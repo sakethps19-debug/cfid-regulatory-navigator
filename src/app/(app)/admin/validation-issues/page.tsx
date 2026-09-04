@@ -12,7 +12,7 @@ export default async function ValidationIssuesPage() {
       </Link>
       <PageHeader
         title="Validation Issues"
-        description="Every recorded data-integrity issue, each traceable to a specific order or source workbook row — retrieval failures, missing citations, and register housekeeping notes. Nothing here is silently dropped or hidden."
+        description="Every recorded data-integrity issue, each traceable to a specific order or source workbook row — orders awaiting retrieval, missing citations, and register housekeeping notes. Nothing here is silently dropped or hidden. Most rows here are informational (an order has not yet been retrieved), not defects — see severity."
       />
       <ValidationIssuesClient issues={issues} />
     </div>

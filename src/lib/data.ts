@@ -19,6 +19,7 @@ import type {
   VerifiedCfidOrderRow,
 } from "@/types/domain";
 import type { Database } from "@/types/database";
+import { PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ScenarioFindingRow = Database["public"]["Tables"]["scenario_findings"]["Row"];
@@ -40,16 +41,6 @@ const ORDER_STAGE_LABELS: Record<OrderRow["order_type"], OrderStage> = {
   adjudication_order: "Adjudication order",
   settlement_order: "Settlement order",
   other: "Other",
-};
-
-const PROCESSING_STAGE_LABELS: Record<ProcessingStage, string> = {
-  indexed: "Indexed only",
-  downloaded: "Downloaded",
-  text_extracted: "Text extracted",
-  scenario_findings_extracted: "Scenario findings extracted",
-  legally_reviewed: "Legally reviewed (deep-analyzed)",
-  needs_manual_review: "Needs manual review",
-  retrieval_failed: "Retrieval failed",
 };
 
 const FINDING_STATUS_LABELS: Record<ScenarioFindingRow["finding_status"], FindingStatus> = {
@@ -523,12 +514,18 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
   const supabase = await createClient();
   const [
     { count: totalIndexed },
-    { count: successfullyRetrieved },
-    { count: retrievalFailures },
+    { count: officialUrlSupplied },
+    { count: urlFormatValidated },
+    { count: cfidIdentifierPresent },
     { count: cfidVerificationFailures },
+    { count: documentActuallyRetrieved },
+    { count: documentMetadataConfirmed },
+    { count: completeDocumentOnFile },
+    { count: awaitingRetrieval },
+    { count: retrievalFailures },
     { count: fullyExtracted },
     { count: needsManualReview },
-    { count: verifiedAwaitingExtraction },
+    { count: midPipelineCount },
     { count: residualPendingLink },
     { count: residualDuplicates },
     { count: residualNotCfid },
@@ -537,15 +534,21 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     { count: officialLawTextsVerified },
   ] = await Promise.all([
     supabase.from("orders").select("*", { count: "exact", head: true }),
-    supabase.from("orders").select("*", { count: "exact", head: true }).eq("retrieval_status", "success"),
-    supabase.from("orders").select("*", { count: "exact", head: true }).eq("retrieval_status", "failed"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).not("official_url", "is", null),
+    supabase.from("orders").select("*", { count: "exact", head: true }).like("official_url", "http%"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("cfid_verified", true),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("cfid_verified", false),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("retrieval_status", "success"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("cfid_verification_source", "document_confirmed"),
+    supabase.from("source_documents").select("*", { count: "exact", head: true }).eq("retrieval_status", "success"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "awaiting_retrieval"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "retrieval_failed"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "legally_reviewed"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "needs_manual_review"),
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .not("processing_stage", "in", "(legally_reviewed,retrieval_failed,needs_manual_review)"),
+      .in("processing_stage", ["retrieval_attempted", "downloaded", "text_extracted", "scenario_findings_extracted", "citations_checked"]),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "pending_link"),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "duplicate_of_verified"),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "not_cfid"),
@@ -555,12 +558,18 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
   ]);
   return {
     totalIndexed: totalIndexed ?? 0,
-    successfullyRetrieved: successfullyRetrieved ?? 0,
-    retrievalFailures: retrievalFailures ?? 0,
+    officialUrlSupplied: officialUrlSupplied ?? 0,
+    urlFormatValidated: urlFormatValidated ?? 0,
+    cfidIdentifierPresent: cfidIdentifierPresent ?? 0,
     cfidVerificationFailures: cfidVerificationFailures ?? 0,
+    documentActuallyRetrieved: documentActuallyRetrieved ?? 0,
+    documentMetadataConfirmed: documentMetadataConfirmed ?? 0,
+    completeDocumentOnFile: completeDocumentOnFile ?? 0,
+    awaitingRetrieval: awaitingRetrieval ?? 0,
+    retrievalFailures: retrievalFailures ?? 0,
     fullyExtracted: fullyExtracted ?? 0,
     needsManualReview: needsManualReview ?? 0,
-    verifiedAwaitingExtraction: verifiedAwaitingExtraction ?? 0,
+    midPipelineCount: midPipelineCount ?? 0,
     residualPendingLink: residualPendingLink ?? 0,
     residualDuplicates: residualDuplicates ?? 0,
     residualNotCfid: residualNotCfid ?? 0,

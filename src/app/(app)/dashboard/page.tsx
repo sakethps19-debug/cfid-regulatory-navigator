@@ -89,7 +89,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`${orders.length} verified CFID order links are currently indexed as the case-library universe — this is not a claim that every CFID matter or every related order has been found; the count will grow as residual entries are resolved and related orders are identified. ${deepAnalyzedOrders.length} of them have been deeply analysed into scenario findings so far. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI URL and a CFID identifier confirmed in its own record — this is not a claim that every one of those documents has been opened, or that every CFID matter or related order has been found; see the Admin Processing Dashboard for the distinct link-verification and retrieval stages. Only ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into scenario findings so far. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

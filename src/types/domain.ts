@@ -29,15 +29,27 @@ export type OrderStage =
   | "Other";
 
 /** Where an order currently stands in the processing pipeline (see the
- * Admin Processing Dashboard). Mirrors the DB's processing_stage enum. */
+ * Admin Processing Dashboard). Mirrors the DB's processing_stage enum.
+ *
+ * "awaiting_retrieval" and "retrieval_failed" are deliberately distinct and
+ * must never be conflated: awaiting_retrieval means no retrieval attempt has
+ * been made or recorded for this specific order yet (the normal starting
+ * state for most of the register); retrieval_failed means a genuine,
+ * individually recorded attempt was made and it failed. An order is never
+ * moved to retrieval_failed without an actual per-order attempt, a stored
+ * failure reason, and a timestamp. See src/lib/processingStages.ts for the
+ * canonical display order and labels. */
 export type ProcessingStage =
   | "indexed"
+  | "awaiting_retrieval"
+  | "retrieval_attempted"
+  | "retrieval_failed"
   | "downloaded"
   | "text_extracted"
   | "scenario_findings_extracted"
+  | "citations_checked"
   | "legally_reviewed"
-  | "needs_manual_review"
-  | "retrieval_failed";
+  | "needs_manual_review";
 
 /** How CFID origin was established for this order. Absence of "CFID" in the
  * order number is NOT by itself grounds for exclusion — an adjudication
@@ -246,16 +258,50 @@ export interface LegalInstrument {
 
 export interface ProcessingMetrics {
   totalIndexed: number;
-  successfullyRetrieved: number;
-  retrievalFailures: number;
+
+  // ---- Link-verification stages (deliberately separate — "official link
+  // verified" is never a single blanket claim). Each is a distinct, honest
+  // checkpoint; a count here does NOT imply the later stages have happened. ----
+  /** Orders with a non-null official SEBI URL on file. */
+  officialUrlSupplied: number;
+  /** Of those, how many are a well-formed http(s) URL (computed live, not
+   * merely asserted at import time). */
+  urlFormatValidated: number;
+  /** Orders whose supplied order identifier/number contains a "CFID" tag —
+   * a claim about the *record*, not about the document itself. */
+  cfidIdentifierPresent: number;
+  /** Orders whose number does NOT contain "CFID" — tracked, never silently
+   * dropped; per cfid_verification_basis, absence alone is not exclusionary. */
   cfidVerificationFailures: number;
+  /** Orders whose SEBI order document was actually opened/retrieved
+   * (retrieval_status = success) — this is the only stage that reflects a
+   * real, completed retrieval, not merely a supplied/validated link. */
+  documentActuallyRetrieved: number;
+  /** Of those, orders whose metadata (date, order number, authority) was
+   * confirmed directly from the opened document itself, not just claimed by
+   * the source workbook. */
+  documentMetadataConfirmed: number;
+  /** Orders with a recorded source_documents row (a formal retrieval audit
+   * entry with checksum/timestamp) — kept separate because even a
+   * documentActuallyRetrieved order may not yet have this formal record. */
+  completeDocumentOnFile: number;
+
+  // ---- Processing-pipeline stages ----
+  /** processing_stage = awaiting_retrieval: indexed and CFID-tag-checked,
+   * but no retrieval attempt has been made or recorded for this specific
+   * order yet. This is NOT a failure — see retrievalFailures below. */
+  awaitingRetrieval: number;
+  /** processing_stage = retrieval_failed: a genuine, individually recorded
+   * retrieval attempt was made for this specific order and it failed
+   * (distinct from awaitingRetrieval, where no attempt has been made). */
+  retrievalFailures: number;
   fullyExtracted: number;
   needsManualReview: number;
-  /** Verified CFID orders that have started processing (retrieved, text
-   * extracted, etc.) but have not yet reached legally_reviewed — kept
-   * separate from the residual-register counts below, which are a
-   * different register entirely (never a source of case-library orders). */
-  verifiedAwaitingExtraction: number;
+  /** Orders in an active intermediate pipeline stage (retrieval_attempted,
+   * downloaded, text_extracted, scenario_findings_extracted,
+   * citations_checked) — neither "not yet started" nor "fully reviewed". */
+  midPipelineCount: number;
+
   residualPendingLink: number;
   residualDuplicates: number;
   residualNotCfid: number;

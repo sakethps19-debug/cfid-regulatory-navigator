@@ -848,6 +848,9 @@ export type Database = {
         | "legally_reviewed"
         | "needs_manual_review"
         | "retrieval_failed"
+        | "awaiting_retrieval"
+        | "retrieval_attempted"
+        | "citations_checked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1028,6 +1031,9 @@ export const Constants = {
         "legally_reviewed",
         "needs_manual_review",
         "retrieval_failed",
+        "awaiting_retrieval",
+        "retrieval_attempted",
+        "citations_checked",
       ],
     },
   },

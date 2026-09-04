@@ -70,14 +70,23 @@ To (re)populate the database after a schema or workbook change: `npm run db:buil
 ## Data model & precedent library
 
 The **Case Library** (`/case-library`) is the full 89-order universe from `Verified_CFID_Order_Links.xlsx` — every
-order number has been confirmed to contain "CFID". Each row's `processing_stage` shows exactly where it stands:
-`indexed` → `downloaded` → `text_extracted` → `scenario_findings_extracted` → `legally_reviewed` (fully
-deep-analyzed), or `retrieval_failed` / `needs_manual_review`. Today, 3 orders (2 cases: Rajesh Exports Limited
-interim order; Seacoast Shipping Services Limited interim and final orders) are `legally_reviewed`, broken down into
-34 scenario findings with paragraph citations. The remaining 86 are `retrieval_failed`: `sebi.gov.in` is not
-reachable from the environment these were processed in (confirmed via direct network tests, not assumed), so they
-are recorded as failed rather than fabricated — see `/admin` and `/admin/validation-issues` for the full accounting,
-and **Continuing the case library** below for how to actually retrieve and analyse them.
+order's own identifier/number has been confirmed to contain "CFID" (a claim about the *record*, tracked separately
+from whether the document itself has actually been opened — see below). Each row's `processing_stage` shows exactly
+where it stands: `indexed` → `awaiting_retrieval` → `retrieval_attempted` → `downloaded` → `text_extracted` →
+`scenario_findings_extracted` → `citations_checked` → `legally_reviewed` (fully deep-analyzed), with
+`retrieval_failed` / `needs_manual_review` as exception states. `awaiting_retrieval` and `retrieval_failed` are
+deliberately distinct and never conflated: `awaiting_retrieval` means no retrieval attempt has been made or recorded
+for that specific order yet; `retrieval_failed` means a genuine, individually recorded attempt was made and it
+failed. Today, 3 orders (2 cases: Rajesh Exports Limited interim order; Seacoast Shipping Services Limited interim
+and final orders) are `legally_reviewed`, broken down into 34 scenario findings with paragraph citations. The
+remaining 86 are `awaiting_retrieval` — a single general connectivity test confirmed `sebi.gov.in` is unreachable
+from this development environment, but that is not the same thing as 86 individually attempted-and-failed
+retrievals, and bulk retrieval is also separately on hold pending scope confirmation, so these orders are correctly
+described as not-yet-attempted rather than failed — see `/admin` (which breaks "official link verified" into its
+separate URL-supplied / format-validated / CFID-identifier-present / document-actually-opened /
+metadata-confirmed-from-source / formal-audit-record-on-file stages, none of which is claimed on behalf of the
+others) and `/admin/validation-issues` for the full accounting, and **Continuing the case library** below for how to
+actually retrieve and analyse them.
 
 `Residual_Order_Links.xlsx` (→ the `residual_register` table) is an exclusion and pending-link register only
 (awaiting a link, a duplicate of a verified order, or confirmed not a CFID order) and is never treated as a source
@@ -92,7 +101,7 @@ applied at the time of the conduct.
 
 ## Continuing the case library
 
-To move another order from `retrieval_failed` (or any earlier stage) to `legally_reviewed`:
+To move another order from `awaiting_retrieval` (or any earlier stage) to `legally_reviewed`:
 
 1. Retrieve the order from its official SEBI URL (the `orders.official_url` column already has it).
 2. Confirm the order number contains "CFID" from the document itself (already true for all 89 rows here, but always
@@ -106,6 +115,11 @@ To move another order from `retrieval_failed` (or any earlier stage) to `legally
    place for every finding — never mark a stage complete based on a partial extraction.
 
 ## Security
+
+A confidential-information warning ("Enter only information that may lawfully be processed in this pilot. Do not
+enter confidential, unpublished or market-sensitive investigation information.") is shown on the login page and, via
+`src/components/DisclaimerBanner.tsx` in the authenticated app shell layout (`src/app/(app)/layout.tsx`), on every
+authenticated page including the Scenario Analyzer — persistently, not just once.
 
 Supabase Auth (email + password) gated by an `ALLOWED_EMAILS` allow-list, enforced both in the Next.js middleware
 (`src/proxy.ts`, via the `is_allowed_user()` RPC) and — the real security boundary — by Row-Level Security on every

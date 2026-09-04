@@ -4,35 +4,24 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Order, ProcessingStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
+import { PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
 
-const STAGE_LABELS: Record<ProcessingStage, string> = {
-  indexed: "Indexed only",
-  downloaded: "Downloaded",
-  text_extracted: "Text extracted",
-  scenario_findings_extracted: "Scenario findings extracted",
-  legally_reviewed: "Legally reviewed",
-  needs_manual_review: "Needs manual review",
-  retrieval_failed: "Retrieval failed",
-};
+const STAGE_LABELS = PROCESSING_STAGE_SHORT_LABELS;
+const STAGE_STYLES = PROCESSING_STAGE_STYLES;
 
-const STAGE_STYLES: Record<ProcessingStage, string> = {
-  indexed: "bg-slate-100 text-slate-600 ring-slate-300",
-  downloaded: "bg-slate-100 text-slate-600 ring-slate-300",
-  text_extracted: "bg-sky-100 text-sky-800 ring-sky-300",
-  scenario_findings_extracted: "bg-sky-100 text-sky-800 ring-sky-300",
-  legally_reviewed: "bg-emerald-100 text-emerald-800 ring-emerald-300",
-  needs_manual_review: "bg-amber-100 text-amber-800 ring-amber-300",
-  retrieval_failed: "bg-rose-100 text-rose-800 ring-rose-300",
-};
-
+// Filter-chip order: most-complete first, so "Legally reviewed" (the small,
+// real number) isn't buried after a long list of not-yet-started stages.
 const STAGE_ORDER: ProcessingStage[] = [
   "legally_reviewed",
+  "citations_checked",
   "scenario_findings_extracted",
   "text_extracted",
   "downloaded",
-  "indexed",
+  "retrieval_attempted",
   "needs_manual_review",
   "retrieval_failed",
+  "awaiting_retrieval",
+  "indexed",
 ];
 
 export function CaseLibraryClient({ orders }: { orders: Order[] }) {
