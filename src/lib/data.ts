@@ -3,15 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   DirectionOutcome,
   FindingStatus,
+  LegalInstrument,
   LegalProvision,
   LegalTest,
   Order,
   OrderStage,
   PfutpFocusEntry,
+  ProcessingMetrics,
   ProcessingStage,
   ProvisionVersion,
   ResidualOrderRow,
   ScenarioFinding,
+  ValidationIssue,
   VerifiedCfidOrderRow,
 } from "@/types/domain";
 import type { Database } from "@/types/database";
@@ -23,6 +26,8 @@ type LegalTestRow = Database["public"]["Tables"]["legal_tests"]["Row"];
 type OrderDirectionRow = Database["public"]["Tables"]["order_directions"]["Row"];
 type ResidualRegisterRow = Database["public"]["Tables"]["residual_register"]["Row"];
 type ProvisionVersionRow = Database["public"]["Tables"]["provision_versions"]["Row"];
+type LegalInstrumentRow = Database["public"]["Tables"]["legal_instruments"]["Row"];
+type ValidationIssueRow = Database["public"]["Tables"]["validation_issues"]["Row"];
 
 const ORDER_STAGE_LABELS: Record<OrderRow["order_type"], OrderStage> = {
   interim_order: "Interim order",
@@ -424,4 +429,85 @@ export async function searchScenarioFindingsFullText(query: string): Promise<Sce
     const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
     return mapFinding(row, provisionIdsByFinding.get(row.id) ?? [], orderIds);
   });
+}
+
+function mapValidationIssue(row: ValidationIssueRow, orderCaseName: string | null): ValidationIssue {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    orderCaseName,
+    findingId: row.finding_id,
+    issueType: row.issue_type,
+    severity: row.severity === "error" || row.severity === "info" ? row.severity : "warning",
+    description: row.description,
+    sourceRowRef: row.source_row_ref,
+    resolved: row.resolved,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getValidationIssues(): Promise<ValidationIssue[]> {
+  const supabase = await createClient();
+  const [{ data: issueRows, error: issuesError }, { data: orderRows, error: ordersError }] = await Promise.all([
+    supabase.from("validation_issues").select("*").order("severity", { ascending: true }),
+    supabase.from("orders").select("id, case_name"),
+  ]);
+  if (issuesError) throw issuesError;
+  if (ordersError) throw ordersError;
+  const caseNameById = new Map((orderRows ?? []).map((o) => [o.id, o.case_name]));
+  return (issueRows ?? []).map((row) => mapValidationIssue(row, row.order_id ? (caseNameById.get(row.order_id) ?? null) : null));
+}
+
+export async function getLegalInstruments(): Promise<LegalInstrument[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("legal_instruments").select("*").order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row: LegalInstrumentRow) => ({
+    id: row.id,
+    name: row.name,
+    issuingAuthority: row.issuing_authority,
+    officialSourceUrl: row.official_source_url,
+  }));
+}
+
+/** Aggregate counts for the Admin Processing Dashboard. Every count is a
+ * direct query against the live tables — nothing here is cached or
+ * estimated, so the dashboard always reflects the current database state. */
+export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
+  const supabase = await createClient();
+  const [
+    { count: totalIndexed },
+    { count: successfullyRetrieved },
+    { count: retrievalFailures },
+    { count: cfidVerificationFailures },
+    { count: fullyExtracted },
+    { count: needsManualReview },
+    { count: residualPendingLink },
+    { count: scenarioFindingsCreated },
+    { count: legalProvisionsIdentified },
+    { count: officialLawTextsVerified },
+  ] = await Promise.all([
+    supabase.from("orders").select("*", { count: "exact", head: true }),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("retrieval_status", "success"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("retrieval_status", "failed"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("cfid_verified", false),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "legally_reviewed"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "needs_manual_review"),
+    supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "pending_link"),
+    supabase.from("scenario_findings").select("*", { count: "exact", head: true }),
+    supabase.from("legal_provisions").select("*", { count: "exact", head: true }),
+    supabase.from("provision_versions").select("*", { count: "exact", head: true }).eq("status", "officially_verified"),
+  ]);
+  return {
+    totalIndexed: totalIndexed ?? 0,
+    successfullyRetrieved: successfullyRetrieved ?? 0,
+    retrievalFailures: retrievalFailures ?? 0,
+    cfidVerificationFailures: cfidVerificationFailures ?? 0,
+    fullyExtracted: fullyExtracted ?? 0,
+    needsManualReview: needsManualReview ?? 0,
+    residualPendingLink: residualPendingLink ?? 0,
+    scenarioFindingsCreated: scenarioFindingsCreated ?? 0,
+    legalProvisionsIdentified: legalProvisionsIdentified ?? 0,
+    officialLawTextsVerified: officialLawTextsVerified ?? 0,
+  };
 }

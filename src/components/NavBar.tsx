@@ -7,12 +7,15 @@ import { useState } from "react";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/analyzer", label: "Scenario Analyzer" },
+  { href: "/case-library", label: "Case Library" },
+  { href: "/law-library", label: "Law Library" },
   { href: "/regulations", label: "Search by Regulation" },
   { href: "/orders", label: "Search by Order" },
   { href: "/pfutp", label: "PFUTP 4(2)(e)" },
   { href: "/compare", label: "Precedent Comparison" },
   { href: "/library", label: "Source Library" },
   { href: "/awaiting-analysis", label: "Orders Awaiting Analysis" },
+  { href: "/admin", label: "Admin Dashboard" },
   { href: "/methodology", label: "Methodology & Limitations" },
 ];
 

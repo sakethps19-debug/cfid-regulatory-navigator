@@ -167,6 +167,39 @@ export interface PfutpFocusEntry {
   officialSourceUrl: string;
 }
 
+export interface ValidationIssue {
+  id: string;
+  orderId: string | null;
+  orderCaseName: string | null;
+  findingId: string | null;
+  issueType: string;
+  severity: "error" | "warning" | "info";
+  description: string;
+  sourceRowRef: string | null;
+  resolved: boolean;
+  createdAt: string;
+}
+
+export interface LegalInstrument {
+  id: string;
+  name: string;
+  issuingAuthority: string;
+  officialSourceUrl: string | null;
+}
+
+export interface ProcessingMetrics {
+  totalIndexed: number;
+  successfullyRetrieved: number;
+  retrievalFailures: number;
+  cfidVerificationFailures: number;
+  fullyExtracted: number;
+  needsManualReview: number;
+  residualPendingLink: number;
+  scenarioFindingsCreated: number;
+  legalProvisionsIdentified: number;
+  officialLawTextsVerified: number;
+}
+
 export interface ValidationReport {
   generatedAt: string;
   importedOrders: number;

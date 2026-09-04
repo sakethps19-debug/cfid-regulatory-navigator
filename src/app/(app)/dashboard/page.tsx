@@ -7,7 +7,7 @@ const STAT_ITEMS = [
   { label: "Orders deep-analyzed", hrefLabel: "Source Library", href: "/library" },
   { label: "Scenario findings", hrefLabel: "Search by Regulation", href: "/regulations" },
   { label: "Provisions indexed", hrefLabel: "Search by Regulation", href: "/regulations" },
-  { label: "Verified CFID orders", hrefLabel: "Orders Awaiting Analysis", href: "/awaiting-analysis" },
+  { label: "Verified CFID orders", hrefLabel: "Case Library", href: "/case-library" },
 ];
 
 export default async function DashboardPage() {
