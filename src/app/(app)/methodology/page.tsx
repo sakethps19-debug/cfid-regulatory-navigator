@@ -1,0 +1,171 @@
+import { PageHeader } from "@/components/PageHeader";
+import { Card } from "@/components/Card";
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="mb-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-700">{children}</div>
+    </Card>
+  );
+}
+
+export default function MethodologyPage() {
+  return (
+    <div>
+      <PageHeader title="Methodology &amp; Limitations" description="How this pilot works, what it does not do, and how to extend it." />
+
+      <Section title="Purpose and scope">
+        <p>
+          CFID Regulatory Navigator is an internal legal-research assistant for one authorised CFID officer. Given a
+          factual scenario, it identifies potentially applicable SEBI Act sections, regulations and other provisions;
+          matching factual ingredients; supporting CFID orders with paragraph references; contrary or negative
+          precedents; the procedural status of each finding; missing facts or evidence; a confidence level; and links
+          to official source documents.
+        </p>
+        <p>
+          <strong>This is a research-assistance tool.</strong> It does not make findings of guilt and does not
+          conclude that a violation has occurred merely because a scenario resembles an earlier order. All output uses
+          careful language such as &quot;potentially relevant&quot; and &quot;prima facie similarity&quot; and never
+          asserts that a regulation has definitely been violated.
+        </p>
+      </Section>
+
+      <Section title="Precedent database — Version 1">
+        <p>
+          The verified precedent library for this pilot consists of exactly three CFID orders, each of whose order
+          number has been confirmed to contain &quot;CFID&quot;:
+        </p>
+        <ul className="list-inside list-disc space-y-1">
+          <li>Rajesh Exports Limited — interim order (order number contains CFID-SEC6)</li>
+          <li>Seacoast Shipping Services Limited — interim order cum show cause notice (CFID-SEC6)</li>
+          <li>Seacoast Shipping Services Limited — final order (CFID-CORD)</li>
+        </ul>
+        <p>
+          Where a final order exists, its finding is treated as controlling and is displayed prominently; the interim
+          order is used only to explain the original allegation and how the case developed. Findings are stored at the
+          level of an individual allegation, not the order as a whole, because one transaction may be upheld while
+          another under the same provision is not.
+        </p>
+      </Section>
+
+      <Section title="Orders Awaiting Analysis">
+        <p>
+          Links.xlsx lists 85 CFID case registrations. Not every row is automatically treated as a verified precedent.
+          Rows marked &quot;No order&quot;/&quot;No CFID Order&quot;, rows without any link, and rows whose order
+          number has not yet been confirmed to contain &quot;CFID&quot; are all flagged for manual review in the{" "}
+          <a href="/awaiting-analysis" className="text-blue-700 underline">
+            Orders Awaiting Analysis
+          </a>{" "}
+          register rather than being admitted to the precedent library. No row is ever deleted.
+        </p>
+        <p>
+          <strong>Procedure for adding missing order links later:</strong> update Links.xlsx with the correct link(s)
+          for the case, re-run <code>npm run import:data</code>, confirm the order number contains &quot;CFID&quot;
+          from the order document itself, then move the case into
+          <code> CFID_Precedent_Library_Pilot.xlsx</code> with its scenario findings, provisions and paragraph
+          references filled in exactly as they appear in the order — never inferred or invented. Re-run{" "}
+          <code>npm run import:data</code> and <code>npm run validate:data</code>, review the validation report, and
+          redeploy.
+        </p>
+      </Section>
+
+      <Section title="Permitted sources">
+        <p>Only the following are used as sources of legal or factual content in this pilot:</p>
+        <ul className="list-inside list-disc space-y-1">
+          <li>The official SEBI website, for SEBI orders, Acts, regulations and circulars.</li>
+          <li>The official MCA website, for the Companies Act and rules.</li>
+          <li>Official sources for notified accounting standards / Ind AS.</li>
+          <li>Official sources expressly referred to within the SEBI orders themselves.</li>
+        </ul>
+        <p>
+          Law-firm articles, blogs, news reports, commercial legal databases and unofficial reproductions or summaries
+          are never used. Anything that cannot be verified against an official source is marked &quot;Requires
+          verification&quot; rather than presented as settled.
+        </p>
+      </Section>
+
+      <Section title="Critical legal safeguards">
+        <ul className="list-inside list-disc space-y-1">
+          <li>
+            PFUTP Regulation 4(2)(e) (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board
+            and management responsibility for true and fair financial statements) are never conflated, even though
+            both are frequently cited in the same order.
+          </li>
+          <li>Observations in interim orders are always treated as prima facie findings only.</li>
+          <li>Where a final order exists, it is displayed prominently and controls over an inconsistent interim finding.</li>
+          <li>
+            Circular movement of funds is treated as an indicator, not a complete conclusion. The engine always
+            surfaces the guardrail checklist — commercial purpose, accounting treatment, bank-flow evidence, timing,
+            counterparty identity, third-party examination, recording in audited accounts, flow-back, ultimate
+            economic benefit, and whether distinct transactions were improperly clubbed.
+          </li>
+          <li>
+            The Seacoast final order&apos;s rejection of the ₹0.52 crore cash preferential-allotment allegation is
+            treated as an important negative precedent and is retrieved for scenarios involving preferential
+            allotment, circular funding, alleged front entities, or unexplained fund movements.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="How the Scenario Analyzer works (zero-cost architecture)">
+        <p>
+          The matching engine is entirely deterministic — there is no call to any paid AI API and no external network
+          request at analysis time. It works in the following steps:
+        </p>
+        <ol className="list-inside list-decimal space-y-1">
+          <li>Normalize the entered scenario text (lowercase, strip punctuation, collapse whitespace).</li>
+          <li>
+            Detect factual concepts (transaction types, actor roles, evidence types, alleged conduct) using a
+            controlled synonym dictionary of keyword and phrase matches.
+          </li>
+          <li>Score each of the pilot&apos;s 34 scenario findings by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
+          <li>Prefer findings drawn from a final order over an interim-only finding.</li>
+          <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with — a provision is never suggested merely because it appeared elsewhere in the same order.</li>
+          <li>Retrieve supporting precedents (status Upheld / Prima facie / Partly upheld) and contrary precedents (status Not upheld) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
+          <li>Assemble a missing-facts checklist from each matched finding&apos;s recorded evidentiary gaps.</li>
+          <li>Derive a High / Medium / Low confidence level from how many independent factual categories overlap and whether the best match is a final or interim-only finding.</li>
+        </ol>
+        <p>
+          The underlying data (orders, scenario findings, provisions, legal tests, directions, and the fact-element
+          tags used for matching) is generated once from the two source workbooks by <code>npm run import:data</code>{" "}
+          and committed as structured JSON/TypeScript — the workbooks are never parsed in the browser or at request
+          time.
+        </p>
+      </Section>
+
+      <Section title="Future extensibility (Supabase / optional LLM)">
+        <p>
+          Version 1 has no database and no AI API dependency by design — it must run at zero marginal cost. The code
+          is structured so either can be added later without a rewrite: <code>src/lib/data.ts</code> is the single
+          data-access boundary the rest of the app calls through, so it could be pointed at Supabase (or another
+          database) instead of the generated JSON without changing any page or component. Similarly, the deterministic
+          engine in <code>src/lib/matching/engine.ts</code> could be supplemented by an optional LLM re-ranking or
+          explanation step behind a feature flag, called only if an API key is configured, while keeping the
+          deterministic engine as the default and as the safeguard against fabricated citations.
+        </p>
+      </Section>
+
+      <Section title="Known limitations">
+        <ul className="list-inside list-disc space-y-1">
+          <li>The verified precedent library covers only three orders (two cases). Results for facts outside those patterns will correctly show no match rather than a fabricated one.</li>
+          <li>Keyword/synonym matching cannot capture every phrasing of a scenario — try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
+          <li>Provision &quot;current text&quot; is not reproduced or guaranteed current — always verify against the official SEBI/MCA source before relying on it.</li>
+          <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>
+          <li>No user data, scenario queries, or analytics are stored or transmitted anywhere by this application.</li>
+        </ul>
+      </Section>
+
+      <Section title="Security">
+        <ul className="list-inside list-disc space-y-1">
+          <li>Single authorised user, authenticated with a username/password pair set only via server environment variables.</li>
+          <li>Sessions are signed, HTTP-only cookies (not readable from browser JavaScript) with an 8-hour expiry.</li>
+          <li>All application routes and API endpoints are protected by server-side middleware; unauthenticated requests are redirected to sign-in.</li>
+          <li>Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS in production) are applied to every response.</li>
+          <li>Basic rate limiting is applied to every route, with a stricter limit on the sign-in endpoint.</li>
+          <li>No scenario queries are stored, no analytics or third-party trackers are included, and there is no facility to upload confidential investigation records.</li>
+        </ul>
+      </Section>
+    </div>
+  );
+}

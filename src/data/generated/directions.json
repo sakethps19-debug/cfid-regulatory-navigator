@@ -1,0 +1,90 @@
+[
+  {
+    "id": "DIR-1",
+    "caseName": "Rajesh Exports Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Noticees to cooperate and provide specified records within 30 days",
+    "paragraphReference": "Para 231(I)",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html"
+  },
+  {
+    "id": "DIR-2",
+    "caseName": "Rajesh Exports Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Rajesh Mehta restrained from dealing in REL securities until further orders",
+    "paragraphReference": "Para 231(II)",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html"
+  },
+  {
+    "id": "DIR-3",
+    "caseName": "Rajesh Exports Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "REL directed to make true and fair financial/RPT disclosures; new forensic auditor to be appointed",
+    "paragraphReference": "Paras 231(III), 232-233",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html"
+  },
+  {
+    "id": "DIR-4",
+    "caseName": "Rajesh Exports Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Order forwarded to NFRA regarding statutory auditors",
+    "paragraphReference": "Para 234",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html"
+  },
+  {
+    "id": "DIR-5",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Company restrained from raising public money; market/access restraints against specified noticees",
+    "paragraphReference": "Paras 157(a)-(c), 158",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/sep-2024/interim-order-in-the-matter-of-seacoast-shipping-services-limited_87152.html"
+  },
+  {
+    "id": "DIR-6",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Alleged gains impounded; escrow, freeze, asset and inventory directions",
+    "paragraphReference": "Paras 157(d)-(j)",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/sep-2024/interim-order-in-the-matter-of-seacoast-shipping-services-limited_87152.html"
+  },
+  {
+    "id": "DIR-7",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Interim",
+    "directionOrOutcome": "Company directed to bring back diverted funds and reconstitute Audit Committee",
+    "paragraphReference": "Paras 157(f),(k)",
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/sep-2024/interim-order-in-the-matter-of-seacoast-shipping-services-limited_87152.html"
+  },
+  {
+    "id": "DIR-8",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Final",
+    "directionOrOutcome": "Five-year restraints for company/promoters; one-year association restraint for Noticees 11 and 12",
+    "paragraphReference": "Para 247(i)-(v)",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf"
+  },
+  {
+    "id": "DIR-9",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Final",
+    "directionOrOutcome": "Penalties under sections 15HA/15HB; INR 47,89,87,587 disgorgement plus 12% interest against Manish Shah",
+    "paragraphReference": "Para 247(vi)-(vii)",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf"
+  },
+  {
+    "id": "DIR-10",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Final",
+    "directionOrOutcome": "Company to bring back diverted rights-issue/cash-credit funds and constitute a new Audit Committee",
+    "paragraphReference": "Para 247(xiv)-(xv)",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf"
+  },
+  {
+    "id": "DIR-11",
+    "caseName": "Seacoast Shipping Services Limited",
+    "stage": "Final",
+    "directionOrOutcome": "Directions against Noticees 4-10 vacated; proceedings against Noticee 13 abated",
+    "paragraphReference": "Para 247(xvii)-(xviii)",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf"
+  }
+]

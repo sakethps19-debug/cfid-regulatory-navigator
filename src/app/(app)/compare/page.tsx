@@ -1,0 +1,15 @@
+import { PageHeader } from "@/components/PageHeader";
+import { PrecedentCompareClient } from "@/components/PrecedentCompareClient";
+import { scenarioFindings } from "@/lib/data";
+
+export default function ComparePage() {
+  return (
+    <div>
+      <PageHeader
+        title="Precedent Comparison"
+        description="Compare any two scenario findings side by side — useful, for example, to see why the 1.50 crore promoter allotment (SSSL-02) was upheld while the 0.52 crore cash allotment (SSSL-03) was not."
+      />
+      <PrecedentCompareClient findings={scenarioFindings} />
+    </div>
+  );
+}

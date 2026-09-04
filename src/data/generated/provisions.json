@@ -1,0 +1,342 @@
+[
+  {
+    "id": "SEBI-ACT-12A",
+    "instrument": "SEBI Act, 1992",
+    "provisionNumber": "Section 12A(a), (b), (c)",
+    "subject": "Manipulative/deceptive devices and fraud in connection with securities",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Order-cited text; obtain current official statutory text for law library"
+  },
+  {
+    "id": "SEBI-ACT-27",
+    "instrument": "SEBI Act, 1992",
+    "provisionNumber": "Section 27",
+    "subject": "Liability where contravention is committed by a company",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and upheld",
+    "lawLibraryNote": "Used for persons in charge/responsible; role-specific analysis required"
+  },
+  {
+    "id": "SEBI-ACT-11-11C",
+    "instrument": "SEBI Act, 1992",
+    "provisionNumber": "Sections 11(2)(ia), 11C(3)",
+    "subject": "Investigation/production of information",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL"
+    ],
+    "treatmentInPilotOrders": "Prima facie",
+    "lawLibraryNote": "Relevant to non-cooperation findings"
+  },
+  {
+    "id": "SEBI-ACT-15HA-15HB",
+    "instrument": "SEBI Act, 1992",
+    "provisionNumber": "Sections 15HA and 15HB",
+    "subject": "Penalty provisions for PFUTP and other contraventions",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Applied in final directions",
+    "lawLibraryNote": "See final paras 241-247"
+  },
+  {
+    "id": "PFUTP-3-a-d",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 3(a)-(d)",
+    "subject": "Prohibitions on fraudulent/deceptive conduct",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Exact clause set varies by scenario"
+  },
+  {
+    "id": "PFUTP-4-1",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 4(1)",
+    "subject": "Manipulative, fraudulent or unfair trade practice",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "REL discusses diversion/manipulated books explanation at paras 198-200"
+  },
+  {
+    "id": "PFUTP-4-2-e",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 4(2)(e)",
+    "subject": "Act/omission amounting to manipulation of security price",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld/not upheld",
+    "lawLibraryNote": "See dedicated 4(2)(e) sheet"
+  },
+  {
+    "id": "PFUTP-4-2-f",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 4(2)(f)",
+    "subject": "Publishing/reporting untrue securities-related information",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Often paired with financial-result misstatements"
+  },
+  {
+    "id": "PFUTP-4-2-k",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 4(2)(k)",
+    "subject": "Disseminating false/misleading information likely to influence investors",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Amendment timing may matter; REL para 203"
+  },
+  {
+    "id": "PFUTP-4-2-r",
+    "instrument": "PFUTP Regulations, 2003",
+    "provisionNumber": "Regulation 4(2)(r)",
+    "subject": "Knowingly planting false/misleading information inducing trades",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Used for false announcements and disclosures"
+  },
+  {
+    "id": "LODR-4-1-general",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 4(1)(a),(b),(c),(e),(g),(h),(j)",
+    "subject": "General principles for disclosures and governance",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Map clause-by-clause in law library"
+  },
+  {
+    "id": "LODR-4-2-e-i",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 4(2)(e)(i)",
+    "subject": "Financial statements: true and fair view / applicable standards",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Do not confuse with PFUTP Regulation 4(2)(e)"
+  },
+  {
+    "id": "LODR-4-2-f",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 4(2)(f) sub-clauses",
+    "subject": "Board responsibilities and governance principles",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld for specified directors",
+    "lawLibraryNote": "See Table 52 rows 14 and 19-21"
+  },
+  {
+    "id": "LODR-6-compliance-officer",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 6(1), 6(1A), 6(2)(a),(c)",
+    "subject": "Compliance Officer appointment, vacancy and duties",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld",
+    "lawLibraryNote": "Company and officer obligations are distinct"
+  },
+  {
+    "id": "LODR-audit-committee",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulations 16(1)(b), 18(1)(d), 18(2), 18(3)",
+    "subject": "Independent-director eligibility and Audit Committee requirements",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld",
+    "lawLibraryNote": "Includes constitution, meetings and functions"
+  },
+  {
+    "id": "LODR-17-8",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 17(8)",
+    "subject": "CEO/CFO compliance certification",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld",
+    "lawLibraryNote": "Final Table 52 row 16"
+  },
+  {
+    "id": "LODR-23-2",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 23(2)",
+    "subject": "Prior Audit Committee approval of RPTs",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and upheld",
+    "lawLibraryNote": "SSSL absence of AC meetings meant approval was not proved"
+  },
+  {
+    "id": "LODR-27-2-a",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 27(2)(a)",
+    "subject": "Quarterly corporate-governance compliance report",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld against MD",
+    "lawLibraryNote": "Final para 222(vii)"
+  },
+  {
+    "id": "LODR-32",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 32 / 32(7A)",
+    "subject": "Monitoring/disclosure of issue-proceeds utilisation",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Upheld in relevant findings",
+    "lawLibraryNote": "Final paras 181-182 and 214"
+  },
+  {
+    "id": "LODR-33",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 33(1)(a),(c), 33(3)(d)",
+    "subject": "Financial results, accounting compliance and audit qualification impact",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Scenario-specific"
+  },
+  {
+    "id": "LODR-34",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 34(2)(a), 34(3) and Schedule V",
+    "subject": "Annual-report contents and disclosures",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Includes audit qualifications and RPT disclosures"
+  },
+  {
+    "id": "LODR-46-2-s",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 46(2)(s)",
+    "subject": "Website publication of subsidiary financial statements",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL"
+    ],
+    "treatmentInPilotOrders": "Prima facie",
+    "lawLibraryNote": "REL para 222(V)"
+  },
+  {
+    "id": "LODR-48",
+    "instrument": "LODR Regulations, 2015",
+    "provisionNumber": "Regulation 48",
+    "subject": "Compliance with applicable accounting standards",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Operates with specific Ind AS findings"
+  },
+  {
+    "id": "COMPANIES-ACT-136",
+    "instrument": "Companies Act, 2013",
+    "provisionNumber": "Section 136(1)",
+    "subject": "Access/publication of financial statements including subsidiary information",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL"
+    ],
+    "treatmentInPilotOrders": "Prima facie",
+    "lawLibraryNote": "REL para 222(V); obtain current MCA text"
+  },
+  {
+    "id": "IND-AS-various",
+    "instrument": "Indian Accounting Standards",
+    "provisionNumber": "Ind AS 1, 7, 21, 24, 32, 107, 110, 115",
+    "subject": "Presentation, cash flows, forex, RPT, offsetting/disclosures, consolidation and revenue",
+    "currentTextVerificationStatus": "Requires verification",
+    "officialSource": null,
+    "ordersConsidered": [
+      "REL",
+      "SSSL"
+    ],
+    "treatmentInPilotOrders": "Prima facie and/or upheld",
+    "lawLibraryNote": "Obtain official MCA-notified standards for law library"
+  }
+]

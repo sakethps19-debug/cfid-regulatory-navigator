@@ -1,0 +1,41 @@
+[
+  {
+    "id": "REL-INTERIM-ORDER",
+    "caseName": "Rajesh Exports Limited",
+    "orderStage": "Interim order",
+    "orderDate": "2026-06-03",
+    "orderNumber": "WTM/KV/CFID/CFID-SEC6/32431/2026-27",
+    "authority": "Kamlesh C. Varshney, Whole Time Member",
+    "noticeesCount": 2,
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "cfidVerified": true,
+    "proceduralStatus": "Prima facie; investigation continuing",
+    "scopeNote": "Financial-statement manipulation, concealment, fund routing/misutilisation and non-cooperation."
+  },
+  {
+    "id": "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderStage": "Interim order cum show cause notice",
+    "orderDate": "2024-09-30",
+    "orderNumber": "WTM/AB/CFID/CFID-SEC6/30827/2024-25",
+    "authority": "Ashwani Bhatia, Whole Time Member",
+    "noticeesCount": 22,
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/sep-2024/interim-order-in-the-matter-of-seacoast-shipping-services-limited_87152.html",
+    "cfidVerified": true,
+    "proceduralStatus": "Prima facie findings and preventive directions",
+    "scopeNote": "Misstated financials, preferential allotments, fund diversion and corporate-governance failures."
+  },
+  {
+    "id": "SSSL-FINAL-ORDER",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderStage": "Final order",
+    "orderDate": "2025-09-24",
+    "orderNumber": "WTM/KV/CFID/CFID-CORD/31688/2025-26",
+    "authority": "Kamlesh C. Varshney, Whole Time Member",
+    "noticeesCount": 22,
+    "officialUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "cfidVerified": true,
+    "proceduralStatus": "Final findings, penalties, disgorgement and directions",
+    "scopeNote": "Final adjudication of the allegations contained in the interim order cum SCN."
+  }
+]

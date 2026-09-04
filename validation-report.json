@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-09-04T04:24:37.326Z",
+  "importedOrders": 3,
+  "scenarioFindings": 34,
+  "invalidOrMissingUrls": [],
+  "missingParagraphReferences": [],
+  "unknownProvisions": [],
+  "duplicateRecords": [],
+  "conflictingFindings": [],
+  "rowsRequiringManualReview": 83,
+  "nonCfidOrders": 59,
+  "rowsMarkedNoOrder": 24
+}

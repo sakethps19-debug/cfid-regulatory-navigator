@@ -1,0 +1,51 @@
+[
+  {
+    "id": "LT-1",
+    "provisionOrIssue": "PFUTP 4(2)(e): market nexus",
+    "workingPrinciple": "An accounting irregularity becomes relevant to price manipulation where dissemination creates a false appearance of financial health/valuation, induces investors, or distorts price discovery.",
+    "paragraphAnchors": "REL paras 198-214; SSSL final paras 186-189",
+    "implementationGuardrail": "Treat as an analytical bridge, not an automatic rule that every accounting error violates PFUTP."
+  },
+  {
+    "id": "LT-2",
+    "provisionOrIssue": "Financial misstatement evidence",
+    "workingPrinciple": "Look for transaction-level commercial records, GST/tax records, bank flows, inventory/delivery evidence, counterparty confirmation and consistency across ledgers and statutory filings.",
+    "paragraphAnchors": "REL paras 67-159; SSSL final paras 53-115",
+    "implementationGuardrail": "Absence of several independent forms of evidence strengthens an inference of non-genuineness."
+  },
+  {
+    "id": "LT-3",
+    "provisionOrIssue": "Circular fund-flow allegation",
+    "workingPrinciple": "Circular movement by itself may be insufficient where loan/advance transactions are supported, occur in ordinary business, and are reflected in audited statements.",
+    "paragraphAnchors": "SSSL final paras 157-166",
+    "implementationGuardrail": "Trace the substance of each leg and test the explanation; temporal proximity alone is not conclusive."
+  },
+  {
+    "id": "LT-4",
+    "provisionOrIssue": "Third-party examination",
+    "workingPrinciple": "If a fraud theory depends on intermediary entities, failure to examine them or obtain corroboration can leave evidentiary gaps.",
+    "paragraphAnchors": "SSSL final para 166(iii)-(iv)",
+    "implementationGuardrail": "Record which entities were summoned, examined and made noticees."
+  },
+  {
+    "id": "LT-5",
+    "provisionOrIssue": "Distinct transactions",
+    "workingPrinciple": "Separate receipt of prior dues and later investment cannot be clubbed without credible evidence connecting the two transactions.",
+    "paragraphAnchors": "SSSL final paras 171-173",
+    "implementationGuardrail": "Require evidence of routing, common control, pre-arrangement or return of economic benefit."
+  },
+  {
+    "id": "LT-6",
+    "provisionOrIssue": "Ultimate benefit / sale proceeds",
+    "workingPrinciple": "Where alleged front allottees retain sale proceeds and no flow back is proved, that fact may undermine the allegation that allotment was financed for the promoter/company.",
+    "paragraphAnchors": "SSSL final paras 164-166 and 172-173",
+    "implementationGuardrail": "Always trace the eventual economic benefit, not only initial funding."
+  },
+  {
+    "id": "LT-7",
+    "provisionOrIssue": "Interim versus final status",
+    "workingPrinciple": "Interim findings are prima facie and may be displaced after replies, cross-examination and further evidence.",
+    "paragraphAnchors": "SSSL interim para 159; SSSL final paras 132-174",
+    "implementationGuardrail": "The chatbot must label procedural stage and prefer final findings when available."
+  }
+]

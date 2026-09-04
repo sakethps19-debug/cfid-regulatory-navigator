@@ -1,0 +1,1561 @@
+[
+  {
+    "recordId": "REL-01",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Financial disclosure",
+    "scenarioTitle": "Non-disclosure of subsidiary financial statements",
+    "factualPattern": "Financial statements of subsidiaries/step-down subsidiaries contributing substantially to consolidated revenue and assets were not uploaded or produced.",
+    "provisionsConsideredRaw": "LODR Reg. 46(2)(s); Companies Act s.136(1)",
+    "provisionIds": [
+      "LODR-46-2-s",
+      "COMPANIES-ACT-136"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 9-27; summary para 219(I); finding para 222(V)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "financial_statement_disclosure",
+      "consolidated_financials"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "consolidation_workpapers"
+    ],
+    "allegedConduct": [
+      "non_disclosure_of_information"
+    ],
+    "evidentiaryGaps": [
+      "Subsidiary and step-down subsidiary financial statements and consolidation working papers",
+      "Confirmation of the website/filing publication history"
+    ]
+  },
+  {
+    "recordId": "REL-02",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Consolidated financial statements",
+    "scenarioTitle": "Unsupported/inflated consolidated revenue",
+    "factualPattern": "Approximately INR 15,15,385 crore of consolidated revenue for FY 2020-21 to FY 2024-25 was treated as prima facie misrepresented; subsidiary records and consolidation support were not furnished.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 1, 110 and 115",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 28-53; summary para 219(VI); findings para 222(I),(II),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "consolidated_financials",
+      "financial_statement_disclosure"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "consolidation_workpapers",
+      "gst_tax_records",
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement",
+      "fictitious_sales_or_assets",
+      "price_manipulation_nexus"
+    ],
+    "evidentiaryGaps": [
+      "Subsidiary-level books and consolidation support for the revenue figures",
+      "Independent verification of customer-wise sales",
+      "Completion of the forensic audit"
+    ]
+  },
+  {
+    "recordId": "REL-03",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Investigation cooperation",
+    "scenarioTitle": "Contradictory and incomplete submissions",
+    "factualPattern": "Different customer-wise sales figures were furnished at different stages and complete information was not produced despite repeated summons.",
+    "provisionsConsideredRaw": "SEBI Act s.11(2)(ia) and s.11C(3)",
+    "provisionIds": [
+      "SEBI-ACT-11-11C"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 6-8, 25-27 and 54-66; summary para 219(VIII),(XIV); finding para 222(VI),(VII)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "investigation_process"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "correspondence_summons_replies"
+    ],
+    "allegedConduct": [
+      "non_cooperation_with_investigation"
+    ],
+    "evidentiaryGaps": [
+      "Complete and consistent customer-wise sales data",
+      "Explanation for the differing submissions across stages"
+    ]
+  },
+  {
+    "recordId": "REL-04",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Standalone financial statements",
+    "scenarioTitle": "Personal derivative trades booked as company sales and purchases",
+    "factualPattern": "Derivative transactions executed through the promoter’s personal account were recorded as REL sales of INR 11,487 crore and purchases of INR 11,488 crore.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 1 and 115",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 67-87; summary para 219(II); findings paras 86-87 and 222(I),(II),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "derivative_transaction",
+      "fund_transfer_personal_account",
+      "standalone_financials"
+    ],
+    "actorRoles": [
+      "company",
+      "promoter"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow",
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "fictitious_sales_or_assets",
+      "financial_statement_misstatement",
+      "price_manipulation_nexus"
+    ],
+    "evidentiaryGaps": [
+      "Broker/exchange records for the promoter's personal derivative account",
+      "Reconciliation showing how the personal trades entered the company's books",
+      "Explanation from the promoter"
+    ]
+  },
+  {
+    "recordId": "REL-05",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Revenue recognition",
+    "scenarioTitle": "Foreign-exchange differences and investment interest included in revenue from operations",
+    "factualPattern": "Foreign-exchange fluctuations of about INR 867 crore and interest on mutual funds/fixed deposits of INR 204 crore were included in operating revenue; exchange fluctuation of about INR 716 crore was included in purchases.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 21 and 115",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 88-103; summary para 219(III); findings paras 100-103 and 222(I),(II),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "revenue_recognition",
+      "standalone_financials"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Ind AS 21/115 classification workpapers",
+      "Year-wise break-up of the foreign-exchange and interest components"
+    ]
+  },
+  {
+    "recordId": "REL-06",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Purchases and inventory",
+    "scenarioTitle": "Purchases recorded without contemporaneous supporting evidence",
+    "factualPattern": "Purchases recorded against Vienna Multiventures and Harshil Enterprise lacked delivery, receipt, inventory, GST and banking support and appeared non-genuine.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(c),(e),(g),(h),(j), 4(2)(e)(i)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 104-112; findings paras 110-112",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "purchase_transaction"
+    ],
+    "actorRoles": [
+      "company",
+      "related_party_counterparty"
+    ],
+    "evidenceTypes": [
+      "delivery_inventory_records",
+      "gst_tax_records",
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "fictitious_sales_or_assets",
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Delivery challans, GST filings and banking trail for the purchases",
+      "Confirmation from Vienna Multiventures and Harshil Enterprise"
+    ]
+  },
+  {
+    "recordId": "REL-07",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Consolidation",
+    "scenarioTitle": "Intra-group balances not eliminated on consolidation",
+    "factualPattern": "Intra-group investments and trade payables continued in consolidated statements, inflating investments and liabilities and impairing the true and fair view.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 110",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 113-132; summary para 219(IX); findings paras 130-132 and 222(I),(II),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "consolidated_financials"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "consolidation_workpapers",
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Consolidation elimination workpapers",
+      "Entity-wise intra-group balance confirmations"
+    ]
+  },
+  {
+    "recordId": "REL-08",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Investments",
+    "scenarioTitle": "Unverifiable claim of investment in African gold mines",
+    "factualPattern": "Other non-current investments described as investments in gold mines in Africa lacked identifiable entity-wise or documentary support.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 1",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 133-141; finding paras 139-141",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "investment_valuation"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement",
+      "fictitious_sales_or_assets"
+    ],
+    "evidentiaryGaps": [
+      "Entity-wise documentary support for the investment",
+      "Independent valuation or title evidence"
+    ]
+  },
+  {
+    "recordId": "REL-09",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Receivables/payables",
+    "scenarioTitle": "Opaque netting of long-outstanding receivables and payables",
+    "factualPattern": "Trade receivables of about INR 2,914 crore were reduced through multi-party netting/knock-off arrangements without adequate basis or disclosure.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e),(g),(h),(j), 4(2)(e)(i), 33(1)(a),(c), 48; Ind AS 1, 32, 107",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 142-159; summary para 219(X); findings paras 157-159 and 222(I),(II),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "receivables_payables_adjustment"
+    ],
+    "actorRoles": [
+      "company",
+      "related_party_counterparty"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "related_party_register"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Multi-party netting/knock-off agreements and the basis for offset",
+      "Counterparty confirmations"
+    ]
+  },
+  {
+    "recordId": "REL-10",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Related parties/fund routing",
+    "scenarioTitle": "Company funds routed through promoter and family personal accounts",
+    "factualPattern": "Substantial corporate funds were routed through personal bank accounts of Rajesh Mehta and Siddharth Mehta, including statutory and operating payments, without adequate disclosure or approvals.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 23(2), 34(3) read with Schedule V; Ind AS 24",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-23-2",
+      "LODR-34",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited",
+      "Rajesh Mehta"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 160-181; summary para 219(XI); findings paras 177-181 and 222(I),(III),(IV)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "fund_transfer_personal_account",
+      "related_party_transaction"
+    ],
+    "actorRoles": [
+      "company",
+      "promoter"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "fund_routed_personal_account",
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Board/Audit Committee approvals for routing payments through personal accounts",
+      "End-use evidence for the statutory and operating payments",
+      "Related-party disclosure records"
+    ]
+  },
+  {
+    "recordId": "REL-11",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Diversion/misutilisation",
+    "scenarioTitle": "Transfers to promoter-controlled entities without demonstrated purpose",
+    "factualPattern": "Funds were transferred through opaque arrangements involving promoter-controlled entities without adequate business rationale, approval, disclosure or end-use evidence.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited",
+      "Rajesh Mehta"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 182-197; finding para 197; summary paras 218-219; para 222(I),(III)",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "fund_transfer_promoter_entity",
+      "related_party_transaction"
+    ],
+    "actorRoles": [
+      "company",
+      "promoter",
+      "related_party_counterparty"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow",
+      "related_party_register"
+    ],
+    "allegedConduct": [
+      "fund_diversion"
+    ],
+    "evidentiaryGaps": [
+      "Business rationale and board approval for the transfers",
+      "End-use/utilisation evidence",
+      "Confirmation from the counterparty entities"
+    ]
+  },
+  {
+    "recordId": "REL-12",
+    "caseName": "Rajesh Exports Limited",
+    "orderIds": [
+      "REL-INTERIM-ORDER"
+    ],
+    "category": "Market nexus",
+    "scenarioTitle": "Misleading financial picture distorted price discovery and induced investors",
+    "factualPattern": "The cumulative manipulation and concealment allegedly created an illusion of operational growth and financial strength, interfered with price discovery and induced trading at prices not reflective of the company’s true position.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r"
+    ],
+    "noticeeActors": [
+      "Rajesh Exports Limited"
+    ],
+    "findingStatus": "Prima facie",
+    "interimParagraphReferences": "Interim paras 198-214; overall finding paras 218-222",
+    "finalParagraphReferences": null,
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/interim-order-in-the-matter-of-rajesh-exports-limited_101820.html",
+    "transactionTypes": [
+      "financial_statement_disclosure"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "price_manipulation_nexus",
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "Evidence connecting the disclosures to actual trading or price impact",
+      "Completion of the forensic audit"
+    ]
+  },
+  {
+    "recordId": "SSSL-01",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Financial statements",
+    "scenarioTitle": "Published misrepresented financial statements",
+    "factualPattern": "More than 85% of recorded sales and more than 98% of assets during the relevant periods were held non-genuine; statements for FY 2020-21 to FY 2022-23 and Apr-Dec 2023 were misstated.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; Ind AS 1, 7 and 115; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "SEBI-ACT-27",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 10-48; conclusion paras 44-48; para 156(a)-(b)",
+    "finalParagraphReferences": "Final paras 53-131; summary para 238(a),(c); Table 52 row 1",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "financial_statement_disclosure",
+      "standalone_financials"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "forensic_audit_report",
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "fictitious_sales_or_assets",
+      "financial_statement_misstatement",
+      "price_manipulation_nexus"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-02",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Preferential allotment",
+    "scenarioTitle": "1.50 crore shares allotted to promoter without acquisition of promised net assets",
+    "factualPattern": "Shares worth INR 22.73 crore were issued to Manish Shah for purported takeover of Seacoast-HUF, but no corresponding net assets were acquired by SSSL.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(a)-(d), 4(1), 4(2)(e),(f),(k),(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "SEBI-ACT-27",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-33",
+      "LODR-48"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 49-57",
+    "finalParagraphReferences": "Final paras 116-131; summary para 238(b); Table 52 row 2",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "preferential_allotment"
+    ],
+    "actorRoles": [
+      "company",
+      "promoter",
+      "allottee_promoter"
+    ],
+    "evidenceTypes": [
+      "shareholding_allotment_records",
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "sham_preferential_allotment",
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-03",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Preferential allotment",
+    "scenarioTitle": "0.52 crore shares allegedly allotted without effective cash consideration",
+    "factualPattern": "Interim order inferred circular financing of the cash allotment; final order accepted supported explanations for loans/advances and found insufficient evidence of fictitious consideration.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(a)-(d), 4(1), 4(2)(e),(f),(k),(r); SEBI Act s.12A(a)-(c); LODR Reg. 4(1)(a)-(c), 4(1)(e), 4(1)(g), 4(1)(h), 4(1)(j), 4(2)(e)(i), 33(1)(a), 33(1)(c), 48; LODR Reg. 32; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "SEBI-ACT-27",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-32",
+      "LODR-33",
+      "LODR-48"
+    ],
+    "noticeeActors": [
+      "Noticees 1-10"
+    ],
+    "findingStatus": "Not upheld",
+    "interimParagraphReferences": "Interim paras 58-83",
+    "finalParagraphReferences": "Final paras 132-174; summary para 238(b),(e); Table 52 rows 3 and 18",
+    "qualification": "Important negative precedent: circular bank movement alone did not establish sham consideration.",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "preferential_allotment",
+      "cash_credit_facility"
+    ],
+    "actorRoles": [
+      "company",
+      "allottee_promoter",
+      "allottee_third_party"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow",
+      "audited_financial_statements",
+      "third_party_examination_statements"
+    ],
+    "allegedConduct": [
+      "circular_fund_movement",
+      "unsupported_share_allotment_consideration"
+    ],
+    "evidentiaryGaps": [
+      "Important negative precedent: the final order accepted supported explanations for the loans/advances underlying the allotment.",
+      "Third parties were not examined by the investigation.",
+      "Sale proceeds remained with the allottees; no flow-back to the company or promoter was proved."
+    ]
+  },
+  {
+    "recordId": "SSSL-04",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Diversion of funds",
+    "scenarioTitle": "Rights-issue and cash-credit funds diverted through fictitious purchases",
+    "factualPattern": "INR 43.42 crore of rights-issue funds and INR 10.83 crore of cash-credit funds were held diverted; intended use and supporting purchase evidence were absent.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); LODR Reg. 18(3) read with Schedule II and Reg. 32; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "SEBI-ACT-27",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r",
+      "LODR-audit-committee",
+      "LODR-32"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 84-98; para 156(c)",
+    "finalParagraphReferences": "Final paras 175-183; summary para 238(b); Table 52 row 4",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "rights_issue",
+      "cash_credit_facility",
+      "purchase_transaction"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow",
+      "delivery_inventory_records",
+      "utilisation_of_issue_proceeds_certificate"
+    ],
+    "allegedConduct": [
+      "fund_diversion",
+      "fictitious_sales_or_assets"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-05",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Annual report",
+    "scenarioTitle": "Incomplete annual report and false statement regarding audit qualifications",
+    "factualPattern": "RPT disclosures and Statements on Impact of Audit Qualifications were omitted, while the director’s report stated there were no audit qualifications.",
+    "provisionsConsideredRaw": "PFUTP Reg. 4(2)(f),(k),(r); LODR Reg. 4(1)(c), 33(3)(d), 34(2)(a), 34(3) read with Schedule V; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "PFUTP-4-2-f",
+      "LODR-4-1-general",
+      "LODR-33",
+      "LODR-34"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 99-101",
+    "finalParagraphReferences": "Final paras 185-189; Table 52 row 5",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "annual_report_disclosure",
+      "related_party_transaction"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "non_disclosure_of_information",
+      "financial_statement_misstatement"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-06",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Business disclosure",
+    "scenarioTitle": "False description of business segment",
+    "factualPattern": "The company showed agro transactions but continued disclosing only ship-hiring/operating as its reportable business segment.",
+    "provisionsConsideredRaw": "PFUTP Reg. 4(2)(f),(k),(r); LODR Reg. 4(1)(c); SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "PFUTP-4-2-f",
+      "LODR-4-1-general"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 102-104",
+    "finalParagraphReferences": "Final paras 190-194; Table 52 row 6",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "business_segment_disclosure"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements"
+    ],
+    "allegedConduct": [
+      "false_business_or_corporate_announcement",
+      "non_disclosure_of_information"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-07",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Corporate announcement",
+    "scenarioTitle": "Unsupported Starchart acquisition/turnover announcement",
+    "factualPattern": "SSSL announced an intended takeover and projected INR 500-600 crore turnover without a demonstrated basis and did not properly disclose cancellation.",
+    "provisionsConsideredRaw": "PFUTP Reg. 4(2)(f),(k),(r); LODR Reg. 4(1)(c); SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "PFUTP-4-2-f",
+      "LODR-4-1-general"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 105-108",
+    "finalParagraphReferences": "Final paras 195-201; Table 52 row 7",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "corporate_announcement"
+    ],
+    "actorRoles": [
+      "company"
+    ],
+    "evidenceTypes": [
+      "correspondence_summons_replies"
+    ],
+    "allegedConduct": [
+      "false_business_or_corporate_announcement"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-08",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Related-party disclosure",
+    "scenarioTitle": "Misrepresented RPT with Seacoast-HUF",
+    "factualPattern": "Sales and purchases were disclosed as RPTs with Seacoast-HUF although registers did not evidence such transactions and takeover accounting differed.",
+    "provisionsConsideredRaw": "LODR Reg. 4(1)(a),(b), 4(2)(e)(i), 34(3) read with Schedule V, 48; Ind AS 24 para 18; SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "LODR-4-1-general",
+      "LODR-4-2-e-i",
+      "LODR-34",
+      "LODR-48",
+      "IND-AS-various"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 109-110",
+    "finalParagraphReferences": "Final paras 202-204; Table 52 row 8",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "related_party_transaction",
+      "annual_report_disclosure"
+    ],
+    "actorRoles": [
+      "company",
+      "related_party_counterparty"
+    ],
+    "evidenceTypes": [
+      "related_party_register",
+      "audit_committee_minutes_agendas"
+    ],
+    "allegedConduct": [
+      "related_party_misrepresentation"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-09",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Audit committee",
+    "scenarioTitle": "Improper constitution of Audit Committee",
+    "factualPattern": "A material customer/vendor was treated as independent director and appointed Audit Committee chair despite ineligibility.",
+    "provisionsConsideredRaw": "PFUTP Reg. 4(2)(f),(k),(r); LODR Reg. 4(1)(c), 18(1)(d) read with 16(1)(b); SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "PFUTP-4-2-f",
+      "LODR-4-1-general",
+      "LODR-6-compliance-officer",
+      "LODR-audit-committee"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 111-115",
+    "finalParagraphReferences": "Final paras 205-210; Table 52 row 9",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "audit_committee_process"
+    ],
+    "actorRoles": [
+      "company",
+      "audit_committee_member",
+      "independent_director"
+    ],
+    "evidenceTypes": [
+      "board_minutes",
+      "related_party_register"
+    ],
+    "allegedConduct": [
+      "audit_committee_deficiency"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-10",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Audit committee",
+    "scenarioTitle": "Audit Committee meetings disclosed but not held",
+    "factualPattern": "Annual reports claimed 20 meetings, but members denied attendance/knowledge and the company failed to produce agendas or minutes; RPT approvals consequently lacked proof.",
+    "provisionsConsideredRaw": "PFUTP Reg. 4(2)(f),(k),(r); LODR Reg. 4(1)(c), 18(2), 23(2); SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "PFUTP-4-2-f",
+      "LODR-4-1-general",
+      "LODR-audit-committee",
+      "LODR-23-2"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 116-119",
+    "finalParagraphReferences": "Final paras 211-217; Table 52 row 10",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "audit_committee_process"
+    ],
+    "actorRoles": [
+      "company",
+      "audit_committee_member"
+    ],
+    "evidenceTypes": [
+      "audit_committee_minutes_agendas"
+    ],
+    "allegedConduct": [
+      "audit_committee_deficiency",
+      "false_compliance_certification"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-11",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Compliance officer",
+    "scenarioTitle": "Unqualified appointment and delayed filling of vacancy",
+    "factualPattern": "A non-company-secretary served as Compliance Officer and a later vacancy remained unfilled beyond the permitted period.",
+    "provisionsConsideredRaw": "LODR Reg. 6(1), 6(1A); SEBI Act s.27",
+    "provisionIds": [
+      "SEBI-ACT-27",
+      "LODR-6-compliance-officer"
+    ],
+    "noticeeActors": [
+      "Noticees 1, 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 120-121",
+    "finalParagraphReferences": "Final paras 218-220; Table 52 row 11",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "compliance_officer_appointment"
+    ],
+    "actorRoles": [
+      "company",
+      "compliance_officer"
+    ],
+    "evidenceTypes": [
+      "board_minutes"
+    ],
+    "allegedConduct": [
+      "compliance_officer_deficiency"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-12",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Management liability",
+    "scenarioTitle": "Managing Director’s pivotal role in overall fraud",
+    "factualPattern": "Manish Shah held multiple controlling roles, signed filings/certificates and was held responsible for the company’s misstatements, diversion and governance failures, except the cash preferential-allotment allegation.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c); SEBI Act s.27; multiple LODR provisions listed in final para 222(viii)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "SEBI-ACT-27",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r"
+    ],
+    "noticeeActors": [
+      "Noticee 2"
+    ],
+    "findingStatus": "Partly upheld",
+    "interimParagraphReferences": "Interim paras 122-126",
+    "finalParagraphReferences": "Final para 222; Table 52 row 12",
+    "qualification": "Excluded only to the extent of the allegation in SSSL-03.",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "managing_director"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "financial_statement_misstatement",
+      "fund_diversion",
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "Liability for the SSSL-03 cash preferential-allotment allegation was specifically excluded — do not treat the Managing Director's overall liability as extending to that allegation."
+    ]
+  },
+  {
+    "recordId": "SSSL-13",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Promoter benefit",
+    "scenarioTitle": "Promoter allotted himself shares without consideration",
+    "factualPattern": "Manish Shah obtained shares worth INR 22.73 crore without transferring the stated net assets to SSSL.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(a)-(d), 4(1); SEBI Act s.12A(a)-(c)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1"
+    ],
+    "noticeeActors": [
+      "Noticee 2"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 56-57",
+    "finalParagraphReferences": "Final paras 116-131; Table 52 row 13",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "preferential_allotment"
+    ],
+    "actorRoles": [
+      "promoter",
+      "allottee_promoter"
+    ],
+    "evidenceTypes": [
+      "shareholding_allotment_records"
+    ],
+    "allegedConduct": [
+      "sham_preferential_allotment"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-14",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Director duties",
+    "scenarioTitle": "Managing and executive directors failed their board responsibilities",
+    "factualPattern": "The managing and executive directors were held responsible for failures of operational transparency, conflict monitoring, misuse of corporate assets and RPT governance.",
+    "provisionsConsideredRaw": "LODR Reg. 4(2)(f)(i)(2), 4(2)(f)(ii)(2),(6),(7), 4(2)(f)(iii)(6),(7)",
+    "provisionIds": [
+      "LODR-4-2-f"
+    ],
+    "noticeeActors": [
+      "Noticees 2 and 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 123-130",
+    "finalParagraphReferences": "Final paras 222-223; Table 52 row 14",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "managing_director",
+      "executive_director"
+    ],
+    "evidenceTypes": [
+      "board_minutes"
+    ],
+    "allegedConduct": [
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-15",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Audit committee duties",
+    "scenarioTitle": "Board/Audit Committee gross negligence",
+    "factualPattern": "A director and Audit Committee member failed to supervise financial reporting, disclosures and use of issue proceeds.",
+    "provisionsConsideredRaw": "LODR Reg. 18(3) read with Para A, Part C, Schedule II",
+    "provisionIds": [
+      "LODR-audit-committee"
+    ],
+    "noticeeActors": [
+      "Noticee 2"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 123-126",
+    "finalParagraphReferences": "Final para 222(vi); Table 52 row 15",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "audit_committee_process",
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "audit_committee_member"
+    ],
+    "evidenceTypes": [
+      "audit_committee_minutes_agendas",
+      "utilisation_of_issue_proceeds_certificate"
+    ],
+    "allegedConduct": [
+      "audit_committee_deficiency",
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-16",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Certification",
+    "scenarioTitle": "False compliance certificate to the board",
+    "factualPattern": "The MD signed the Regulation 17(8) certificate despite financial statements not presenting a true and fair view.",
+    "provisionsConsideredRaw": "LODR Reg. 17(8)",
+    "provisionIds": [
+      "LODR-17-8"
+    ],
+    "noticeeActors": [
+      "Noticee 2"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim para 123",
+    "finalParagraphReferences": "Final para 222(iii); Table 52 row 16",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "certification_process"
+    ],
+    "actorRoles": [
+      "managing_director"
+    ],
+    "evidenceTypes": [
+      "board_minutes"
+    ],
+    "allegedConduct": [
+      "false_compliance_certification"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-17",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Aiding and abetting",
+    "scenarioTitle": "Executive Director aided the overall scheme",
+    "factualPattern": "Sameer Shah was found to have aided and abetted Manish Shah in financial misrepresentation, the sham promoter allotment, fund diversion and governance failures.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(b), 3(c), 3(d), 4(1), 4(2)(e), 4(2)(f), 4(2)(k), 4(2)(r); SEBI Act s.12A(a)-(c)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e",
+      "PFUTP-4-2-f",
+      "PFUTP-4-2-k",
+      "PFUTP-4-2-r"
+    ],
+    "noticeeActors": [
+      "Noticee 3"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 127-130",
+    "finalParagraphReferences": "Final para 223; Table 52 row 17",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "executive_director"
+    ],
+    "evidenceTypes": [
+      "audited_financial_statements",
+      "bank_statements_flow"
+    ],
+    "allegedConduct": [
+      "aiding_abetting",
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-18",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Preferential allottees",
+    "scenarioTitle": "Non-promoter allottees allegedly participated without effective consideration",
+    "factualPattern": "The evidence did not establish that the allottees used SSSL’s own money or that their sale proceeds returned to SSSL/Manish Shah.",
+    "provisionsConsideredRaw": "PFUTP Reg. 3(a)-(d), 4(1), 4(2)(e),(f),(k),(r); SEBI Act s.12A(a)-(c)",
+    "provisionIds": [
+      "SEBI-ACT-12A",
+      "PFUTP-3-a-d",
+      "PFUTP-4-1",
+      "PFUTP-4-2-e"
+    ],
+    "noticeeActors": [
+      "Noticees 4-10"
+    ],
+    "findingStatus": "Not upheld",
+    "interimParagraphReferences": "Interim paras 58-83",
+    "finalParagraphReferences": "Final paras 132-174; summary para 238(e); Table 52 row 18",
+    "qualification": "Exonerated; interim impounding directions vacated.",
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "preferential_allotment"
+    ],
+    "actorRoles": [
+      "allottee_third_party"
+    ],
+    "evidenceTypes": [
+      "bank_statements_flow",
+      "third_party_examination_statements"
+    ],
+    "allegedConduct": [
+      "circular_fund_movement",
+      "unsupported_share_allotment_consideration"
+    ],
+    "evidentiaryGaps": [
+      "Negative precedent: the evidence did not establish that the allottees used the company's own money or that sale proceeds returned to the company or the promoter; directions against these noticees were vacated."
+    ]
+  },
+  {
+    "recordId": "SSSL-19",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Director/Audit Committee duties",
+    "scenarioTitle": "Director and Audit Committee member showed gross negligence",
+    "factualPattern": "Failure to question non-convening of Audit Committee meetings and discharge board/committee duties.",
+    "provisionsConsideredRaw": "LODR Reg. 4(2)(f)(i)(2), 4(2)(f)(ii)(2),(6),(7),(8), 18(3) read with Schedule II",
+    "provisionIds": [
+      "LODR-4-2-f",
+      "LODR-audit-committee"
+    ],
+    "noticeeActors": [
+      "Noticee 11"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 134-138",
+    "finalParagraphReferences": "Final paras 224-235; Table 52 row 19",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "audit_committee_process",
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "director_general",
+      "audit_committee_member"
+    ],
+    "evidenceTypes": [
+      "audit_committee_minutes_agendas"
+    ],
+    "allegedConduct": [
+      "audit_committee_deficiency",
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-20",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Independent-director duties",
+    "scenarioTitle": "Directors/Audit Committee members showed gross negligence",
+    "factualPattern": "Directors failed to raise concerns regarding non-convening of Audit Committee meetings and widespread financial/governance failures.",
+    "provisionsConsideredRaw": "LODR Reg. 4(2)(f)(i)(2), 4(2)(f)(ii)(2),(6),(7),(8), 18(3) read with Schedule II",
+    "provisionIds": [
+      "LODR-4-2-f",
+      "LODR-audit-committee"
+    ],
+    "noticeeActors": [
+      "Noticees 12, 14, 15, 16 and 17"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 134-138",
+    "finalParagraphReferences": "Final paras 224-235; summary para 238(f); Table 52 row 20",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "audit_committee_process",
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "independent_director",
+      "audit_committee_member"
+    ],
+    "evidenceTypes": [
+      "audit_committee_minutes_agendas"
+    ],
+    "allegedConduct": [
+      "audit_committee_deficiency",
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-21",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Independent-director duties",
+    "scenarioTitle": "Independent Director failed basic duties during widespread misstatements",
+    "factualPattern": "The independent director failed to exercise duties expected during the period of pervasive financial misrepresentation.",
+    "provisionsConsideredRaw": "LODR Reg. 4(2)(f)(i)(2), 4(2)(f)(ii)(2),(6),(7),(8)",
+    "provisionIds": [
+      "LODR-4-2-f"
+    ],
+    "noticeeActors": [
+      "Noticee 18"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 131-133",
+    "finalParagraphReferences": "Final paras 224-235; summary para 238(g); Table 52 row 21",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "board_director_duties"
+    ],
+    "actorRoles": [
+      "independent_director"
+    ],
+    "evidenceTypes": [
+      "board_minutes"
+    ],
+    "allegedConduct": [
+      "director_governance_failure"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  },
+  {
+    "recordId": "SSSL-22",
+    "caseName": "Seacoast Shipping Services Limited",
+    "orderIds": [
+      "SSSL-INTERIM-ORDER-CUM-SHOW-CAUSE-NOTICE",
+      "SSSL-FINAL-ORDER"
+    ],
+    "category": "Compliance officer duties",
+    "scenarioTitle": "Compliance Officers failed to ensure Audit Committee compliance",
+    "factualPattern": "Compliance Officers did not ensure/convene Audit Committee meetings or discharge compliance obligations during their respective tenures.",
+    "provisionsConsideredRaw": "LODR Reg. 6(2)(a), 6(2)(c)",
+    "provisionIds": [
+      "LODR-6-compliance-officer"
+    ],
+    "noticeeActors": [
+      "Noticees 19-22"
+    ],
+    "findingStatus": "Upheld",
+    "interimParagraphReferences": "Interim paras 139-140",
+    "finalParagraphReferences": "Final paras 236-237; summary para 238(h); Table 52 row 22",
+    "qualification": null,
+    "officialSourceUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/final_order_sssl.pdf",
+    "transactionTypes": [
+      "compliance_officer_appointment",
+      "audit_committee_process"
+    ],
+    "actorRoles": [
+      "compliance_officer"
+    ],
+    "evidenceTypes": [
+      "audit_committee_minutes_agendas"
+    ],
+    "allegedConduct": [
+      "compliance_officer_deficiency",
+      "audit_committee_deficiency"
+    ],
+    "evidentiaryGaps": [
+      "None outstanding — this allegation was resolved in the final order."
+    ]
+  }
+]
