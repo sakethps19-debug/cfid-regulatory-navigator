@@ -167,6 +167,23 @@ export interface PfutpFocusEntry {
   officialSourceUrl: string;
 }
 
+export type OrderRelationshipType =
+  | "interim_to_final"
+  | "interim_to_confirmatory"
+  | "confirmatory_to_revocation"
+  | "corrigendum_to"
+  | "related_matter";
+
+export interface OrderRelationship {
+  id: string;
+  fromOrderId: string;
+  fromCaseName: string;
+  toOrderId: string;
+  toCaseName: string;
+  relationshipType: OrderRelationshipType;
+  note: string | null;
+}
+
 export interface ValidationIssue {
   id: string;
   orderId: string | null;

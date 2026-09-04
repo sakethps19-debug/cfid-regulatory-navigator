@@ -3,14 +3,26 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
-import { directionsForCase, getOrderById, getScenarioFindings } from "@/lib/data";
+import { directionsForCase, getOrderById, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
+
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  interim_to_final: "resolved by the final order",
+  interim_to_confirmatory: "resolved by the confirmatory order",
+  confirmatory_to_revocation: "later revoked",
+  corrigendum_to: "corrected by a corrigendum",
+  related_matter: "related to",
+};
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [allFindings, allDirections] = await Promise.all([getScenarioFindings(), directionsForCase(order.caseName)]);
+  const [allFindings, allDirections, relationships] = await Promise.all([
+    getScenarioFindings(),
+    directionsForCase(order.caseName),
+    orderRelationshipsForOrder(order.id),
+  ]);
   const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
   const directions = allDirections.filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
 
@@ -20,6 +32,34 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         ← Back to Search by Order
       </Link>
       <PageHeader title={order.caseName} description={`${order.orderStage} · ${order.orderDate}`} />
+
+      {relationships.map((r) => {
+        const isSource = r.fromOrderId === order.id;
+        const otherOrderId = isSource ? r.toOrderId : r.fromOrderId;
+        const label = RELATIONSHIP_LABELS[r.relationshipType] ?? r.relationshipType;
+        return (
+          <div
+            key={r.id}
+            className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-300"
+          >
+            {isSource ? (
+              <>
+                This order was <strong>{label}</strong> — where they differ, the later order&apos;s outcome
+                controls; do not treat this interim finding as final.{" "}
+              </>
+            ) : (
+              <>
+                This order <strong>{label.replace("resolved by ", "resolves ").replace("later revoked", "later revokes")}</strong>{" "}
+                the order below — its outcome controls over any earlier interim finding.{" "}
+              </>
+            )}
+            {r.note && <span className="block mt-1 text-xs text-amber-800">{r.note}</span>}
+            <Link href={`/orders/${otherOrderId}`} className="mt-1 inline-block font-medium text-amber-900 underline">
+              View the linked order →
+            </Link>
+          </div>
+        );
+      })}
 
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">

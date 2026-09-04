@@ -7,6 +7,7 @@ import type {
   LegalProvision,
   LegalTest,
   Order,
+  OrderRelationship,
   OrderStage,
   PfutpFocusEntry,
   ProcessingMetrics,
@@ -429,6 +430,37 @@ export async function searchScenarioFindingsFullText(query: string): Promise<Sce
     const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
     return mapFinding(row, provisionIdsByFinding.get(row.id) ?? [], orderIds);
   });
+}
+
+/** Every order_relationships row (interim<->final, confirmatory, corrigendum,
+ * related-matter links), resolved to both orders' case names. The Order
+ * Detail page uses this to warn when an interim finding has since been
+ * resolved by a final order — never overwrite an interim analysis with a
+ * final outcome silently; always show both, in relationship order. */
+export async function getOrderRelationships(): Promise<OrderRelationship[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("order_relationships")
+    .select("*, from_order:orders!order_relationships_from_order_id_fkey(case_name), to_order:orders!order_relationships_to_order_id_fkey(case_name)");
+  if (error) throw error;
+  return (data ?? []).map((row) => {
+    const fromOrder = (row as { from_order: { case_name: string } | null }).from_order;
+    const toOrder = (row as { to_order: { case_name: string } | null }).to_order;
+    return {
+      id: row.id,
+      fromOrderId: row.from_order_id,
+      fromCaseName: fromOrder?.case_name ?? "",
+      toOrderId: row.to_order_id,
+      toCaseName: toOrder?.case_name ?? "",
+      relationshipType: row.relationship_type,
+      note: row.note,
+    };
+  });
+}
+
+export async function orderRelationshipsForOrder(orderId: string): Promise<OrderRelationship[]> {
+  const all = await getOrderRelationships();
+  return all.filter((r) => r.fromOrderId === orderId || r.toOrderId === orderId);
 }
 
 function mapValidationIssue(row: ValidationIssueRow, orderCaseName: string | null): ValidationIssue {
