@@ -1,0 +1,29 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { supabaseUrl, supabaseAnonKey } from "./env";
+import type { Database } from "@/types/database";
+
+/** Server-side Supabase client for use in Server Components, Route Handlers,
+ * and Server Actions. Reads/writes the session via the Next.js cookie store. */
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient<Database>(supabaseUrl(), supabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options);
+          }
+        } catch {
+          // setAll is called from a Server Component where cookies() is
+          // read-only; the middleware is responsible for refreshing the
+          // session cookie in that case, so this is safe to ignore.
+        }
+      },
+    },
+  });
+}
