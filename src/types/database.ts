@@ -165,6 +165,27 @@ export type Database = {
         }
         Relationships: []
       }
+      matters: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          normalized_matter_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          normalized_matter_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          normalized_matter_name?: string
+        }
+        Relationships: []
+      }
       noticees: {
         Row: {
           created_at: string
@@ -318,6 +339,7 @@ export type Database = {
         Row: {
           background_chronology: string | null
           case_name: string
+          cfid_verification_basis: Database["public"]["Enums"]["cfid_verification_basis_type"]
           cfid_verification_source: string
           cfid_verified: boolean
           checksum: string | null
@@ -325,6 +347,9 @@ export type Database = {
           id: string
           investigation_period: string | null
           listed_entity: string | null
+          matter_id: string | null
+          normalized_matter_name: string | null
+          official_order_title: string | null
           official_url: string
           order_date: string | null
           order_number: string | null
@@ -343,6 +368,7 @@ export type Database = {
         Insert: {
           background_chronology?: string | null
           case_name: string
+          cfid_verification_basis?: Database["public"]["Enums"]["cfid_verification_basis_type"]
           cfid_verification_source?: string
           cfid_verified?: boolean
           checksum?: string | null
@@ -350,6 +376,9 @@ export type Database = {
           id?: string
           investigation_period?: string | null
           listed_entity?: string | null
+          matter_id?: string | null
+          normalized_matter_name?: string | null
+          official_order_title?: string | null
           official_url: string
           order_date?: string | null
           order_number?: string | null
@@ -368,6 +397,7 @@ export type Database = {
         Update: {
           background_chronology?: string | null
           case_name?: string
+          cfid_verification_basis?: Database["public"]["Enums"]["cfid_verification_basis_type"]
           cfid_verification_source?: string
           cfid_verified?: boolean
           checksum?: string | null
@@ -375,6 +405,9 @@ export type Database = {
           id?: string
           investigation_period?: string | null
           listed_entity?: string | null
+          matter_id?: string | null
+          normalized_matter_name?: string | null
+          official_order_title?: string | null
           official_url?: string
           order_date?: string | null
           order_number?: string | null
@@ -390,7 +423,15 @@ export type Database = {
           source_row_ref?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "matters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processing_runs: {
         Row: {
@@ -549,17 +590,23 @@ export type Database = {
           final_order_id: string | null
           final_paragraph_references: string | null
           finding_status: Database["public"]["Enums"]["finding_status"]
+          finding_status_verified: boolean
+          human_legal_review_completed: boolean
           id: string
           ingredients_not_established: string[]
           interim_paragraph_references: string | null
           noticee_actor_names: string[]
+          noticee_mapping_verified: boolean
           official_source_url: string
           order_id: string | null
+          paragraph_citation_verified: boolean
+          provision_mapping_verified: boolean
           provisions_considered_raw: string | null
           qualification: string | null
           record_id: string
           scenario_title: string
           search_vector: unknown
+          source_document_verified: boolean
           transaction_types: string[]
           updated_at: string
         }
@@ -576,17 +623,23 @@ export type Database = {
           final_order_id?: string | null
           final_paragraph_references?: string | null
           finding_status: Database["public"]["Enums"]["finding_status"]
+          finding_status_verified?: boolean
+          human_legal_review_completed?: boolean
           id?: string
           ingredients_not_established?: string[]
           interim_paragraph_references?: string | null
           noticee_actor_names?: string[]
+          noticee_mapping_verified?: boolean
           official_source_url: string
           order_id?: string | null
+          paragraph_citation_verified?: boolean
+          provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
           qualification?: string | null
           record_id: string
           scenario_title: string
           search_vector?: unknown
+          source_document_verified?: boolean
           transaction_types?: string[]
           updated_at?: string
         }
@@ -603,17 +656,23 @@ export type Database = {
           final_order_id?: string | null
           final_paragraph_references?: string | null
           finding_status?: Database["public"]["Enums"]["finding_status"]
+          finding_status_verified?: boolean
+          human_legal_review_completed?: boolean
           id?: string
           ingredients_not_established?: string[]
           interim_paragraph_references?: string | null
           noticee_actor_names?: string[]
+          noticee_mapping_verified?: boolean
           official_source_url?: string
           order_id?: string | null
+          paragraph_citation_verified?: boolean
+          provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
           qualification?: string | null
           record_id?: string
           scenario_title?: string
           search_vector?: unknown
+          source_document_verified?: boolean
           transaction_types?: string[]
           updated_at?: string
         }
@@ -740,6 +799,13 @@ export type Database = {
       is_allowed_user: { Args: never; Returns: boolean }
     }
     Enums: {
+      cfid_verification_basis_type:
+        | "cfid_tag_in_order_number"
+        | "cfid_origin_established_from_official_order"
+        | "related_to_verified_cfid_parent_matter"
+        | "confirmed_by_authorised_cfid_officer"
+        | "needs_manual_verification"
+        | "not_cfid"
       finding_status:
         | "alleged"
         | "prima_facie"
@@ -756,6 +822,15 @@ export type Database = {
         | "confirmatory_to_revocation"
         | "corrigendum_to"
         | "related_matter"
+        | "same_matter"
+        | "precedes"
+        | "confirms"
+        | "modifies"
+        | "revokes"
+        | "finalises"
+        | "adjudication_arising_from"
+        | "same_investigation"
+        | "different_noticee_group"
       order_type:
         | "interim_order"
         | "interim_cum_show_cause_notice"
@@ -900,6 +975,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cfid_verification_basis_type: [
+        "cfid_tag_in_order_number",
+        "cfid_origin_established_from_official_order",
+        "related_to_verified_cfid_parent_matter",
+        "confirmed_by_authorised_cfid_officer",
+        "needs_manual_verification",
+        "not_cfid",
+      ],
       finding_status: [
         "alleged",
         "prima_facie",
@@ -917,6 +1000,15 @@ export const Constants = {
         "confirmatory_to_revocation",
         "corrigendum_to",
         "related_matter",
+        "same_matter",
+        "precedes",
+        "confirms",
+        "modifies",
+        "revokes",
+        "finalises",
+        "adjudication_arising_from",
+        "same_investigation",
+        "different_noticee_group",
       ],
       order_type: [
         "interim_order",

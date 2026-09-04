@@ -64,11 +64,15 @@ function parseOrders(workbook: ReturnType<typeof readWorkbook>, warnings: string
       noticeesCount: Number(cellText(row[5]) ?? 0) || 0,
       officialUrl,
       cfidVerified: /CFID/.test(orderNumber),
+      cfidVerificationBasis: /CFID/.test(orderNumber) ? "cfid_tag_in_order_number" : "needs_manual_verification",
       proceduralStatus: cellText(row[6]) ?? "",
       processingStage: "legally_reviewed",
       retrievalStatus: "retrieved",
       retrievalFailureReason: null,
       scopeNote: cellText(row[8]) ?? "",
+      matterId: null,
+      officialOrderTitle: null,
+      normalizedMatterName: caseName,
     });
     if (!isUrl(officialUrl)) {
       warnings.push(`Order Master: missing/invalid official URL for "${caseName}" (${stage ?? stageRaw})`);
@@ -169,6 +173,15 @@ function parseScenarioFindings(
       allegedConduct: overlay?.allegedConduct ?? [],
       evidentiaryGaps: overlay?.evidentiaryGaps ?? [],
       ingredientsNotEstablished: [],
+      // These 34 findings come from the human-curated, already
+      // legally-reviewed CFID_Precedent_Library_Pilot.xlsx — recording that
+      // existing status as explicit flags, not a new claim.
+      sourceDocumentVerified: true,
+      paragraphCitationVerified: true,
+      findingStatusVerified: true,
+      provisionMappingVerified: true,
+      noticeeMappingVerified: true,
+      humanLegalReviewCompleted: true,
     });
   }
   return findings;

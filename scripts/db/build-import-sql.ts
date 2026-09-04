@@ -163,9 +163,15 @@ function main() {
     const { orderType, matched } = orderTypeFromUrl(v.officialUrl);
     const periodHint = orderPeriodHintFromUrl(v.officialUrl);
 
+    // cfid_verification_basis records HOW CFID origin was established — for
+    // every row here that is literally a "CFID" tag matched in the order's
+    // own identifier/order number, never inferred or assumed for any row
+    // that didn't actually match.
+    const verificationBasis = v.cfidConfirmed ? "cfid_tag_in_order_number" : "needs_manual_verification";
+
     if (pilotOrder) {
       push(
-        `insert into orders (id, case_name, listed_entity, order_type, order_type_source, order_date, order_period_hint, order_number, passing_authority, official_url, cfid_verified, cfid_verification_source, scope_note, processing_stage, retrieval_status, source_row_ref) values (` +
+        `insert into orders (id, case_name, listed_entity, order_type, order_type_source, order_date, order_period_hint, order_number, passing_authority, official_url, cfid_verified, cfid_verification_source, cfid_verification_basis, normalized_matter_name, scope_note, processing_stage, retrieval_status, source_row_ref) values (` +
           [
             sqlString(uuid),
             sqlString(pilotOrder.caseName),
@@ -179,16 +185,18 @@ function main() {
             sqlString(pilotOrder.officialUrl),
             sqlBool(pilotOrder.cfidVerified),
             sqlEnum("document_confirmed"),
+            sqlEnum(verificationBasis),
+            sqlString(pilotOrder.caseName),
             sqlString(pilotOrder.scopeNote),
             sqlEnum("legally_reviewed"),
             sqlEnum("success"),
             sqlString(`${v.caseName} — ${v.orderIdentifier}`),
           ].join(", ") +
-          `) on conflict (official_url) do update set case_name = excluded.case_name, order_type = excluded.order_type, order_date = excluded.order_date, order_number = excluded.order_number, passing_authority = excluded.passing_authority, cfid_verified = excluded.cfid_verified, cfid_verification_source = excluded.cfid_verification_source, scope_note = excluded.scope_note, processing_stage = excluded.processing_stage, retrieval_status = excluded.retrieval_status;`
+          `) on conflict (official_url) do update set case_name = excluded.case_name, order_type = excluded.order_type, order_date = excluded.order_date, order_number = excluded.order_number, passing_authority = excluded.passing_authority, cfid_verified = excluded.cfid_verified, cfid_verification_source = excluded.cfid_verification_source, cfid_verification_basis = excluded.cfid_verification_basis, normalized_matter_name = excluded.normalized_matter_name, scope_note = excluded.scope_note, processing_stage = excluded.processing_stage, retrieval_status = excluded.retrieval_status;`
       );
     } else {
       push(
-        `insert into orders (id, case_name, order_type, order_type_source, order_period_hint, order_number, official_url, cfid_verified, cfid_verification_source, processing_stage, retrieval_status, retrieval_failure_reason) values (` +
+        `insert into orders (id, case_name, order_type, order_type_source, order_period_hint, order_number, official_url, cfid_verified, cfid_verification_source, cfid_verification_basis, normalized_matter_name, processing_stage, retrieval_status, retrieval_failure_reason) values (` +
           [
             sqlString(uuid),
             sqlString(v.caseName),
@@ -199,11 +207,13 @@ function main() {
             sqlString(v.officialUrl),
             sqlBool(v.cfidConfirmed),
             sqlEnum("verified_workbook"),
+            sqlEnum(verificationBasis),
+            sqlString(v.caseName),
             sqlEnum("retrieval_failed"),
             sqlEnum("failed"),
             sqlString(NETWORK_BLOCK_REASON),
           ].join(", ") +
-          `) on conflict (official_url) do update set processing_stage = excluded.processing_stage, retrieval_status = excluded.retrieval_status;`
+          `) on conflict (official_url) do update set processing_stage = excluded.processing_stage, retrieval_status = excluded.retrieval_status, cfid_verification_basis = excluded.cfid_verification_basis, normalized_matter_name = excluded.normalized_matter_name;`
       );
     }
   }

@@ -38,7 +38,14 @@
     "evidentiaryGaps": [
       "Subsidiary and step-down subsidiary financial statements and consolidation working papers",
       "Confirmation of the website/filing publication history"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-02",
@@ -94,7 +101,14 @@
       "Subsidiary-level books and consolidation support for the revenue figures",
       "Independent verification of customer-wise sales",
       "Completion of the forensic audit"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-03",
@@ -132,7 +146,14 @@
     "evidentiaryGaps": [
       "Complete and consistent customer-wise sales data",
       "Explanation for the differing submissions across stages"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-04",
@@ -188,7 +209,14 @@
       "Broker/exchange records for the promoter's personal derivative account",
       "Reconciliation showing how the personal trades entered the company's books",
       "Explanation from the promoter"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-05",
@@ -238,7 +266,14 @@
     "evidentiaryGaps": [
       "Ind AS 21/115 classification workpapers",
       "Year-wise break-up of the foreign-exchange and interest components"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-06",
@@ -288,7 +323,14 @@
     "evidentiaryGaps": [
       "Delivery challans, GST filings and banking trail for the purchases",
       "Confirmation from Vienna Multiventures and Harshil Enterprise"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-07",
@@ -338,7 +380,14 @@
     "evidentiaryGaps": [
       "Consolidation elimination workpapers",
       "Entity-wise intra-group balance confirmations"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-08",
@@ -388,7 +437,14 @@
     "evidentiaryGaps": [
       "Entity-wise documentary support for the investment",
       "Independent valuation or title evidence"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-09",
@@ -439,7 +495,14 @@
     "evidentiaryGaps": [
       "Multi-party netting/knock-off agreements and the basis for offset",
       "Counterparty confirmations"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-10",
@@ -491,7 +554,14 @@
       "Board/Audit Committee approvals for routing payments through personal accounts",
       "End-use evidence for the statutory and operating payments",
       "Related-party disclosure records"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-11",
@@ -541,7 +611,14 @@
       "Business rationale and board approval for the transfers",
       "End-use/utilisation evidence",
       "Confirmation from the counterparty entities"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "REL-12",
@@ -586,7 +663,14 @@
     "evidentiaryGaps": [
       "Evidence connecting the disclosures to actual trading or price impact",
       "Completion of the forensic audit"
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-01",
@@ -641,7 +725,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-02",
@@ -691,7 +782,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-03",
@@ -746,7 +844,14 @@
       "Important negative precedent: the final order accepted supported explanations for the loans/advances underlying the allotment.",
       "Third parties were not examined by the investigation.",
       "Sale proceeds remained with the allottees; no flow-back to the company or promoter was proved."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-04",
@@ -798,7 +903,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-05",
@@ -842,7 +954,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-06",
@@ -883,7 +1002,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-07",
@@ -923,7 +1049,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-08",
@@ -969,7 +1102,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-09",
@@ -1014,7 +1154,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-10",
@@ -1058,7 +1205,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-11",
@@ -1098,7 +1252,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-12",
@@ -1146,7 +1307,14 @@
     ],
     "evidentiaryGaps": [
       "Liability for the SSSL-03 cash preferential-allotment allegation was specifically excluded — do not treat the Managing Director's overall liability as extending to that allegation."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-13",
@@ -1187,7 +1355,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-14",
@@ -1226,7 +1401,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-15",
@@ -1267,7 +1449,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-16",
@@ -1305,7 +1494,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-17",
@@ -1351,7 +1547,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-18",
@@ -1394,7 +1597,14 @@
     ],
     "evidentiaryGaps": [
       "Negative precedent: the evidence did not establish that the allottees used the company's own money or that sale proceeds returned to the company or the promoter; directions against these noticees were vacated."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-19",
@@ -1436,7 +1646,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-20",
@@ -1478,7 +1695,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-21",
@@ -1516,7 +1740,14 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   },
   {
     "recordId": "SSSL-22",
@@ -1556,6 +1787,13 @@
     ],
     "evidentiaryGaps": [
       "None outstanding — this allegation was resolved in the final order."
-    ]
+    ],
+    "ingredientsNotEstablished": [],
+    "sourceDocumentVerified": true,
+    "paragraphCitationVerified": true,
+    "findingStatusVerified": true,
+    "provisionMappingVerified": true,
+    "noticeeMappingVerified": true,
+    "humanLegalReviewCompleted": true
   }
 ]

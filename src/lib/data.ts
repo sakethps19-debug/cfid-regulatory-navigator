@@ -6,6 +6,7 @@ import type {
   LegalInstrument,
   LegalProvision,
   LegalTest,
+  Matter,
   Order,
   OrderRelationship,
   OrderStage,
@@ -28,6 +29,7 @@ type ResidualRegisterRow = Database["public"]["Tables"]["residual_register"]["Ro
 type ProvisionVersionRow = Database["public"]["Tables"]["provision_versions"]["Row"];
 type LegalInstrumentRow = Database["public"]["Tables"]["legal_instruments"]["Row"];
 type ValidationIssueRow = Database["public"]["Tables"]["validation_issues"]["Row"];
+type MatterRow = Database["public"]["Tables"]["matters"]["Row"];
 
 const ORDER_STAGE_LABELS: Record<OrderRow["order_type"], OrderStage> = {
   interim_order: "Interim order",
@@ -79,11 +81,15 @@ function mapOrder(row: OrderRow, noticeesCount: number): Order {
     noticeesCount,
     officialUrl: row.official_url,
     cfidVerified: row.cfid_verified,
+    cfidVerificationBasis: row.cfid_verification_basis,
     proceduralStatus: PROCESSING_STAGE_LABELS[row.processing_stage as ProcessingStage] ?? row.processing_stage,
     processingStage: row.processing_stage as ProcessingStage,
     retrievalStatus: row.retrieval_status,
     retrievalFailureReason: row.retrieval_failure_reason,
     scopeNote: row.scope_note,
+    matterId: row.matter_id,
+    officialOrderTitle: row.official_order_title,
+    normalizedMatterName: row.normalized_matter_name,
   };
 }
 
@@ -109,6 +115,12 @@ function mapFinding(row: ScenarioFindingRow, provisionIds: string[], orderIds: s
     allegedConduct: row.alleged_conduct,
     evidentiaryGaps: row.evidentiary_gaps,
     ingredientsNotEstablished: row.ingredients_not_established,
+    sourceDocumentVerified: row.source_document_verified,
+    paragraphCitationVerified: row.paragraph_citation_verified,
+    findingStatusVerified: row.finding_status_verified,
+    provisionMappingVerified: row.provision_mapping_verified,
+    noticeeMappingVerified: row.noticee_mapping_verified,
+    humanLegalReviewCompleted: row.human_legal_review_completed,
   };
 }
 
@@ -130,6 +142,14 @@ function mapDirection(row: OrderDirectionRow): DirectionOutcome {
     directionOrOutcome: row.direction_or_outcome,
     paragraphReference: row.paragraph_reference,
     officialSourceUrl: row.official_source_url,
+  };
+}
+
+function mapMatter(row: MatterRow): Matter {
+  return {
+    id: row.id,
+    normalizedMatterName: row.normalized_matter_name,
+    description: row.description,
   };
 }
 
@@ -160,6 +180,22 @@ export async function getOrders(): Promise<Order[]> {
     counts.set(row.order_id, (counts.get(row.order_id) ?? 0) + 1);
   }
   return (orderRows ?? []).map((row) => mapOrder(row, counts.get(row.id) ?? 0));
+}
+
+/** Matters already established via order_relationships — never a guessed
+ * grouping by company/matter name alone. */
+export async function getMatters(): Promise<Matter[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("matters").select("*").order("normalized_matter_name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(mapMatter);
+}
+
+/** All orders belonging to one matter — the "Individual orders" level of the
+ * Matter → Orders → Noticees → Allegations → Provisions → Findings hierarchy. */
+export async function ordersForMatter(matterId: string): Promise<Order[]> {
+  const all = await getOrders();
+  return all.filter((o) => o.matterId === matterId);
 }
 
 export async function getOrderById(id: string): Promise<Order | undefined> {

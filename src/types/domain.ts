@@ -39,6 +39,18 @@ export type ProcessingStage =
   | "needs_manual_review"
   | "retrieval_failed";
 
+/** How CFID origin was established for this order. Absence of "CFID" in the
+ * order number is NOT by itself grounds for exclusion — an adjudication
+ * order in particular may lack the tag yet still arise from a CFID
+ * investigation, so this is tracked independently of cfidVerified. */
+export type CfidVerificationBasis =
+  | "cfid_tag_in_order_number"
+  | "cfid_origin_established_from_official_order"
+  | "related_to_verified_cfid_parent_matter"
+  | "confirmed_by_authorised_cfid_officer"
+  | "needs_manual_verification"
+  | "not_cfid";
+
 export interface Order {
   id: string; // DB uuid
   caseName: string;
@@ -49,11 +61,30 @@ export interface Order {
   noticeesCount: number;
   officialUrl: string;
   cfidVerified: boolean; // order number contains "CFID"
+  cfidVerificationBasis: CfidVerificationBasis;
   proceduralStatus: string; // human-readable label derived from processingStage
   processingStage: ProcessingStage;
   retrievalStatus: string;
   retrievalFailureReason: string | null;
   scopeNote: string | null;
+  /** Matter this order belongs to, when a grouping is already known via
+   * order_relationships — never inferred from company/matter-name alone. */
+  matterId: string | null;
+  /** Exact title as it appears on the official order document. Left null
+   * until actually captured from the source — never derived from caseName. */
+  officialOrderTitle: string | null;
+  /** Consistent name used for grouping/search across an order's siblings. */
+  normalizedMatterName: string | null;
+}
+
+/** A Matter is distinct from an Order: one matter/investigation can span
+ * several individual orders (interim, confirmatory, final, adjudication,
+ * etc.). Populated only from relationships already established via
+ * order_relationships — never a guessed grouping. */
+export interface Matter {
+  id: string;
+  normalizedMatterName: string;
+  description: string | null;
 }
 
 export interface ScenarioFinding {
@@ -82,6 +113,16 @@ export interface ScenarioFinding {
   // did NOT match the query scenario — used to show "ingredients not
   // established" for a candidate precedent (see the matching engine).
   ingredientsNotEstablished: string[];
+  // Independent review flags. A finding is never described as "verified"
+  // merely because it was script-generated — each of these is tracked and
+  // set separately; a finding with any flag false still "Needs manual
+  // review" regardless of its findingStatus.
+  sourceDocumentVerified: boolean;
+  paragraphCitationVerified: boolean;
+  findingStatusVerified: boolean;
+  provisionMappingVerified: boolean;
+  noticeeMappingVerified: boolean;
+  humanLegalReviewCompleted: boolean;
 }
 
 export interface LegalProvision {
@@ -162,7 +203,16 @@ export type OrderRelationshipType =
   | "interim_to_confirmatory"
   | "confirmatory_to_revocation"
   | "corrigendum_to"
-  | "related_matter";
+  | "related_matter"
+  | "same_matter"
+  | "precedes"
+  | "confirms"
+  | "modifies"
+  | "revokes"
+  | "finalises"
+  | "adjudication_arising_from"
+  | "same_investigation"
+  | "different_noticee_group";
 
 export interface OrderRelationship {
   id: string;
