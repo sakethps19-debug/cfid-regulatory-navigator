@@ -12,7 +12,8 @@
     "import:data": "tsx scripts/import-data.ts",
     "validate:data": "tsx scripts/validate-data.ts",
     "db:build-import": "tsx scripts/db/build-import-sql.ts",
-    "db:run-import": "tsx scripts/db/run-import.ts"
+    "db:run-import": "tsx scripts/db/run-import.ts",
+    "db:verify": "tsx scripts/db/verify.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
