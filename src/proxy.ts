@@ -71,50 +71,74 @@ export async function proxy(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  const { supabase, getResponse } = createMiddlewareClient(request);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Everything from here on touches the Supabase client, which reads
+  // NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY and throws a
+  // plain, non-secret configuration error if either is missing (see
+  // src/lib/supabase/env.ts). That must never surface as an unhandled
+  // platform-level crash — every request gets a controlled response, and
+  // the exact (non-secret) error is logged server-side for diagnosis.
+  try {
+    const { supabase, getResponse } = createMiddlewareClient(request);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const isPublicPage = PUBLIC_PATHS.has(pathname);
+    const isPublicPage = PUBLIC_PATHS.has(pathname);
 
-  const denyAuth = () => {
-    if (pathname.startsWith("/api/")) {
-      return applySecurityHeaders(NextResponse.json({ error: "Not authenticated." }, { status: 401 }));
+    const denyAuth = () => {
+      if (pathname.startsWith("/api/")) {
+        return applySecurityHeaders(NextResponse.json({ error: "Not authenticated." }, { status: 401 }));
+      }
+      const loginUrl = new URL("/login", request.url);
+      if (pathname !== "/") loginUrl.searchParams.set("next", pathname);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    };
+
+    if (!user) {
+      if (isPublicPage) return applySecurityHeaders(getResponse());
+      return denyAuth();
     }
-    const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/") loginUrl.searchParams.set("next", pathname);
-    return applySecurityHeaders(NextResponse.redirect(loginUrl));
-  };
 
-  if (!user) {
-    if (isPublicPage) return applySecurityHeaders(getResponse());
-    return denyAuth();
-  }
+    // Defense in depth: every table's RLS policy already requires
+    // is_allowed_user(), so an unlisted email can read nothing regardless —
+    // but we also check it here so an authenticated-but-unlisted user is
+    // bounced back to /login with a clear reason instead of seeing empty pages.
+    const { data: allowed } = await supabase.rpc("is_allowed_user");
+    if (!allowed) {
+      await supabase.auth.signOut();
+      if (pathname.startsWith("/api/")) {
+        return applySecurityHeaders(
+          NextResponse.json({ error: "This email is not authorised for this pilot." }, { status: 403 })
+        );
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("error", "not_allowed");
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    }
 
-  // Defense in depth: every table's RLS policy already requires
-  // is_allowed_user(), so an unlisted email can read nothing regardless —
-  // but we also check it here so an authenticated-but-unlisted user is
-  // bounced back to /login with a clear reason instead of seeing empty pages.
-  const { data: allowed } = await supabase.rpc("is_allowed_user");
-  if (!allowed) {
-    await supabase.auth.signOut();
+    if (isPublicPage) {
+      // Already signed in and allowed — no reason to show the login page again.
+      return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
+    }
+
+    return applySecurityHeaders(getResponse());
+  } catch (error) {
+    // Never leak the error message, a stack trace, or any env value to the
+    // browser — only a generic, safe notice. The real (non-secret) reason
+    // still goes to server-side runtime logs via console.error.
+    console.error("proxy: Supabase client/auth error —", error instanceof Error ? error.message : error);
     if (pathname.startsWith("/api/")) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "This email is not authorised for this pilot." }, { status: 403 })
+        NextResponse.json({ error: "Service temporarily unavailable. Please try again shortly." }, { status: 503 })
       );
     }
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", "not_allowed");
-    return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    return applySecurityHeaders(
+      new NextResponse("Service temporarily unavailable. Please try again shortly.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      })
+    );
   }
-
-  if (isPublicPage) {
-    // Already signed in and allowed — no reason to show the login page again.
-    return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
-  }
-
-  return applySecurityHeaders(getResponse());
 }
 
 export const config = {
