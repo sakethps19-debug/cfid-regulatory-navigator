@@ -47,23 +47,46 @@ export default function MethodologyPage() {
           level of an individual allegation, not the order as a whole, because one transaction may be upheld while
           another under the same provision is not.
         </p>
+        <p>
+          These three orders are also the two cases marked &quot;deep-analyzed&quot; in the broader{" "}
+          <a href="/awaiting-analysis" className="text-blue-700 underline">
+            Verified CFID Orders
+          </a>{" "}
+          register — see the next section for how that register relates to this precedent database.
+        </p>
       </Section>
 
-      <Section title="Orders Awaiting Analysis">
+      <Section title="Verified CFID Orders and the Residual register">
         <p>
-          Links.xlsx lists 85 CFID case registrations. Not every row is automatically treated as a verified precedent.
-          Rows marked &quot;No order&quot;/&quot;No CFID Order&quot;, rows without any link, and rows whose order
-          number has not yet been confirmed to contain &quot;CFID&quot; are all flagged for manual review in the{" "}
+          <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative list of confirmed CFID orders for this
+          pilot — every order identifier in it has already been confirmed to contain &quot;CFID&quot;. It currently
+          lists 89 order-level rows across 54 cases. Of these, only two cases (Rajesh Exports Limited and Seacoast
+          Shipping Services Limited, three orders in total) have been broken down into the full scenario-finding
+          analysis that powers the Scenario Analyzer; every other verified order is genuine but still{" "}
+          <strong>awaiting detailed analysis</strong> — it is not treated as a source of scenario findings or
+          provision matches until that analysis is done.
+        </p>
+        <p>
+          <strong>Residual_Order_Links.xlsx</strong> is an exclusion and pending-link register only. It records cases
+          that were removed from an earlier working compilation, each with a reason: still awaiting a link from the
+          user, a duplicate of an order already counted once in the verified list, or a case confirmed{" "}
+          <em>not</em> to be a CFID order (e.g. an adjudication order, a legacy pre-CFID order, or an IVD order). None
+          of these residual entries are ever used as a source of substantive CFID precedent unless a row is
+          subsequently verified and moved into Verified_CFID_Order_Links.xlsx. The original Links.xlsx compilation
+          that both of these were refined from is no longer used by this application.
+        </p>
+        <p>
+          Both registers are shown in full on the{" "}
           <a href="/awaiting-analysis" className="text-blue-700 underline">
             Orders Awaiting Analysis
           </a>{" "}
-          register rather than being admitted to the precedent library. No row is ever deleted.
+          page. No row is ever deleted from either register.
         </p>
         <p>
-          <strong>Procedure for adding missing order links later:</strong> update Links.xlsx with the correct link(s)
-          for the case, re-run <code>npm run import:data</code>, confirm the order number contains &quot;CFID&quot;
-          from the order document itself, then move the case into
-          <code> CFID_Precedent_Library_Pilot.xlsx</code> with its scenario findings, provisions and paragraph
+          <strong>Procedure for adding a newly analysed order later:</strong> confirm the order number contains
+          &quot;CFID&quot; from the order document itself (if it is not already in Verified_CFID_Order_Links.xlsx,
+          add it there, and move any corresponding row out of Residual_Order_Links.xlsx), then add the case to{" "}
+          <code>CFID_Precedent_Library_Pilot.xlsx</code> with its scenario findings, provisions and paragraph
           references filled in exactly as they appear in the order — never inferred or invented. Re-run{" "}
           <code>npm run import:data</code> and <code>npm run validate:data</code>, review the validation report, and
           redeploy.
@@ -148,7 +171,7 @@ export default function MethodologyPage() {
 
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
-          <li>The verified precedent library covers only three orders (two cases). Results for facts outside those patterns will correctly show no match rather than a fabricated one.</li>
+          <li>The deep-analyzed scenario-finding library covers only three orders (two cases) out of 89 confirmed CFID orders in the Verified CFID Order Links register. Results for facts outside those two cases&apos; patterns will correctly show no match rather than a fabricated one.</li>
           <li>Keyword/synonym matching cannot capture every phrasing of a scenario — try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
           <li>Provision &quot;current text&quot; is not reproduced or guaranteed current — always verify against the official SEBI/MCA source before relying on it.</li>
           <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>

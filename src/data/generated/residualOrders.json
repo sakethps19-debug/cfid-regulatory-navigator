@@ -1,0 +1,298 @@
+[
+  {
+    "id": "balasore-alloys-limited-",
+    "caseOrOrderName": "Balasore Alloys Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 54.",
+    "status": "pending_link"
+  },
+  {
+    "id": "bank-of-baroda-",
+    "caseOrOrderName": "Bank of Baroda",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 76.",
+    "status": "pending_link"
+  },
+  {
+    "id": "bilcare-limited-",
+    "caseOrOrderName": "Bilcare Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 68.",
+    "status": "pending_link"
+  },
+  {
+    "id": "brightcom-group-limited-wtm-an-cfid-cfid-4-31187-2024-25",
+    "caseOrOrderName": "Brightcom Group Limited — WTM/AN/CFID/CFID_4/31187/2024-25",
+    "orderIdentifier": "WTM/AN/CFID/CFID_4/31187/2024-25",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/feb-2025/final-order-in-the-matter-of-brightcom-group-ltd-_91693.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "brightcom-group-limited-wtm-an-cfid-cfid-4-31705-2025-26",
+    "caseOrOrderName": "Brightcom Group Limited — WTM/AN/CFID/CFID_4/31705/2025-26",
+    "orderIdentifier": "WTM/AN/CFID/CFID_4/31705/2025-26",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/oct-2025/final-order-in-the-matter-of-brightcom-group-ltd-in-respect-of-allam-raghunath-and-subrato-saha_97083.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "brightcom-group-limited-wtm-asb-cfid-cfid-4-25730-2023-24",
+    "caseOrOrderName": "Brightcom Group Limited — WTM/ASB/CFID/CFID_4/25730/2023-24",
+    "orderIdentifier": "WTM/ASB/CFID/CFID_4/25730/2023-24",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/apr-2023/interim-order-cum-show-cause-notice-in-the-matter-of-brightcom-group-ltd-_70159.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "brightcom-group-limited-wtm-asb-cfid-cfid-4-28846-2023-24",
+    "caseOrOrderName": "Brightcom Group Limited — WTM/ASB/CFID/CFID_4/28846/2023-24",
+    "orderIdentifier": "WTM/ASB/CFID/CFID_4/28846/2023-24",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/aug-2023/interim-order-in-the-matter-of-preferential-allotments-by-brightcom-group-limited_75746.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "brightcom-group-limited-wtm-asb-cfid-cfid-4-30052-2023-24",
+    "caseOrOrderName": "Brightcom Group Limited — WTM/ASB/CFID/CFID_4/30052/2023-24",
+    "orderIdentifier": "WTM/ASB/CFID/CFID_4/30052/2023-24",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/feb-2024/confirmatory-order-in-the-matter-of-brightcom-group-limited_81827.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "burnpur-cement-limited-",
+    "caseOrOrderName": "Burnpur Cement Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 73.",
+    "status": "pending_link"
+  },
+  {
+    "id": "c-mahendra-exports-limited-",
+    "caseOrOrderName": "C Mahendra Exports Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 83.",
+    "status": "pending_link"
+  },
+  {
+    "id": "coffee-day-enterprises-limited-wtm-asb-cfid-cfid-1-23008-2022-23",
+    "caseOrOrderName": "Coffee Day Enterprises Limited — WTM/ASB/CFID/CFID_1/23008/2022-23",
+    "orderIdentifier": "WTM/ASB/CFID/CFID_1/23008/2022-23",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/jan-2023/order-in-the-matter-of-coffee-day-enterprises-ltd-_67495.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "concord-drugs-limited-",
+    "caseOrOrderName": "Concord Drugs Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 60.",
+    "status": "pending_link"
+  },
+  {
+    "id": "excel-realty-n-infra-limited-",
+    "caseOrOrderName": "Excel Realty N Infra Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 67.",
+    "status": "pending_link"
+  },
+  {
+    "id": "family-care-hospitals-limited-",
+    "caseOrOrderName": "Family Care Hospitals Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 30.",
+    "status": "pending_link"
+  },
+  {
+    "id": "hr-allegation-alleged-related-party-transactions-of-adicorp-enterprises-pvt-ltd-with-adani-group-companies-wtm-kv-cfid-c",
+    "caseOrOrderName": "HR Allegation - Alleged related party transactions of Adicorp Enterprises Pvt. Ltd. with Adani Group companies — WTM/KV/CFID/CFID-SEC1/31672/2025-26",
+    "orderIdentifier": "WTM/KV/CFID/CFID-SEC1/31672/2025-26",
+    "officialUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/order_matter_milestone_rehvar.pdf",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "hr-allegation-alleged-related-party-transactions-of-adicorp-enterprises-pvt-ltd-with-adani-group-companies-wtm-kv-cfid-c-15",
+    "caseOrOrderName": "HR Allegation - Alleged related party transactions of Adicorp Enterprises Pvt. Ltd. with Adani Group companies — WTM/KV/CFID/CFID-TPD/31671/2025-26",
+    "orderIdentifier": "WTM/KV/CFID/CFID-TPD/31671/2025-26",
+    "officialUrl": "https://www.sebi.gov.in/sebi_data/attachdocs/sep-2025/order_matter_adicorp.pdf",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "investigation-in-the-financial-statements-of-kaarya-facilitities-and-services-limited-kaarya-",
+    "caseOrOrderName": "INVESTIGATION IN THE FINANCIAL STATEMENTS OF KAARYA FACILITITIES AND SERVICES LIMITED KAARYA",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 39.",
+    "status": "pending_link"
+  },
+  {
+    "id": "investigation-in-the-matter-of-tanla-platforms-limited-",
+    "caseOrOrderName": "Investigation in the matter of Tanla Platforms Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 50.",
+    "status": "pending_link"
+  },
+  {
+    "id": "investigation-in-the-scrip-of-sulabh-engineers-and-services-limited-",
+    "caseOrOrderName": "Investigation in the scrip of Sulabh Engineers and Services Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 81.",
+    "status": "pending_link"
+  },
+  {
+    "id": "investigation-in-the-trading-activities-of-certain-entities-in-the-scrip-jolly-plastic-industries-limited-",
+    "caseOrOrderName": "Investigation in the trading activities of certain entities in the scrip Jolly Plastic Industries Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 82.",
+    "status": "pending_link"
+  },
+  {
+    "id": "investigation-into-alleged-misstatements-irregularities-in-the-books-of-accounts-of-cg-power-and-industrial-solutions-lt",
+    "caseOrOrderName": "INVESTIGATION INTO ALLEGED MISSTATEMENTS/ IRREGULARITIES IN THE BOOKS OF ACCOUNTS OF CG POWER AND INDUSTRIAL SOLUTIONS LTD. — WTM/AB/CFID/24/2021-22",
+    "orderIdentifier": "WTM/AB/CFID/24/2021-22",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/feb-2022/miscellaneous-order-in-the-matter-of-cg-power-and-industrial-solutions-limited_56354.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "investigation-into-alleged-misstatements-irregularities-in-the-books-of-accounts-of-cg-power-and-industrial-solutions-lt-21",
+    "caseOrOrderName": "INVESTIGATION INTO ALLEGED MISSTATEMENTS/ IRREGULARITIES IN THE BOOKS OF ACCOUNTS OF CG POWER AND INDUSTRIAL SOLUTIONS LTD. — WTM/AB/CFID/CFID_1/20149/2022-23",
+    "orderIdentifier": "WTM/AB/CFID/CFID_1/20149/2022-23",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/oct-2022/final-order-in-the-matter-of-cg-power-and-industrial-solutions-limited_63715.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  },
+  {
+    "id": "investigation-into-misstatement-or-misrepresentation-in-financial-statements-of-agri-tech-india-limited-",
+    "caseOrOrderName": "Investigation into Misstatement or Misrepresentation in Financial Statements of Agri-Tech India Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 55.",
+    "status": "pending_link"
+  },
+  {
+    "id": "investigation-into-misstatement-misrepresentation-in-financial-statements-of-skil-infrastructure-limited-",
+    "caseOrOrderName": "Investigation into misstatement/ Misrepresentation in FINANCIAL STATEMENTS of SKIL INFRASTRUCTURE LIMITED",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 40.",
+    "status": "pending_link"
+  },
+  {
+    "id": "jaiprakash-power-ventures-limited-",
+    "caseOrOrderName": "Jaiprakash Power Ventures Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 37.",
+    "status": "pending_link"
+  },
+  {
+    "id": "lcc-infotech-limited-",
+    "caseOrOrderName": "Lcc Infotech Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 36.",
+    "status": "pending_link"
+  },
+  {
+    "id": "lypsa-gems-and-jewellery-limited-order-sm-bk-2026-27-32345-32349",
+    "caseOrOrderName": "Lypsa Gems and Jewellery Limited — Order/SM/BK/2026-27/32345-32349",
+    "orderIdentifier": "Order/SM/BK/2026-27/32345-32349",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/apr-2026/adjudication-order-in-the-matter-of-lypsa-gems-and-jewellery-limited_100939.html",
+    "reason": "Adjudication order number does not identify CFID.",
+    "status": "not_cfid"
+  },
+  {
+    "id": "oriental-trimex-limited-",
+    "caseOrOrderName": "Oriental Trimex Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 16.",
+    "status": "pending_link"
+  },
+  {
+    "id": "prabhu-steel-industries-limited-not-stated-on-the-opening-page",
+    "caseOrOrderName": "Prabhu Steel Industries Limited — Not stated on the opening page",
+    "orderIdentifier": "Not stated on the opening page",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/nov-2007/order-in-the-matter-of-prabhu-steel-industries-ltd_9495.html",
+    "reason": "Legacy 2007 order; CFID does not appear in the document.",
+    "status": "not_cfid"
+  },
+  {
+    "id": "prime-focus-limited-",
+    "caseOrOrderName": "Prime Focus Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 51.",
+    "status": "pending_link"
+  },
+  {
+    "id": "rajasthan-tubes-manufacturing-co-ltd-",
+    "caseOrOrderName": "Rajasthan Tubes Manufacturing Co. Ltd",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 19.",
+    "status": "pending_link"
+  },
+  {
+    "id": "salasar-exteriors-and-contours-limited-",
+    "caseOrOrderName": "Salasar Exteriors and Contours Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 35.",
+    "status": "pending_link"
+  },
+  {
+    "id": "starlog-enterprises-limited-",
+    "caseOrOrderName": "Starlog Enterprises Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 25.",
+    "status": "pending_link"
+  },
+  {
+    "id": "til-limited-",
+    "caseOrOrderName": "Til Limited",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 44.",
+    "status": "pending_link"
+  },
+  {
+    "id": "veerkrupa-jewellers-limited-qja-ss-ivd-2-id13-32430-2026-27",
+    "caseOrOrderName": "Veerkrupa Jewellers Limited — QJA/SS/IVD-2/ID13/32430/2026-27",
+    "orderIdentifier": "QJA/SS/IVD-2/ID13/32430/2026-27",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/jun-2026/corrigendum-order-in-the-matter-of-m-s-veerkrupa-jewellers-limited-_101812.html",
+    "reason": "Corrigendum is an IVD order; the underlying order cited is also IVD.",
+    "status": "not_cfid"
+  },
+  {
+    "id": "vikas-proppant-and-granite-limited-",
+    "caseOrOrderName": "VIKAS PROPPANT AND GRANITE LIMITED",
+    "orderIdentifier": null,
+    "officialUrl": null,
+    "reason": "Awaiting link from user; source row 56.",
+    "status": "pending_link"
+  },
+  {
+    "id": "white-organic-agro-limited-wtm-asb-cfid-cfid-sec6-30323-2024-25",
+    "caseOrOrderName": "White Organic Agro Limited — WTM/ASB/CFID/CFID-SEC6/30323/2024-25",
+    "orderIdentifier": "WTM/ASB/CFID/CFID-SEC6/30323/2024-25",
+    "officialUrl": "https://www.sebi.gov.in/enforcement/orders/may-2024/interim-order-in-the-matter-of-add-shop-e-retail-ltd-and-white-organics-agro-ltd-_83195.html",
+    "reason": "Duplicate reference — the same verified CFID order is retained once in the refined list.",
+    "status": "duplicate_of_verified"
+  }
+]

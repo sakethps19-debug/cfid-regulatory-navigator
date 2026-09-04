@@ -1,7 +1,11 @@
 // CFID Regulatory Navigator — core domain types
-// These types describe the structured data generated from the two source
-// workbooks (CFID_Precedent_Library_Pilot.xlsx and Links.xlsx). Nothing in
-// this file invents facts; it only shapes what the workbooks already contain.
+// These types describe the structured data generated from the source
+// workbooks: CFID_Precedent_Library_Pilot.xlsx (deep scenario-finding
+// analysis for 3 orders), Verified_CFID_Order_Links.xlsx (the authoritative
+// list of confirmed CFID orders), and Residual_Order_Links.xlsx (an
+// exclusion / pending-link register — never a source of precedent). The
+// original Links.xlsx compilation is no longer used. Nothing in this file
+// invents facts; it only shapes what the workbooks already contain.
 
 export type FindingStatus =
   | "Alleged"
@@ -82,20 +86,36 @@ export interface DirectionOutcome {
   officialSourceUrl: string;
 }
 
-export type AwaitingAnalysisStatus =
-  | "already_in_library"
-  | "no_order"
-  | "links_pending_review";
+// ----- Verified CFID Order Links.xlsx (authoritative order list) -----
 
-export interface AwaitingAnalysisRow {
-  srNo: number;
-  caseId: number;
+export type VerifiedOrderAnalysisStatus = "deep_analyzed" | "verified_pending_analysis";
+
+export interface VerifiedCfidOrderRow {
+  id: string;
   caseName: string;
-  orderType: string;
-  links: string[];
-  status: AwaitingAnalysisStatus;
-  reviewFlag: boolean;
-  reviewReason: string | null;
+  /** Order identifier as given in the source workbook, verbatim. */
+  orderIdentifier: string;
+  officialUrl: string;
+  /** True if orderIdentifier contains "CFID" — checked defensively even though every row in this workbook is expected to. */
+  cfidConfirmed: boolean;
+  analysisStatus: VerifiedOrderAnalysisStatus;
+  /** Order.id values this row corresponds to, when analysisStatus is "deep_analyzed". */
+  linkedOrderIds: string[];
+}
+
+// ----- Residual_Order_Links.xlsx (exclusion / pending-link register only) -----
+
+export type ResidualEntryStatus = "pending_link" | "duplicate_of_verified" | "not_cfid";
+
+export interface ResidualOrderRow {
+  id: string;
+  /** Case name, or "Case name — order identifier" when a link/order number was captured before exclusion. */
+  caseOrOrderName: string;
+  orderIdentifier: string | null;
+  officialUrl: string | null;
+  /** Verbatim reason text from the workbook. */
+  reason: string;
+  status: ResidualEntryStatus;
 }
 
 export interface PfutpFocusEntry {
@@ -119,6 +139,9 @@ export interface ValidationReport {
   duplicateRecords: string[];
   conflictingFindings: string[];
   rowsRequiringManualReview: number;
-  nonCfidOrders: number;
-  rowsMarkedNoOrder: number;
+  verifiedCfidOrderRows: number;
+  verifiedCasesPendingAnalysis: number;
+  residualPendingLink: number;
+  residualDuplicates: number;
+  residualNotCfid: number;
 }

@@ -1,28 +1,30 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { awaitingAnalysis, importMeta, orders, provisions, scenarioFindings } from "@/lib/data";
+import { importMeta, orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders } from "@/lib/data";
 
 const STAT_ITEMS = [
-  { label: "Verified orders analysed", hrefLabel: "Source Library", href: "/library" },
+  { label: "Orders deep-analyzed", hrefLabel: "Source Library", href: "/library" },
   { label: "Scenario findings", hrefLabel: "Search by Regulation", href: "/regulations" },
   { label: "Provisions indexed", hrefLabel: "Search by Regulation", href: "/regulations" },
-  { label: "Orders awaiting analysis", hrefLabel: "Orders Awaiting Analysis", href: "/awaiting-analysis" },
+  { label: "Verified CFID orders", hrefLabel: "Orders Awaiting Analysis", href: "/awaiting-analysis" },
 ];
 
 export default function DashboardPage() {
-  const counts = [orders.length, scenarioFindings.length, provisions.length, awaitingAnalysis.length];
+  const counts = [orders.length, scenarioFindings.length, provisions.length, verifiedCfidOrders.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
     acc[f.findingStatus] = (acc[f.findingStatus] ?? 0) + 1;
     return acc;
   }, {});
-  const reviewCount = awaitingAnalysis.filter((r) => r.reviewFlag).length;
+  const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
+  const residualPendingCount = residualOrders.filter((r) => r.status === "pending_link").length;
+  const reviewCount = verifiedPendingCount + residualPendingCount;
 
   return (
     <div>
       <PageHeader
         title="Dashboard"
-        description="Pilot scope: three analysed CFID orders (Rajesh Exports Limited interim order; Seacoast Shipping Services Limited interim and final orders). This is a research-assistance tool — it does not make findings of guilt."
+        description={`Pilot scope: three deep-analysed CFID orders (Rajesh Exports Limited interim order; Seacoast Shipping Services Limited interim and final orders), out of ${verifiedCfidOrders.length} confirmed CFID orders in the authoritative Verified CFID Order Links register. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -86,7 +88,9 @@ export default function DashboardPage() {
               <Link href="/awaiting-analysis" className="font-medium text-blue-700 hover:underline">
                 {reviewCount} rows await manual review →
               </Link>{" "}
-              <span className="text-slate-600">before any admission to the verified precedent library.</span>
+              <span className="text-slate-600">
+                verified CFID orders not yet turned into scenario findings, plus residual entries awaiting a link.
+              </span>
             </li>
           </ul>
         </Card>

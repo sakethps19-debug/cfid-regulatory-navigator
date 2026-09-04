@@ -7,7 +7,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import type { AwaitingAnalysisRow, LegalProvision, Order, ScenarioFinding } from "../src/types/domain";
+import type { LegalProvision, Order, ResidualOrderRow, ScenarioFinding, VerifiedCfidOrderRow } from "../src/types/domain";
 import { REPO_ROOT } from "./lib/xlsxUtil";
 
 const GENERATED_DIR = path.join(REPO_ROOT, "src", "data", "generated");
@@ -29,7 +29,8 @@ function main() {
   const orders = readJson<Order[]>("orders.json");
   const scenarioFindings = readJson<ScenarioFinding[]>("scenarioFindings.json");
   const provisions = readJson<LegalProvision[]>("provisions.json");
-  const awaitingAnalysis = readJson<AwaitingAnalysisRow[]>("awaitingAnalysis.json");
+  const verifiedCfidOrders = readJson<VerifiedCfidOrderRow[]>("verifiedCfidOrders.json");
+  const residualOrders = readJson<ResidualOrderRow[]>("residualOrders.json");
 
   const invalidOrMissingUrls: string[] = [];
   for (const o of orders) {
@@ -37,6 +38,9 @@ function main() {
   }
   for (const f of scenarioFindings) {
     if (!isValidUrl(f.officialSourceUrl)) invalidOrMissingUrls.push(`Scenario finding ${f.recordId}: "${f.officialSourceUrl || "(empty)"}"`);
+  }
+  for (const v of verifiedCfidOrders) {
+    if (!isValidUrl(v.officialUrl)) invalidOrMissingUrls.push(`Verified CFID order "${v.caseName} — ${v.orderIdentifier}": "${v.officialUrl || "(empty)"}"`);
   }
 
   const missingParagraphReferences: string[] = scenarioFindings
@@ -51,7 +55,14 @@ function main() {
   for (const f of scenarioFindings) {
     seenRecordIds.set(f.recordId, (seenRecordIds.get(f.recordId) ?? 0) + 1);
   }
-  const duplicateRecords: string[] = [...seenRecordIds.entries()].filter(([, n]) => n > 1).map(([id]) => id);
+  const seenVerifiedIds = new Map<string, number>();
+  for (const v of verifiedCfidOrders) {
+    seenVerifiedIds.set(v.id, (seenVerifiedIds.get(v.id) ?? 0) + 1);
+  }
+  const duplicateRecords: string[] = [
+    ...[...seenRecordIds.entries()].filter(([, n]) => n > 1).map(([id]) => `scenario finding ${id}`),
+    ...[...seenVerifiedIds.entries()].filter(([, n]) => n > 1).map(([id]) => `verified order ${id}`),
+  ];
 
   const byTitle = new Map<string, ScenarioFinding[]>();
   for (const f of scenarioFindings) {
@@ -68,9 +79,16 @@ function main() {
     }
   }
 
-  const rowsRequiringManualReview = awaitingAnalysis.filter((r) => r.reviewFlag).length;
-  const nonCfidOrders = awaitingAnalysis.filter((r) => r.status === "links_pending_review").length;
-  const rowsMarkedNoOrder = awaitingAnalysis.filter((r) => r.status === "no_order").length;
+  const nonCfidVerifiedRows = verifiedCfidOrders.filter((v) => !v.cfidConfirmed).length;
+  const verifiedCasesPendingAnalysis = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
+  const residualPendingLink = residualOrders.filter((r) => r.status === "pending_link").length;
+  const residualDuplicates = residualOrders.filter((r) => r.status === "duplicate_of_verified").length;
+  const residualNotCfid = residualOrders.filter((r) => r.status === "not_cfid").length;
+  const rowsRequiringManualReview = verifiedCasesPendingAnalysis + residualPendingLink;
+
+  if (nonCfidVerifiedRows > 0) {
+    invalidOrMissingUrls.push(`${nonCfidVerifiedRows} row(s) in Verified_CFID_Order_Links.xlsx do not actually contain "CFID" in their order identifier — review this workbook.`);
+  }
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -82,8 +100,11 @@ function main() {
     duplicateRecords,
     conflictingFindings,
     rowsRequiringManualReview,
-    nonCfidOrders,
-    rowsMarkedNoOrder,
+    verifiedCfidOrderRows: verifiedCfidOrders.length,
+    verifiedCasesPendingAnalysis,
+    residualPendingLink,
+    residualDuplicates,
+    residualNotCfid,
   };
 
   fs.writeFileSync(path.join(REPO_ROOT, "validation-report.json"), JSON.stringify(report, null, 2) + "\n", "utf-8");
@@ -93,23 +114,29 @@ function main() {
 Generated: ${report.generatedAt}
 
 This report is produced by \`npm run validate:data\` from the JSON generated
-by \`npm run import:data\` out of \`CFID_Precedent_Library_Pilot.xlsx\` and
-\`Links.xlsx\`. Neither source workbook is modified by either script.
+by \`npm run import:data\` out of \`CFID_Precedent_Library_Pilot.xlsx\`,
+\`Verified_CFID_Order_Links.xlsx\` (authoritative CFID order list) and
+\`Residual_Order_Links.xlsx\` (exclusion / pending-link register only). The
+original \`Links.xlsx\` compilation is no longer used. None of the source
+workbooks are modified by either script.
 
 ## Summary
 
 | Metric | Count |
 | --- | --- |
-| Imported orders | ${report.importedOrders} |
+| Imported orders (deep scenario-finding analysis) | ${report.importedOrders} |
 | Scenario findings | ${report.scenarioFindings} |
+| Verified CFID order rows (Verified_CFID_Order_Links.xlsx) | ${report.verifiedCfidOrderRows} |
+| Verified cases awaiting detailed scenario analysis | ${report.verifiedCasesPendingAnalysis} |
+| Residual — awaiting link from user | ${report.residualPendingLink} |
+| Residual — duplicate of a verified order | ${report.residualDuplicates} |
+| Residual — confirmed not a CFID order | ${report.residualNotCfid} |
 | Invalid or missing URLs | ${invalidOrMissingUrls.length} |
 | Missing paragraph references | ${missingParagraphReferences.length} |
 | Unknown provisions | ${unknownProvisions.length} |
 | Duplicate records | ${duplicateRecords.length} |
 | Conflicting findings | ${conflictingFindings.length} |
-| Orders-Awaiting-Analysis rows requiring manual review | ${rowsRequiringManualReview} |
-| Non-CFID / unverified orders (Links.xlsx, has link but unverified) | ${nonCfidOrders} |
-| Rows marked "No order" | ${rowsMarkedNoOrder} |
+| Rows requiring manual review | ${rowsRequiringManualReview} |
 
 ## Invalid or missing URLs
 ${invalidOrMissingUrls.length ? invalidOrMissingUrls.map((s) => `- ${s}`).join("\n") : "None."}
@@ -121,15 +148,17 @@ ${missingParagraphReferences.length ? missingParagraphReferences.map((s) => `- $
 ${unknownProvisions.length ? unknownProvisions.map((s) => `- ${s}`).join("\n") : "None — every Provision Index row maps to a curated id/pattern."}
 
 ## Duplicate records
-${duplicateRecords.length ? duplicateRecords.map((s) => `- ${s}`).join("\n") : "None — the import script also throws on duplicate Record IDs, so this list will always be empty for a successful import."}
+${duplicateRecords.length ? duplicateRecords.map((s) => `- ${s}`).join("\n") : "None — the import script also throws on duplicate scenario-finding Record IDs, so this list will always be empty for a successful import."}
 
 ## Conflicting findings
 ${conflictingFindings.length ? conflictingFindings.map((s) => `- ${s}`).join("\n") : "None — no two findings share a case + scenario title with different statuses."}
 
-## Orders Awaiting Analysis — rows requiring manual review
-${rowsRequiringManualReview} of ${awaitingAnalysis.length} rows in Links.xlsx are flagged for manual review before any admission to the precedent library:
-- ${nonCfidOrders} row(s) have at least one order link but the order number has not yet been verified to contain "CFID".
-- ${rowsMarkedNoOrder} row(s) are marked "No order"/"No CFID Order" or have no link at all.
+## Rows requiring manual review
+${rowsRequiringManualReview} row(s) require manual review before any admission to the deep-analyzed precedent library:
+- ${report.verifiedCasesPendingAnalysis} verified CFID order(s) confirmed genuine but not yet turned into scenario findings.
+- ${report.residualPendingLink} residual entr(y/ies) still awaiting a link from the user.
+
+${report.residualDuplicates} residual row(s) are duplicates of an order already counted once in the verified list (informational only, not a review item). ${report.residualNotCfid} residual row(s) were confirmed **not** CFID orders and are excluded from precedent use.
 
 No row has been deleted. See the "Orders Awaiting Analysis" page in the application for the full register.
 `;

@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { AwaitingAnalysisClient } from "@/components/AwaitingAnalysisClient";
-import { awaitingAnalysis } from "@/lib/data";
+import { residualOrders, verifiedCfidOrders } from "@/lib/data";
 
 export default function AwaitingAnalysisPage() {
   return (
@@ -8,10 +8,10 @@ export default function AwaitingAnalysisPage() {
       <PageHeader
         title="Orders Awaiting Analysis"
         description={
-          'Register built from Links.xlsx. Not every row is a verified precedent — rows are only admitted to the CFID precedent library after their order number is confirmed to contain "CFID". Rows marked "No order", rows without any link, and rows with unverified order numbers are flagged for manual review below. No row has been deleted; missing links will be added as they become available.'
+          'Verified_CFID_Order_Links.xlsx is the authoritative list of confirmed CFID orders — every order identifier here has been confirmed to contain "CFID". Only two cases (Rajesh Exports Limited and Seacoast Shipping Services Limited) have been turned into full scenario findings so far; every other verified order is genuine but still awaiting detailed analysis. Residual_Order_Links.xlsx is an exclusion and pending-link register only — it is never used as a source of substantive CFID precedent unless a row is subsequently verified and moved into the list above. No row has been deleted from either register.'
         }
       />
-      <AwaitingAnalysisClient rows={awaitingAnalysis} />
+      <AwaitingAnalysisClient verifiedRows={verifiedCfidOrders} residualRows={residualOrders} />
     </div>
   );
 }

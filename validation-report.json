@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T04:24:37.326Z",
+  "generatedAt": "2026-09-04T05:01:03.836Z",
   "importedOrders": 3,
   "scenarioFindings": 34,
   "invalidOrMissingUrls": [],
@@ -7,7 +7,10 @@
   "unknownProvisions": [],
   "duplicateRecords": [],
   "conflictingFindings": [],
-  "rowsRequiringManualReview": 83,
-  "nonCfidOrders": 59,
-  "rowsMarkedNoOrder": 24
+  "rowsRequiringManualReview": 109,
+  "verifiedCfidOrderRows": 89,
+  "verifiedCasesPendingAnalysis": 86,
+  "residualPendingLink": 23,
+  "residualDuplicates": 11,
+  "residualNotCfid": 3
 }

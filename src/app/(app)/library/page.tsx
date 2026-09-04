@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { orders, provisions } from "@/lib/data";
+import { orders, provisions, verifiedCfidOrders } from "@/lib/data";
 
 export default function LibraryPage() {
   const byInstrument = new Map<string, number>();
@@ -14,7 +14,14 @@ export default function LibraryPage() {
         description="Official sources used in this pilot. Only the official SEBI website (orders, Acts, regulations, circulars), the official MCA website, official sources for notified accounting standards, and sources expressly referred to within the SEBI orders themselves are used — never law-firm articles, blogs, news reports, commercial databases, or unofficial reproductions."
       />
 
-      <h2 className="mb-3 text-base font-semibold text-slate-900">Verified CFID orders ({orders.length})</h2>
+      <h2 className="mb-3 text-base font-semibold text-slate-900">Deep-analyzed orders ({orders.length})</h2>
+      <p className="mb-3 text-sm text-slate-600">
+        These orders have been broken down into individual scenario findings with paragraph references. See{" "}
+        <Link href="/awaiting-analysis" className="text-blue-700 hover:underline">
+          Orders Awaiting Analysis
+        </Link>{" "}
+        for the full authoritative list of {verifiedCfidOrders.length} confirmed CFID orders.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((o) => (
           <Card key={o.id}>
