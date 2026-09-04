@@ -9,7 +9,6 @@ import type {
   Order,
   OrderRelationship,
   OrderStage,
-  PfutpFocusEntry,
   ProcessingMetrics,
   ProcessingStage,
   ProvisionVersion,
@@ -293,27 +292,6 @@ export async function getVerifiedCfidOrders(): Promise<VerifiedCfidOrderRow[]> {
   }));
 }
 
-/** PFUTP Regulation 4(2)(e) is derived, not separately curated: every
- * scenario finding that cites PFUTP-4-2-e, reshaped for the focused view. */
-export async function getPfutpFocus(): Promise<PfutpFocusEntry[]> {
-  const [findings, orders] = await Promise.all([getScenarioFindings(), getOrders()]);
-  const ordersById = new Map(orders.map((o) => [o.id, o]));
-  return findings
-    .filter((f) => f.provisionIds.includes("PFUTP-4-2-e"))
-    .map((f) => {
-      const order = f.orderIds.map((id) => ordersById.get(id)).find(Boolean);
-      return {
-        id: f.recordId,
-        caseName: f.caseName,
-        orderStage: order?.orderStage ?? "",
-        scenario: f.scenarioTitle,
-        findingOnPfutp42e: f.findingStatus,
-        reasoning: f.factualPattern,
-        paragraphReferences: [f.interimParagraphReferences, f.finalParagraphReferences].filter(Boolean).join("; "),
-        officialSourceUrl: f.officialSourceUrl,
-      };
-    });
-}
 
 export interface ImportMeta {
   generatedAt: string;
@@ -514,7 +492,10 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     { count: cfidVerificationFailures },
     { count: fullyExtracted },
     { count: needsManualReview },
+    { count: verifiedAwaitingExtraction },
     { count: residualPendingLink },
+    { count: residualDuplicates },
+    { count: residualNotCfid },
     { count: scenarioFindingsCreated },
     { count: legalProvisionsIdentified },
     { count: officialLawTextsVerified },
@@ -525,7 +506,13 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("cfid_verified", false),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "legally_reviewed"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "needs_manual_review"),
+    supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .not("processing_stage", "in", "(legally_reviewed,retrieval_failed,needs_manual_review)"),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "pending_link"),
+    supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "duplicate_of_verified"),
+    supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "not_cfid"),
     supabase.from("scenario_findings").select("*", { count: "exact", head: true }),
     supabase.from("legal_provisions").select("*", { count: "exact", head: true }),
     supabase.from("provision_versions").select("*", { count: "exact", head: true }).eq("status", "officially_verified"),
@@ -537,7 +524,10 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     cfidVerificationFailures: cfidVerificationFailures ?? 0,
     fullyExtracted: fullyExtracted ?? 0,
     needsManualReview: needsManualReview ?? 0,
+    verifiedAwaitingExtraction: verifiedAwaitingExtraction ?? 0,
     residualPendingLink: residualPendingLink ?? 0,
+    residualDuplicates: residualDuplicates ?? 0,
+    residualNotCfid: residualNotCfid ?? 0,
     scenarioFindingsCreated: scenarioFindingsCreated ?? 0,
     legalProvisionsIdentified: legalProvisionsIdentified ?? 0,
     officialLawTextsVerified: officialLawTextsVerified ?? 0,

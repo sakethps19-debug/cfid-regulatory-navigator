@@ -37,7 +37,7 @@ export default async function LawLibraryPage() {
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {instrumentProvisions.map((p) => (
                   <Card key={p.id}>
-                    <Link href={`/regulations/${p.id}`} className="text-sm font-semibold text-blue-700 hover:underline">
+                    <Link href={`/provisions/${p.id}`} className="text-sm font-semibold text-blue-700 hover:underline">
                       {p.provisionNumber}
                     </Link>
                     <p className="mt-1 text-sm text-slate-700">{p.subject ?? "Subject not recorded."}</p>

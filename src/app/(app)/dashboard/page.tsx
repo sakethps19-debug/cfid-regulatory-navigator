@@ -1,14 +1,44 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
+import { Card, SourceLink } from "@/components/Card";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { getImportMeta, getOrders, getProvisions, getResidualOrders, getScenarioFindings, getVerifiedCfidOrders } from "@/lib/data";
 
 const STAT_ITEMS = [
-  { label: "Orders deep-analyzed", hrefLabel: "Source Library", href: "/library" },
-  { label: "Scenario findings", hrefLabel: "Search by Regulation", href: "/regulations" },
-  { label: "Provisions indexed", hrefLabel: "Search by Regulation", href: "/regulations" },
-  { label: "Verified CFID orders", hrefLabel: "Case Library", href: "/case-library" },
+  { label: "Orders indexed (case-library universe)", href: "/case-library" },
+  { label: "Orders deeply analysed", href: "/library" },
+  { label: "Scenario findings", href: "/provisions" },
+  { label: "Provisions currently indexed", href: "/provisions" },
 ];
+
+// A balanced, status-diverse sample rather than any single case: at most one
+// finding per distinct status actually present in the data, preferring a
+// finding drawn from a final order within each status. Purely mechanical —
+// no case or provision is ever hardcoded here.
+const STATUS_PRIORITY: FindingStatus[] = [
+  "Upheld",
+  "Not upheld",
+  "Partly upheld",
+  "Confirmed at interim",
+  "Prima facie",
+  "Procedural observation",
+  "Alleged",
+  "Withdrawn",
+  "Inconclusive",
+];
+
+function pickRecentAndSignificant(findings: ScenarioFinding[]): ScenarioFinding[] {
+  const picked: ScenarioFinding[] = [];
+  for (const status of STATUS_PRIORITY) {
+    const candidates = findings.filter((f) => f.findingStatus === status);
+    if (candidates.length === 0) continue;
+    const best = candidates.find((f) => f.finalParagraphReferences) ?? candidates[0];
+    picked.push(best);
+    if (picked.length >= 6) break;
+  }
+  return picked;
+}
 
 export default async function DashboardPage() {
   const [orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders, importMeta] = await Promise.all([
@@ -20,20 +50,22 @@ export default async function DashboardPage() {
     getImportMeta(),
   ]);
   const deepAnalyzedOrders = orders.filter((o) => o.processingStage === "legally_reviewed");
-  const counts = [deepAnalyzedOrders.length, scenarioFindings.length, provisions.length, verifiedCfidOrders.length];
+  const counts = [orders.length, deepAnalyzedOrders.length, scenarioFindings.length, provisions.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
     acc[f.findingStatus] = (acc[f.findingStatus] ?? 0) + 1;
     return acc;
   }, {});
   const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
   const residualPendingCount = residualOrders.filter((r) => r.status === "pending_link").length;
-  const reviewCount = verifiedPendingCount + residualPendingCount;
+  const residualDuplicateCount = residualOrders.filter((r) => r.status === "duplicate_of_verified").length;
+  const residualNotCfidCount = residualOrders.filter((r) => r.status === "not_cfid").length;
+  const recentAndSignificant = pickRecentAndSignificant(scenarioFindings);
 
   return (
     <div>
       <PageHeader
         title="Dashboard"
-        description={`Pilot scope: three deep-analysed CFID orders (Rajesh Exports Limited interim order; Seacoast Shipping Services Limited interim and final orders), out of ${verifiedCfidOrders.length} confirmed CFID orders in the authoritative Verified CFID Order Links register. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} verified CFID order links are currently indexed as the case-library universe — this is not a claim that every CFID matter or every related order has been found; the count will grow as residual entries are resolved and related orders are identified. ${deepAnalyzedOrders.length} of them have been deeply analysed into scenario findings so far. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -51,8 +83,8 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="text-base font-semibold text-slate-900">Scenario finding status breakdown</h2>
           <dl className="mt-4 space-y-2">
-            {(["Prima facie", "Upheld", "Partly upheld", "Not upheld", "Alleged"] as const)
-              .filter((s) => statusCounts[s])
+            {(Object.keys(statusCounts) as FindingStatus[])
+              .sort((a, b) => statusCounts[b] - statusCounts[a])
               .map((s) => (
                 <div key={s} className="flex items-center justify-between text-sm">
                   <dt className="text-slate-600">{s}</dt>
@@ -63,17 +95,25 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Important negative precedent</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            The Seacoast Shipping Services Limited final order did <strong>not uphold</strong> the allegation that the
-            ₹0.52 crore cash preferential allotment was financed through circular transactions — loans/advances were
-            found to be supported and recorded in audited accounts, third parties were not examined, and sale proceeds
-            remained with the allottees. The Scenario Analyzer retrieves this contrary precedent automatically for
-            comparable facts.
+          <h2 className="text-base font-semibold text-slate-900">Recent and significant findings</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            One example per finding status currently represented in the data — not a ranking, and no single case,
+            provision or transaction type is treated as the application&apos;s focus.
           </p>
-          <Link href="/regulations?highlight=SSSL-03" className="mt-3 inline-block text-sm font-medium text-blue-700 hover:underline">
-            View this finding →
-          </Link>
+          <ul className="mt-3 space-y-2">
+            {recentAndSignificant.map((f) => (
+              <li key={f.recordId} className="rounded-lg border border-slate-200 p-2.5 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={f.findingStatus} />
+                  <span className="font-medium text-slate-900">{f.caseName}</span>
+                </div>
+                <p className="mt-1 text-slate-600">{f.scenarioTitle}</p>
+                <div className="mt-1">
+                  <SourceLink href={f.officialSourceUrl} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </Card>
       </div>
 
@@ -85,20 +125,30 @@ export default async function DashboardPage() {
               <Link href="/analyzer" className="font-medium text-blue-700 hover:underline">
                 Analyze a scenario →
               </Link>{" "}
-              <span className="text-slate-600">describe the facts and get potentially relevant provisions with precedents.</span>
+              <span className="text-slate-600">
+                describe the facts and get every potentially relevant provision, across every instrument, with
+                supporting and contrary precedents.
+              </span>
             </li>
             <li>
-              <Link href="/pfutp" className="font-medium text-blue-700 hover:underline">
-                PFUTP Regulation 4(2)(e) focused page →
+              <Link href="/provisions" className="font-medium text-blue-700 hover:underline">
+                Browse the Provision Explorer →
               </Link>{" "}
-              <span className="text-slate-600">kept strictly distinct from LODR Regulation 4(2)(e)(i).</span>
+              <span className="text-slate-600">search any provision by number, instrument, or the underlying facts.</span>
+            </li>
+            <li>
+              <Link href="/case-library" className="font-medium text-blue-700 hover:underline">
+                {verifiedPendingCount} verified orders await extraction →
+              </Link>{" "}
+              <span className="text-slate-600">confirmed CFID orders not yet turned into scenario findings.</span>
             </li>
             <li>
               <Link href="/awaiting-analysis" className="font-medium text-blue-700 hover:underline">
-                {reviewCount} rows await manual review →
+                {residualPendingCount} residual entries await a link →
               </Link>{" "}
               <span className="text-slate-600">
-                verified CFID orders not yet turned into scenario findings, plus residual entries awaiting a link.
+                plus {residualDuplicateCount} confirmed duplicates and {residualNotCfidCount} confirmed non-CFID,
+                excluded but never deleted.
               </span>
             </li>
           </ul>

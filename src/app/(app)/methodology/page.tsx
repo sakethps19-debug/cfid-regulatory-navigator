@@ -113,9 +113,13 @@ export default function MethodologyPage() {
       <Section title="Critical legal safeguards">
         <ul className="list-inside list-disc space-y-1">
           <li>
-            PFUTP Regulation 4(2)(e) (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board
-            and management responsibility for true and fair financial statements) are never conflated, even though
-            both are frequently cited in the same order.
+            <span className="font-medium">Identical-numbering data-integrity check.</span> Whenever two provisions
+            from different instruments share the same clause number, or one is a sub-clause of another, the
+            Provision Explorer flags this automatically so the two are never conflated. PFUTP Regulation 4(2)(e)
+            (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board and management
+            responsibility for true and fair financial statements) are one instance of this generic check, not a
+            special case — the same logic runs for every provision pair in the library, regardless of instrument or
+            clause number.
           </li>
           <li>Observations in interim orders are always treated as prima facie findings only.</li>
           <li>Where a final order exists, it is displayed prominently and controls over an inconsistent interim finding.</li>
@@ -126,9 +130,13 @@ export default function MethodologyPage() {
             economic benefit, and whether distinct transactions were improperly clubbed.
           </li>
           <li>
-            The Seacoast final order&apos;s rejection of the ₹0.52 crore cash preferential-allotment allegation is
-            treated as an important negative precedent and is retrieved for scenarios involving preferential
-            allotment, circular funding, alleged front entities, or unexplained fund movements.
+            <span className="font-medium">Contrary-precedent retrieval is a universal feature, not a special case
+            for any one order.</span> Any finding with a negative or partly-negative status (not upheld, partly
+            upheld, withdrawn, inconclusive) is eligible to surface as a contrary precedent whenever a query
+            scenario materially matches its facts. The Seacoast final order&apos;s rejection of the ₹0.52 crore cash
+            preferential-allotment allegation is one example of this — it surfaces for scenarios involving
+            preferential allotment, circular funding, alleged front entities, or unexplained fund movements, and is
+            never forced into results it does not factually match.
           </li>
         </ul>
       </Section>

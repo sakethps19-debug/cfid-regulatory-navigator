@@ -156,16 +156,6 @@ export interface ResidualOrderRow {
   status: ResidualEntryStatus;
 }
 
-export interface PfutpFocusEntry {
-  id: string;
-  caseName: string;
-  orderStage: string;
-  scenario: string;
-  findingOnPfutp42e: string;
-  reasoning: string;
-  paragraphReferences: string;
-  officialSourceUrl: string;
-}
 
 export type OrderRelationshipType =
   | "interim_to_final"
@@ -211,7 +201,14 @@ export interface ProcessingMetrics {
   cfidVerificationFailures: number;
   fullyExtracted: number;
   needsManualReview: number;
+  /** Verified CFID orders that have started processing (retrieved, text
+   * extracted, etc.) but have not yet reached legally_reviewed — kept
+   * separate from the residual-register counts below, which are a
+   * different register entirely (never a source of case-library orders). */
+  verifiedAwaitingExtraction: number;
   residualPendingLink: number;
+  residualDuplicates: number;
+  residualNotCfid: number;
   scenarioFindingsCreated: number;
   legalProvisionsIdentified: number;
   officialLawTextsVerified: number;

@@ -54,6 +54,8 @@ export default async function LibraryPage() {
           ))}
         </dl>
         <p className="mt-4 text-xs text-slate-500">
+          These {provisions.length} provisions are only the ones actually cited in the orders analysed so far — they
+          do not represent the complete CFID law library, and the count will grow as more orders are analysed.
           Current statutory text for each provision is not reproduced in this pilot and is marked{" "}
           <span className="font-medium">&quot;Requires verification&quot;</span> — always confirm the current
           in-force text on the official SEBI or MCA website before relying on it.

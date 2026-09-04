@@ -44,7 +44,6 @@ function main() {
   writeJson("provisions.json", precedent.provisions);
   writeJson("legalTests.json", precedent.legalTests);
   writeJson("directions.json", precedent.directions);
-  writeJson("pfutpFocus.json", precedent.pfutpFocus);
   writeJson("verifiedCfidOrders.json", verified.rows);
   writeJson("residualOrders.json", residual.rows);
   writeJson(

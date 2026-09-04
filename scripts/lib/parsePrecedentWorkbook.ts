@@ -4,7 +4,6 @@ import type {
   LegalProvision,
   LegalTest,
   DirectionOutcome,
-  PfutpFocusEntry,
   FindingStatus,
   OrderStage,
 } from "../../src/types/domain";
@@ -18,7 +17,6 @@ export interface PrecedentWorkbookResult {
   provisions: LegalProvision[];
   legalTests: LegalTest[];
   directions: DirectionOutcome[];
-  pfutpFocus: PfutpFocusEntry[];
   warnings: string[];
 }
 
@@ -238,28 +236,6 @@ function parseDirections(workbook: ReturnType<typeof readWorkbook>, warnings: st
     });
 }
 
-function parsePfutpFocus(workbook: ReturnType<typeof readWorkbook>, warnings: string[]): PfutpFocusEntry[] {
-  const rows = sheetRows(workbook, "PFUTP 4(2)(e)");
-  const headerIdx = findHeaderRowIndex(rows, "Case");
-  return rows
-    .slice(headerIdx + 1)
-    .filter((row) => cellText(row[0]))
-    .map((row, i) => {
-      const url = cellText(row[6]) ?? "";
-      if (!isUrl(url)) warnings.push(`PFUTP 4(2)(e) row ${i + 1}: missing/invalid official URL`);
-      return {
-        id: `PFUTP42E-${i + 1}`,
-        caseName: cellText(row[0]) ?? "",
-        orderStage: cellText(row[1]) ?? "",
-        scenario: cellText(row[2]) ?? "",
-        findingOnPfutp42e: cellText(row[3]) ?? "",
-        reasoning: cellText(row[4]) ?? "",
-        paragraphReferences: cellText(row[5]) ?? "",
-        officialSourceUrl: url,
-      };
-    });
-}
-
 export function parsePrecedentWorkbook(filePath: string = PRECEDENT_WORKBOOK_PATH): PrecedentWorkbookResult {
   const workbook = readWorkbook(filePath);
   const warnings: string[] = [];
@@ -268,6 +244,5 @@ export function parsePrecedentWorkbook(filePath: string = PRECEDENT_WORKBOOK_PAT
   const provisions = parseProvisionIndex(workbook, warnings);
   const legalTests = parseLegalTests(workbook);
   const directions = parseDirections(workbook, warnings);
-  const pfutpFocus = parsePfutpFocus(workbook, warnings);
-  return { orders, scenarioFindings, provisions, legalTests, directions, pfutpFocus, warnings };
+  return { orders, scenarioFindings, provisions, legalTests, directions, warnings };
 }
