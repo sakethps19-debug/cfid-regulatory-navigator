@@ -7,9 +7,9 @@ import { findingsForProvision, getProvisionById, getProvisions } from "@/lib/dat
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
 
 const RELATION_TEXT: Record<string, string> = {
-  same_number_different_instrument: "shares the same number under a different instrument",
-  sub_clause_of: "is a sub-clause of this provision",
-  parent_of: "this provision is a sub-clause of",
+  similarly_numbered_different_instrument: "distinct similarly-numbered provision in a different instrument",
+  sub_clause_of: "is a sub-clause of this provision (same instrument)",
+  parent_of: "this provision is a sub-clause of (same instrument)",
 };
 
 export default async function ProvisionDetailPage({ params }: { params: Promise<{ id: string }> }) {

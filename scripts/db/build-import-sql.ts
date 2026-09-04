@@ -279,7 +279,7 @@ function main() {
     const finalOrderUuid = finalOrderId ? pilotOrderIdByOrderId.get(finalOrderId.id) : undefined;
 
     push(
-      `insert into scenario_findings (id, record_id, order_id, final_order_id, case_name, category, scenario_title, factual_pattern, allegation_text, provisions_considered_raw, noticee_actor_names, finding_status, interim_paragraph_references, final_paragraph_references, qualification, official_source_url, transaction_types, actor_roles, evidence_types, alleged_conduct, evidentiary_gaps) values (` +
+      `insert into scenario_findings (id, record_id, order_id, final_order_id, case_name, category, scenario_title, factual_pattern, allegation_text, provisions_considered_raw, noticee_actor_names, finding_status, interim_paragraph_references, final_paragraph_references, qualification, official_source_url, transaction_types, actor_roles, evidence_types, alleged_conduct, evidentiary_gaps, precedent_outcome_note) values (` +
         [
           sqlString(uuid),
           sqlString(f.recordId),
@@ -302,8 +302,9 @@ function main() {
           sqlTextArray(f.evidenceTypes),
           sqlTextArray(f.allegedConduct),
           sqlTextArray(f.evidentiaryGaps),
+          sqlString(f.precedentOutcomeNote),
         ].join(", ") +
-        `) on conflict (record_id) do update set factual_pattern = excluded.factual_pattern, finding_status = excluded.finding_status, interim_paragraph_references = excluded.interim_paragraph_references, final_paragraph_references = excluded.final_paragraph_references, qualification = excluded.qualification;`
+        `) on conflict (record_id) do update set factual_pattern = excluded.factual_pattern, finding_status = excluded.finding_status, interim_paragraph_references = excluded.interim_paragraph_references, final_paragraph_references = excluded.final_paragraph_references, qualification = excluded.qualification, evidentiary_gaps = excluded.evidentiary_gaps, precedent_outcome_note = excluded.precedent_outcome_note;`
     );
   }
   push("");

@@ -120,7 +120,16 @@ export interface ScenarioFinding {
   actorRoles: string[];
   evidenceTypes: string[];
   allegedConduct: string[];
+  /** Genuine outstanding evidence/facts relevant to comparing this precedent
+   * against a NEW scenario — never the precedent's own historical outcome.
+   * See precedentOutcomeNote for that. */
   evidentiaryGaps: string[];
+  /** How THIS precedent's own allegation was resolved (e.g. "this allegation
+   * was resolved in the final order") — a fact about the cited precedent's
+   * history, not about the user's present scenario, and never merged into
+   * evidentiaryGaps or any missing-facts checklist. Null when not
+   * applicable/not recorded. */
+  precedentOutcomeNote: string | null;
   // computed at query time: concepts present in this finding's own tags that
   // did NOT match the query scenario — used to show "ingredients not
   // established" for a candidate precedent (see the matching engine).

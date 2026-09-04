@@ -172,6 +172,7 @@ function parseScenarioFindings(
       evidenceTypes: overlay?.evidenceTypes ?? [],
       allegedConduct: overlay?.allegedConduct ?? [],
       evidentiaryGaps: overlay?.evidentiaryGaps ?? [],
+      precedentOutcomeNote: overlay?.precedentOutcomeNote ?? null,
       ingredientsNotEstablished: [],
       // These 34 findings come from the human-curated, already
       // legally-reviewed CFID_Precedent_Library_Pilot.xlsx — recording that

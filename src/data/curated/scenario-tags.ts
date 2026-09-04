@@ -16,10 +16,17 @@ export interface ScenarioTagOverlay {
   actorRoles: string[];
   evidenceTypes: string[];
   allegedConduct: string[];
+  /** Genuine outstanding evidentiary gaps only — never a note about the
+   * precedent's own historical outcome; see precedentOutcomeNote below. */
   evidentiaryGaps: string[];
+  /** How this precedent's own allegation was resolved, when applicable —
+   * kept structurally separate from evidentiaryGaps so the Scenario
+   * Analyzer never mixes "this precedent's history" into a checklist of
+   * missing evidence for the user's present scenario. */
+  precedentOutcomeNote?: string;
 }
 
-const RESOLVED = ["None outstanding — this allegation was resolved in the final order."];
+const RESOLVED_NOTE = "None outstanding — this allegation was resolved in the final order.";
 
 export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
   {
@@ -164,7 +171,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements", "forensic_audit_report", "bank_statements_flow"],
     allegedConduct: ["fictitious_sales_or_assets", "financial_statement_misstatement", "price_manipulation_nexus"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-02",
@@ -172,7 +180,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company", "promoter", "allottee_promoter"],
     evidenceTypes: ["shareholding_allotment_records", "audited_financial_statements"],
     allegedConduct: ["sham_preferential_allotment", "financial_statement_misstatement"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-03",
@@ -192,7 +201,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company"],
     evidenceTypes: ["bank_statements_flow", "delivery_inventory_records", "utilisation_of_issue_proceeds_certificate"],
     allegedConduct: ["fund_diversion", "fictitious_sales_or_assets"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-05",
@@ -200,7 +210,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements"],
     allegedConduct: ["non_disclosure_of_information", "financial_statement_misstatement"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-06",
@@ -208,7 +219,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements"],
     allegedConduct: ["false_business_or_corporate_announcement", "non_disclosure_of_information"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-07",
@@ -216,7 +228,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company"],
     evidenceTypes: ["correspondence_summons_replies"],
     allegedConduct: ["false_business_or_corporate_announcement"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-08",
@@ -224,7 +237,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company", "related_party_counterparty"],
     evidenceTypes: ["related_party_register", "audit_committee_minutes_agendas"],
     allegedConduct: ["related_party_misrepresentation"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-09",
@@ -232,7 +246,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company", "audit_committee_member", "independent_director"],
     evidenceTypes: ["board_minutes", "related_party_register"],
     allegedConduct: ["audit_committee_deficiency"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-10",
@@ -240,7 +255,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company", "audit_committee_member"],
     evidenceTypes: ["audit_committee_minutes_agendas"],
     allegedConduct: ["audit_committee_deficiency", "false_compliance_certification"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-11",
@@ -248,7 +264,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["company", "compliance_officer"],
     evidenceTypes: ["board_minutes"],
     allegedConduct: ["compliance_officer_deficiency"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-12",
@@ -266,7 +283,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["promoter", "allottee_promoter"],
     evidenceTypes: ["shareholding_allotment_records"],
     allegedConduct: ["sham_preferential_allotment"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-14",
@@ -274,7 +292,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["managing_director", "executive_director"],
     evidenceTypes: ["board_minutes"],
     allegedConduct: ["director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-15",
@@ -282,7 +301,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["audit_committee_member"],
     evidenceTypes: ["audit_committee_minutes_agendas", "utilisation_of_issue_proceeds_certificate"],
     allegedConduct: ["audit_committee_deficiency", "director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-16",
@@ -290,7 +310,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["managing_director"],
     evidenceTypes: ["board_minutes"],
     allegedConduct: ["false_compliance_certification"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-17",
@@ -298,7 +319,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["executive_director"],
     evidenceTypes: ["audited_financial_statements", "bank_statements_flow"],
     allegedConduct: ["aiding_abetting", "director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-18",
@@ -316,7 +338,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["director_general", "audit_committee_member"],
     evidenceTypes: ["audit_committee_minutes_agendas"],
     allegedConduct: ["audit_committee_deficiency", "director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-20",
@@ -324,7 +347,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["independent_director", "audit_committee_member"],
     evidenceTypes: ["audit_committee_minutes_agendas"],
     allegedConduct: ["audit_committee_deficiency", "director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-21",
@@ -332,7 +356,8 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["independent_director"],
     evidenceTypes: ["board_minutes"],
     allegedConduct: ["director_governance_failure"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
   {
     recordId: "SSSL-22",
@@ -340,6 +365,7 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     actorRoles: ["compliance_officer"],
     evidenceTypes: ["audit_committee_minutes_agendas"],
     allegedConduct: ["compliance_officer_deficiency", "audit_committee_deficiency"],
-    evidentiaryGaps: RESOLVED,
+    evidentiaryGaps: [],
+    precedentOutcomeNote: RESOLVED_NOTE,
   },
 ];

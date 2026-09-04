@@ -39,6 +39,7 @@
       "Subsidiary and step-down subsidiary financial statements and consolidation working papers",
       "Confirmation of the website/filing publication history"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -102,6 +103,7 @@
       "Independent verification of customer-wise sales",
       "Completion of the forensic audit"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -147,6 +149,7 @@
       "Complete and consistent customer-wise sales data",
       "Explanation for the differing submissions across stages"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -210,6 +213,7 @@
       "Reconciliation showing how the personal trades entered the company's books",
       "Explanation from the promoter"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -267,6 +271,7 @@
       "Ind AS 21/115 classification workpapers",
       "Year-wise break-up of the foreign-exchange and interest components"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -324,6 +329,7 @@
       "Delivery challans, GST filings and banking trail for the purchases",
       "Confirmation from Vienna Multiventures and Harshil Enterprise"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -381,6 +387,7 @@
       "Consolidation elimination workpapers",
       "Entity-wise intra-group balance confirmations"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -438,6 +445,7 @@
       "Entity-wise documentary support for the investment",
       "Independent valuation or title evidence"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -496,6 +504,7 @@
       "Multi-party netting/knock-off agreements and the basis for offset",
       "Counterparty confirmations"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -555,6 +564,7 @@
       "End-use evidence for the statutory and operating payments",
       "Related-party disclosure records"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -612,6 +622,7 @@
       "End-use/utilisation evidence",
       "Confirmation from the counterparty entities"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -664,6 +675,7 @@
       "Evidence connecting the disclosures to actual trading or price impact",
       "Completion of the forensic audit"
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -723,9 +735,8 @@
       "financial_statement_misstatement",
       "price_manipulation_nexus"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -780,9 +791,8 @@
       "sham_preferential_allotment",
       "financial_statement_misstatement"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -845,6 +855,7 @@
       "Third parties were not examined by the investigation.",
       "Sale proceeds remained with the allottees; no flow-back to the company or promoter was proved."
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -901,9 +912,8 @@
       "fund_diversion",
       "fictitious_sales_or_assets"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -952,9 +962,8 @@
       "non_disclosure_of_information",
       "financial_statement_misstatement"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1000,9 +1009,8 @@
       "false_business_or_corporate_announcement",
       "non_disclosure_of_information"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1047,9 +1055,8 @@
     "allegedConduct": [
       "false_business_or_corporate_announcement"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1100,9 +1107,8 @@
     "allegedConduct": [
       "related_party_misrepresentation"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1152,9 +1158,8 @@
     "allegedConduct": [
       "audit_committee_deficiency"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1203,9 +1208,8 @@
       "audit_committee_deficiency",
       "false_compliance_certification"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1250,9 +1254,8 @@
     "allegedConduct": [
       "compliance_officer_deficiency"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1308,6 +1311,7 @@
     "evidentiaryGaps": [
       "Liability for the SSSL-03 cash preferential-allotment allegation was specifically excluded — do not treat the Managing Director's overall liability as extending to that allegation."
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1353,9 +1357,8 @@
     "allegedConduct": [
       "sham_preferential_allotment"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1399,9 +1402,8 @@
     "allegedConduct": [
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1447,9 +1449,8 @@
       "audit_committee_deficiency",
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1492,9 +1493,8 @@
     "allegedConduct": [
       "false_compliance_certification"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1545,9 +1545,8 @@
       "aiding_abetting",
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1598,6 +1597,7 @@
     "evidentiaryGaps": [
       "Negative precedent: the evidence did not establish that the allottees used the company's own money or that sale proceeds returned to the company or the promoter; directions against these noticees were vacated."
     ],
+    "precedentOutcomeNote": null,
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1644,9 +1644,8 @@
       "audit_committee_deficiency",
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1693,9 +1692,8 @@
       "audit_committee_deficiency",
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1738,9 +1736,8 @@
     "allegedConduct": [
       "director_governance_failure"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,
@@ -1785,9 +1782,8 @@
       "compliance_officer_deficiency",
       "audit_committee_deficiency"
     ],
-    "evidentiaryGaps": [
-      "None outstanding — this allegation was resolved in the final order."
-    ],
+    "evidentiaryGaps": [],
+    "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",
     "ingredientsNotEstablished": [],
     "sourceDocumentVerified": true,
     "paragraphCitationVerified": true,

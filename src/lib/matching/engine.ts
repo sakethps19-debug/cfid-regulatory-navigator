@@ -60,6 +60,17 @@ function unique<T>(items: T[]): T[] {
   return [...new Set(items)];
 }
 
+// Defense in depth: evidentiaryGaps must only ever contain genuine
+// outstanding evidence for the PRESENT scenario, never a note about a cited
+// precedent's own historical outcome (that belongs in
+// ScenarioFinding.precedentOutcomeNote, shown separately). This guard
+// strips any such note out of the missing-facts checklist even if curated
+// data were ever mis-entered again, so "None outstanding" can never sit
+// alongside genuine outstanding items.
+function isGenuineEvidentiaryGap(text: string): boolean {
+  return !/^none outstanding/i.test(text.trim());
+}
+
 function scoreFinding(
   finding: ScenarioFinding,
   detected: DetectedConcept[],
@@ -187,7 +198,7 @@ export function analyzeScenario(
       statusesSeen: unique(findings.map((f) => f.finding.findingStatus)),
       confidence: level,
       confidenceReasons: reasons,
-      missingFacts: unique(supporting.flatMap((s) => s.finding.evidentiaryGaps)),
+      missingFacts: unique(supporting.flatMap((s) => s.finding.evidentiaryGaps)).filter(isGenuineEvidentiaryGap),
       provisionVersions,
       applicableVersionNote: buildApplicableVersionNote(provisionVersions),
     });

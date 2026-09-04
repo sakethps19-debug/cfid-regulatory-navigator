@@ -16,7 +16,8 @@ const FIELDS: { label: string; render: (f: ScenarioFinding) => React.ReactNode }
   { label: "Interim paragraph references", render: (f) => f.interimParagraphReferences ?? "—" },
   { label: "Final paragraph references", render: (f) => f.finalParagraphReferences ?? "—" },
   { label: "Qualification / note", render: (f) => f.qualification ?? "—" },
-  { label: "Evidentiary gaps", render: (f) => (f.evidentiaryGaps.length ? f.evidentiaryGaps.join("; ") : "—") },
+  { label: "Missing facts / evidence (present-scenario gaps)", render: (f) => (f.evidentiaryGaps.length ? f.evidentiaryGaps.join("; ") : "—") },
+  { label: "Outcome in this precedent", render: (f) => f.precedentOutcomeNote ?? "—" },
   { label: "Official source", render: (f) => <SourceLink href={f.officialSourceUrl} /> },
 ];
 

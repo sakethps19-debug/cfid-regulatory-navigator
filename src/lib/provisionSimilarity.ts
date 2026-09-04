@@ -12,7 +12,17 @@ function normalizeProvisionNumber(raw: string): string {
     .replace(/\s+/g, "");
 }
 
-export type SimilarProvisionRelation = "same_number_different_instrument" | "sub_clause_of" | "parent_of";
+/** "sub_clause_of"/"parent_of" describe a genuine hierarchical relationship
+ * and are only ever assigned WITHIN one instrument (e.g. Regulation 4(2)
+ * and Regulation 4(2)(e) of the same Act). Two provisions from DIFFERENT
+ * instruments that merely happen to share, or overlap in, their numbering —
+ * such as PFUTP Regulation 4(2)(e) and LODR Regulation 4(2)(e)(i) — are
+ * never a parent/child pair; they are unrelated provisions with coincidental
+ * numbering, always reported as "similarly_numbered_different_instrument". */
+export type SimilarProvisionRelation =
+  | "similarly_numbered_different_instrument"
+  | "sub_clause_of"
+  | "parent_of";
 
 export interface SimilarProvision {
   provision: LegalProvision;
@@ -21,12 +31,16 @@ export interface SimilarProvision {
 
 /**
  * Finds every OTHER provision whose numbering could plausibly be confused
- * with the target's — an identical bracket/number sequence in a different
- * instrument, or one that is a direct sub-clause extension of the other
- * (e.g. "4(2)(e)" vs "4(2)(e)(i)"). This is a general safeguard, not
- * hardcoded to any one pair: it runs identically for every provision in the
- * Law Library, and would catch a future case just as it catches the known
- * PFUTP Regulation 4(2)(e) / LODR Regulation 4(2)(e)(i) pair.
+ * with the target's — an identical or overlapping bracket/number sequence.
+ * A genuine parent/sub-clause relationship ("sub_clause_of"/"parent_of") is
+ * reported ONLY when both provisions belong to the same instrument — numeric
+ * overlap alone is never enough, and is never sufficient across different
+ * instruments regardless of how closely the numbering lines up. This is a
+ * general safeguard, not hardcoded to any one pair: it runs identically for
+ * every provision in the Law Library, and would catch a future case just as
+ * it catches the known PFUTP Regulation 4(2)(e) / LODR Regulation 4(2)(e)(i)
+ * pair — which, being in different instruments, is always reported as
+ * "similarly_numbered_different_instrument", never as a sub-clause.
  */
 export function findSimilarlyNumberedProvisions(target: LegalProvision, all: LegalProvision[]): SimilarProvision[] {
   const targetNorm = normalizeProvisionNumber(target.provisionNumber);
@@ -36,12 +50,24 @@ export function findSimilarlyNumberedProvisions(target: LegalProvision, all: Leg
     if (p.id === target.id) continue;
     const norm = normalizeProvisionNumber(p.provisionNumber);
     if (!norm) continue;
-    if (norm === targetNorm) {
-      results.push({ provision: p, relation: "same_number_different_instrument" });
-    } else if (norm.startsWith(targetNorm) && norm[targetNorm.length] === "(") {
+
+    const isExactMatch = norm === targetNorm;
+    const pExtendsTarget = norm.startsWith(targetNorm) && norm[targetNorm.length] === "(";
+    const targetExtendsP = targetNorm.startsWith(norm) && targetNorm[norm.length] === "(";
+    if (!isExactMatch && !pExtendsTarget && !targetExtendsP) continue;
+
+    const sameInstrument = p.instrument === target.instrument;
+
+    if (sameInstrument && pExtendsTarget) {
       results.push({ provision: p, relation: "sub_clause_of" });
-    } else if (targetNorm.startsWith(norm) && targetNorm[norm.length] === "(") {
+    } else if (sameInstrument && targetExtendsP) {
       results.push({ provision: p, relation: "parent_of" });
+    } else {
+      // Different instruments (or, rarely, an exact-number duplicate within
+      // the same instrument) — numbering overlap alone never implies a
+      // hierarchical relationship; only ever reported as coincidental
+      // similar numbering.
+      results.push({ provision: p, relation: "similarly_numbered_different_instrument" });
     }
   }
   return results;

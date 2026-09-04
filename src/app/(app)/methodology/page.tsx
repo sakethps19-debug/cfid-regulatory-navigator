@@ -114,8 +114,9 @@ export default function MethodologyPage() {
         <ul className="list-inside list-disc space-y-1">
           <li>
             <span className="font-medium">Identical-numbering data-integrity check.</span> Whenever two provisions
-            from different instruments share the same clause number, or one is a sub-clause of another, the
-            Provision Explorer flags this automatically so the two are never conflated. PFUTP Regulation 4(2)(e)
+            from different instruments share or overlap in their numbering, the Provision Explorer flags this
+            automatically as coincidental similar numbering — never as a parent/sub-clause relationship, which is
+            only ever reported when both provisions belong to the <em>same</em> instrument. PFUTP Regulation 4(2)(e)
             (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board and management
             responsibility for true and fair financial statements) are one instance of this generic check, not a
             special case — the same logic runs for every provision pair in the library, regardless of instrument or

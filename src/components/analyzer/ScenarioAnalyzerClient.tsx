@@ -65,6 +65,9 @@ function resultToText(result: AnalysisResult): string {
       lines.push(
         `  - [${s.finding.findingStatus}] ${s.finding.recordId} — ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) — ${s.finding.officialSourceUrl}`
       );
+      if (s.finding.precedentOutcomeNote) {
+        lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
+      }
     }
     if (pr.contraryPrecedents.length > 0) {
       lines.push("Contrary precedent(s):");
@@ -75,7 +78,7 @@ function resultToText(result: AnalysisResult): string {
       }
     }
     if (pr.missingFacts.length > 0) {
-      lines.push("Missing facts / evidence:");
+      lines.push("Missing facts / evidence in the present scenario:");
       for (const m of pr.missingFacts) lines.push(`  - ${m}`);
     }
   }
@@ -323,6 +326,11 @@ export function ScenarioAnalyzerClient() {
                               {s.ingredientsNotEstablished.join("; ")}
                             </p>
                           )}
+                          {s.finding.precedentOutcomeNote && (
+                            <p className="mt-1 text-xs italic text-emerald-700">
+                              Outcome in the cited precedent: {s.finding.precedentOutcomeNote}
+                            </p>
+                          )}
                           <div className="mt-1">
                             <SourceLink href={s.finding.officialSourceUrl} />
                           </div>
@@ -363,21 +371,20 @@ export function ScenarioAnalyzerClient() {
                 {pr.missingFacts.length > 0 && (
                   <div className="mt-4">
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Missing facts / evidence checklist
+                      Missing facts / evidence in the present scenario
                     </h4>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Outstanding evidence relevant to comparing your scenario against these precedents — never a
+                      cited precedent&apos;s own historical outcome, which is shown separately under that precedent
+                      above.
+                    </p>
                     <ul className="mt-2 space-y-1">
-                      {pr.missingFacts.map((m, i) =>
-                        m.startsWith("None outstanding") ? (
-                          <li key={i} className="text-sm italic text-slate-500">
-                            {m}
-                          </li>
-                        ) : (
-                          <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                            <input type="checkbox" className="mt-1" />
-                            <span>{m}</span>
-                          </li>
-                        )
-                      )}
+                      {pr.missingFacts.map((m, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                          <input type="checkbox" className="mt-1" />
+                          <span>{m}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}

@@ -48,10 +48,93 @@ const RELATIONSHIP_LABELS: Record<OrderRelationshipType, { whenCurrentIsFrom: st
   different_noticee_group: { whenCurrentIsFrom: "Different noticee group", whenCurrentIsTo: "Different noticee group" },
 };
 
+/** The SIBLING order's relationship to the CURRENT order (used for the
+ * sibling-list badge, e.g. "Finalises" shown next to a final-order sibling
+ * when viewing the interim order's page). */
 function labelForRelationship(r: OrderRelationship, currentOrderId: string): string | undefined {
   const table = RELATIONSHIP_LABELS[r.relationshipType];
   if (!table) return undefined;
   return r.fromOrderId === currentOrderId ? table.whenCurrentIsFrom : table.whenCurrentIsTo;
+}
+
+/** The CURRENT order's OWN relationship to the other order — the inverse
+ * framing of labelForRelationship, used for self-referential sentences like
+ * "This final order resolves the interim order below." Reuses the exact
+ * same direction table so the sibling-list badges and the narrative
+ * sentences below can never drift apart or disagree on direction. */
+function currentOrderRelationLabel(r: OrderRelationship, currentOrderId: string): string | undefined {
+  const table = RELATIONSHIP_LABELS[r.relationshipType];
+  if (!table) return undefined;
+  return r.fromOrderId === currentOrderId ? table.whenCurrentIsTo : table.whenCurrentIsFrom;
+}
+
+/** Sentence-phrasing for each of the short badge labels above. "supersedes"
+ * marks the labels that imply the active side's outcome legally controls
+ * the other side (finalises/confirms/revokes/modifies-style relationships)
+ * — only then does the generated sentence add a "controls over the earlier
+ * findings" clause; purely-linking relationships (same matter/investigation,
+ * different noticee group, precedes/follows with no stated supersession)
+ * never get that clause. */
+const LABEL_TO_SENTENCE_VERB: Record<string, { verb: string; supersedes: boolean }> = {
+  Finalises: { verb: "resolves", supersedes: true },
+  Confirms: { verb: "confirms", supersedes: true },
+  Revokes: { verb: "revokes", supersedes: true },
+  Modifies: { verb: "modifies", supersedes: true },
+  Precedes: { verb: "precedes", supersedes: false },
+  Follows: { verb: "follows", supersedes: false },
+  "Same matter": { verb: "is part of the same matter as", supersedes: false },
+  "Same investigation": { verb: "shares the same investigation as", supersedes: false },
+  "Different noticee group": { verb: "concerns a different noticee group within", supersedes: false },
+  "Adjudication arising from": { verb: "is an adjudication arising from", supersedes: false },
+};
+
+/** Findings are characterised generically by the ORDER TYPE that produced
+ * them — an interim order's findings are "prima facie" by definition, a
+ * confirmatory order's are "confirmatory", and so on — never by case name
+ * or facts, so this works identically for every order. */
+function findingsAdjective(stage: Order["orderStage"]): string {
+  switch (stage) {
+    case "Interim order":
+    case "Interim order cum show cause notice":
+      return "prima facie";
+    case "Confirmatory order":
+      return "confirmatory";
+    case "Adjudication order":
+      return "adjudication";
+    case "Settlement order":
+      return "settlement";
+    default:
+      return "earlier";
+  }
+}
+
+/** A grammatically correct, direction-aware sentence describing an
+ * order_relationships row from the CURRENT order's own point of view —
+ * e.g. "This final order resolves the interim order below; its outcome
+ * controls over the earlier prima facie findings." Derived entirely from
+ * the stored relationship type/direction and each order's own orderStage —
+ * never from case name, order id, or any hardcoded example, so the same
+ * function produces the correct sentence for any pair of linked orders. */
+export function orderRelationshipSentence(current: Order, other: Order, relationship: OrderRelationship): string {
+  const currentStage = current.orderStage.toLowerCase();
+  const otherStage = other.orderStage.toLowerCase();
+
+  const currentLabel = currentOrderRelationLabel(relationship, current.id);
+  const currentPhrase = currentLabel ? LABEL_TO_SENTENCE_VERB[currentLabel] : undefined;
+
+  if (currentPhrase?.supersedes) {
+    return `This ${currentStage} ${currentPhrase.verb} the ${otherStage} below; its outcome controls over the earlier ${findingsAdjective(other.orderStage)} findings.`;
+  }
+
+  const otherLabel = labelForRelationship(relationship, current.id);
+  const otherPhrase = otherLabel ? LABEL_TO_SENTENCE_VERB[otherLabel] : undefined;
+  const currentVerb = currentPhrase?.verb ?? "is linked to";
+
+  if (otherPhrase?.supersedes) {
+    return `This ${currentStage} ${currentVerb} the ${otherStage} below; where they differ, the ${otherStage}'s outcome controls, and this order's ${findingsAdjective(current.orderStage)} findings should not be treated as final.`;
+  }
+
+  return `This ${currentStage} ${currentVerb} the ${otherStage} below.`;
 }
 
 /** Every other order that belongs to the current order's matter, or is

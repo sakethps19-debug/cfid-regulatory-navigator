@@ -3,7 +3,7 @@
 // names) — deliberately not modelled on Seacoast or any real order — to
 // prove the feature is data-driven and works for any matter.
 import { describe, expect, it } from "vitest";
-import { siblingOrdersInMatter } from "@/lib/matterRelationships";
+import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
 import type { Order, OrderRelationship, OrderRelationshipType } from "@/types/domain";
 
 function makeOrder(overrides: Partial<Order> & { id: string }): Order {
@@ -164,5 +164,72 @@ describe("siblingOrdersInMatter", () => {
     const result = siblingOrdersInMatter(alpha, [alpha, beta, gamma], relationships);
     expect(result.map((s) => s.order.id)).toEqual(["ALPHA-2"]);
     expect(result[0].relationshipLabel).toBe("Precedes");
+  });
+});
+
+describe("orderRelationshipSentence", () => {
+  it("produces the exact required direction-aware sentence: final resolves interim, generic fixtures", () => {
+    const interim = makeOrder({ id: "ORDER-INTERIM", orderStage: "Interim order cum show cause notice" });
+    const final = makeOrder({ id: "ORDER-FINAL", orderStage: "Final order" });
+    const relationship = makeRelationship("ORDER-INTERIM", "ORDER-FINAL", "interim_to_final");
+
+    const sentence = orderRelationshipSentence(final, interim, relationship);
+    expect(sentence).toBe(
+      "This final order resolves the interim order cum show cause notice below; its outcome controls over the earlier prima facie findings."
+    );
+  });
+
+  it("never produces the old garbled text ('...resolves the final order the order below')", () => {
+    const interim = makeOrder({ id: "ORDER-INTERIM", orderStage: "Interim order cum show cause notice" });
+    const final = makeOrder({ id: "ORDER-FINAL", orderStage: "Final order" });
+    const relationship = makeRelationship("ORDER-INTERIM", "ORDER-FINAL", "interim_to_final");
+
+    const sentence = orderRelationshipSentence(final, interim, relationship);
+    expect(sentence).not.toMatch(/the order below the order below/i);
+    expect(sentence).not.toMatch(/resolves the final order the order below/i);
+  });
+
+  it("is direction-aware: the reverse (interim describing final) reads correctly and cautions against treating findings as final", () => {
+    const interim = makeOrder({ id: "ORDER-INTERIM", orderStage: "Interim order cum show cause notice" });
+    const final = makeOrder({ id: "ORDER-FINAL", orderStage: "Final order" });
+    const relationship = makeRelationship("ORDER-INTERIM", "ORDER-FINAL", "interim_to_final");
+
+    const sentence = orderRelationshipSentence(interim, final, relationship);
+    expect(sentence).toContain("This interim order cum show cause notice precedes the final order below");
+    expect(sentence).toContain("should not be treated as final");
+    expect(sentence).not.toContain("controls over the earlier"); // interim does not control the final
+  });
+
+  it("is grammatically correct and generic for a confirmatory/revocation pair (not hardcoded to interim/final)", () => {
+    const confirmatory = makeOrder({ id: "ORDER-CONF", orderStage: "Confirmatory order" });
+    const revocation = makeOrder({ id: "ORDER-REV", orderStage: "Revocation order" });
+    const relationship = makeRelationship("ORDER-CONF", "ORDER-REV", "confirmatory_to_revocation");
+
+    const sentence = orderRelationshipSentence(revocation, confirmatory, relationship);
+    expect(sentence).toBe(
+      "This revocation order revokes the confirmatory order below; its outcome controls over the earlier confirmatory findings."
+    );
+  });
+
+  it("does not add a false 'controls' clause for a purely symmetric relationship (same matter)", () => {
+    const a = makeOrder({ id: "ORDER-A", orderStage: "Adjudication order" });
+    const b = makeOrder({ id: "ORDER-B", orderStage: "Adjudication order" });
+    const relationship = makeRelationship("ORDER-A", "ORDER-B", "same_matter");
+
+    const sentence = orderRelationshipSentence(a, b, relationship);
+    expect(sentence).not.toContain("controls");
+    expect(sentence.toLowerCase()).toContain("same matter");
+  });
+
+  it("derives the sentence entirely from order type and relationship direction, not case identity (generic, non-Seacoast fixtures)", () => {
+    const interim = makeOrder({ id: "GENERIC-1", caseName: "Generic Traders Limited", orderStage: "Interim order" });
+    const final = makeOrder({ id: "GENERIC-2", caseName: "Generic Traders Limited", orderStage: "Final order" });
+    const relationship = makeRelationship("GENERIC-1", "GENERIC-2", "interim_to_final");
+
+    const sentence = orderRelationshipSentence(final, interim, relationship);
+    expect(sentence).toBe(
+      "This final order resolves the interim order below; its outcome controls over the earlier prima facie findings."
+    );
+    expect(sentence).not.toContain("Generic Traders Limited");
   });
 });

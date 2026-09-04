@@ -600,6 +600,7 @@ export type Database = {
           official_source_url: string
           order_id: string | null
           paragraph_citation_verified: boolean
+          precedent_outcome_note: string | null
           provision_mapping_verified: boolean
           provisions_considered_raw: string | null
           qualification: string | null
@@ -633,6 +634,7 @@ export type Database = {
           official_source_url: string
           order_id?: string | null
           paragraph_citation_verified?: boolean
+          precedent_outcome_note?: string | null
           provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
           qualification?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           official_source_url?: string
           order_id?: string | null
           paragraph_citation_verified?: boolean
+          precedent_outcome_note?: string | null
           provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
           qualification?: string | null

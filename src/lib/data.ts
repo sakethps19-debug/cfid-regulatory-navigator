@@ -105,6 +105,7 @@ function mapFinding(row: ScenarioFindingRow, provisionIds: string[], orderIds: s
     evidenceTypes: row.evidence_types,
     allegedConduct: row.alleged_conduct,
     evidentiaryGaps: row.evidentiary_gaps,
+    precedentOutcomeNote: row.precedent_outcome_note,
     ingredientsNotEstablished: row.ingredients_not_established,
     sourceDocumentVerified: row.source_document_verified,
     paragraphCitationVerified: row.paragraph_citation_verified,
