@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { orders } from "@/lib/data";
+import { getOrders } from "@/lib/data";
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const allOrders = await getOrders();
+  const orders = allOrders.filter((o) => o.processingStage === "legally_reviewed");
   return (
     <div>
       <PageHeader

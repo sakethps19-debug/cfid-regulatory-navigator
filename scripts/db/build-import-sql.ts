@@ -44,13 +44,13 @@ const INSTRUMENTS: { name: string; issuingAuthority: string; officialSourceUrl: 
   { name: "Indian Accounting Standards", issuingAuthority: "MCA (notified)", officialSourceUrl: "https://www.mca.gov.in/content/mca/global/en/acts-rules/ind-as.html" },
 ];
 
-const ORDER_STAGE_TO_TYPE: Record<OrderStage, string> = {
+const ORDER_STAGE_TO_TYPE: Partial<Record<OrderStage, string>> = {
   "Interim order": "interim_order",
   "Interim order cum show cause notice": "interim_cum_show_cause_notice",
   "Final order": "final_order",
 };
 
-const FINDING_STATUS_TO_ENUM: Record<FindingStatus, string> = {
+const FINDING_STATUS_TO_ENUM: Partial<Record<FindingStatus, string>> = {
   Alleged: "alleged",
   "Prima facie": "prima_facie",
   Upheld: "upheld",
@@ -170,7 +170,7 @@ function main() {
             sqlString(uuid),
             sqlString(pilotOrder.caseName),
             sqlString(pilotOrder.caseName),
-            sqlEnum(ORDER_STAGE_TO_TYPE[pilotOrder.orderStage]),
+            sqlEnum(ORDER_STAGE_TO_TYPE[pilotOrder.orderStage]!),
             sqlEnum("document_confirmed"),
             sqlDate(pilotOrder.orderDate),
             sqlString(periodHint),
@@ -282,7 +282,7 @@ function main() {
           sqlString(f.factualPattern),
           sqlString(f.provisionsConsideredRaw),
           sqlTextArray(f.noticeeActors),
-          sqlEnum(FINDING_STATUS_TO_ENUM[f.findingStatus]),
+          sqlEnum(FINDING_STATUS_TO_ENUM[f.findingStatus]!),
           sqlString(f.interimParagraphReferences),
           sqlString(f.finalParagraphReferences),
           sqlString(f.qualification),

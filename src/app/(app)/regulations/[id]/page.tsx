@@ -7,17 +7,17 @@ import { findingsForProvision, getProvisionById } from "@/lib/data";
 
 export default async function RegulationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const provision = getProvisionById(id);
+  const provision = await getProvisionById(id);
   if (!provision) notFound();
 
-  const findings = findingsForProvision(provision.id);
+  const findings = await findingsForProvision(provision.id);
 
   return (
     <div>
       <Link href="/regulations" className="text-sm text-blue-700 hover:underline">
         ← Back to Search by Regulation
       </Link>
-      <PageHeader title={`${provision.instrument} — ${provision.provisionNumber}`} description={provision.subject} />
+      <PageHeader title={`${provision.instrument} — ${provision.provisionNumber}`} description={provision.subject ?? undefined} />
 
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">

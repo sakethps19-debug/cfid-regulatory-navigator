@@ -47,7 +47,7 @@ export function parseVerifiedOrdersWorkbook(
 
     const isDeepAnalyzed = DEEP_ANALYZED_CASE_PATTERNS.some((p) => p.test(caseName));
     const linkedOrderIds = isDeepAnalyzed
-      ? orders.filter((o) => o.orderNumber.trim() === (orderIdentifier ?? "").trim()).map((o) => o.id)
+      ? orders.filter((o) => (o.orderNumber ?? "").trim() === (orderIdentifier ?? "").trim()).map((o) => o.id)
       : [];
     if (isDeepAnalyzed && linkedOrderIds.length === 0) {
       warnings.push(`Verified CFID Orders: "${combined}" looks deep-analyzed by case name but its order identifier did not match any Order Master row`);

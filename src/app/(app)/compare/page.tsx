@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { PrecedentCompareClient } from "@/components/PrecedentCompareClient";
-import { scenarioFindings } from "@/lib/data";
+import { getScenarioFindings } from "@/lib/data";
 
-export default function ComparePage() {
+export default async function ComparePage() {
+  const scenarioFindings = await getScenarioFindings();
   return (
     <div>
       <PageHeader

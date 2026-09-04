@@ -10,37 +10,60 @@
 export type FindingStatus =
   | "Alleged"
   | "Prima facie"
+  | "Confirmed at interim"
   | "Upheld"
   | "Partly upheld"
-  | "Not upheld";
+  | "Not upheld"
+  | "Withdrawn"
+  | "Inconclusive"
+  | "Procedural observation";
 
 export type OrderStage =
   | "Interim order"
   | "Interim order cum show cause notice"
-  | "Final order";
+  | "Confirmatory order"
+  | "Revocation order"
+  | "Final order"
+  | "Adjudication order"
+  | "Settlement order"
+  | "Other";
+
+/** Where an order currently stands in the processing pipeline (see the
+ * Admin Processing Dashboard). Mirrors the DB's processing_stage enum. */
+export type ProcessingStage =
+  | "indexed"
+  | "downloaded"
+  | "text_extracted"
+  | "scenario_findings_extracted"
+  | "legally_reviewed"
+  | "needs_manual_review"
+  | "retrieval_failed";
 
 export interface Order {
-  id: string; // e.g. "REL-INTERIM", "SSSL-INTERIM", "SSSL-FINAL"
+  id: string; // DB uuid
   caseName: string;
   orderStage: OrderStage;
-  orderDate: string; // ISO date
-  orderNumber: string;
-  authority: string;
+  orderDate: string | null; // ISO date — null until the order is retrieved and dated
+  orderNumber: string | null;
+  authority: string | null;
   noticeesCount: number;
   officialUrl: string;
   cfidVerified: boolean; // order number contains "CFID"
-  proceduralStatus: string;
-  scopeNote: string;
+  proceduralStatus: string; // human-readable label derived from processingStage
+  processingStage: ProcessingStage;
+  retrievalStatus: string;
+  retrievalFailureReason: string | null;
+  scopeNote: string | null;
 }
 
 export interface ScenarioFinding {
   recordId: string; // e.g. "REL-01", "SSSL-03"
   caseName: string;
   orderIds: string[]; // which Order records this finding draws on (interim/final)
-  category: string;
+  category: string | null;
   scenarioTitle: string;
   factualPattern: string;
-  provisionsConsideredRaw: string; // original text from workbook
+  provisionsConsideredRaw: string | null; // original text from workbook
   provisionIds: string[]; // parsed canonical provision ids, instrument-qualified
   noticeeActors: string[];
   findingStatus: FindingStatus;
@@ -55,25 +78,29 @@ export interface ScenarioFinding {
   evidenceTypes: string[];
   allegedConduct: string[];
   evidentiaryGaps: string[];
+  // computed at query time: concepts present in this finding's own tags that
+  // did NOT match the query scenario — used to show "ingredients not
+  // established" for a candidate precedent (see the matching engine).
+  ingredientsNotEstablished: string[];
 }
 
 export interface LegalProvision {
   id: string; // canonical id, e.g. "PFUTP-4-2-e", "LODR-4-2-e-i"
   instrument: string;
   provisionNumber: string;
-  subject: string;
-  currentTextVerificationStatus: "Requires verification" | "Order-cited text only";
+  subject: string | null;
+  currentTextVerificationStatus: "Requires verification" | "Order-cited text only" | "Officially verified";
   officialSource: string | null;
   ordersConsidered: string[]; // case names
   treatmentInPilotOrders: string;
-  lawLibraryNote: string;
+  lawLibraryNote: string | null;
 }
 
 export interface LegalTest {
   id: string;
   provisionOrIssue: string;
   workingPrinciple: string;
-  paragraphAnchors: string;
+  paragraphAnchors: string | null;
   implementationGuardrail: string;
 }
 
@@ -82,7 +109,7 @@ export interface DirectionOutcome {
   caseName: string;
   stage: string;
   directionOrOutcome: string;
-  paragraphReference: string;
+  paragraphReference: string | null;
   officialSourceUrl: string;
 }
 

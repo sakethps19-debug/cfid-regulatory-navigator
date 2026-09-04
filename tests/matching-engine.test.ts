@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
-import { legalTests, provisions, scenarioFindings } from "@/lib/data";
+import { legalTests, provisions, scenarioFindings } from "./fixtures";
 import type { AnalysisResult } from "@/lib/matching/types";
 
 const FORBIDDEN_PHRASES = [
@@ -124,8 +124,8 @@ describe("Safeguard: PFUTP 4(2)(e) vs LODR 4(2)(e)(i) must remain distinct", () 
     expect(lodr).toBeDefined();
     expect(pfutp?.instrument).toMatch(/PFUTP/i);
     expect(lodr?.instrument).toMatch(/LODR/i);
-    expect(pfutp?.subject.toLowerCase()).toContain("manipulation");
-    expect(lodr?.subject.toLowerCase()).toContain("true and fair");
+    expect(pfutp?.subject?.toLowerCase()).toContain("manipulation");
+    expect(lodr?.subject?.toLowerCase()).toContain("true and fair");
   });
 
   it("never matches PFUTP 4(2)(e) text against a finding that only cites LODR 4(2)(e)(i)", () => {
@@ -133,8 +133,8 @@ describe("Safeguard: PFUTP 4(2)(e) vs LODR 4(2)(e)(i) must remain distinct", () 
     // instrument segment must not be tagged with the PFUTP id, and vice
     // versa, even though both share the literal substring "4(2)(e)".
     for (const f of scenarioFindings) {
-      const hasPfutpSegment = /PFUTP[^;]*4\(2\)\(e\)(?!\(i\))/i.test(f.provisionsConsideredRaw);
-      const hasLodrSegment = /LODR[^;]*4\(2\)\(e\)\(i\)/i.test(f.provisionsConsideredRaw);
+      const hasPfutpSegment = /PFUTP[^;]*4\(2\)\(e\)(?!\(i\))/i.test(f.provisionsConsideredRaw ?? "");
+      const hasLodrSegment = /LODR[^;]*4\(2\)\(e\)\(i\)/i.test(f.provisionsConsideredRaw ?? "");
       expect(f.provisionIds.includes("PFUTP-4-2-e")).toBe(hasPfutpSegment);
       expect(f.provisionIds.includes("LODR-4-2-e-i")).toBe(hasLodrSegment);
     }

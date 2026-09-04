@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { analyzeScenario } from "@/lib/matching/engine";
-import { legalTests, provisions, scenarioFindings } from "@/lib/data";
+import { getLegalTests, getProvisions, getScenarioFindings } from "@/lib/data";
 
 const MAX_SCENARIO_LENGTH = 4000;
 
@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
   const transactionTypeFilter =
     typeof body.transactionTypeFilter === "string" && body.transactionTypeFilter ? body.transactionTypeFilter : null;
 
+  const [scenarioFindings, provisions, legalTests] = await Promise.all([
+    getScenarioFindings(),
+    getProvisions(),
+    getLegalTests(),
+  ]);
   const result = analyzeScenario({ freeText, actorFilter, transactionTypeFilter }, scenarioFindings, provisions, legalTests);
   return NextResponse.json(result);
 }

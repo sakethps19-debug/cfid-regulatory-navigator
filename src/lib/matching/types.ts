@@ -31,7 +31,7 @@ export interface GuardrailNote {
   provisionOrIssue: string;
   workingPrinciple: string;
   implementationGuardrail: string;
-  paragraphAnchors: string;
+  paragraphAnchors: string | null;
 }
 
 export interface AnalysisResult {

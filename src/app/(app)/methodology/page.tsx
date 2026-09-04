@@ -84,12 +84,14 @@ export default function MethodologyPage() {
         </p>
         <p>
           <strong>Procedure for adding a newly analysed order later:</strong> confirm the order number contains
-          &quot;CFID&quot; from the order document itself (if it is not already in Verified_CFID_Order_Links.xlsx,
-          add it there, and move any corresponding row out of Residual_Order_Links.xlsx), then add the case to{" "}
-          <code>CFID_Precedent_Library_Pilot.xlsx</code> with its scenario findings, provisions and paragraph
-          references filled in exactly as they appear in the order — never inferred or invented. Re-run{" "}
-          <code>npm run import:data</code> and <code>npm run validate:data</code>, review the validation report, and
-          redeploy.
+          &quot;CFID&quot; from the order document itself, retrieve the order from the official SEBI website, extract
+          its scenario findings, provisions and paragraph references exactly as they appear in the order — never
+          inferred or invented — and insert them into the relational database (see{" "}
+          <code>scripts/db/build-import-sql.ts</code> and <code>scripts/db/run-import.ts</code>) with{" "}
+          <code>processing_stage</code> updated to <code>legally_reviewed</code>. Every write goes through the
+          service role and is subject to the same validation the pilot library was: a citation without a paragraph
+          reference or official URL is recorded as a <code>validation_issues</code> row rather than shown as
+          settled.
         </p>
       </Section>
 
@@ -151,20 +153,21 @@ export default function MethodologyPage() {
         </ol>
         <p>
           The underlying data (orders, scenario findings, provisions, legal tests, directions, and the fact-element
-          tags used for matching) is generated once from the two source workbooks by <code>npm run import:data</code>{" "}
-          and committed as structured JSON/TypeScript — the workbooks are never parsed in the browser or at request
-          time.
+          tags used for matching) lives in a Postgres database (Supabase), reachable only by an authenticated,
+          allow-listed user via Row-Level Security — there is no anonymous read or write access, and no service-role
+          key is ever present in browser code. <code>src/lib/data.ts</code> is the single data-access boundary the
+          rest of the app calls through; every page fetches through it rather than querying Supabase directly.
         </p>
       </Section>
 
-      <Section title="Future extensibility (Supabase / optional LLM)">
+      <Section title="Architecture (zero-cost, no paid LLM dependency)">
         <p>
-          Version 1 has no database and no AI API dependency by design — it must run at zero marginal cost. The code
-          is structured so either can be added later without a rewrite: <code>src/lib/data.ts</code> is the single
-          data-access boundary the rest of the app calls through, so it could be pointed at Supabase (or another
-          database) instead of the generated JSON without changing any page or component. Similarly, the deterministic
-          engine in <code>src/lib/matching/engine.ts</code> could be supplemented by an optional LLM re-ranking or
-          explanation step behind a feature flag, called only if an API key is configured, while keeping the
+          The matching engine itself is entirely deterministic — analyzing a scenario never calls any paid AI API and
+          makes no external network request beyond the database query for candidate findings. An LLM may assist a
+          human during development or one-off data extraction, but the deployed application does not depend on paid
+          LLM API credits to function: the same deterministic engine that ran against the static pilot library runs
+          unchanged against the live database. The code is structured so an optional LLM re-ranking or explanation
+          step could be added later behind a feature flag, called only if an API key is configured, while keeping the
           deterministic engine as the default and as the safeguard against fabricated citations.
         </p>
       </Section>

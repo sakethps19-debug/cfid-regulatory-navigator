@@ -1,15 +1,16 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { pfutpFocus } from "@/lib/data";
+import { getPfutpFocus } from "@/lib/data";
 
 const STATUS_STYLES: Record<string, string> = {
-  "Prima facie violated": "bg-amber-100 text-amber-800 ring-amber-300",
+  "Prima facie": "bg-amber-100 text-amber-800 ring-amber-300",
   Upheld: "bg-emerald-100 text-emerald-800 ring-emerald-300",
   "Not upheld": "bg-rose-100 text-rose-800 ring-rose-300",
   "Partly upheld": "bg-sky-100 text-sky-800 ring-sky-300",
 };
 
-export default function PfutpPage() {
+export default async function PfutpPage() {
+  const pfutpFocus = await getPfutpFocus();
   return (
     <div>
       <PageHeader

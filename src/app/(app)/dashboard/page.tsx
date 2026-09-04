@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { importMeta, orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders } from "@/lib/data";
+import { getImportMeta, getOrders, getProvisions, getResidualOrders, getScenarioFindings, getVerifiedCfidOrders } from "@/lib/data";
 
 const STAT_ITEMS = [
   { label: "Orders deep-analyzed", hrefLabel: "Source Library", href: "/library" },
@@ -10,8 +10,17 @@ const STAT_ITEMS = [
   { label: "Verified CFID orders", hrefLabel: "Orders Awaiting Analysis", href: "/awaiting-analysis" },
 ];
 
-export default function DashboardPage() {
-  const counts = [orders.length, scenarioFindings.length, provisions.length, verifiedCfidOrders.length];
+export default async function DashboardPage() {
+  const [orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders, importMeta] = await Promise.all([
+    getOrders(),
+    getProvisions(),
+    getResidualOrders(),
+    getScenarioFindings(),
+    getVerifiedCfidOrders(),
+    getImportMeta(),
+  ]);
+  const deepAnalyzedOrders = orders.filter((o) => o.processingStage === "legally_reviewed");
+  const counts = [deepAnalyzedOrders.length, scenarioFindings.length, provisions.length, verifiedCfidOrders.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
     acc[f.findingStatus] = (acc[f.findingStatus] ?? 0) + 1;
     return acc;

@@ -3,15 +3,16 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
-import { directionsForCase, getOrderById, scenarioFindings } from "@/lib/data";
+import { directionsForCase, getOrderById, getScenarioFindings } from "@/lib/data";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
   if (!order) notFound();
 
-  const findings = scenarioFindings.filter((f) => f.orderIds.includes(order.id));
-  const directions = directionsForCase(order.caseName).filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
+  const [allFindings, allDirections] = await Promise.all([getScenarioFindings(), directionsForCase(order.caseName)]);
+  const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
+  const directions = allDirections.filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
 
   return (
     <div>

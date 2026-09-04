@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { AwaitingAnalysisClient } from "@/components/AwaitingAnalysisClient";
-import { residualOrders, verifiedCfidOrders } from "@/lib/data";
+import { getResidualOrders, getVerifiedCfidOrders } from "@/lib/data";
 
-export default function AwaitingAnalysisPage() {
+export default async function AwaitingAnalysisPage() {
+  const [verifiedCfidOrders, residualOrders] = await Promise.all([getVerifiedCfidOrders(), getResidualOrders()]);
   return (
     <div>
       <PageHeader

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { orders, provisions, verifiedCfidOrders } from "@/lib/data";
+import { getOrders, getProvisions, getVerifiedCfidOrders } from "@/lib/data";
 
-export default function LibraryPage() {
+export default async function LibraryPage() {
+  const [allOrders, provisions, verifiedCfidOrders] = await Promise.all([getOrders(), getProvisions(), getVerifiedCfidOrders()]);
+  const orders = allOrders.filter((o) => o.processingStage === "legally_reviewed");
   const byInstrument = new Map<string, number>();
   for (const p of provisions) byInstrument.set(p.instrument, (byInstrument.get(p.instrument) ?? 0) + 1);
 

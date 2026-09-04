@@ -67,6 +67,9 @@ function parseOrders(workbook: ReturnType<typeof readWorkbook>, warnings: string
       officialUrl,
       cfidVerified: /CFID/.test(orderNumber),
       proceduralStatus: cellText(row[6]) ?? "",
+      processingStage: "legally_reviewed",
+      retrievalStatus: "retrieved",
+      retrievalFailureReason: null,
       scopeNote: cellText(row[8]) ?? "",
     });
     if (!isUrl(officialUrl)) {
@@ -167,6 +170,7 @@ function parseScenarioFindings(
       evidenceTypes: overlay?.evidenceTypes ?? [],
       allegedConduct: overlay?.allegedConduct ?? [],
       evidentiaryGaps: overlay?.evidentiaryGaps ?? [],
+      ingredientsNotEstablished: [],
     });
   }
   return findings;

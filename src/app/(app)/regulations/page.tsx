@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { RegulationSearchClient } from "@/components/RegulationSearchClient";
-import { provisions } from "@/lib/data";
+import { getProvisions } from "@/lib/data";
 
-export default function RegulationsPage() {
+export default async function RegulationsPage() {
+  const provisions = await getProvisions();
   return (
     <div>
       <PageHeader
