@@ -29,7 +29,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self'",
-      "connect-src 'self'",
+      // Supabase Auth/PostgREST/Realtime calls go directly from the browser
+      // to this specific Supabase project — scoped by exact origin, never a
+      // wildcard, so no other host can be reached even if injected.
+      "connect-src 'self' https://aytcrvaagqxyetqckbvb.supabase.co wss://aytcrvaagqxyetqckbvb.supabase.co",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
