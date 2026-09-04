@@ -96,6 +96,17 @@ export interface LegalProvision {
   lawLibraryNote: string | null;
 }
 
+export interface ProvisionVersion {
+  id: string;
+  provisionId: string; // legal_provisions.canonical_id
+  versionLabel: string;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  exactText: string | null;
+  sourceUrl: string | null;
+  status: "requires_verification" | "officially_verified";
+}
+
 export interface LegalTest {
   id: string;
   provisionOrIssue: string;

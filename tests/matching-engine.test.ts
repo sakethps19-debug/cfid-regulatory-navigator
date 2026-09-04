@@ -236,3 +236,84 @@ describe("Safeguard: careful, hedged language only", () => {
     }
   });
 });
+
+describe("Extension: ingredients not established", () => {
+  it("every precedent ref reports which of its own tags the query did not establish", () => {
+    const result = run("Fictitious sales and assets disclosed through financial statements.");
+    const allRefs = result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents]);
+    expect(allRefs.length).toBeGreaterThan(0);
+    for (const ref of allRefs) {
+      expect(Array.isArray(ref.ingredientsNotEstablished)).toBe(true);
+      // No overlap between what matched and what's reported as not established.
+      for (const label of ref.matchedFactualIngredients) {
+        expect(ref.ingredientsNotEstablished).not.toContain(label);
+      }
+    }
+  });
+});
+
+describe("Extension: contrary-precedent distinguishing language", () => {
+  it("SSSL-03 (the Seacoast negative precedent) carries a distinguishing note built from its qualification", () => {
+    const result = run(
+      "Preferential allotment allegedly financed through circular transactions, but loans are recorded in audited accounts, third parties were not examined and sale proceeds remain with the allottees."
+    );
+    const allContrary = [
+      ...result.provisionResults.flatMap((pr) => pr.contraryPrecedents),
+      ...result.globalContraryPrecedents,
+    ];
+    const sssl03 = allContrary.find((c) => c.finding.recordId === "SSSL-03");
+    expect(sssl03).toBeDefined();
+    expect(sssl03?.distinguishingNote).toBeTruthy();
+    expect(sssl03?.distinguishingNote?.toLowerCase()).toContain("distinguishable");
+  });
+
+  it("supporting (non-contrary) precedents never carry a distinguishing note", () => {
+    const result = run("Fictitious sales and assets disclosed through financial statements.");
+    for (const pr of result.provisionResults) {
+      for (const s of pr.supportingPrecedents) {
+        expect(s.distinguishingNote).toBeUndefined();
+      }
+    }
+  });
+});
+
+describe("Extension: applicable provision version note", () => {
+  it("every provision result carries an applicable-version note, defaulting to 'requires verification' with no version data", () => {
+    const result = run("Fictitious sales and assets disclosed through financial statements.");
+    expect(result.provisionResults.length).toBeGreaterThan(0);
+    for (const pr of result.provisionResults) {
+      expect(pr.applicableVersionNote).toBeTruthy();
+      // No provision_versions map was passed in these fixture-only tests, so
+      // every provision must fall back to the "no record on file" note
+      // rather than silently assuming the current text applied.
+      expect(pr.applicableVersionNote.toLowerCase()).toMatch(/verify|no provision-version record/);
+    }
+  });
+});
+
+describe("Extension: full-text search is additive only", () => {
+  it("a full-text candidate already surfaced by the deterministic engine is not duplicated as supplemental", () => {
+    const result = analyzeScenario(
+      { freeText: "Fictitious sales and assets disclosed through financial statements." },
+      scenarioFindings,
+      provisions,
+      legalTests,
+      new Map(),
+      scenarioFindings.filter((f) => f.recordId === "SSSL-01")
+    );
+    expect(result.fullTextSupplementalFindings.find((f) => f.recordId === "SSSL-01")).toBeUndefined();
+  });
+
+  it("a full-text candidate the deterministic engine did not surface is kept as supplemental", () => {
+    const decoyFinding = { ...scenarioFindings[0], recordId: "DECOY-01" };
+    const result = analyzeScenario(
+      { freeText: "Fictitious sales and assets disclosed through financial statements." },
+      scenarioFindings,
+      provisions,
+      legalTests,
+      new Map(),
+      [decoyFinding]
+    );
+    expect(result.fullTextSupplementalFindings.map((f) => f.recordId)).toContain("DECOY-01");
+  });
+});

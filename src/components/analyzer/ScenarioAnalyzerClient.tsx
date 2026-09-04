@@ -58,6 +58,7 @@ function resultToText(result: AnalysisResult): string {
     lines.push(`Subject: ${pr.provision.subject}`);
     lines.push(`Confidence: ${pr.confidence}`);
     lines.push(`Why potentially relevant: ${pr.whyRelevant}`);
+    lines.push(`Applicable provision version: ${pr.applicableVersionNote}`);
     lines.push(`Factual ingredients matched: ${pr.matchedFactualIngredients.join("; ") || "none"}`);
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
@@ -285,6 +286,7 @@ export function ScenarioAnalyzerClient() {
                 </div>
 
                 <p className="mt-3 text-sm text-slate-700">{pr.whyRelevant}</p>
+                <p className="mt-2 text-xs italic text-slate-500">{pr.applicableVersionNote}</p>
 
                 {pr.matchedFactualIngredients.length > 0 && (
                   <div className="mt-3">
@@ -315,6 +317,12 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1 text-xs text-slate-500">
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
+                          {s.ingredientsNotEstablished.length > 0 && (
+                            <p className="mt-1 text-xs text-amber-700">
+                              Also required in this precedent (not established by your facts):{" "}
+                              {s.ingredientsNotEstablished.join("; ")}
+                            </p>
+                          )}
                           <div className="mt-1">
                             <SourceLink href={s.finding.officialSourceUrl} />
                           </div>
@@ -336,7 +344,9 @@ export function ScenarioAnalyzerClient() {
                               <span className="text-sm font-medium text-slate-900">{c.finding.recordId}</span>
                             </div>
                             <p className="mt-1 text-sm text-slate-700">{c.finding.scenarioTitle}</p>
-                            {c.finding.qualification && <p className="mt-1 text-xs text-slate-600">{c.finding.qualification}</p>}
+                            {c.distinguishingNote && (
+                              <p className="mt-1 text-xs font-medium text-rose-800">{c.distinguishingNote}</p>
+                            )}
                             <p className="mt-1 text-xs text-slate-500">
                               {c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}
                             </p>
@@ -408,9 +418,34 @@ export function ScenarioAnalyzerClient() {
                       <span className="text-sm font-medium text-slate-900">{c.finding.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-slate-700">{c.finding.scenarioTitle}</p>
-                    {c.finding.qualification && <p className="mt-1 text-xs text-slate-600">{c.finding.qualification}</p>}
+                    {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-rose-800">{c.distinguishingNote}</p>}
                     <div className="mt-1">
                       <SourceLink href={c.finding.officialSourceUrl} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )}
+
+          {result.fullTextSupplementalFindings.length > 0 && (
+            <article className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
+              <h3 className="text-base font-semibold text-slate-900">Also worth reviewing (full-text search)</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                These findings matched the words of your scenario in a full-text search of the database but did not
+                score highly enough on the curated fact-element tags above to be ranked as a match. They are not
+                scored or ordered by relevance — review them yourself before relying on them.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {result.fullTextSupplementalFindings.map((f) => (
+                  <li key={f.recordId} className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={f.findingStatus} />
+                      <span className="text-sm font-medium text-slate-900">{f.recordId}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-700">{f.scenarioTitle}</p>
+                    <div className="mt-1">
+                      <SourceLink href={f.officialSourceUrl} />
                     </div>
                   </li>
                 ))}

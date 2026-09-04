@@ -9,6 +9,7 @@ import type {
   OrderStage,
   PfutpFocusEntry,
   ProcessingStage,
+  ProvisionVersion,
   ResidualOrderRow,
   ScenarioFinding,
   VerifiedCfidOrderRow,
@@ -21,6 +22,7 @@ type LegalProvisionRow = Database["public"]["Tables"]["legal_provisions"]["Row"]
 type LegalTestRow = Database["public"]["Tables"]["legal_tests"]["Row"];
 type OrderDirectionRow = Database["public"]["Tables"]["order_directions"]["Row"];
 type ResidualRegisterRow = Database["public"]["Tables"]["residual_register"]["Row"];
+type ProvisionVersionRow = Database["public"]["Tables"]["provision_versions"]["Row"];
 
 const ORDER_STAGE_LABELS: Record<OrderRow["order_type"], OrderStage> = {
   interim_order: "Interim order",
@@ -327,4 +329,99 @@ export async function getImportMeta(): Promise<ImportMeta> {
     sourceFiles: runs.map((r) => r.run_type),
     note: runs.map((r) => r.summary).filter(Boolean).join(" "),
   };
+}
+
+function mapProvisionVersion(row: ProvisionVersionRow, provisionCanonicalId: string): ProvisionVersion {
+  return {
+    id: row.id,
+    provisionId: provisionCanonicalId,
+    versionLabel: row.version_label,
+    effectiveFrom: row.effective_from,
+    effectiveTo: row.effective_to,
+    exactText: row.exact_text,
+    sourceUrl: row.source_url,
+    status: row.status === "officially_verified" ? "officially_verified" : "requires_verification",
+  };
+}
+
+/** All recorded versions of a provision's text, in effective-date order.
+ * Used to surface the historically-applicable version (rather than
+ * assuming current text applied) — see the matching engine and the Law
+ * Library. Every provision in this pilot currently has exactly one
+ * unverified placeholder version; the shape supports adding verified,
+ * dated versions later without a schema change. */
+export async function getProvisionVersions(provisionCanonicalId: string): Promise<ProvisionVersion[]> {
+  const supabase = await createClient();
+  const { data: provisionRow, error: provisionError } = await supabase
+    .from("legal_provisions")
+    .select("id")
+    .eq("canonical_id", provisionCanonicalId)
+    .maybeSingle();
+  if (provisionError) throw provisionError;
+  if (!provisionRow) return [];
+
+  const { data, error } = await supabase
+    .from("provision_versions")
+    .select("*")
+    .eq("provision_id", provisionRow.id)
+    .order("effective_from", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => mapProvisionVersion(row, provisionCanonicalId));
+}
+
+/** All provision versions, grouped by the provision's canonical id, in a
+ * single bulk query — for callers (like the matching engine) that need
+ * every provision's version history at once rather than one at a time. */
+export async function getProvisionVersionsByProvisionId(): Promise<Map<string, ProvisionVersion[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("provision_versions")
+    .select("*, legal_provisions(canonical_id)")
+    .order("effective_from", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+
+  const byProvision = new Map<string, ProvisionVersion[]>();
+  for (const row of data ?? []) {
+    const canonicalId = (row as { legal_provisions: { canonical_id: string } | null }).legal_provisions?.canonical_id;
+    if (!canonicalId) continue;
+    const list = byProvision.get(canonicalId) ?? [];
+    list.push(mapProvisionVersion(row, canonicalId));
+    byProvision.set(canonicalId, list);
+  }
+  return byProvision;
+}
+
+/** Postgres full-text search over scenario findings' free text (title,
+ * factual pattern, allegation text), as a complement to the curated-tag
+ * deterministic matching engine — surfaces candidates whose wording falls
+ * outside the synonym dictionary. Never used in place of the deterministic
+ * engine's own scoring, only alongside it. */
+export async function searchScenarioFindingsFullText(query: string): Promise<ScenarioFinding[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const supabase = await createClient();
+  const [{ data: findingRows, error: findingsError }, { data: linkRows, error: linksError }] = await Promise.all([
+    supabase
+      .from("scenario_findings")
+      .select("*")
+      .textSearch("search_vector", trimmed, { type: "websearch", config: "english" })
+      .limit(20),
+    supabase.from("finding_provisions").select("finding_id, provision_id, legal_provisions(canonical_id)"),
+  ]);
+  if (findingsError) throw findingsError;
+  if (linksError) throw linksError;
+
+  const provisionIdsByFinding = new Map<string, string[]>();
+  for (const link of linkRows ?? []) {
+    const canonicalId = (link as { legal_provisions: { canonical_id: string } | null }).legal_provisions?.canonical_id;
+    if (!canonicalId) continue;
+    const list = provisionIdsByFinding.get(link.finding_id) ?? [];
+    list.push(canonicalId);
+    provisionIdsByFinding.set(link.finding_id, list);
+  }
+
+  return (findingRows ?? []).map((row) => {
+    const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
+    return mapFinding(row, provisionIdsByFinding.get(row.id) ?? [], orderIds);
+  });
 }

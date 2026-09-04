@@ -1,11 +1,53 @@
-import type { LegalProvision, LegalTest, ScenarioFinding } from "@/types/domain";
+import type { LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import { CONTRARY_PRECEDENT_TRIGGER_TAGS } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
 
-const NEGATIVE_STATUSES = new Set(["Not upheld"]);
+const NEGATIVE_STATUSES = new Set(["Not upheld", "Withdrawn"]);
 const MIN_FINDING_SCORE = 3; // require at least one meaningful (weight-3) category match
+
+function humanizeTag(id: string): string {
+  return id.replace(/_/g, " ");
+}
+
+/** A precedent's own fact-element tags that were NOT part of what matched
+ * the query — i.e. what more this precedent required. */
+function ingredientsNotEstablished(finding: ScenarioFinding, matchedIngredients: string[]): string[] {
+  const matchedSet = new Set(matchedIngredients);
+  const allOwnTags = unique([
+    ...finding.transactionTypes,
+    ...finding.actorRoles,
+    ...finding.allegedConduct,
+    ...finding.evidenceTypes,
+  ]);
+  return allOwnTags.map(humanizeTag).filter((label) => !matchedSet.has(label));
+}
+
+function buildDistinguishingNote(finding: ScenarioFinding): string | undefined {
+  if (!NEGATIVE_STATUSES.has(finding.findingStatus)) return undefined;
+  const parts: string[] = [];
+  if (finding.qualification) parts.push(finding.qualification);
+  if (finding.evidentiaryGaps.length > 0) {
+    parts.push(`Facts that distinguished this case: ${finding.evidentiaryGaps.join("; ")}.`);
+  }
+  if (parts.length === 0) {
+    return `This precedent (${finding.recordId}) was not upheld on its own facts — check whether the same distinguishing factors are present before treating it as controlling here.`;
+  }
+  return `This precedent may be distinguishable because: ${parts.join(" ")}`;
+}
+
+function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
+  if (versions.length === 0) {
+    return "No provision-version record on file — verify the in-force text directly against the official SEBI or MCA source before relying on it.";
+  }
+  const verified = versions.filter((v) => v.status === "officially_verified" && v.effectiveFrom);
+  if (verified.length > 0) {
+    const v = verified[verified.length - 1];
+    return `Applicable version: ${v.versionLabel} (effective ${v.effectiveFrom}${v.effectiveTo ? ` to ${v.effectiveTo}` : " onward"}), officially verified.`;
+  }
+  return "The historically-applicable version of this provision at the time of the conduct has not been independently verified — do not assume the current statutory text applied; confirm against the official source before relying on it.";
+}
 
 interface ScoredFinding {
   finding: ScenarioFinding;
@@ -54,7 +96,13 @@ function scoreFinding(
 }
 
 function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
-  return { finding: sf.finding, score: sf.score, matchedFactualIngredients: sf.matchedIngredients };
+  return {
+    finding: sf.finding,
+    score: sf.score,
+    matchedFactualIngredients: sf.matchedIngredients,
+    ingredientsNotEstablished: ingredientsNotEstablished(sf.finding, sf.matchedIngredients),
+    distinguishingNote: buildDistinguishingNote(sf.finding),
+  };
 }
 
 function deriveConfidence(best: ScoredFinding, supportCount: number): { level: ConfidenceLevel; reasons: string[] } {
@@ -93,7 +141,9 @@ export function analyzeScenario(
   query: ScenarioQuery,
   scenarioFindings: ScenarioFinding[],
   provisions: LegalProvision[],
-  legalTests: LegalTest[]
+  legalTests: LegalTest[],
+  provisionVersionsByProvisionId: Map<string, ProvisionVersion[]> = new Map(),
+  fullTextCandidates: ScenarioFinding[] = []
 ): AnalysisResult {
   const detected = detectConcepts(query.freeText);
   const actorFilter = query.actorFilter || null;
@@ -126,6 +176,7 @@ export function analyzeScenario(
 
     const best = supporting[0];
     const { level, reasons } = deriveConfidence(best, supporting.length);
+    const provisionVersions = provisionVersionsByProvisionId.get(provisionId) ?? [];
 
     provisionResults.push({
       provision,
@@ -137,6 +188,8 @@ export function analyzeScenario(
       confidence: level,
       confidenceReasons: reasons,
       missingFacts: unique(supporting.flatMap((s) => s.finding.evidentiaryGaps)),
+      provisionVersions,
+      applicableVersionNote: buildApplicableVersionNote(provisionVersions),
     });
   }
 
@@ -152,7 +205,13 @@ export function analyzeScenario(
     for (const f of scenarioFindings.filter((f) => NEGATIVE_STATUSES.has(f.findingStatus))) {
       const alreadyShown = provisionResults.some((pr) => pr.contraryPrecedents.some((c) => c.finding.recordId === f.recordId));
       if (!alreadyShown) {
-        globalContraryPrecedents.push({ finding: f, score: 0, matchedFactualIngredients: [] });
+        globalContraryPrecedents.push({
+          finding: f,
+          score: 0,
+          matchedFactualIngredients: [],
+          ingredientsNotEstablished: ingredientsNotEstablished(f, []),
+          distinguishingNote: buildDistinguishingNote(f),
+        });
       }
     }
   }
@@ -178,6 +237,14 @@ export function analyzeScenario(
       paragraphAnchors: lt.paragraphAnchors,
     }));
 
+  // Full-text search results are a complement, not a replacement: only keep
+  // ones the deterministic engine above didn't already surface anywhere.
+  const alreadySurfacedIds = new Set([
+    ...provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents]).map((p) => p.finding.recordId),
+    ...globalContraryPrecedents.map((p) => p.finding.recordId),
+  ]);
+  const fullTextSupplementalFindings = fullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId));
+
   return {
     query,
     detectedConceptLabels: unique(detected.map((c) => c.label)),
@@ -185,6 +252,7 @@ export function analyzeScenario(
     globalContraryPrecedents,
     globalMissingFacts,
     applicableGuardrails,
-    hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0,
+    hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
+    fullTextSupplementalFindings,
   };
 }

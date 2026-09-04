@@ -559,6 +559,7 @@ export type Database = {
           qualification: string | null
           record_id: string
           scenario_title: string
+          search_vector: unknown
           transaction_types: string[]
           updated_at: string
         }
@@ -585,6 +586,7 @@ export type Database = {
           qualification?: string | null
           record_id: string
           scenario_title: string
+          search_vector?: unknown
           transaction_types?: string[]
           updated_at?: string
         }
@@ -611,6 +613,7 @@ export type Database = {
           qualification?: string | null
           record_id?: string
           scenario_title?: string
+          search_vector?: unknown
           transaction_types?: string[]
           updated_at?: string
         }
