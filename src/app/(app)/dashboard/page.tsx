@@ -3,7 +3,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
-import { getImportMeta, getOrders, getProvisions, getResidualOrders, getScenarioFindings, getVerifiedCfidOrders } from "@/lib/data";
+import {
+  getImportMeta,
+  getMatters,
+  getOrderRelationships,
+  getOrders,
+  getProvisions,
+  getResidualOrders,
+  getScenarioFindings,
+  getVerifiedCfidOrders,
+} from "@/lib/data";
 
 const STAT_ITEMS = [
   { label: "Orders indexed (case-library universe)", href: "/case-library" },
@@ -41,14 +50,17 @@ function pickRecentAndSignificant(findings: ScenarioFinding[]): ScenarioFinding[
 }
 
 export default async function DashboardPage() {
-  const [orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders, importMeta] = await Promise.all([
-    getOrders(),
-    getProvisions(),
-    getResidualOrders(),
-    getScenarioFindings(),
-    getVerifiedCfidOrders(),
-    getImportMeta(),
-  ]);
+  const [orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders, importMeta, matters, orderRelationships] =
+    await Promise.all([
+      getOrders(),
+      getProvisions(),
+      getResidualOrders(),
+      getScenarioFindings(),
+      getVerifiedCfidOrders(),
+      getImportMeta(),
+      getMatters(),
+      getOrderRelationships(),
+    ]);
   const deepAnalyzedOrders = orders.filter((o) => o.processingStage === "legally_reviewed");
   const counts = [orders.length, deepAnalyzedOrders.length, scenarioFindings.length, provisions.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
@@ -60,6 +72,18 @@ export default async function DashboardPage() {
   const residualDuplicateCount = residualOrders.filter((r) => r.status === "duplicate_of_verified").length;
   const residualNotCfidCount = residualOrders.filter((r) => r.status === "not_cfid").length;
   const recentAndSignificant = pickRecentAndSignificant(scenarioFindings);
+
+  const ordersPerMatter = new Map<string, number>();
+  for (const o of orders) {
+    if (!o.matterId) continue;
+    ordersPerMatter.set(o.matterId, (ordersPerMatter.get(o.matterId) ?? 0) + 1);
+  }
+  const mattersWithMultipleOrders = [...ordersPerMatter.values()].filter((n) => n > 1).length;
+  const matterLinkingStats = [
+    { label: "Matters indexed", value: matters.length },
+    { label: "Matters with more than one order", value: mattersWithMultipleOrders },
+    { label: "Related-order links recorded", value: orderRelationships.length },
+  ];
 
   return (
     <div>
@@ -116,6 +140,20 @@ export default async function DashboardPage() {
           </ul>
         </Card>
       </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {matterLinkingStats.map((s) => (
+          <Card key={s.label}>
+            <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{s.value}</div>
+            <div className="mt-1 text-sm text-slate-600">{s.label}</div>
+          </Card>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        A matter can span several individual orders (interim, confirmatory, final, adjudication, or otherwise); most
+        orders are not yet linked to a matter, and that count grows only as relationships already known from official
+        sources are recorded — never guessed from company name or order dates.
+      </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

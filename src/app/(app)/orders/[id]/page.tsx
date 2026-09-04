@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
-import { directionsForCase, getOrderById, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
+import { directionsForCase, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
+import { siblingOrdersInMatter } from "@/lib/matterRelationships";
 
 const RELATIONSHIP_LABELS: Record<string, string> = {
   interim_to_final: "resolved by the final order",
@@ -18,13 +19,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [allFindings, allDirections, relationships] = await Promise.all([
+  const [allFindings, allDirections, relationships, allOrders] = await Promise.all([
     getScenarioFindings(),
     directionsForCase(order.caseName),
     orderRelationshipsForOrder(order.id),
+    getOrders(),
   ]);
   const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
   const directions = allDirections.filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
+  const siblingOrders = siblingOrdersInMatter(order, allOrders, relationships);
 
   return (
     <div>
@@ -60,6 +63,48 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
         );
       })}
+
+      {siblingOrders.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="mb-1 text-base font-semibold text-slate-900">Other orders in the same matter</h2>
+          <p className="mb-4 text-sm text-slate-600">
+            One matter/investigation can span several individual orders — interim, confirmatory, final, adjudication,
+            or otherwise. Each stays independently visible with its own procedural status; a later order is never
+            treated as silently overwriting an earlier one.
+          </p>
+          <ul className="space-y-3">
+            {siblingOrders.map(({ order: sibling, relationshipLabel }) => (
+              <li key={sibling.id} className="rounded-lg border border-slate-200 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {sibling.officialOrderTitle ?? sibling.caseName}
+                    </p>
+                    {!sibling.officialOrderTitle && (
+                      <p className="text-xs italic text-slate-400">
+                        Exact official order title not yet captured — showing the matter/case name.
+                      </p>
+                    )}
+                    <p className="mt-1 text-sm text-slate-600">
+                      {sibling.orderStage} · {sibling.orderDate ?? "Date not yet confirmed"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{sibling.proceduralStatus}</p>
+                  </div>
+                  <span className="whitespace-nowrap rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-blue-200">
+                    {relationshipLabel}
+                  </span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <Link href={`/orders/${sibling.id}`} className="text-sm font-medium text-blue-700 hover:underline">
+                    View this order →
+                  </Link>
+                  <SourceLink href={sibling.officialUrl} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">
