@@ -27,6 +27,10 @@ const EXAMPLE_SCENARIOS = [
     label: "Audit Committee lapse",
     text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
   },
+  {
+    label: "Rights issue funds diverted",
+    text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
+  },
 ];
 
 function downloadTextFile(filename: string, content: string) {
@@ -60,6 +64,16 @@ function resultToText(result: AnalysisResult): string {
     lines.push(`Why potentially relevant: ${pr.whyRelevant}`);
     lines.push(`Applicable provision version: ${pr.applicableVersionNote}`);
     lines.push(`Factual ingredients matched: ${pr.matchedFactualIngredients.join("; ") || "none"}`);
+    if (pr.upheldPrecedents.length > 0) {
+      lines.push("Upheld in prior case(s):");
+      for (const u of pr.upheldPrecedents) {
+        lines.push(
+          `  - [${u.finding.findingStatus}] ${u.finding.recordId} — ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) — ${u.finding.officialSourceUrl}`
+        );
+      }
+    } else {
+      lines.push("Upheld in prior case(s): none in this pilot's precedent library — treat as unproven on these facts alone.");
+    }
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
@@ -305,6 +319,39 @@ export function ScenarioAnalyzerClient() {
                     </div>
                   </div>
                 )}
+
+                <div className="mt-4 rounded-lg bg-emerald-50 p-3 ring-1 ring-emerald-300">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                    {pr.upheldPrecedents.length > 0
+                      ? `Upheld in ${pr.upheldPrecedents.length} prior case${pr.upheldPrecedents.length > 1 ? "s" : ""}`
+                      : "Not yet upheld in this pilot's precedent library"}
+                  </h4>
+                  {pr.upheldPrecedents.length > 0 ? (
+                    <ul className="mt-2 space-y-2">
+                      {pr.upheldPrecedents.map((u) => (
+                        <li key={u.finding.recordId} className="rounded-lg bg-white p-3 ring-1 ring-emerald-200">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status={u.finding.findingStatus} />
+                            <span className="text-sm font-medium text-slate-900">{u.finding.recordId}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-slate-700">{u.finding.scenarioTitle}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}
+                          </p>
+                          <div className="mt-1">
+                            <SourceLink href={u.finding.officialSourceUrl} />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-sm text-emerald-900">
+                      Only alleged, interim, or otherwise-not-yet-confirmed findings exist for this provision in the
+                      pilot&apos;s precedent library — treat as unproven on these facts alone until a final order is
+                      on record.
+                    </p>
+                  )}
+                </div>
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div>

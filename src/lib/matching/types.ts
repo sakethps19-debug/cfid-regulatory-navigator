@@ -29,6 +29,13 @@ export interface ProvisionResult {
   matchedFactualIngredients: string[];
   supportingPrecedents: PrecedentRef[];
   contraryPrecedents: PrecedentRef[];
+  /** Matching precedents whose outcome was actually "Upheld" or "Partly
+   * upheld" — pulled out from supportingPrecedents (which mixes in weaker
+   * statuses like Alleged/Prima facie) so an officer can see at a glance
+   * whether this provision has ever actually been confirmed on similar
+   * facts, not just alleged. Drawn from every matching finding for this
+   * provision, not only the top-3 shown under supportingPrecedents. */
+  upheldPrecedents: PrecedentRef[];
   statusesSeen: FindingStatus[];
   confidence: ConfidenceLevel;
   confidenceReasons: string[];

@@ -5,6 +5,7 @@ import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
 
 const NEGATIVE_STATUSES = new Set(["Not upheld", "Withdrawn"]);
+const UPHELD_STATUSES = new Set(["Upheld", "Partly upheld"]);
 const MIN_FINDING_SCORE = 3; // require at least one meaningful (weight-3) category match
 
 function humanizeTag(id: string): string {
@@ -188,6 +189,7 @@ export function analyzeScenario(
     const best = supporting[0];
     const { level, reasons } = deriveConfidence(best, supporting.length);
     const provisionVersions = provisionVersionsByProvisionId.get(provisionId) ?? [];
+    const upheld = findings.filter((f) => UPHELD_STATUSES.has(f.finding.findingStatus));
 
     provisionResults.push({
       provision,
@@ -195,6 +197,7 @@ export function analyzeScenario(
       matchedFactualIngredients: unique(supporting.flatMap((s) => s.matchedIngredients)),
       supportingPrecedents: supporting.slice(0, 3).map(toPrecedentRef),
       contraryPrecedents: contrary.slice(0, 3).map(toPrecedentRef),
+      upheldPrecedents: upheld.slice(0, 5).map(toPrecedentRef),
       statusesSeen: unique(findings.map((f) => f.finding.findingStatus)),
       confidence: level,
       confidenceReasons: reasons,
