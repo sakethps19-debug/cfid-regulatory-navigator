@@ -406,21 +406,55 @@ export async function getProvisionVersionsByProvisionId(): Promise<Map<string, P
   return byProvision;
 }
 
+/** Words that appear in over half of all scenario_findings' factual text
+ * (measured via ts_stat over search_vector) — SEBI/regulatory-narrative
+ * boilerplate ("company", "found", "regulation", "alleged", statute/
+ * regulation citation tokens) that Postgres's own English stopword list
+ * doesn't catch because they're not generic English stopwords, just
+ * non-discriminating within this specific corpus. Left in an OR query
+ * they swamp genuinely distinctive terms with noise matches. */
+const CORPUS_BOILERPLATE_TERMS = new Set([
+  "alleged", "alleges", "alleging", "regulation", "regulations", "violated", "violation", "violations",
+  "sebi", "pfutp", "act", "acts", "found", "company", "companies", "section", "sections", "promoter",
+  "promoters", "lodr", "ltd", "financial", "audit", "audited", "report", "reports", "reported", "notice",
+  "noticee", "noticees", "statement", "statements", "transaction", "transactions", "entity", "entities", "via",
+]);
+
+/** Tokenizes free text into the distinct, non-boilerplate, non-numeric
+ * words a full-text OR query should search on. Returns null when nothing
+ * meaningful survives filtering (e.g. an all-numeric or all-boilerplate
+ * query), signalling the caller to skip the search entirely. */
+function buildFullTextOrQuery(freeText: string): string | null {
+  const tokens = freeText
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((t) => t.length >= 3 && !CORPUS_BOILERPLATE_TERMS.has(t));
+  const unique = [...new Set(tokens)].slice(0, 40);
+  if (unique.length === 0) return null;
+  return unique.join(" | ");
+}
+
 /** Postgres full-text search over scenario findings' free text (title,
  * factual pattern, allegation text), as a complement to the curated-tag
  * deterministic matching engine — surfaces candidates whose wording falls
  * outside the synonym dictionary. Never used in place of the deterministic
- * engine's own scoring, only alongside it. */
+ * engine's own scoring, only alongside it.
+ *
+ * Built as an OR of individual terms (via a plain to_tsquery, not
+ * websearch_to_tsquery on the whole paragraph) because websearch_to_tsquery
+ * ANDs every bare word together — a multi-sentence scenario description
+ * routinely produces 20+ ANDed terms that no single precedent's text will
+ * ever contain all of, so the search silently returns nothing. */
 export async function searchScenarioFindingsFullText(query: string): Promise<ScenarioFinding[]> {
-  const trimmed = query.trim();
-  if (!trimmed) return [];
+  const orQuery = buildFullTextOrQuery(query);
+  if (!orQuery) return [];
   const supabase = await createClient();
   const [{ data: findingRows, error: findingsError }, { data: linkRows, error: linksError }] = await Promise.all([
     supabase
       .from("scenario_findings")
       .select("*")
-      .textSearch("search_vector", trimmed, { type: "websearch", config: "english" })
-      .limit(20),
+      .textSearch("search_vector", orQuery, { config: "english" })
+      .limit(8),
     supabase.from("finding_provisions").select("finding_id, provision_id, legal_provisions(canonical_id)"),
   ]);
   if (findingsError) throw findingsError;
