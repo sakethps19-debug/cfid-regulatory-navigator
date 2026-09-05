@@ -88,8 +88,10 @@ export default async function AdminDashboardPage() {
           <div>
             <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Validation issues</h2>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {issues.length} recorded, {unresolvedIssues} unresolved — mostly orders awaiting retrieval, plus missing
-              citations and register housekeeping notes, each traceable back to a specific order or source row.
+              {issues.length} recorded, {unresolvedIssues} unresolved — each traceable back to a specific order or
+              source row. Issues are marked resolved once their underlying condition no longer holds (e.g. an
+              &quot;awaiting retrieval&quot; note once that order&apos;s retrieval succeeds); the remainder are
+              genuinely open items such as residual-register entries still awaiting a link.
             </p>
           </div>
           <Link
