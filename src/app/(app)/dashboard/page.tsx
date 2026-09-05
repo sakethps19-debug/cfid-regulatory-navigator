@@ -9,7 +9,6 @@ import {
   getOrderRelationships,
   getOrders,
   getProvisions,
-  getResidualOrders,
   getScenarioFindings,
   getVerifiedCfidOrders,
 } from "@/lib/data";
@@ -51,11 +50,10 @@ function pickRecentAndSignificant(findings: ScenarioFinding[]): ScenarioFinding[
 }
 
 export default async function DashboardPage() {
-  const [orders, provisions, residualOrders, scenarioFindings, verifiedCfidOrders, importMeta, matters, orderRelationships] =
+  const [orders, provisions, scenarioFindings, verifiedCfidOrders, importMeta, matters, orderRelationships] =
     await Promise.all([
       getOrders(),
       getProvisions(),
-      getResidualOrders(),
       getScenarioFindings(),
       getVerifiedCfidOrders(),
       getImportMeta(),
@@ -69,9 +67,6 @@ export default async function DashboardPage() {
     return acc;
   }, {});
   const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
-  const residualPendingCount = residualOrders.filter((r) => r.status === "pending_link").length;
-  const residualDuplicateCount = residualOrders.filter((r) => r.status === "duplicate_of_verified").length;
-  const residualNotCfidCount = residualOrders.filter((r) => r.status === "not_cfid").length;
   const recentAndSignificant = pickRecentAndSignificant(scenarioFindings);
 
   const ordersPerMatter = new Map<string, number>();
@@ -90,7 +85,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI URL and a CFID identifier confirmed in its own record — this is not a claim that every one of those documents has been opened, or that every CFID matter or related order has been found; see the Admin Processing Dashboard for the distinct link-verification and retrieval stages. ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into ${scenarioFindings.length} scenario findings with paragraph citations so far — none of that AI-assisted analysis has yet been legally reviewed by a CFID officer, which is a separate, further step. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI source link — this is not a claim that every related order has been found. ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into ${scenarioFindings.length} scenario findings with paragraph citations so far — none of that AI-assisted analysis has yet been legally reviewed by a CFID officer, which is a separate, further step. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -180,15 +175,6 @@ export default async function DashboardPage() {
                 {verifiedPendingCount} verified orders await extraction →
               </Link>{" "}
               <span className="text-[var(--color-ink-700)]">confirmed CFID orders not yet turned into scenario findings.</span>
-            </li>
-            <li>
-              <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
-                {residualPendingCount} residual entries await a link →
-              </Link>{" "}
-              <span className="text-[var(--color-ink-700)]">
-                plus {residualDuplicateCount} confirmed duplicates and {residualNotCfidCount} confirmed non-CFID,
-                excluded but never deleted.
-              </span>
             </li>
           </ul>
         </Card>

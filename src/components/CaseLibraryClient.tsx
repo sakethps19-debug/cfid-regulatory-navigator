@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Order, ProcessingStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
 import { isDeepAnalyzed, PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
-import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 
 const STAGE_LABELS = PROCESSING_STAGE_SHORT_LABELS;
 const STAGE_STYLES = PROCESSING_STAGE_STYLES;
@@ -81,7 +80,6 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case name</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order number</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Stage</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">CFID tag</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Link</th>
             </tr>
           </thead>
@@ -105,12 +103,6 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
                   >
                     {STAGE_LABELS[o.processingStage]}
                   </span>
-                </td>
-                <td
-                  className="whitespace-nowrap px-3 py-2 align-top text-[var(--color-ink-700)]"
-                  title={cfidVerificationDisplayText(o.cfidVerificationBasis)}
-                >
-                  {o.cfidVerified ? "Yes" : "No"}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 align-top">
                   <SourceLink href={o.officialUrl} />
