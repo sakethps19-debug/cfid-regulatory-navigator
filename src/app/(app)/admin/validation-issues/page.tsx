@@ -7,7 +7,7 @@ export default async function ValidationIssuesPage() {
   const issues = await getValidationIssues();
   return (
     <div>
-      <Link href="/admin" className="text-sm text-blue-700 hover:underline">
+      <Link href="/admin" className="text-sm text-[var(--color-gold-700)] hover:underline">
         ← Back to Admin Processing Dashboard
       </Link>
       <PageHeader

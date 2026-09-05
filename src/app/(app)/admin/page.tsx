@@ -45,15 +45,15 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((r) => (
           <Card key={r.label}>
-            <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{r.value}</div>
-            <div className="mt-1 text-sm text-slate-700">{r.label}</div>
-            {r.hint && <div className="mt-1 text-xs text-slate-500">{r.hint}</div>}
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
+            {r.hint && <div className="mt-1 text-xs text-[var(--color-ink-500)]">{r.hint}</div>}
           </Card>
         ))}
       </div>
 
-      <h2 className="mt-8 mb-3 text-base font-semibold text-slate-900">Official-link verification stages</h2>
-      <p className="mb-3 text-sm text-slate-600">
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Official-link verification stages</h2>
+      <p className="mb-3 text-sm text-[var(--color-ink-700)]">
         &quot;89 official links verified&quot; is not one fact — it collapses several distinct checkpoints. Each row
         below is a separate, honestly-tracked stage; a high count at one stage is never a claim that a later stage
         has also happened.
@@ -61,24 +61,24 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {linkVerificationRows.map((r) => (
           <Card key={r.label}>
-            <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{r.value}</div>
-            <div className="mt-1 text-sm text-slate-700">{r.label}</div>
-            {r.hint && <div className="mt-1 text-xs text-slate-500">{r.hint}</div>}
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
+            {r.hint && <div className="mt-1 text-xs text-[var(--color-ink-500)]">{r.hint}</div>}
           </Card>
         ))}
       </div>
 
-      <h2 className="mt-8 mb-3 text-base font-semibold text-slate-900">Residual register (never a source of case-library orders)</h2>
-      <p className="mb-3 text-sm text-slate-600">
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Residual register (never a source of case-library orders)</h2>
+      <p className="mb-3 text-sm text-[var(--color-ink-700)]">
         Kept as three separate counts, never combined with the verified case-library counts above — a residual entry
         only ever becomes a case-library order if it is subsequently verified and moved.
       </p>
       <div className="grid gap-4 sm:grid-cols-3">
         {residualRows.map((r) => (
           <Card key={r.label}>
-            <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{r.value}</div>
-            <div className="mt-1 text-sm text-slate-700">{r.label}</div>
-            {r.hint && <div className="mt-1 text-xs text-slate-500">{r.hint}</div>}
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
+            {r.hint && <div className="mt-1 text-xs text-[var(--color-ink-500)]">{r.hint}</div>}
           </Card>
         ))}
       </div>
@@ -86,15 +86,15 @@ export default async function AdminDashboardPage() {
       <Card className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Validation issues</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Validation issues</h2>
+            <p className="mt-1 text-sm text-[var(--color-ink-700)]">
               {issues.length} recorded, {unresolvedIssues} unresolved — mostly orders awaiting retrieval, plus missing
               citations and register housekeeping notes, each traceable back to a specific order or source row.
             </p>
           </div>
           <Link
             href="/admin/validation-issues"
-            className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+            className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
           >
             View all validation issues →
           </Link>

@@ -4,8 +4,8 @@ import { Card } from "@/components/Card";
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="mb-6">
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-700">{children}</div>
+      <h2 className="text-base font-semibold text-[var(--color-ink-900)]">{title}</h2>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
     </Card>
   );
 }
@@ -49,7 +49,7 @@ export default function MethodologyPage() {
         </p>
         <p>
           These three orders are also the two cases marked &quot;deep-analyzed&quot; in the broader{" "}
-          <a href="/awaiting-analysis" className="text-blue-700 underline">
+          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
             Verified CFID Orders
           </a>{" "}
           register — see the next section for how that register relates to this precedent database.
@@ -77,7 +77,7 @@ export default function MethodologyPage() {
         </p>
         <p>
           Both registers are shown in full on the{" "}
-          <a href="/awaiting-analysis" className="text-blue-700 underline">
+          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
             Orders Awaiting Analysis
           </a>{" "}
           page. No row is ever deleted from either register.

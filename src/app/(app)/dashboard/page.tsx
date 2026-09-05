@@ -96,9 +96,9 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {STAT_ITEMS.map((item, i) => (
           <Link key={item.label} href={item.href}>
-            <Card className="h-full transition hover:ring-blue-400">
-              <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{counts[i]}</div>
-              <div className="mt-1 text-sm text-slate-600">{item.label}</div>
+            <Card className="h-full transition hover:ring-[var(--color-gold-600)]">
+              <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{counts[i]}</div>
+              <div className="mt-1 text-sm text-[var(--color-ink-700)]">{item.label}</div>
             </Card>
           </Link>
         ))}
@@ -106,33 +106,33 @@ export default async function DashboardPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Scenario finding status breakdown</h2>
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Scenario finding status breakdown</h2>
           <dl className="mt-4 space-y-2">
             {(Object.keys(statusCounts) as FindingStatus[])
               .sort((a, b) => statusCounts[b] - statusCounts[a])
               .map((s) => (
                 <div key={s} className="flex items-center justify-between text-sm">
-                  <dt className="text-slate-600">{s}</dt>
-                  <dd className="font-semibold text-slate-900">{statusCounts[s]}</dd>
+                  <dt className="text-[var(--color-ink-700)]">{s}</dt>
+                  <dd className="font-semibold text-[var(--color-ink-900)]">{statusCounts[s]}</dd>
                 </div>
               ))}
           </dl>
         </Card>
 
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Recent and significant findings</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Recent and significant findings</h2>
+          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
             One example per finding status currently represented in the data — not a ranking, and no single case,
             provision or transaction type is treated as the application&apos;s focus.
           </p>
           <ul className="mt-3 space-y-2">
             {recentAndSignificant.map((f) => (
-              <li key={f.recordId} className="rounded-lg border border-slate-200 p-2.5 text-sm">
+              <li key={f.recordId} className="rounded-lg border border-[var(--color-border)] p-2.5 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={f.findingStatus} />
-                  <span className="font-medium text-slate-900">{f.caseName}</span>
+                  <span className="font-medium text-[var(--color-ink-900)]">{f.caseName}</span>
                 </div>
-                <p className="mt-1 text-slate-600">{f.scenarioTitle}</p>
+                <p className="mt-1 text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
                 <div className="mt-1">
                   <SourceLink href={f.officialSourceUrl} />
                 </div>
@@ -145,12 +145,12 @@ export default async function DashboardPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {matterLinkingStats.map((s) => (
           <Card key={s.label}>
-            <div className="text-2xl font-semibold text-blue-800 sm:text-3xl">{s.value}</div>
-            <div className="mt-1 text-sm text-slate-600">{s.label}</div>
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{s.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{s.label}</div>
           </Card>
         ))}
       </div>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-[var(--color-ink-500)]">
         A matter can span several individual orders (interim, confirmatory, final, adjudication, or otherwise); most
         orders are not yet linked to a matter, and that count grows only as relationships already known from official
         sources are recorded — never guessed from company name or order dates.
@@ -158,34 +158,34 @@ export default async function DashboardPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <h2 className="text-base font-semibold text-slate-900">Get started</h2>
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Get started</h2>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <Link href="/analyzer" className="font-medium text-blue-700 hover:underline">
+              <Link href="/analyzer" className="font-medium text-[var(--color-gold-700)] hover:underline">
                 Analyze a scenario →
               </Link>{" "}
-              <span className="text-slate-600">
+              <span className="text-[var(--color-ink-700)]">
                 describe the facts and get every potentially relevant provision, across every instrument, with
                 supporting and contrary precedents.
               </span>
             </li>
             <li>
-              <Link href="/provisions" className="font-medium text-blue-700 hover:underline">
+              <Link href="/provisions" className="font-medium text-[var(--color-gold-700)] hover:underline">
                 Browse the Provision Explorer →
               </Link>{" "}
-              <span className="text-slate-600">search any provision by number, instrument, or the underlying facts.</span>
+              <span className="text-[var(--color-ink-700)]">search any provision by number, instrument, or the underlying facts.</span>
             </li>
             <li>
-              <Link href="/case-library" className="font-medium text-blue-700 hover:underline">
+              <Link href="/case-library" className="font-medium text-[var(--color-gold-700)] hover:underline">
                 {verifiedPendingCount} verified orders await extraction →
               </Link>{" "}
-              <span className="text-slate-600">confirmed CFID orders not yet turned into scenario findings.</span>
+              <span className="text-[var(--color-ink-700)]">confirmed CFID orders not yet turned into scenario findings.</span>
             </li>
             <li>
-              <Link href="/awaiting-analysis" className="font-medium text-blue-700 hover:underline">
+              <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
                 {residualPendingCount} residual entries await a link →
               </Link>{" "}
-              <span className="text-slate-600">
+              <span className="text-[var(--color-ink-700)]">
                 plus {residualDuplicateCount} confirmed duplicates and {residualNotCfidCount} confirmed non-CFID,
                 excluded but never deleted.
               </span>
@@ -193,11 +193,11 @@ export default async function DashboardPage() {
           </ul>
         </Card>
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Data provenance</h2>
-          <p className="mt-2 text-xs text-slate-500">
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Data provenance</h2>
+          <p className="mt-2 text-xs text-[var(--color-ink-500)]">
             Generated {new Date(importMeta.generatedAt).toLocaleString()} from {importMeta.sourceFiles.join(" and ")}.
           </p>
-          <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-blue-700 hover:underline">
+          <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-[var(--color-gold-700)] hover:underline">
             Methodology &amp; Limitations →
           </Link>
         </Card>

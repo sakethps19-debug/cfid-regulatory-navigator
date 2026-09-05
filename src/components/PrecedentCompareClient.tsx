@@ -34,11 +34,11 @@ function FindingPicker({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700">{label}</label>
+      <label className="block text-sm font-medium text-[var(--color-ink-700)]">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
       >
         <option value="">Select a scenario finding…</option>
         {findings.map((f) => (
@@ -66,21 +66,21 @@ export function PrecedentCompareClient({ findings }: { findings: ScenarioFinding
       </div>
 
       {left && right && (
-        <div className="mt-6 overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
-          <table className="w-full min-w-[640px] divide-y divide-slate-200 text-sm">
+        <div className="mt-6 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
+          <table className="w-full min-w-[640px] divide-y divide-[var(--color-border)] text-sm">
             <thead>
-              <tr className="bg-slate-50">
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Field</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">{left.recordId}</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">{right.recordId}</th>
+              <tr className="bg-[var(--color-neutral-50)]">
+                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">Field</th>
+                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{left.recordId}</th>
+                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{right.recordId}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {FIELDS.map((field) => (
                 <tr key={field.label}>
-                  <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-slate-600">{field.label}</td>
-                  <td className="px-4 py-3 align-top text-slate-800">{field.render(left)}</td>
-                  <td className="px-4 py-3 align-top text-slate-800">{field.render(right)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-[var(--color-ink-700)]">{field.label}</td>
+                  <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">{field.render(left)}</td>
+                  <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">{field.render(right)}</td>
                 </tr>
               ))}
             </tbody>

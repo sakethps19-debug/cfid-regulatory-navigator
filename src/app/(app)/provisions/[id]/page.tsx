@@ -22,7 +22,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
 
   return (
     <div>
-      <Link href="/provisions" className="text-sm text-blue-700 hover:underline">
+      <Link href="/provisions" className="text-sm text-[var(--color-gold-700)] hover:underline">
         ← Back to Provision Explorer
       </Link>
       <PageHeader title={`${provision.instrument} — ${provision.provisionNumber}`} description={provision.subject ?? undefined} />
@@ -30,20 +30,20 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">How this provision has been treated</dt>
-            <dd className="mt-1 text-sm text-slate-700">{provision.treatmentInPilotOrders}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">How this provision has been treated</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.treatmentInPilotOrders}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Orders in which considered</dt>
-            <dd className="mt-1 text-sm text-slate-700">{provision.ordersConsidered.join(", ") || "—"}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Orders in which considered</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.ordersConsidered.join(", ") || "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current-text verification status</dt>
-            <dd className="mt-1 text-sm text-slate-700">{provision.currentTextVerificationStatus}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Current-text verification status</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.currentTextVerificationStatus}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Law-library note</dt>
-            <dd className="mt-1 text-sm text-slate-700">{provision.lawLibraryNote}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Law-library note</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.lawLibraryNote}</dd>
           </div>
         </dl>
         {provision.officialSource && (
@@ -52,7 +52,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
           </div>
         )}
         {similar.length > 0 && (
-          <div className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-900 ring-1 ring-amber-200">
+          <div className="mt-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[#7a5310] ring-1 border-[#dfc98f]">
             <strong>Data-integrity check — similarly-numbered provisions:</strong> the following{" "}
             {similar.length === 1 ? "provision is" : "provisions are"} distinct from this one and must not be
             conflated with it, even though the numbering looks alike:
@@ -71,7 +71,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
       </Card>
 
       <Card>
-        <h2 className="mb-4 text-base font-semibold text-slate-900">Scenario findings under this provision</h2>
+        <h2 className="mb-4 text-base font-semibold text-[var(--color-ink-900)]">Scenario findings under this provision</h2>
         <FindingsByStatus findings={findings} />
       </Card>
     </div>

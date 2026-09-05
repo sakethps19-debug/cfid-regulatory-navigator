@@ -59,14 +59,14 @@ export function isDeepAnalyzed(stage: ProcessingStage): boolean {
 
 /** Tailwind ring/background classes per stage, used for status chips. */
 export const PROCESSING_STAGE_STYLES: Record<ProcessingStage, string> = {
-  indexed: "bg-slate-100 text-slate-600 ring-slate-300",
-  awaiting_retrieval: "bg-slate-100 text-slate-600 ring-slate-300",
-  retrieval_attempted: "bg-sky-100 text-sky-800 ring-sky-300",
-  retrieval_failed: "bg-rose-100 text-rose-800 ring-rose-300",
-  downloaded: "bg-sky-100 text-sky-800 ring-sky-300",
-  text_extracted: "bg-sky-100 text-sky-800 ring-sky-300",
-  scenario_findings_extracted: "bg-sky-100 text-sky-800 ring-sky-300",
-  citations_checked: "bg-sky-100 text-sky-800 ring-sky-300",
-  legally_reviewed: "bg-emerald-100 text-emerald-800 ring-emerald-300",
-  needs_manual_review: "bg-amber-100 text-amber-800 ring-amber-300",
+  indexed: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
+  awaiting_retrieval: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
+  retrieval_attempted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  retrieval_failed: "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
+  downloaded: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  text_extracted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  scenario_findings_extracted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  citations_checked: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  legally_reviewed: "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
+  needs_manual_review: "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
 };

@@ -48,8 +48,8 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setStageFilter("all")}
-          className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-            stageFilter === "all" ? "bg-blue-700 text-white ring-blue-700" : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-50"
+          className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
+            stageFilter === "all" ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
           }`}
         >
           All ({orders.length})
@@ -58,8 +58,8 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
           <button
             key={s}
             onClick={() => setStageFilter(s)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-              stageFilter === s ? "bg-blue-700 text-white ring-blue-700" : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-50"
+            className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
+              stageFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
             {STAGE_LABELS[s]} ({counts.get(s) ?? 0})
@@ -70,44 +70,44 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
           placeholder="Search case name…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="ml-auto rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="ml-auto rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
-        <table className="w-full min-w-[900px] divide-y divide-slate-200 text-sm">
+      <div className="mt-4 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
+        <table className="w-full min-w-[900px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
-            <tr className="bg-slate-50">
-              <th className="px-3 py-2 text-left font-semibold text-slate-700">Case name</th>
-              <th className="px-3 py-2 text-left font-semibold text-slate-700">Order number</th>
-              <th className="px-3 py-2 text-left font-semibold text-slate-700">Stage</th>
-              <th className="px-3 py-2 text-left font-semibold text-slate-700">CFID tag</th>
-              <th className="px-3 py-2 text-left font-semibold text-slate-700">Link</th>
+            <tr className="bg-[var(--color-neutral-50)]">
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case name</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order number</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Stage</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">CFID tag</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Link</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {filtered.map((o) => (
               <tr key={o.id}>
-                <td className="px-3 py-2 align-top font-medium text-slate-900">
+                <td className="px-3 py-2 align-top font-medium text-[var(--color-ink-900)]">
                   {isDeepAnalyzed(o.processingStage) ? (
-                    <Link href={`/orders/${o.id}`} className="text-blue-700 hover:underline">
+                    <Link href={`/orders/${o.id}`} className="text-[var(--color-gold-700)] hover:underline">
                       {o.caseName}
                     </Link>
                   ) : (
                     o.caseName
                   )}
                 </td>
-                <td className="px-3 py-2 align-top font-mono text-xs text-slate-600">{o.orderNumber ?? "—"}</td>
+                <td className="px-3 py-2 align-top font-mono text-xs text-[var(--color-ink-700)]">{o.orderNumber ?? "—"}</td>
                 <td className="whitespace-nowrap px-3 py-2 align-top">
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
+                    className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
                     title={o.retrievalFailureReason ?? undefined}
                   >
                     {STAGE_LABELS[o.processingStage]}
                   </span>
                 </td>
                 <td
-                  className="whitespace-nowrap px-3 py-2 align-top text-slate-700"
+                  className="whitespace-nowrap px-3 py-2 align-top text-[var(--color-ink-700)]"
                   title={cfidVerificationDisplayText(o.cfidVerificationBasis)}
                 >
                   {o.cfidVerified ? "Yes" : "No"}
@@ -119,7 +119,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <p className="p-4 text-sm text-slate-500">No rows match this filter.</p>}
+        {filtered.length === 0 && <p className="p-4 text-sm text-[var(--color-ink-500)]">No rows match this filter.</p>}
       </div>
     </div>
   );

@@ -16,21 +16,21 @@ export default async function OrdersPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((o) => (
           <Link key={o.id} href={`/orders/${o.id}`}>
-            <Card className="h-full transition hover:ring-blue-400">
+            <Card className="h-full transition hover:ring-[var(--color-gold-600)]">
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800 ring-1 ring-blue-300">
+                <span className="rounded-sm bg-[var(--color-gold-100)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-600)]/50">
                   {o.orderStage}
                 </span>
                 {o.cfidVerified && (
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-300">
+                  <span className="rounded-sm bg-[#e6ede3] px-2.5 py-0.5 text-xs font-semibold text-[#204a2e] ring-1 border-[#a9c2a0]">
                     CFID tag present
                   </span>
                 )}
               </div>
-              <h2 className="mt-2 text-base font-semibold text-slate-900">{o.caseName}</h2>
-              <p className="mt-1 text-sm text-slate-600">{o.orderDate}</p>
-              <p className="mt-1 font-mono text-xs text-slate-500">{o.orderNumber}</p>
-              <p className="mt-2 text-sm text-slate-600">{o.scopeNote}</p>
+              <h2 className="mt-2 text-base font-semibold text-[var(--color-ink-900)]">{o.caseName}</h2>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">{o.orderDate}</p>
+              <p className="mt-1 font-mono text-xs text-[var(--color-ink-500)]">{o.orderNumber}</p>
+              <p className="mt-2 text-sm text-[var(--color-ink-700)]">{o.scopeNote}</p>
             </Card>
           </Link>
         ))}
