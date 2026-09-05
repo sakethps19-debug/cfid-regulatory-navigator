@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Order, ProcessingStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
-import { PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
+import { isDeepAnalyzed, PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
 import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 
 const STAGE_LABELS = PROCESSING_STAGE_SHORT_LABELS;
@@ -89,7 +89,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
             {filtered.map((o) => (
               <tr key={o.id}>
                 <td className="px-3 py-2 align-top font-medium text-slate-900">
-                  {o.processingStage === "legally_reviewed" ? (
+                  {isDeepAnalyzed(o.processingStage) ? (
                     <Link href={`/orders/${o.id}`} className="text-blue-700 hover:underline">
                       {o.caseName}
                     </Link>

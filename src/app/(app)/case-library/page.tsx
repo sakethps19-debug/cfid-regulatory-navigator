@@ -8,7 +8,7 @@ export default async function CaseLibraryPage() {
     <div>
       <PageHeader
         title="Case Library"
-        description={`All ${orders.length} orders from the authoritative Verified_CFID_Order_Links.xlsx register, with their current processing stage. Only orders at "Legally reviewed" have been broken down into scenario findings; every other row is a genuine, CFID-verified order whose text has not yet been retrieved and analysed in this environment (see the stage badge and the Admin Processing Dashboard for why).`}
+        description={`All ${orders.length} orders from the authoritative Verified_CFID_Order_Links.xlsx register, with their current processing stage. Orders at "Citations checked" or "Legally reviewed" have been broken down into scenario findings with paragraph citations — "Legally reviewed" additionally means a CFID officer has signed off, which none have yet; every other row is a genuine, CFID-verified order whose text has not yet been retrieved and analysed in this environment (see the stage badge and the Admin Processing Dashboard for why).`}
       />
       <CaseLibraryClient orders={orders} />
     </div>

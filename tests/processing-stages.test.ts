@@ -3,7 +3,7 @@
 // recorded attempt was made and failed) must never be conflated, and every
 // stage the officer asked for must be present with an honest label.
 import { describe, expect, it } from "vitest";
-import { PROCESSING_STAGE_LABELS, PROCESSING_STAGE_ORDER, PROCESSING_STAGE_SHORT_LABELS } from "@/lib/processingStages";
+import { isDeepAnalyzed, PROCESSING_STAGE_LABELS, PROCESSING_STAGE_ORDER, PROCESSING_STAGE_SHORT_LABELS } from "@/lib/processingStages";
 import type { ProcessingStage } from "@/types/domain";
 
 const EXPECTED_STAGES: ProcessingStage[] = [
@@ -44,5 +44,32 @@ describe("processing stage vocabulary", () => {
   it("has no duplicate short labels across distinct stages", () => {
     const labels = EXPECTED_STAGES.map((s) => PROCESSING_STAGE_SHORT_LABELS[s]);
     expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+describe("isDeepAnalyzed", () => {
+  // Guards against reintroducing the bug where several pages treated
+  // legally_reviewed (human sign-off, expected to sit at 0 for a long time
+  // in this pilot) as the only stage with real scenario findings, hiding the
+  // citations_checked orders that actually carry the analysis.
+  it("is true for citations_checked and legally_reviewed", () => {
+    expect(isDeepAnalyzed("citations_checked")).toBe(true);
+    expect(isDeepAnalyzed("legally_reviewed")).toBe(true);
+  });
+
+  it("is false for every earlier stage", () => {
+    const earlierStages: ProcessingStage[] = [
+      "indexed",
+      "awaiting_retrieval",
+      "retrieval_attempted",
+      "retrieval_failed",
+      "downloaded",
+      "text_extracted",
+      "scenario_findings_extracted",
+      "needs_manual_review",
+    ];
+    for (const stage of earlierStages) {
+      expect(isDeepAnalyzed(stage)).toBe(false);
+    }
   });
 });

@@ -19,7 +19,7 @@ import type {
   VerifiedCfidOrderRow,
 } from "@/types/domain";
 import type { Database } from "@/types/database";
-import { PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
+import { isDeepAnalyzed, PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ScenarioFindingRow = Database["public"]["Tables"]["scenario_findings"]["Row"];
@@ -304,9 +304,12 @@ export async function getResidualOrders(): Promise<ResidualOrderRow[]> {
 }
 
 /** The full 89-order universe, shaped for the "Orders Awaiting Analysis" /
- * Case Library views: every row from `orders`, marked deep_analyzed when its
- * processing has reached legally_reviewed, verified_pending_analysis
- * otherwise. */
+ * Case Library views: every row from `orders`, marked deep_analyzed once its
+ * processing has reached citations_checked (broken down into scenario
+ * findings with paragraph citations) or beyond, verified_pending_analysis
+ * otherwise. legally_reviewed is a further, distinct stage reserved for
+ * actual human/CFID-officer sign-off and is not required for deep_analyzed —
+ * see src/lib/processingStages.ts. */
 export async function getVerifiedCfidOrders(): Promise<VerifiedCfidOrderRow[]> {
   const orders = await getOrders();
   return orders.map((o) => ({
@@ -315,8 +318,8 @@ export async function getVerifiedCfidOrders(): Promise<VerifiedCfidOrderRow[]> {
     orderIdentifier: o.orderNumber ?? "",
     officialUrl: o.officialUrl,
     cfidConfirmed: o.cfidVerified,
-    analysisStatus: o.processingStage === "legally_reviewed" ? "deep_analyzed" : "verified_pending_analysis",
-    linkedOrderIds: o.processingStage === "legally_reviewed" ? [o.id] : [],
+    analysisStatus: isDeepAnalyzed(o.processingStage) ? "deep_analyzed" : "verified_pending_analysis",
+    linkedOrderIds: isDeepAnalyzed(o.processingStage) ? [o.id] : [],
   }));
 }
 

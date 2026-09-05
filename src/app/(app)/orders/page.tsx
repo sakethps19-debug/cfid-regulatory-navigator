@@ -2,15 +2,16 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { getOrders } from "@/lib/data";
+import { isDeepAnalyzed } from "@/lib/processingStages";
 
 export default async function OrdersPage() {
   const allOrders = await getOrders();
-  const orders = allOrders.filter((o) => o.processingStage === "legally_reviewed");
+  const orders = allOrders.filter((o) => isDeepAnalyzed(o.processingStage));
   return (
     <div>
       <PageHeader
         title="Search by Order"
-        description={'The three verified CFID orders analysed for this pilot. Each order\'s number has been confirmed to contain "CFID" before admission to this library.'}
+        description={`Every order that has actually been opened, read, and broken down into scenario findings with paragraph citations (${orders.length} of ${allOrders.length} indexed orders). Most are citation-checked but not yet legally reviewed by a CFID officer — still ready for research use. See the Admin Processing Dashboard for the remaining orders and why they haven't been analysed yet.`}
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((o) => (

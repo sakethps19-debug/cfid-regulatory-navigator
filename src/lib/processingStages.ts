@@ -46,6 +46,17 @@ export const PROCESSING_STAGE_SHORT_LABELS: Record<ProcessingStage, string> = {
   needs_manual_review: "Needs manual review",
 };
 
+/** An order counts as "deeply analysed" once it has been broken down into
+ * scenario findings with paragraph citations — i.e. citations_checked or
+ * legally_reviewed. legally_reviewed is a further, distinct stage reserved
+ * for actual human/CFID-officer sign-off; it is not a precondition for
+ * deep analysis, and every "deep analysed" / "scenario findings" surface in
+ * this app must use this helper rather than checking legally_reviewed alone,
+ * so they can never drift back out of sync. */
+export function isDeepAnalyzed(stage: ProcessingStage): boolean {
+  return stage === "citations_checked" || stage === "legally_reviewed";
+}
+
 /** Tailwind ring/background classes per stage, used for status chips. */
 export const PROCESSING_STAGE_STYLES: Record<ProcessingStage, string> = {
   indexed: "bg-slate-100 text-slate-600 ring-slate-300",

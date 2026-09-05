@@ -13,6 +13,7 @@ import {
   getScenarioFindings,
   getVerifiedCfidOrders,
 } from "@/lib/data";
+import { isDeepAnalyzed } from "@/lib/processingStages";
 
 const STAT_ITEMS = [
   { label: "Orders indexed (case-library universe)", href: "/case-library" },
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
       getMatters(),
       getOrderRelationships(),
     ]);
-  const deepAnalyzedOrders = orders.filter((o) => o.processingStage === "legally_reviewed");
+  const deepAnalyzedOrders = orders.filter((o) => isDeepAnalyzed(o.processingStage));
   const counts = [orders.length, deepAnalyzedOrders.length, scenarioFindings.length, provisions.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
     acc[f.findingStatus] = (acc[f.findingStatus] ?? 0) + 1;
@@ -89,7 +90,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI URL and a CFID identifier confirmed in its own record — this is not a claim that every one of those documents has been opened, or that every CFID matter or related order has been found; see the Admin Processing Dashboard for the distinct link-verification and retrieval stages. Only ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into scenario findings so far. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI URL and a CFID identifier confirmed in its own record — this is not a claim that every one of those documents has been opened, or that every CFID matter or related order has been found; see the Admin Processing Dashboard for the distinct link-verification and retrieval stages. ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into ${scenarioFindings.length} scenario findings with paragraph citations so far — none of that AI-assisted analysis has yet been legally reviewed by a CFID officer, which is a separate, further step. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
