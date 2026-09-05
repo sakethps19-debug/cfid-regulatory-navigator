@@ -111,7 +111,7 @@ function findingsAdjective(stage: Order["orderStage"]): string {
 /** A grammatically correct, direction-aware sentence describing an
  * order_relationships row from the CURRENT order's own point of view —
  * e.g. "This final order resolves the interim order below; its outcome
- * controls over the earlier prima facie findings." Derived entirely from
+ * takes precedence over the earlier prima facie findings." Derived entirely from
  * the stored relationship type/direction and each order's own orderStage —
  * never from case name, order id, or any hardcoded example, so the same
  * function produces the correct sentence for any pair of linked orders. */
@@ -123,7 +123,7 @@ export function orderRelationshipSentence(current: Order, other: Order, relation
   const currentPhrase = currentLabel ? LABEL_TO_SENTENCE_VERB[currentLabel] : undefined;
 
   if (currentPhrase?.supersedes) {
-    return `This ${currentStage} ${currentPhrase.verb} the ${otherStage} below; its outcome controls over the earlier ${findingsAdjective(other.orderStage)} findings.`;
+    return `This ${currentStage} ${currentPhrase.verb} the ${otherStage} below; its outcome takes precedence over the earlier ${findingsAdjective(other.orderStage)} findings.`;
   }
 
   const otherLabel = labelForRelationship(relationship, current.id);

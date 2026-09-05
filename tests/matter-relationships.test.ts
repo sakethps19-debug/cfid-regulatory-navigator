@@ -175,7 +175,7 @@ describe("orderRelationshipSentence", () => {
 
     const sentence = orderRelationshipSentence(final, interim, relationship);
     expect(sentence).toBe(
-      "This final order resolves the interim order cum show cause notice below; its outcome controls over the earlier prima facie findings."
+      "This final order resolves the interim order cum show cause notice below; its outcome takes precedence over the earlier prima facie findings."
     );
   });
 
@@ -197,7 +197,7 @@ describe("orderRelationshipSentence", () => {
     const sentence = orderRelationshipSentence(interim, final, relationship);
     expect(sentence).toContain("This interim order cum show cause notice precedes the final order below");
     expect(sentence).toContain("should not be treated as final");
-    expect(sentence).not.toContain("controls over the earlier"); // interim does not control the final
+    expect(sentence).not.toContain("takes precedence over the earlier"); // interim does not control the final
   });
 
   it("is grammatically correct and generic for a confirmatory/revocation pair (not hardcoded to interim/final)", () => {
@@ -207,7 +207,7 @@ describe("orderRelationshipSentence", () => {
 
     const sentence = orderRelationshipSentence(revocation, confirmatory, relationship);
     expect(sentence).toBe(
-      "This revocation order revokes the confirmatory order below; its outcome controls over the earlier confirmatory findings."
+      "This revocation order revokes the confirmatory order below; its outcome takes precedence over the earlier confirmatory findings."
     );
   });
 
@@ -228,7 +228,7 @@ describe("orderRelationshipSentence", () => {
 
     const sentence = orderRelationshipSentence(final, interim, relationship);
     expect(sentence).toBe(
-      "This final order resolves the interim order below; its outcome controls over the earlier prima facie findings."
+      "This final order resolves the interim order below; its outcome takes precedence over the earlier prima facie findings."
     );
     expect(sentence).not.toContain("Generic Traders Limited");
   });

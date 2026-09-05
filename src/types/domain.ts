@@ -72,7 +72,15 @@ export interface Order {
   authority: string | null;
   noticeesCount: number;
   officialUrl: string;
-  cfidVerified: boolean; // order number contains "CFID"
+  /** Whether the order's own identifier/number contains a "CFID" tag —
+   * literally that fact, and nothing more. This is NOT the authoritative
+   * verification signal and must never be equated with "this order is
+   * verified": an order can be genuinely CFID-verified via
+   * cfidVerificationBasis even when this is false (e.g. an adjudication
+   * order confirmed by an authorised CFID officer, or one established from
+   * the official order's own contents). Use cfidVerificationBasis, not
+   * this field, to determine and display verification status. */
+  cfidVerified: boolean;
   cfidVerificationBasis: CfidVerificationBasis;
   proceduralStatus: string; // human-readable label derived from processingStage
   processingStage: ProcessingStage;

@@ -5,6 +5,7 @@ import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
 import { directionsForCase, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
+import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -97,8 +98,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">CFID verification</dt>
-            <dd className="mt-1 text-sm text-slate-700">
-              {order.cfidVerified ? "Verified — order number contains \"CFID\"" : "Not verified"}
+            <dd className="mt-1 text-sm text-slate-700">{cfidVerificationDisplayText(order.cfidVerificationBasis)}</dd>
+            <dd className="mt-1 text-xs text-slate-500">
+              CFID identifier in order number: {order.cfidVerified ? "present" : "absent"} — tracked as a separate
+              fact from verification, since verification can also rest on the official order&apos;s own contents, a
+              verified CFID parent matter, or confirmation by an authorised CFID officer.
             </dd>
           </div>
           <div>

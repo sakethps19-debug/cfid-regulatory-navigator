@@ -22,7 +22,7 @@ export default async function OrdersPage() {
                 </span>
                 {o.cfidVerified && (
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-300">
-                    CFID verified
+                    CFID tag present
                   </span>
                 )}
               </div>
