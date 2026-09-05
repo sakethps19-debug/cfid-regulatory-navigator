@@ -1,12 +1,53 @@
-import type { ScenarioFinding } from "@/types/domain";
+import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SourceLink } from "@/components/Card";
 
-const GROUPS: { title: string; statuses: ScenarioFinding["findingStatus"][]; hint: string }[] = [
-  { title: "Prima facie findings", statuses: ["Prima facie"], hint: "Interim-stage findings only — not a final determination." },
-  { title: "Final findings — upheld", statuses: ["Upheld"], hint: "Confirmed in a final order." },
-  { title: "Partly upheld findings", statuses: ["Partly upheld"], hint: "Upheld in part; see the qualification for what was excluded." },
-  { title: "Findings not upheld", statuses: ["Not upheld"], hint: "Rejected in a final order — an important contrary/negative precedent." },
+// A Record keyed by every FindingStatus, not a plain array of hand-picked
+// statuses — so adding a new status to the domain type forces a compile
+// error here instead of silently dropping its findings from this section
+// (as previously happened for confirmed_at_interim, alleged, inconclusive,
+// procedural_observation and withdrawn — 18 of 80 findings, invisible with
+// no error and no "not linked" message).
+export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> = {
+  Upheld: { title: "Final findings — upheld", hint: "Confirmed in a final order." },
+  "Partly upheld": {
+    title: "Partly upheld findings",
+    hint: "Upheld in part; see the qualification for what was excluded.",
+  },
+  "Not upheld": {
+    title: "Findings not upheld",
+    hint: "Rejected in a final order — an important contrary/negative precedent.",
+  },
+  "Confirmed at interim": {
+    title: "Confirmed at interim",
+    hint: "Confirmed by a confirmatory interim order; not yet a final determination.",
+  },
+  "Prima facie": {
+    title: "Prima facie findings",
+    hint: "Interim-stage findings only — not a final determination.",
+  },
+  Alleged: { title: "Alleged", hint: "Raised in the SCN; not yet adjudicated at any stage." },
+  "Procedural observation": {
+    title: "Procedural observation",
+    hint: "A procedural point in the order, not a substantive finding on the merits.",
+  },
+  Inconclusive: { title: "Inconclusive", hint: "The order reached no determination either way." },
+  Withdrawn: { title: "Withdrawn", hint: "Withdrawn during the proceedings." },
+};
+
+// Display order: final-order outcomes first, then interim/pending, then
+// procedural — every FindingStatus value from GROUP_INFO appears exactly
+// once, checked by the render loop below never seeing an undefined title.
+export const GROUP_ORDER: FindingStatus[] = [
+  "Upheld",
+  "Partly upheld",
+  "Not upheld",
+  "Confirmed at interim",
+  "Prima facie",
+  "Alleged",
+  "Procedural observation",
+  "Inconclusive",
+  "Withdrawn",
 ];
 
 function FindingRow({ finding }: { finding: ScenarioFinding }) {
@@ -37,13 +78,14 @@ export function FindingsByStatus({ findings }: { findings: ScenarioFinding[] }) 
   }
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {GROUPS.map((group) => {
-        const items = findings.filter((f) => group.statuses.includes(f.findingStatus));
+      {GROUP_ORDER.map((status) => {
+        const items = findings.filter((f) => f.findingStatus === status);
         if (items.length === 0) return null;
+        const { title, hint } = GROUP_INFO[status];
         return (
-          <div key={group.title}>
-            <h3 className="text-sm font-semibold text-slate-900">{group.title}</h3>
-            <p className="text-xs text-slate-500">{group.hint}</p>
+          <div key={status}>
+            <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+            <p className="text-xs text-slate-500">{hint}</p>
             <ul className="mt-2 space-y-2">
               {items.map((f) => (
                 <FindingRow key={f.recordId} finding={f} />
