@@ -230,7 +230,7 @@ export async function getScenarioFindings(): Promise<ScenarioFinding[]> {
 export async function getProvisions(): Promise<LegalProvision[]> {
   const supabase = await createClient();
   const [{ data: provisionRows, error: provisionsError }, findings] = await Promise.all([
-    supabase.from("legal_provisions").select("*, legal_instruments(name)").order("canonical_id", { ascending: true }),
+    supabase.from("legal_provisions").select("*, legal_instruments(id, name, issuing_authority)").order("canonical_id", { ascending: true }),
     getScenarioFindings(),
   ]);
   if (provisionsError) throw provisionsError;
@@ -245,12 +245,14 @@ export async function getProvisions(): Promise<LegalProvision[]> {
   }
 
   return (provisionRows ?? []).map((row) => {
-    const instrumentName = (row as { legal_instruments: { name: string } | null }).legal_instruments?.name ?? "";
+    const instrumentRow = (row as { legal_instruments: { id: string; name: string; issuing_authority: string } | null }).legal_instruments;
     const casesConsidered = [...(casesByProvision.get(row.canonical_id) ?? [])];
     const findingsCount = findings.filter((f) => f.provisionIds.includes(row.canonical_id)).length;
     return {
       id: row.canonical_id,
-      instrument: instrumentName,
+      instrument: instrumentRow?.name ?? "",
+      instrumentId: instrumentRow?.id ?? "",
+      issuingAuthority: instrumentRow?.issuing_authority ?? "",
       provisionNumber: row.provision_number,
       subject: row.subject,
       currentTextVerificationStatus: VERIFICATION_STATUS_LABELS[row.current_text_verification_status] ?? "Requires verification",

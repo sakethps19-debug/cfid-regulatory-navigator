@@ -157,6 +157,8 @@ export interface ScenarioFinding {
 export interface LegalProvision {
   id: string; // canonical id, e.g. "PFUTP-4-2-e", "LODR-4-2-e-i"
   instrument: string;
+  instrumentId?: string;
+  issuingAuthority?: string;
   provisionNumber: string;
   subject: string | null;
   currentTextVerificationStatus: "Requires verification" | "Order-cited text only" | "Officially verified";

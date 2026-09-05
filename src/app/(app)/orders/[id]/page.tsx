@@ -23,9 +23,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <Link href="/orders" className="text-sm text-[var(--color-gold-700)] hover:underline">
-        ← Back to Search by Order
-      </Link>
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+        <Link href="/case-library" className="text-[var(--color-gold-700)] hover:underline">
+          ← Back to Case Library
+        </Link>
+        <span className="mx-1 text-[var(--color-border)]">·</span>
+        <Link href="/orders" className="text-[var(--color-gold-700)] hover:underline">
+          Search by Order
+        </Link>
+      </div>
       <PageHeader title={order.caseName} description={`${order.orderStage} · ${order.orderDate}`} />
 
       {relationships.map((r) => {
