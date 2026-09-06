@@ -232,3 +232,34 @@ export const CONTRARY_PRECEDENT_TRIGGER_TAGS = new Set([
   "fund_diversion",
   "unsupported_share_allotment_consideration",
 ]);
+
+// A user directly tested "fictitious sales" and got Regulation 6 of the
+// LODR Regulations back — a provision that governs Compliance Officer
+// appointment and duties and has nothing to do with fictitious sales. The
+// cause: ScenarioFinding.provisionIds is a flat list of every provision an
+// order cited for a finding, with no record of which specific alleged
+// conduct justified which specific provision. A single order finding can
+// legitimately bundle fictitious sales together with an entirely separate
+// Compliance Officer vacancy (e.g. FCEL-01), so the flat list surfaces
+// Regulation 6 for ANY query that matches that finding on ANY of its
+// bundled conduct tags, not just the Compliance Officer one.
+//
+// This is a narrow, targeted correction for provisions whose entire
+// subject matter is one specific procedural/governance topic (unlike
+// broad anti-fraud clauses such as PFUTP 3(a)-(d) or SEBI Act 12A, which
+// are genuinely applicable across many kinds of fraud, including
+// fictitious sales, and must not be scoped down). analyzeScenario only
+// surfaces one of these provisions when the query itself actually
+// detected the specific concept the provision is about.
+export const NARROW_SCOPE_PROVISION_TAGS: Record<string, string[]> = {
+  "LODR-6-gen": ["compliance_officer_deficiency"],
+  "LODR-6-1": ["compliance_officer_deficiency"],
+  "LODR-6-2-gen": ["compliance_officer_deficiency"],
+  "LODR-6-2-a": ["compliance_officer_deficiency"],
+  "LODR-6-2-b": ["compliance_officer_deficiency"],
+  "LODR-6-2-c": ["compliance_officer_deficiency"],
+  "LODR-17-8": ["false_compliance_certification"],
+  "LODR-18-1-b": ["audit_committee_deficiency"],
+  "LODR-18-1-d": ["audit_committee_deficiency"],
+  "LODR-18-3-schedule-II": ["audit_committee_deficiency"],
+};
