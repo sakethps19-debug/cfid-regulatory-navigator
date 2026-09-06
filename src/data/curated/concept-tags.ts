@@ -73,13 +73,19 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "preferential_allotment",
     kind: "transaction",
     label: "Preferential allotment",
-    synonyms: ["preferential allotment", "preferential issue", "preferential shares", "allotment of shares", "share allotment", "shares allotted", "warrants allotted", "cash preferential allotment"],
+    synonyms: ["preferential allotment", "preferential issue", "preferential shares", "allotment of shares", "share allotment", "shares allotted", "warrants allotted", "cash preferential allotment", "lock-in period", "lock in period", "lock-in violation", "circumvented lock-in"],
   },
   {
     id: "rights_issue",
     kind: "transaction",
     label: "Rights issue",
     synonyms: ["rights issue", "rights-issue proceeds", "rights issue funds", "renunciation of rights"],
+  },
+  {
+    id: "asset_pledge",
+    kind: "transaction",
+    label: "Pledge of shares/assets as loan security",
+    synonyms: ["pledge", "pledged", "pledging", "loan security", "share pledge", "pledge of shares", "pledge invocation", "collateral pledge"],
   },
   {
     id: "cash_credit_facility",
@@ -162,6 +168,7 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "related_party_counterparty", kind: "actor", label: "Related-party counterparty", synonyms: ["related party", "counterparty", "vendor", "customer entity", "connected entity"] },
   { id: "chairman", kind: "actor", label: "Chairman", synonyms: ["chairman", "chairperson", "executive chairman", "non-executive chairman", "chairman-cum-managing director"] },
   { id: "cfo", kind: "actor", label: "Chief Financial Officer", synonyms: ["cfo", "chief financial officer"] },
+  { id: "statutory_auditor", kind: "actor", label: "Statutory auditor", synonyms: ["statutory auditor", "incumbent auditor", "audit firm", "signing partner", "auditors resigned"] },
 
   // ----- Evidence types -----
   { id: "bank_statements_flow", kind: "evidence", label: "Bank statements / fund-flow trail", synonyms: ["bank statement", "bank statements", "fund flow", "money trail", "bank trail", "fund-flow evidence"] },
