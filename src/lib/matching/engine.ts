@@ -252,12 +252,30 @@ export function analyzeScenario(
     }));
 
   // Full-text search results are a complement, not a replacement: only keep
-  // ones the deterministic engine above didn't already surface anywhere.
+  // ones the deterministic engine above didn't already surface anywhere, and
+  // only when the scenario contains at least one recognized CFID conduct,
+  // transaction-type or evidence concept — not merely an actor mention.
+  // Without this gate, the full-text query is a plain OR of every
+  // non-boilerplate word in the free text: a single ordinary English word
+  // (e.g. "customer", "employee", "security", or the bare word "fraud") is
+  // common enough in the corpus to spuriously surface unrelated cases for
+  // scenarios that have nothing to do with securities law at all (a landlord
+  // dispute, a hospital malpractice claim, etc.). An actor mention alone
+  // (e.g. just "promoter" or "the company") is not enough either — those
+  // words are too generic to indicate the scenario is actually CFID-relevant
+  // subject matter, and empirically still let the same noisy full-text
+  // fallback through. Requiring a genuine conduct/transaction/evidence
+  // concept keeps this feature to its stated purpose — catching
+  // CFID-relevant wording the synonym dictionary missed — without
+  // fabricating matches out of domain-unrelated or barely-related text.
+  const hasNonActorConcept = detected.some((c) => c.kind !== "actor");
   const alreadySurfacedIds = new Set([
     ...provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents]).map((p) => p.finding.recordId),
     ...globalContraryPrecedents.map((p) => p.finding.recordId),
   ]);
-  const fullTextSupplementalFindings = fullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId));
+  const fullTextSupplementalFindings = hasNonActorConcept
+    ? fullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId))
+    : [];
 
   return {
     query,

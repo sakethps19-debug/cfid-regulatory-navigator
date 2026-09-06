@@ -280,9 +280,9 @@ export function ScenarioAnalyzerClient() {
 
           {!result.hasResults && (
             <div className="rounded-sm bg-white p-6 text-sm text-[var(--color-ink-700)] border border-[var(--color-border)]">
-              No potentially relevant provisions were identified from this pilot&apos;s three analysed orders using the
-              facts entered. This does not mean no provision applies — it means the pilot&apos;s limited precedent
-              library does not contain a comparable factual pattern. Try adding more detail about the transaction type,
+              No potentially relevant provisions were identified from this pilot&apos;s analysed precedents using the
+              facts entered. This does not mean no provision applies — it means the pilot&apos;s precedent library
+              does not contain a comparable factual pattern. Try adding more detail about the transaction type,
               actors involved, or the nature of the alleged conduct.
             </div>
           )}
