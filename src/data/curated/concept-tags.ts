@@ -78,8 +78,25 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   {
     id: "rights_issue",
     kind: "transaction",
-    label: "Rights issue",
-    synonyms: ["rights issue", "rights-issue proceeds", "rights issue funds", "renunciation of rights"],
+    label: "IPO / rights issue proceeds",
+    synonyms: [
+      "rights issue",
+      "rights-issue proceeds",
+      "rights issue funds",
+      "renunciation of rights",
+      "ipo proceeds",
+      "ipo funds",
+      "ipo fund",
+      "public issue",
+      "public issue proceeds",
+      "public issue funds",
+      "initial public offering",
+      "money raised in the public issue",
+      "money raised via ipo",
+      "proceeds of the public issue",
+      "proceeds from the ipo",
+      "issue proceeds",
+    ],
   },
   {
     id: "asset_pledge",
@@ -103,7 +120,7 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "fund_transfer_promoter_entity",
     kind: "transaction",
     label: "Funds transferred to promoter-controlled entity",
-    synonyms: ["promoter-controlled entity", "promoter controlled entity", "entity controlled by promoter", "shell entity", "front entity", "front company", "layering entity", "loans to related entities", "transferred to related entities"],
+    synonyms: ["promoter-controlled entity", "promoter controlled entity", "entity controlled by promoter", "shell entity", "front entity", "front company", "layering entity", "loans to related entities", "transferred to related entities", "connected to the promoter", "linked to the promoter", "promoter-connected entity", "promoter-linked entity", "firms connected to the promoter", "entities connected to the promoter"],
   },
   {
     id: "annual_report_disclosure",
@@ -184,12 +201,12 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "third_party_examination_statements", kind: "evidence", label: "Third-party examination statements", synonyms: ["third party examination", "statement of third party", "examined the counterparty", "third parties were not examined", "counterparty examination"] },
   { id: "shareholding_allotment_records", kind: "evidence", label: "Shareholding / allotment records", synonyms: ["shareholding record", "allotment record", "share application form", "allotment register"] },
   { id: "utilisation_of_issue_proceeds_certificate", kind: "evidence", label: "Utilisation of issue-proceeds certificate", synonyms: ["utilisation certificate", "monitoring agency report", "use of proceeds"] },
-  { id: "deposition_testimony", kind: "evidence", label: "Deposition / recorded testimony", synonyms: ["deposition", "testimony", "recorded statement", "statement on oath", "examination on oath", "admitted in deposition"] },
+  { id: "deposition_testimony", kind: "evidence", label: "Deposition / recorded testimony", synonyms: ["deposition", "testimony", "recorded statement", "statement on oath", "examination on oath", "admitted in deposition", "under oath"] },
 
   // ----- Alleged conduct -----
   { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
-  { id: "fictitious_sales_or_assets", kind: "conduct", label: "Fictitious sales or assets", synonyms: ["fictitious sales", "bogus sales", "non-genuine sales", "fake sales", "sham sales", "fictitious assets", "non-genuine assets", "bogus assets", "overstated assets", "inflated assets", "fictitious revenue", "bogus revenue", "no genuine revenue", "not genuine", "no genuine business", "sales were fictitious", "sale was fictitious", "sales figures were fictitious", "revenue was fictitious", "assets were fictitious", "not genuine sales", "sales that were not genuine", "revenue that was not genuine", "revenue was not genuine", "assets that were not genuine", "assets were not genuine", "sales did not actually take place", "sales never took place", "sales never actually occurred", "no genuine underlying transaction", "no genuine sale", "no genuine transaction"] },
-  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "failed to furnish"] },
+  { id: "fictitious_sales_or_assets", kind: "conduct", label: "Fictitious sales or assets", synonyms: ["fictitious sales", "bogus sales", "non-genuine sales", "fake sales", "sham sales", "fictitious assets", "non-genuine assets", "bogus assets", "overstated assets", "inflated assets", "fictitious revenue", "bogus revenue", "no genuine revenue", "not genuine", "no genuine business", "sales were fictitious", "sale was fictitious", "sales figures were fictitious", "revenue was fictitious", "assets were fictitious", "not genuine sales", "sales that were not genuine", "revenue that was not genuine", "revenue was not genuine", "assets that were not genuine", "assets were not genuine", "sales did not actually take place", "sales never took place", "sales never actually occurred", "no genuine underlying transaction", "no genuine sale", "no genuine transaction", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported", "deny having bought", "deny ever having bought", "denied ever buying", "denies ever having transacted", "never actually bought anything", "counterparty denies buying", "cannot actually verify exist", "cannot be verified to exist", "nobody can verify exist"] },
+  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "failed to furnish", "delayed disclosure", "late disclosure", "failed to inform", "did not inform"] },
   { id: "non_cooperation_with_investigation", kind: "conduct", label: "Non-cooperation with investigation", synonyms: ["non-cooperation", "did not cooperate", "failed to produce records", "did not respond to summons", "denied access", "withheld", "refused to share"] },
   { id: "related_party_misrepresentation", kind: "conduct", label: "Related-party misrepresentation", synonyms: ["misrepresented related party", "false rpt disclosure", "rpt not genuine", "related party"] },
   { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised"] },
@@ -202,7 +219,7 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "vacant for"] },
   { id: "false_compliance_certification", kind: "conduct", label: "False compliance certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance"] },
   { id: "director_governance_failure", kind: "conduct", label: "Director/board governance failure", synonyms: ["governance failure", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
-  { id: "price_manipulation_nexus", kind: "conduct", label: "Nexus with price/market manipulation", synonyms: ["price manipulation", "market manipulation", "distorted price discovery", "induced investors to trade", "false appearance of financial health"] },
+  { id: "price_manipulation_nexus", kind: "conduct", label: "Nexus with price/market manipulation", synonyms: ["price manipulation", "market manipulation", "distorted price discovery", "induced investors to trade", "false appearance of financial health", "synchronized trading", "synchronised trading", "matched trades", "wash trades", "wash trading", "no genuine change in ownership", "no real change in ownership", "no real change in beneficial ownership", "connected trading accounts", "artificial price rise", "artificially propped up the price"] },
   { id: "aiding_abetting", kind: "conduct", label: "Aiding and abetting", synonyms: ["aided and abetted", "aiding and abetting", "assisted in the scheme", "facilitated the fraud"] },
 ];
 

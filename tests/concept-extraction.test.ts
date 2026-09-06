@@ -44,3 +44,31 @@ describe("detectConcepts — the exact example-chip regression", () => {
     expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
   });
 });
+
+// Found via a post-launch spot-check of officer-style paraphrases that don't
+// reuse the exact curated synonym wording. Each of these previously
+// returned zero detected concepts for a fact pattern this precedent
+// library directly covers.
+describe("detectConcepts — officer-phrasing spot checks", () => {
+  it("detects fictitious sales from an adverb-form + buyer-denial paraphrase", () => {
+    const text =
+      "There were several fictitiously booked sale transactions and the buyers deny ever having bought anything from the company, and its balance sheet lists assets nobody can actually verify exist.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+  });
+
+  it("detects price manipulation from a plain-English synchronized-trading description", () => {
+    const text =
+      "A small group of connected trading accounts kept buying and selling the same stock back and forth among themselves right before a big price jump, with no real change in who actually owned the shares.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("price_manipulation_nexus");
+  });
+
+  it("detects IPO proceeds diversion described as a 'public issue', not a 'rights issue'", () => {
+    const text =
+      "Money raised in the public issue was supposed to go toward a new plant, but instead it seems to have been transferred out to firms connected to the promoters soon after listing.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("rights_issue");
+    expect(detected.map((d) => d.id)).toContain("fund_transfer_promoter_entity");
+  });
+});
