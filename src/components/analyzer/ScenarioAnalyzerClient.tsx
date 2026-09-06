@@ -334,9 +334,6 @@ export function ScenarioAnalyzerClient() {
 
       {result && (() => {
         const frameworkGroups = groupByFramework(result.provisionResults);
-        const sortedProvisionResults = [...result.provisionResults].sort((a, b) =>
-          compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
-        );
         const violationParagraph = buildViolationParagraph(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
@@ -426,7 +423,12 @@ export function ScenarioAnalyzerClient() {
             </div>
           )}
 
-          {sortedProvisionResults.map((pr) => {
+          {frameworkGroups.map((group) => (
+            <div key={group.label} className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                {group.label}
+              </h3>
+              {group.items.map((pr) => {
             const key = `${pr.provision.id}`;
             const isExpanded = expanded.has(key);
             return (
@@ -595,7 +597,9 @@ export function ScenarioAnalyzerClient() {
                 )}
               </article>
             );
-          })}
+              })}
+            </div>
+          ))}
 
           {result.globalContraryPrecedents.length > 0 && (
             <article className="rounded-sm bg-[#f1e3df] p-4  ring-1 border-[#dcaa9a] sm:p-6">
