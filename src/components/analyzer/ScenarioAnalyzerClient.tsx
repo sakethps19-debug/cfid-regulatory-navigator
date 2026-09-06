@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
+import { buildViolationParagraph } from "@/lib/provisionCitationParagraph";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -101,6 +102,19 @@ function resultToText(result: AnalysisResult): string {
       }
     }
     lines.push("");
+
+    const violationParagraph = buildViolationParagraph(
+      result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
+    );
+    if (violationParagraph.length > 0) {
+      lines.push("Potential regulatory framework(s) violated — summary paragraph (prima facie only, not a finding):");
+      lines.push(
+        `Based on the facts entered, the entity has, prima facie, potentially violated ${violationParagraph
+          .map((v) => `${v.sentence} of the ${v.instrument}`)
+          .join("; ")}.`,
+      );
+      lines.push("");
+    }
   }
   const sortedForExport = [...result.provisionResults].sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
@@ -323,6 +337,9 @@ export function ScenarioAnalyzerClient() {
         const sortedProvisionResults = [...result.provisionResults].sort((a, b) =>
           compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
         );
+        const violationParagraph = buildViolationParagraph(
+          result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
+        );
         return (
         <div className="space-y-6">
           {result.detectedConceptLabels.length > 0 && (
@@ -382,6 +399,30 @@ export function ScenarioAnalyzerClient() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {violationParagraph.length > 0 && (
+            <div className="rounded-sm border border-[var(--color-border)] bg-white p-4 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                Potential regulatory framework(s) violated — summary paragraph
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-900)]">
+                Based on the facts entered, the entity has, prima facie, potentially violated{" "}
+                {violationParagraph.map((v, i) => (
+                  <span key={v.instrument}>
+                    {i > 0 && (i === violationParagraph.length - 1 ? "; and " : "; ")}
+                    {v.sentence} of the {v.instrument}
+                  </span>
+                ))}
+                .
+              </p>
+              <p className="mt-2 text-xs text-[var(--color-ink-500)]">
+                Phrased the way a CFID order states its provisions-violated summary, built only from the provisions
+                listed above — this is still prima facie similarity only, not a finding that any provision has
+                actually been violated. See the detailed analysis below for each provision&apos;s own supporting and
+                contrary precedents before relying on this summary.
+              </p>
             </div>
           )}
 
