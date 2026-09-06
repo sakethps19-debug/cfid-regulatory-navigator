@@ -224,7 +224,7 @@ export function ScenarioAnalyzerClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div id="scenario-analyzer-top" className="space-y-6">
       <form onSubmit={handleAnalyze} className="rounded-sm bg-white p-4 border border-[var(--color-border)] sm:p-6">
         <label htmlFor="scenario" className="block text-sm font-medium text-[var(--color-ink-700)]">
           Describe the factual scenario
@@ -671,6 +671,14 @@ export function ScenarioAnalyzerClient() {
         </div>
         );
       })()}
+      {result && result.provisionResults.length > 5 && (
+        <a
+          href="#scenario-analyzer-top"
+          className="fixed bottom-6 right-6 z-30 rounded-full bg-[var(--color-navy-950)] px-4 py-2.5 text-sm font-medium text-white shadow-lg ring-1 ring-inset ring-[var(--color-gold-600)]/60 hover:bg-[var(--color-navy-800)]"
+        >
+          ↑ Back to top
+        </a>
+      )}
     </div>
   );
 }

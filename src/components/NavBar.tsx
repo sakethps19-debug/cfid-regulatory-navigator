@@ -18,7 +18,7 @@ const PRIMARY_NAV_ITEMS = [
 const SECONDARY_NAV_ITEMS = [
   { href: "/library", label: "Source Library" },
   { href: "/awaiting-analysis", label: "Orders Awaiting Analysis" },
-  { href: "/admin", label: "Admin Dashboard" },
+  { href: "/admin", label: "Admin Processing Dashboard" },
   { href: "/methodology", label: "Methodology & Limitations" },
 ];
 
