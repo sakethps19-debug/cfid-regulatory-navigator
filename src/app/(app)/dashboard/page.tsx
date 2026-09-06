@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { FindingStatus, ScenarioFinding } from "@/types/domain";
+import type { FindingStatus, Order, ScenarioFinding } from "@/types/domain";
 import {
   getMatters,
   getOrderRelationships,
@@ -20,32 +20,25 @@ const STAT_ITEMS = [
   { label: "Provisions currently indexed", href: "/provisions" },
 ];
 
-// A balanced, status-diverse sample rather than any single case: at most one
-// finding per distinct status actually present in the data, preferring a
-// finding drawn from a final order within each status. Purely mechanical —
-// no case or provision is ever hardcoded here.
-const STATUS_PRIORITY: FindingStatus[] = [
-  "Upheld",
-  "Not upheld",
-  "Partly upheld",
-  "Confirmed at interim",
-  "Prima facie",
-  "Procedural observation",
-  "Alleged",
-  "Withdrawn",
-  "Inconclusive",
-];
-
-function pickRecentAndSignificant(findings: ScenarioFinding[]): ScenarioFinding[] {
-  const picked: ScenarioFinding[] = [];
-  for (const status of STATUS_PRIORITY) {
-    const candidates = findings.filter((f) => f.findingStatus === status);
-    if (candidates.length === 0) continue;
-    const best = candidates.find((f) => f.finalParagraphReferences) ?? candidates[0];
-    picked.push(best);
-    if (picked.length >= 6) break;
-  }
-  return picked;
+// Strict chronology, latest order first — no status priority, no preference
+// for final over interim, no other selection logic. A finding's date is the
+// latest orderDate among the orders it draws on; findings with no dated
+// order (orderDate not yet captured) are excluded since they can't be placed
+// in the sequence.
+function pickRecentAndSignificant(
+  findings: ScenarioFinding[],
+  orders: Order[],
+): { finding: ScenarioFinding; latestDate: string }[] {
+  const orderDateById = new Map(orders.map((o) => [o.id, o.orderDate]));
+  return findings
+    .map((f) => {
+      const dates = f.orderIds.map((id) => orderDateById.get(id)).filter((d): d is string => !!d);
+      const latestDate = dates.length > 0 ? dates.reduce((a, b) => (a > b ? a : b)) : null;
+      return { finding: f, latestDate };
+    })
+    .filter((x): x is { finding: ScenarioFinding; latestDate: string } => x.latestDate !== null)
+    .sort((a, b) => b.latestDate.localeCompare(a.latestDate))
+    .slice(0, 6);
 }
 
 export default async function DashboardPage() {
@@ -65,7 +58,7 @@ export default async function DashboardPage() {
     return acc;
   }, {});
   const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
-  const recentAndSignificant = pickRecentAndSignificant(scenarioFindings);
+  const recentAndSignificant = pickRecentAndSignificant(scenarioFindings, orders);
 
   const ordersPerMatter = new Map<string, number>();
   for (const o of orders) {
@@ -115,15 +108,16 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Recent and significant findings</h2>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            One example per finding status currently represented in the data — not a ranking, and no single case,
-            provision or transaction type is treated as the application&apos;s focus.
+            The 6 most recently dated findings across all analysed orders, latest first — strict chronology only, no
+            other ordering.
           </p>
           <ul className="mt-3 space-y-2">
-            {recentAndSignificant.map((f) => (
+            {recentAndSignificant.map(({ finding: f, latestDate }) => (
               <li key={f.recordId} className="rounded-lg border border-[var(--color-border)] p-2.5 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={f.findingStatus} />
                   <span className="font-medium text-[var(--color-ink-900)]">{f.caseName}</span>
+                  <span className="text-xs text-[var(--color-ink-500)]">{latestDate}</span>
                 </div>
                 <p className="mt-1 text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
                 <div className="mt-1">
