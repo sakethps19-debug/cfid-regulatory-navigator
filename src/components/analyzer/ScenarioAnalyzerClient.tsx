@@ -50,7 +50,7 @@ const TRANSACTION_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "transaction")
 const EXAMPLE_SCENARIOS = [
   {
     label: "Fictitious sales/assets",
-    text: "The company's financial statements for the last three years appear to show sales and assets that cannot be verified — a large proportion of recorded revenue and assets may not be genuine.",
+    text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
   },
   {
     label: "Preferential allotment / circular funding",
