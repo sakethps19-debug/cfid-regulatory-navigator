@@ -59,6 +59,7 @@ interface ScoredFinding {
   score: number;
   matchedIngredients: string[];
   categoriesMatched: number;
+  substantiveCategoriesMatched: number;
 }
 
 function unique<T>(items: T[]): T[] {
@@ -108,7 +109,18 @@ function scoreFinding(
     (arr) => arr.length > 0
   ).length;
 
-  return { finding, score, matchedIngredients, categoriesMatched };
+  // Transaction type and alleged conduct are what a provision's relevance
+  // actually turns on ("what happened", weight 3 each) — actor role and
+  // evidence type (weight 2 and 1) are comparatively generic context that
+  // shows up across unrelated violations (almost every fraud finding names
+  // a "promoter" as an actor, for instance). Confidence tiering keys off
+  // this substantive count separately from the raw categoriesMatched count
+  // so a finding that only matched on conduct-plus-actor doesn't read as
+  // equally strong as one that matched on conduct-plus-transaction-type —
+  // see deriveConfidence.
+  const substantiveCategoriesMatched = [transactionOverlap, conductOverlap].filter((arr) => arr.length > 0).length;
+
+  return { finding, score, matchedIngredients, categoriesMatched, substantiveCategoriesMatched };
 }
 
 function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
@@ -135,11 +147,17 @@ function deriveConfidence(best: ScoredFinding, supportCount: number): { level: C
   let level: ConfidenceLevel;
   if (best.categoriesMatched >= 3 && (isFinal || best.score >= 9)) {
     level = "High";
-  } else if (best.categoriesMatched >= 2) {
+  } else if (best.substantiveCategoriesMatched >= 2) {
     level = "Medium";
   } else {
     level = "Low";
-    reasons.push("Only a single factual category overlaps — treat this as a weak signal requiring further review.");
+    if (best.categoriesMatched > best.substantiveCategoriesMatched) {
+      reasons.push(
+        "Beyond that, the overlap is only actor role and/or evidence type — a shared actor (e.g. a promoter) or evidence type appears across many unrelated violations and is a weak signal on its own; check what specifically this precedent required that the present facts do not establish."
+      );
+    } else {
+      reasons.push("Only a single factual category overlaps — treat this as a weak signal requiring further review.");
+    }
   }
   return { level, reasons };
 }
