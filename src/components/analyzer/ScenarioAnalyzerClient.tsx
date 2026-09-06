@@ -2,10 +2,40 @@
 
 import { useState } from "react";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
-import type { AnalysisResult } from "@/lib/matching/types";
+import type { AnalysisResult, ProvisionResult } from "@/lib/matching/types";
+import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { SourceLink } from "@/components/Card";
+
+/** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
+ * name prefixed with its issuing authority only when the name doesn't
+ * already carry it (SEBI Act, SEBI ICDR etc. already do). Used to group
+ * potentially-applicable provisions by regulatory framework so an officer
+ * can scan "everything under LODR" vs "everything under PFUTP" at a glance,
+ * rather than one flat list ordered purely by match score. */
+function frameworkLabel(provision: LegalProvision): string {
+  const { instrument, issuingAuthority } = provision;
+  if (issuingAuthority && !instrument.toLowerCase().startsWith(issuingAuthority.toLowerCase())) {
+    return `${issuingAuthority} ${instrument}`;
+  }
+  return instrument;
+}
+
+/** Groups provision results by regulatory framework, preserving the
+ * existing score-based ordering both across groups (a group's position is
+ * set by the first — i.e. highest-scoring — provision assigned to it) and
+ * within each group. */
+function groupByFramework(provisionResults: ProvisionResult[]): { label: string; items: ProvisionResult[] }[] {
+  const groups = new Map<string, ProvisionResult[]>();
+  for (const pr of provisionResults) {
+    const label = frameworkLabel(pr.provision);
+    const list = groups.get(label) ?? [];
+    list.push(pr);
+    groups.set(label, list);
+  }
+  return [...groups.entries()].map(([label, items]) => ({ label, items }));
+}
 
 const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
 const TRANSACTION_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "transaction");
@@ -55,6 +85,16 @@ function resultToText(result: AnalysisResult): string {
   lines.push("");
   if (!result.hasResults) {
     lines.push("No potentially relevant provisions were identified from the pilot's analysed precedents.");
+  }
+  if (result.provisionResults.length > 0) {
+    lines.push("Potential regulatory framework(s) implicated (prima facie / potentially relevant only):");
+    for (const group of groupByFramework(result.provisionResults)) {
+      lines.push(`  ${group.label}:`);
+      for (const pr of group.items) {
+        lines.push(`    - ${pr.provision.provisionNumber} [${pr.confidence} confidence] — ${pr.provision.subject ?? ""}`);
+      }
+    }
+    lines.push("");
   }
   for (const pr of result.provisionResults) {
     lines.push("----------------------------------------");
@@ -269,7 +309,9 @@ export function ScenarioAnalyzerClient() {
         </div>
       )}
 
-      {result && (
+      {result && (() => {
+        const frameworkGroups = groupByFramework(result.provisionResults);
+        return (
         <div className="space-y-6">
           {result.detectedConceptLabels.length > 0 && (
             <div className="rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
@@ -291,33 +333,43 @@ export function ScenarioAnalyzerClient() {
             <div className="rounded-sm border border-[var(--color-border)] bg-white">
               <div className="border-b border-[var(--color-border)] bg-[var(--color-navy-950)] px-4 py-2.5 sm:px-6">
                 <p className="text-sm font-semibold text-white">
-                  {result.provisionResults.length} potentially relevant provision{result.provisionResults.length === 1 ? "" : "s"} found
+                  Potential regulatory framework{frameworkGroups.length === 1 ? "" : "s"} implicated —{" "}
+                  {result.provisionResults.length} provision{result.provisionResults.length === 1 ? "" : "s"} across{" "}
+                  {frameworkGroups.length} instrument{frameworkGroups.length === 1 ? "" : "s"}
                   {" — "}
                   {result.provisionResults.filter((pr) => pr.upheldPrecedents.length > 0).length} with a prior case actually upheld
                 </p>
+                <p className="mt-1 text-xs text-white/70">
+                  Prima facie / potentially relevant only — not a finding that any provision has actually been violated.
+                </p>
               </div>
-              <ul className="divide-y divide-[var(--color-border)]">
-                {result.provisionResults.map((pr) => (
-                  <li key={pr.provision.id}>
-                    <a
-                      href={`#provision-${pr.provision.id}`}
-                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm hover:bg-[var(--color-neutral-50)] sm:px-6"
-                    >
-                      <span className="font-medium text-[var(--color-ink-900)]">
-                        {pr.provision.instrument} — {pr.provision.provisionNumber}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        {pr.upheldPrecedents.length > 0 && (
-                          <span className="rounded-sm bg-[#e6ede3] px-2 py-0.5 text-xs font-semibold text-[#204a2e] ring-1 ring-inset border-[#a9c2a0]">
-                            Upheld ×{pr.upheldPrecedents.length}
-                          </span>
-                        )}
-                        <ConfidenceBadge level={pr.confidence} />
-                      </span>
-                    </a>
-                  </li>
+              <div className="divide-y divide-[var(--color-border)]">
+                {frameworkGroups.map((group) => (
+                  <div key={group.label} className="px-4 py-2.5 sm:px-6">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{group.label}</p>
+                    <ul className="mt-1.5 divide-y divide-[var(--color-border)]/60">
+                      {group.items.map((pr) => (
+                        <li key={pr.provision.id}>
+                          <a
+                            href={`#provision-${pr.provision.id}`}
+                            className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm hover:text-[var(--color-gold-700)]"
+                          >
+                            <span className="font-medium text-[var(--color-ink-900)]">{pr.provision.provisionNumber}</span>
+                            <span className="flex items-center gap-2">
+                              {pr.upheldPrecedents.length > 0 && (
+                                <span className="rounded-sm bg-[#e6ede3] px-2 py-0.5 text-xs font-semibold text-[#204a2e] ring-1 ring-inset border-[#a9c2a0]">
+                                  Upheld ×{pr.upheldPrecedents.length}
+                                </span>
+                              )}
+                              <ConfidenceBadge level={pr.confidence} />
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
 
@@ -560,7 +612,8 @@ export function ScenarioAnalyzerClient() {
             </article>
           )}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
