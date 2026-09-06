@@ -23,9 +23,10 @@ export const GUARDRAIL_TRIGGERS: Record<string, string[]> = {
   fund_diversion: ["Circular fund-flow allegation", "Ultimate benefit / sale proceeds"],
   fund_transfer_personal_account: ["Circular fund-flow allegation", "Ultimate benefit / sale proceeds"],
   fund_transfer_promoter_entity: ["Circular fund-flow allegation", "Third-party examination"],
-  price_manipulation_nexus: ["PFUTP 4(2)(e): market nexus"],
-  fictitious_sales_or_assets: ["Financial misstatement evidence"],
-  financial_statement_misstatement: ["Financial misstatement evidence"],
+  price_manipulation_nexus: ["PFUTP 4(2)(e): market nexus", "PFUTP 2(1)(c): fraud — inducement/intent test"],
+  fictitious_sales_or_assets: ["Financial misstatement evidence", "PFUTP 2(1)(c): fraud — inducement/intent test"],
+  financial_statement_misstatement: ["Financial misstatement evidence", "PFUTP 2(1)(c): fraud — inducement/intent test"],
+  related_party_misrepresentation: ["PFUTP 2(1)(c): fraud — inducement/intent test"],
 };
 
 /** Always shown once any Prima facie / interim-only finding appears in results. */

@@ -11,6 +11,7 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/law-library", label: "Law Library" },
   { href: "/provisions", label: "Provision Explorer" },
   { href: "/compare", label: "Precedent Comparison" },
+  { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/orders", label: "Search by Order" },
 ];
 
