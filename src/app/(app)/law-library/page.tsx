@@ -25,7 +25,7 @@ export default async function LawLibraryPage() {
     <div>
       <PageHeader
         title="Law Library"
-        description="Every legal instrument and provision actually cited or applied in the orders analysed for this pilot — sourced only from the official SEBI website, the official MCA website, and official sources for notified accounting standards. Never law-firm articles, blogs, news reports, or commercial legal databases. Browse by regulator, then instrument, then provision."
+        description="Every legal instrument and provision actually cited or applied in the orders analysed for this pilot — sourced from the official SEBI website, the official MCA website, official sources for notified accounting standards, or (where noted) quoted verbatim in a CFID order on file. Never law-firm articles, blogs, news reports, or commercial legal databases. Browse by regulator, then instrument, then provision."
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

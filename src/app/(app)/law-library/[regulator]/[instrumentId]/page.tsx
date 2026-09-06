@@ -53,10 +53,16 @@ export default async function LawLibraryInstrumentPage({
               </span>
             </div>
             <p className="mt-1 flex-1 text-sm text-[var(--color-ink-700)]">{p.subject ?? "Subject not recorded."}</p>
-            {p.currentTextVerificationStatus !== "Officially verified" && (
-              <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-[var(--color-gold-700)]">
-                ⚠ {p.currentTextVerificationStatus}
+            {p.currentTextVerificationStatus === "Order-cited text only" ? (
+              <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-[#1c4a56]">
+                {p.currentTextVerificationStatus}
               </p>
+            ) : (
+              p.currentTextVerificationStatus !== "Officially verified" && (
+                <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-[var(--color-gold-700)]">
+                  ⚠ {p.currentTextVerificationStatus}
+                </p>
+              )
             )}
           </Card>
         ))}
@@ -64,9 +70,10 @@ export default async function LawLibraryInstrumentPage({
 
       <Card className="mt-8">
         <p className="text-xs text-[var(--color-ink-500)]">
-          &quot;Requires verification&quot; means the current statutory text has not been independently confirmed
-          against the official source in this pilot — always check the official SEBI or MCA website before relying
-          on any provision text. See the{" "}
+          &quot;Requires verification&quot; means no verbatim text has been found for this provision, in an official
+          source or in any order on file. &quot;Order-cited text only&quot; means the text was quoted verbatim in a
+          CFID order but has not been independently confirmed against the official source. Either way, always check
+          the official SEBI or MCA website before relying on any provision text. See the{" "}
           <Link href="/methodology" className="text-[var(--color-gold-700)] underline">
             Methodology &amp; Limitations
           </Link>{" "}
