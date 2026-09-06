@@ -95,10 +95,16 @@ function hasPrecedingNegation(sentenceNormalized: string, matchIndex: number): b
 /** Splits on sentence-ending punctuation so a negation earlier in one
  * sentence can never suppress a genuine, separately-stated match in the
  * next ("There was no diversion of funds. Related party transactions were
- * not disclosed." must still detect the RPT concept normally). */
+ * not disclosed." must still detect the RPT concept normally). Also splits
+ * on contrastive conjunctions within one sentence ("though", "but", etc.):
+ * CFID order language routinely uses exactly this construction to state one
+ * outcome and then contrast it with another ("...the fraud charge was not
+ * established, though LODR disclosure lapses were confirmed..."), and
+ * without this split a negation cue on one side of the contrast was
+ * wrongly suppressing a genuine, unnegated match stated on the other side. */
 function splitIntoSentences(text: string): string[] {
   return text
-    .split(/[.!?;\n]+/)
+    .split(/[.!?;\n]+|,?\s+\b(?:though|but|however|although|whereas|yet)\b,?\s*/i)
     .map((s) => s.trim())
     .filter(Boolean);
 }

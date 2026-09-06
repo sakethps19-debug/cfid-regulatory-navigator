@@ -126,4 +126,59 @@ describe("detectConcepts — negation handling", () => {
     const detected = detectConcepts(text);
     expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
   });
+
+  it("does not suppress a genuine same-sentence match across a contrastive conjunction ('not established, though X was confirmed')", () => {
+    // A very common CFID order construction: one allegation fails, a
+    // narrower one is confirmed, stated as one contrastive sentence. A
+    // negation cue on the "not established" side must not bleed across
+    // "though" and wrongly suppress the genuinely-alleged, unnegated
+    // concept on the other side.
+    const text =
+      "The final order held that the core fraud charge was not established, though LODR disclosure lapses were confirmed and a penalty was imposed on that narrower basis.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("non_disclosure_of_information");
+  });
+});
+
+// Found via a 483-scenario stress-test battery covering mixed positive/
+// negative allegations, multi-entity scenarios and adversarial inputs.
+describe("detectConcepts — synonym-list precision", () => {
+  it("does not flag related-party misrepresentation from a properly-disclosed, compliant related-party transaction", () => {
+    // related_party_misrepresentation's synonym list used to include the
+    // bare phrase "related party" — far too generic for a tag that means
+    // wrongdoing (misrepresentation), since it fired on every mention of a
+    // related-party transaction at all, compliant ones included.
+    const text =
+      "The related party transaction with the promoter's family trust was disclosed in the annual report and separately approved by the Audit Committee and shareholders as required.";
+    const detected = detectConcepts(text);
+    const ids = detected.map((d) => d.id);
+    expect(ids).toContain("related_party_transaction");
+    expect(ids).not.toContain("related_party_misrepresentation");
+  });
+
+  it("still detects related-party misrepresentation when actually alleged", () => {
+    const text = "The company misrepresented related party transactions in its annual report.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("related_party_misrepresentation");
+  });
+
+  it("detects non-cooperation described as refusing to hand over records", () => {
+    const text =
+      "The company refused to hand over its ERP system logins and underlying accounting records to the court-appointed forensic auditor.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("non_cooperation_with_investigation");
+  });
+
+  it("detects an Audit Committee deficiency described as existing only on paper", () => {
+    const text =
+      "Although the company's annual report listed an Audit Committee with the required composition, no meeting minutes, agendas or attendance records could be produced for any financial year under review.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("audit_committee_deficiency");
+  });
+
+  it("detects false compliance certification phrased with 'compliance' between the two key words", () => {
+    const text = "Noticee 2, the CFO, was held liable for false compliance certification.";
+    const detected = detectConcepts(text);
+    expect(detected.map((d) => d.id)).toContain("false_compliance_certification");
+  });
 });
