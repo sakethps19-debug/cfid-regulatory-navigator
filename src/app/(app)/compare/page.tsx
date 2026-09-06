@@ -9,7 +9,7 @@ export default async function ComparePage() {
     <div>
       <PageHeader
         title="Precedent Comparison"
-        description="Compare any two scenario findings side by side — useful, for example, to see why the 1.50 crore promoter allotment (SSSL-02) was upheld while the 0.52 crore cash allotment (SSSL-03) was not. Search by case name, record ID or scenario text; the two selections are reflected in the URL so a comparison can be bookmarked or shared."
+        description="Compare any two scenario findings side by side — useful, for example, to see why the 1.50 crore-share promoter allotment (SSSL-02) was upheld while the 0.52 crore-share non-promoter allotment (SSSL-03) was not. Search by case name, record ID or scenario text; the two selections are reflected in the URL so a comparison can be bookmarked or shared."
       />
       <Suspense fallback={<p className="text-sm text-[var(--color-ink-500)]">Loading…</p>}>
         <PrecedentCompareClient findings={scenarioFindings} />

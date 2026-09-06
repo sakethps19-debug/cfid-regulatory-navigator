@@ -186,9 +186,11 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">About this data</h2>
           <p className="mt-2 text-xs text-[var(--color-ink-500)]">
-            Every count on this page is a live, uncached query against the database, sourced only from the official
-            SEBI website and other official sources — see how the analysis is built, what it does and does not do,
-            and its known limitations.
+            Every count on this page is a live, uncached query against the database. The underlying orders,
+            provisions and case law are sourced only from the official SEBI website, the official MCA website,
+            official sources for notified accounting standards, and Supreme Court/SAT judgments obtained from their
+            official sources — never law-firm articles, blogs, news reports, or commercial databases. See how the
+            analysis is built, what it does and does not do, and its known limitations.
           </p>
           <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-[var(--color-gold-700)] hover:underline">
             Methodology &amp; Limitations →
