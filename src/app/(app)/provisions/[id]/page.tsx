@@ -87,10 +87,18 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <span
                     className={`text-[11px] font-semibold uppercase tracking-wide ${
-                      v.status === "officially_verified" ? "text-[#204a2e]" : "text-[var(--color-gold-700)]"
+                      v.status === "officially_verified"
+                        ? "text-[#204a2e]"
+                        : v.status === "order_cited_text_only"
+                          ? "text-[#1c4a56]"
+                          : "text-[var(--color-gold-700)]"
                     }`}
                   >
-                    {v.status === "officially_verified" ? "✓ Verified against official source" : "⚠ Requires verification"}
+                    {v.status === "officially_verified"
+                      ? "✓ Verified against official source"
+                      : v.status === "order_cited_text_only"
+                        ? "As reproduced verbatim in a CFID order — not independently checked against the official source"
+                        : "⚠ Requires verification"}
                   </span>
                   {v.sourceUrl && <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>}
                 </div>

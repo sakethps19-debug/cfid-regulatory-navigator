@@ -364,7 +364,10 @@ function mapProvisionVersion(row: ProvisionVersionRow, provisionCanonicalId: str
     effectiveTo: row.effective_to,
     exactText: row.exact_text,
     sourceUrl: row.source_url,
-    status: row.status === "officially_verified" ? "officially_verified" : "requires_verification",
+    status:
+      row.status === "officially_verified" || row.status === "order_cited_text_only"
+        ? row.status
+        : "requires_verification",
   };
 }
 

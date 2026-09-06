@@ -47,6 +47,10 @@ function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
     const v = verified[verified.length - 1];
     return `Applicable version: ${v.versionLabel} (effective ${v.effectiveFrom}${v.effectiveTo ? ` to ${v.effectiveTo}` : " onward"}), officially verified.`;
   }
+  const orderCited = versions.find((v) => v.status === "order_cited_text_only" && v.exactText);
+  if (orderCited) {
+    return `Text on file is quoted verbatim from a CFID order (${orderCited.versionLabel}), not independently checked against the official source — do not assume it is the current in-force text; confirm against the official source before relying on it.`;
+  }
   return "The historically-applicable version of this provision at the time of the conduct has not been independently verified — do not assume the current statutory text applied; confirm against the official source before relying on it.";
 }
 

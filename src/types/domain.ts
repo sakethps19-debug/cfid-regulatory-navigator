@@ -176,7 +176,7 @@ export interface ProvisionVersion {
   effectiveTo: string | null;
   exactText: string | null;
   sourceUrl: string | null;
-  status: "requires_verification" | "officially_verified";
+  status: "requires_verification" | "order_cited_text_only" | "officially_verified";
 }
 
 export interface LegalTest {
