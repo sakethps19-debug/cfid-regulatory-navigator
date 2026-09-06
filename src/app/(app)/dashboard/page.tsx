@@ -4,7 +4,6 @@ import { Card, SourceLink } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import {
-  getImportMeta,
   getMatters,
   getOrderRelationships,
   getOrders,
@@ -50,13 +49,12 @@ function pickRecentAndSignificant(findings: ScenarioFinding[]): ScenarioFinding[
 }
 
 export default async function DashboardPage() {
-  const [orders, provisions, scenarioFindings, verifiedCfidOrders, importMeta, matters, orderRelationships] =
+  const [orders, provisions, scenarioFindings, verifiedCfidOrders, matters, orderRelationships] =
     await Promise.all([
       getOrders(),
       getProvisions(),
       getScenarioFindings(),
       getVerifiedCfidOrders(),
-      getImportMeta(),
       getMatters(),
       getOrderRelationships(),
     ]);
@@ -170,18 +168,33 @@ export default async function DashboardPage() {
               </Link>{" "}
               <span className="text-[var(--color-ink-700)]">search any provision by number, instrument, or the underlying facts.</span>
             </li>
-            <li>
-              <Link href="/case-library" className="font-medium text-[var(--color-gold-700)] hover:underline">
-                {verifiedPendingCount} verified orders await extraction →
-              </Link>{" "}
-              <span className="text-[var(--color-ink-700)]">confirmed CFID orders not yet turned into scenario findings.</span>
-            </li>
+            {verifiedPendingCount > 0 ? (
+              <li>
+                <Link href="/case-library" className="font-medium text-[var(--color-gold-700)] hover:underline">
+                  {verifiedPendingCount} verified orders await extraction →
+                </Link>{" "}
+                <span className="text-[var(--color-ink-700)]">confirmed CFID orders not yet turned into scenario findings.</span>
+              </li>
+            ) : (
+              <li>
+                <span className="font-medium text-[var(--color-ink-700)]">All indexed orders are deep-analyzed.</span>{" "}
+                <span className="text-[var(--color-ink-700)]">
+                  Newly added orders go through the same process — see{" "}
+                  <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
+                    Orders Awaiting Analysis
+                  </Link>
+                  .
+                </span>
+              </li>
+            )}
           </ul>
         </Card>
         <Card>
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Data provenance</h2>
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">About this data</h2>
           <p className="mt-2 text-xs text-[var(--color-ink-500)]">
-            Generated {new Date(importMeta.generatedAt).toLocaleString()} from {importMeta.sourceFiles.join(" and ")}.
+            Every count on this page is a live, uncached query against the database, sourced only from the official
+            SEBI website and other official sources — see how the analysis is built, what it does and does not do,
+            and its known limitations.
           </p>
           <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-[var(--color-gold-700)] hover:underline">
             Methodology &amp; Limitations →

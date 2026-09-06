@@ -563,6 +563,7 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     { count: completeDocumentOnFile },
     { count: awaitingRetrieval },
     { count: retrievalFailures },
+    { count: deepAnalyzedCount },
     { count: fullyExtracted },
     { count: needsManualReview },
     { count: midPipelineCount },
@@ -583,12 +584,13 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     supabase.from("source_documents").select("*", { count: "exact", head: true }).eq("retrieval_status", "success"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "awaiting_retrieval"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "retrieval_failed"),
+    supabase.from("orders").select("*", { count: "exact", head: true }).in("processing_stage", ["citations_checked", "legally_reviewed"]),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "legally_reviewed"),
     supabase.from("orders").select("*", { count: "exact", head: true }).eq("processing_stage", "needs_manual_review"),
     supabase
       .from("orders")
       .select("*", { count: "exact", head: true })
-      .in("processing_stage", ["retrieval_attempted", "downloaded", "text_extracted", "scenario_findings_extracted", "citations_checked"]),
+      .in("processing_stage", ["retrieval_attempted", "downloaded", "text_extracted", "scenario_findings_extracted"]),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "pending_link"),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "duplicate_of_verified"),
     supabase.from("residual_register").select("*", { count: "exact", head: true }).eq("status", "not_cfid"),
@@ -607,6 +609,7 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     completeDocumentOnFile: completeDocumentOnFile ?? 0,
     awaitingRetrieval: awaitingRetrieval ?? 0,
     retrievalFailures: retrievalFailures ?? 0,
+    deepAnalyzedCount: deepAnalyzedCount ?? 0,
     fullyExtracted: fullyExtracted ?? 0,
     needsManualReview: needsManualReview ?? 0,
     midPipelineCount: midPipelineCount ?? 0,

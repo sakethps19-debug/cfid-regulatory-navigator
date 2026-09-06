@@ -17,11 +17,11 @@ export default function MethodologyPage() {
 
       <Section title="Purpose and scope">
         <p>
-          CFID Regulatory Navigator is an internal legal-research assistant for one authorised CFID officer. Given a
-          factual scenario, it identifies potentially applicable SEBI Act sections, regulations and other provisions;
-          matching factual ingredients; supporting CFID orders with paragraph references; contrary or negative
-          precedents; the procedural status of each finding; missing facts or evidence; a confidence level; and links
-          to official source documents.
+          CFID Regulatory Navigator is an internal legal-research assistant for CFID officers, each signed in with
+          their own allow-listed email. Given a factual scenario, it identifies potentially applicable SEBI Act
+          sections, regulations and other provisions; matching factual ingredients; supporting CFID orders with
+          paragraph references; contrary or negative precedents; the procedural status of each finding; missing facts
+          or evidence; a confidence level; and links to official source documents.
         </p>
         <p>
           <strong>This is a research-assistance tool.</strong> It does not make findings of guilt and does not
@@ -31,40 +31,41 @@ export default function MethodologyPage() {
         </p>
       </Section>
 
-      <Section title="Precedent database — Version 1">
+      <Section title="Precedent database">
         <p>
-          The verified precedent library for this pilot consists of exactly three CFID orders, each of whose order
-          number has been confirmed to contain &quot;CFID&quot;:
-        </p>
-        <ul className="list-inside list-disc space-y-1">
-          <li>Rajesh Exports Limited — interim order (order number contains CFID-SEC6)</li>
-          <li>Seacoast Shipping Services Limited — interim order cum show cause notice (CFID-SEC6)</li>
-          <li>Seacoast Shipping Services Limited — final order (CFID-CORD)</li>
-        </ul>
-        <p>
-          Where a final order exists, its finding is treated as controlling and is displayed prominently; the interim
-          order is used only to explain the original allegation and how the case developed. Findings are stored at the
-          level of an individual allegation, not the order as a whole, because one transaction may be upheld while
-          another under the same provision is not.
-        </p>
-        <p>
-          These three orders are also the two cases marked &quot;deep-analyzed&quot; in the broader{" "}
+          Every order in the{" "}
           <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
             Verified CFID Orders
           </a>{" "}
-          register — see the next section for how that register relates to this precedent database.
+          register has been confirmed to contain &quot;CFID&quot; in its own order number, then opened, read, and
+          broken down into individual scenario findings with paragraph citations — see the{" "}
+          <a href="/dashboard" className="text-[var(--color-gold-700)] underline">
+            Dashboard
+          </a>{" "}
+          for the current, live order/finding/provision counts rather than a number fixed here, since this corpus
+          grows as new orders are added and analysed. A new order is added to the corpus by the same process
+          described below, whether it is the first order added or the hundred-and-first.
+        </p>
+        <p>
+          Where a final order exists, its finding is treated as controlling and is displayed prominently; an interim
+          order is used to explain the original allegation and how the case developed. Findings are stored at the
+          level of an individual allegation, not the order as a whole, because one transaction may be upheld while
+          another under the same provision is not.
         </p>
       </Section>
 
       <Section title="Verified CFID Orders and the Residual register">
         <p>
-          <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative list of confirmed CFID orders for this
-          pilot — every order identifier in it has already been confirmed to contain &quot;CFID&quot;. It currently
-          lists 89 order-level rows across 54 cases. Of these, only two cases (Rajesh Exports Limited and Seacoast
-          Shipping Services Limited, three orders in total) have been broken down into the full scenario-finding
-          analysis that powers the Scenario Analyzer; every other verified order is genuine but still{" "}
-          <strong>awaiting detailed analysis</strong> — it is not treated as a source of scenario findings or
-          provision matches until that analysis is done.
+          <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative starting list of confirmed CFID orders
+          for this pilot — every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
+          row is either <strong>deep-analyzed</strong> (broken down into the full scenario-finding analysis that
+          powers the Scenario Analyzer) or still <strong>awaiting detailed analysis</strong> — a row awaiting
+          analysis is not treated as a source of scenario findings or provision matches until that analysis is done.
+          The{" "}
+          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
+            Orders Awaiting Analysis
+          </a>{" "}
+          page shows the current split.
         </p>
         <p>
           <strong>Residual_Order_Links.xlsx</strong> is an exclusion and pending-link register only. It records cases
@@ -153,7 +154,7 @@ export default function MethodologyPage() {
             Detect factual concepts (transaction types, actor roles, evidence types, alleged conduct) using a
             controlled synonym dictionary of keyword and phrase matches.
           </li>
-          <li>Score each of the pilot&apos;s 34 scenario findings by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
+          <li>Score every deep-analyzed scenario finding by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
           <li>Prefer findings drawn from a final order over an interim-only finding.</li>
           <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with — a provision is never suggested merely because it appeared elsewhere in the same order.</li>
           <li>Retrieve supporting precedents (status Upheld / Prima facie / Partly upheld) and contrary precedents (status Not upheld) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
@@ -183,7 +184,8 @@ export default function MethodologyPage() {
 
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
-          <li>The deep-analyzed scenario-finding library covers only three orders (two cases) out of 89 confirmed CFID orders in the Verified CFID Order Links register. Results for facts outside those two cases&apos; patterns will correctly show no match rather than a fabricated one.</li>
+          <li>The deep-analyzed scenario-finding library covers only the orders marked &quot;deep-analyzed&quot; on the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page — any order still awaiting analysis contributes no scenario findings yet. Results for facts outside the analysed corpus will correctly show no match rather than a fabricated one.</li>
+          <li>None of this analysis has yet been legally reviewed and signed off by a CFID officer — that is a separate, further step (see the Dashboard and Admin Processing Dashboard for the current legally-reviewed count).</li>
           <li>Keyword/synonym matching cannot capture every phrasing of a scenario — try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
           <li>Provision &quot;current text&quot; is not reproduced or guaranteed current — always verify against the official SEBI/MCA source before relying on it.</li>
           <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>
@@ -193,8 +195,8 @@ export default function MethodologyPage() {
 
       <Section title="Security">
         <ul className="list-inside list-disc space-y-1">
-          <li>Single authorised user, authenticated with a username/password pair set only via server environment variables.</li>
-          <li>Sessions are signed, HTTP-only cookies (not readable from browser JavaScript) with an 8-hour expiry.</li>
+          <li>Each officer signs in with their own Supabase Auth email/password; only emails on the server-configured allow-list can access any page or data, enforced both in the application and by Postgres Row-Level Security.</li>
+          <li>Sessions are managed by signed, HTTP-only Supabase Auth cookies (not readable from browser JavaScript).</li>
           <li>All application routes and API endpoints are protected by server-side middleware; unauthenticated requests are redirected to sign-in.</li>
           <li>Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS in production) are applied to every response.</li>
           <li>Basic rate limiting is applied to every route, with a stricter limit on the sign-in endpoint.</li>

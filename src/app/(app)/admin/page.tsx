@@ -9,10 +9,11 @@ export default async function AdminDashboardPage() {
 
   const rows: { label: string; value: number; hint?: string }[] = [
     { label: "Total orders indexed", value: metrics.totalIndexed, hint: "Every row in Verified_CFID_Order_Links.xlsx — not a claim this is every CFID order that exists" },
-    { label: "Fully extracted (legally reviewed)", value: metrics.fullyExtracted, hint: "Broken into scenario findings with paragraph citations — the only orders actually opened, read, and deep-analysed" },
+    { label: "Deep-analyzed", value: metrics.deepAnalyzedCount, hint: "Actually opened, read, and broken into scenario findings with paragraph citations — this is what powers the Scenario Analyzer for these orders" },
+    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing — see \"Deep-analyzed\" above" },
     { label: "Awaiting retrieval", value: metrics.awaitingRetrieval, hint: "Indexed and CFID-tag-checked, but no retrieval attempt has been made or recorded for these specific orders yet — not a failure" },
     { label: "Retrieval failed", value: metrics.retrievalFailures, hint: "A genuine, individually recorded retrieval attempt was made and failed — distinct from \"awaiting retrieval\"" },
-    { label: "In an active intermediate stage", value: metrics.midPipelineCount, hint: "Retrieval attempted / downloaded / text extracted / scenario findings extracted / citations checked, but not yet legally reviewed" },
+    { label: "Retrieved but not yet deep-analyzed", value: metrics.midPipelineCount, hint: "Document retrieved and in progress (attempted / downloaded / text extracted / scenario findings extracted), but citations have not yet been checked — genuinely earlier-stage than \"Deep-analyzed\" above" },
     { label: "Needs manual review", value: metrics.needsManualReview },
     { label: "Scenario findings created", value: metrics.scenarioFindingsCreated },
     { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far — not the complete CFID law library" },
@@ -26,7 +27,7 @@ export default async function AdminDashboardPage() {
     { label: "CFID identifier absent from record", value: metrics.cfidVerificationFailures, hint: "Tracked, never silently dropped — absence alone is not exclusionary (see cfid_verification_basis)" },
     { label: "Document actually opened/retrieved", value: metrics.documentActuallyRetrieved, hint: "The only stage that reflects a completed retrieval, not merely a supplied or validated link" },
     { label: "Document metadata confirmed from source", value: metrics.documentMetadataConfirmed, hint: "Date/number/authority confirmed directly from the opened document, not just the source workbook" },
-    { label: "Complete document on file (audit record)", value: metrics.completeDocumentOnFile, hint: "A formal source_documents row with checksum/timestamp — currently 0 even for the deeply-analysed orders; a known gap, not fabricated" },
+    { label: "Complete document on file (audit record)", value: metrics.completeDocumentOnFile, hint: "A formal source_documents row recording a successful retrieval, with checksum and retrieval timestamp" },
   ];
 
   const residualRows: { label: string; value: number; hint?: string }[] = [

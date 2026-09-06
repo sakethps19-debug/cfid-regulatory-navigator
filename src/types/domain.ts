@@ -314,11 +314,22 @@ export interface ProcessingMetrics {
    * retrieval attempt was made for this specific order and it failed
    * (distinct from awaitingRetrieval, where no attempt has been made). */
   retrievalFailures: number;
+  /** processing_stage = citations_checked OR legally_reviewed — i.e.
+   * isDeepAnalyzed(): the order has actually been opened, read, and broken
+   * down into scenario findings with paragraph citations. Kept separate
+   * from fullyExtracted (legal sign-off) since those are two different,
+   * sequential facts, not one. */
+  deepAnalyzedCount: number;
+  /** processing_stage = legally_reviewed only: a CFID officer has signed
+   * off on the AI-assisted analysis. This is the separate, further step
+   * after deep analysis, not a synonym for it. */
   fullyExtracted: number;
   needsManualReview: number;
-  /** Orders in an active intermediate pipeline stage (retrieval_attempted,
-   * downloaded, text_extracted, scenario_findings_extracted,
-   * citations_checked) — neither "not yet started" nor "fully reviewed". */
+  /** Orders in a genuinely early/mid pipeline stage (retrieval_attempted,
+   * downloaded, text_extracted, scenario_findings_extracted) — i.e. NOT
+   * yet deep-analyzed. Deliberately excludes citations_checked, which
+   * counts as deep-analyzed (see deepAnalyzedCount), so this bucket never
+   * lumps a complete analysis in with one barely started. */
   midPipelineCount: number;
 
   residualPendingLink: number;
