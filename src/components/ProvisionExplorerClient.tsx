@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { FindingStatus, LegalProvision, ScenarioFinding } from "@/types/domain";
+import { sortByProvisionNumber } from "@/lib/provisionOrder";
 
 const STATUS_ORDER: FindingStatus[] = [
   "Alleged",
@@ -83,6 +84,7 @@ export function ProvisionExplorerClient({
   const grouped = useMemo(() => {
     const map = new Map<string, LegalProvision[]>();
     for (const p of filtered) map.set(p.instrument, [...(map.get(p.instrument) ?? []), p]);
+    for (const [instrument, items] of map) map.set(instrument, sortByProvisionNumber(items));
     return map;
   }, [filtered]);
 

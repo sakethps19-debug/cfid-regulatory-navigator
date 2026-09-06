@@ -5,6 +5,7 @@ import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
 import { findingsForProvision, getProvisionById, getProvisionVersions, getProvisions } from "@/lib/data";
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
+import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority } from "@/lib/regulators";
 
 const RELATION_TEXT: Record<string, string> = {
@@ -23,7 +24,9 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
     getProvisions(),
     getProvisionVersions(provision.id),
   ]);
-  const similar = findSimilarlyNumberedProvisions(provision, allProvisions);
+  const similar = findSimilarlyNumberedProvisions(provision, allProvisions).sort((a, b) =>
+    compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
+  );
   const regulatorSlug = provision.issuingAuthority ? regulatorSlugForAuthority(provision.issuingAuthority) : null;
 
   return (

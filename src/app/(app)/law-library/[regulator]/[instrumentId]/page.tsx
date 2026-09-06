@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { getLegalInstruments, getProvisions } from "@/lib/data";
 import { REGULATOR_LABELS, isRegulatorSlug, regulatorSlugForAuthority } from "@/lib/regulators";
+import { sortByProvisionNumber } from "@/lib/provisionOrder";
 
 export default async function LawLibraryInstrumentPage({
   params,
@@ -17,9 +18,7 @@ export default async function LawLibraryInstrumentPage({
   const instrument = instruments.find((i) => i.id === instrumentId);
   if (!instrument || regulatorSlugForAuthority(instrument.issuingAuthority) !== regulator) notFound();
 
-  const instrumentProvisions = provisions
-    .filter((p) => p.instrument === instrument.name)
-    .sort((a, b) => b.ordersConsidered.length - a.ordersConsidered.length);
+  const instrumentProvisions = sortByProvisionNumber(provisions.filter((p) => p.instrument === instrument.name));
   if (instrumentProvisions.length === 0) notFound();
 
   return (
@@ -31,7 +30,7 @@ export default async function LawLibraryInstrumentPage({
         title={instrument.name}
         description={`${instrument.issuingAuthority} · ${instrumentProvisions.length} provision${
           instrumentProvisions.length === 1 ? "" : "s"
-        } cited or applied in orders analysed for this pilot, sorted by how often each is cited.`}
+        } cited or applied in orders analysed for this pilot, in ascending order of provision number.`}
         action={
           instrument.officialSourceUrl ? (
             <SourceLink href={instrument.officialSourceUrl}>Official source for this instrument</SourceLink>

@@ -7,6 +7,7 @@ import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { SourceLink } from "@/components/Card";
+import { compareProvisionNumbers } from "@/lib/provisionOrder";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -22,10 +23,12 @@ function frameworkLabel(provision: LegalProvision): string {
   return instrument;
 }
 
-/** Groups provision results by regulatory framework, preserving the
- * existing score-based ordering both across groups (a group's position is
- * set by the first — i.e. highest-scoring — provision assigned to it) and
- * within each group. */
+/** Groups provision results by regulatory framework. A group's position is
+ * set by the first — i.e. highest-scoring — provision assigned to it, but
+ * within each group the provisions are always in ascending order of their
+ * own provision number (e.g. Regulation 4 before Regulation 17), never by
+ * match score — an officer scanning "everything under LODR" expects the
+ * regulations in the order the Act itself numbers them. */
 function groupByFramework(provisionResults: ProvisionResult[]): { label: string; items: ProvisionResult[] }[] {
   const groups = new Map<string, ProvisionResult[]>();
   for (const pr of provisionResults) {
@@ -34,7 +37,10 @@ function groupByFramework(provisionResults: ProvisionResult[]): { label: string;
     list.push(pr);
     groups.set(label, list);
   }
-  return [...groups.entries()].map(([label, items]) => ({ label, items }));
+  return [...groups.entries()].map(([label, items]) => ({
+    label,
+    items: [...items].sort((a, b) => compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)),
+  }));
 }
 
 const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
@@ -96,7 +102,10 @@ function resultToText(result: AnalysisResult): string {
     }
     lines.push("");
   }
-  for (const pr of result.provisionResults) {
+  const sortedForExport = [...result.provisionResults].sort((a, b) =>
+    compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
+  );
+  for (const pr of sortedForExport) {
     lines.push("----------------------------------------");
     lines.push(`${pr.provision.instrument} — ${pr.provision.provisionNumber}`);
     lines.push(`Subject: ${pr.provision.subject}`);
@@ -311,6 +320,9 @@ export function ScenarioAnalyzerClient() {
 
       {result && (() => {
         const frameworkGroups = groupByFramework(result.provisionResults);
+        const sortedProvisionResults = [...result.provisionResults].sort((a, b) =>
+          compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
+        );
         return (
         <div className="space-y-6">
           {result.detectedConceptLabels.length > 0 && (
@@ -373,7 +385,7 @@ export function ScenarioAnalyzerClient() {
             </div>
           )}
 
-          {result.provisionResults.map((pr) => {
+          {sortedProvisionResults.map((pr) => {
             const key = `${pr.provision.id}`;
             const isExpanded = expanded.has(key);
             return (
