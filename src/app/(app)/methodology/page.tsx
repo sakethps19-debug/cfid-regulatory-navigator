@@ -103,11 +103,44 @@ export default function MethodologyPage() {
           <li>The official MCA website, for the Companies Act and rules.</li>
           <li>Official sources for notified accounting standards / Ind AS.</li>
           <li>Official sources expressly referred to within the SEBI orders themselves.</li>
+          <li>
+            The CFID orders in this register themselves, where an order reproduces a provision&apos;s text verbatim
+            (see &quot;Statutory text sourced from orders&quot; below).
+          </li>
         </ul>
         <p>
           Law-firm articles, blogs, news reports, commercial legal databases and unofficial reproductions or summaries
-          are never used. Anything that cannot be verified against an official source is marked &quot;Requires
-          verification&quot; rather than presented as settled.
+          are never used. Anything that cannot be verified against an official source, and that has not been quoted
+          verbatim in an order on file, is marked &quot;Requires verification&quot; rather than presented as settled.
+        </p>
+      </Section>
+
+      <Section title="Statutory text sourced from orders">
+        <p>
+          Many CFID orders reproduce the &quot;relevant provisions&quot; verbatim before applying them to the facts.
+          For every provision in the Law Library, this tool prefers a real quotation from an order on file over an
+          absent or generic description. Where a provision has been quoted verbatim in more than one order, the
+          chronologically <strong>latest</strong> order that actually quotes it (not merely cites it) is used.
+        </p>
+        <p>
+          Each such entry is labelled <strong>&quot;As reproduced verbatim in a CFID order&quot;</strong> — visibly
+          distinct from an <strong>&quot;officially verified&quot;</strong> entry sourced and checked directly
+          against the official SEBI/MCA source, and from a provision still marked &quot;Requires verification&quot;
+          because no verbatim quote has yet been found anywhere in the register. Order-sourced text is not
+          independently checked against the official source and should not be assumed to be the current in-force
+          text without that check.
+        </p>
+        <p>
+          <strong>Process for new orders:</strong> after a new order is added to the register (and converted to
+          searchable text, e.g. via <code>pdftotext -layout</code>), run{" "}
+          <code>npx tsx scripts/db/find-provision-quote-candidates.ts --order-id &lt;id&gt; --text &lt;file&gt;</code>{" "}
+          to surface candidate quotations near each provision&apos;s citation. This script only ever produces a
+          report — it never writes to the database. A first automated pass at this extraction, done without
+          per-candidate human review, produced multiple confirmed false positives (commentary mistaken for the
+          provision&apos;s own text, one provision&apos;s citation matching a different provision&apos;s quote,
+          a paraphrase mistaken for a verbatim quote). Every candidate must therefore be read in its full
+          surrounding context and confirmed before being written to <code>provision_versions</code>, following the
+          same standard described above for any other source.
         </p>
       </Section>
 
