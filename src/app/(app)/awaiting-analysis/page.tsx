@@ -9,7 +9,7 @@ export default async function AwaitingAnalysisPage() {
     <div>
       <PageHeader
         title="Orders Awaiting Analysis"
-        description={`Verified_CFID_Order_Links.xlsx is the authoritative list of confirmed CFID orders — every order identifier here has been confirmed to contain "CFID". ${deepAnalyzedCount} of ${verifiedCfidOrders.length} have been turned into full scenario findings so far; every other verified order is genuine but still awaiting detailed analysis. Residual_Order_Links.xlsx is an exclusion and pending-link register only — it is never used as a source of substantive CFID precedent unless a row is subsequently verified and moved into the list above. No row has been deleted from either register.`}
+        description={`The verified CFID order register is the authoritative list of confirmed CFID orders — every order identifier here has been confirmed to contain "CFID" (see Methodology for how it's compiled). ${deepAnalyzedCount} of ${verifiedCfidOrders.length} have been turned into full scenario findings so far; every other verified order is genuine but still awaiting detailed analysis. The residual register is a separate exclusion and pending-link list — it is never used as a source of substantive CFID precedent unless a row is subsequently verified and moved into the list above. No row has been deleted from either register.`}
       />
       <AwaitingAnalysisClient verifiedRows={verifiedCfidOrders} residualRows={residualOrders} />
     </div>
