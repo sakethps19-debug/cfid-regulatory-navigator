@@ -190,7 +190,14 @@ export async function ordersForMatter(matterId: string): Promise<Order[]> {
   return all.filter((o) => o.matterId === matterId);
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getOrderById(id: string): Promise<Order | undefined> {
+  // orders.id is a uuid column — a non-UUID path segment (a typo, a stale
+  // link, someone editing the URL) would otherwise reach Postgres as an
+  // invalid-cast error and surface as an unhandled 500, instead of the
+  // clean 404 a not-found order gets everywhere else.
+  if (!UUID_PATTERN.test(id)) return undefined;
   const supabase = await createClient();
   const [{ data: row, error }, { count }] = await Promise.all([
     supabase.from("orders").select("*").eq("id", id).maybeSingle(),

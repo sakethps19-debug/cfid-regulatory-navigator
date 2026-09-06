@@ -1,12 +1,13 @@
-// In-memory, fixed-window rate limiter appropriate for a single-user pilot.
+// In-memory, fixed-window rate limiter, keyed per authenticated officer
+// (see src/proxy.ts) so one officer's normal browsing cannot exhaust the
+// budget of every other officer sharing the same office network/IP.
 //
 // Limitation: this state lives in the memory of one serverless/edge isolate.
 // On a platform that runs multiple isolates or recycles them frequently, the
-// effective limit is "per isolate", not a strict global limit. For a pilot
-// with exactly one authorised user this is a reasonable, zero-infrastructure
-// defence against accidental hammering or basic brute force, not a
-// substitute for a shared store (e.g. Redis) in a future multi-instance
-// deployment. See Methodology & Limitations in the app.
+// effective limit is "per isolate", not a strict global limit. This is a
+// reasonable, zero-infrastructure defence against accidental hammering or
+// basic brute force, not a substitute for a shared store (e.g. Redis) in a
+// future higher-scale deployment. See Methodology & Limitations in the app.
 
 interface Bucket {
   count: number;

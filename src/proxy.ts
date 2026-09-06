@@ -56,21 +56,27 @@ export async function proxy(request: NextRequest) {
   }
 
   // Sign-in itself now goes directly from the browser to Supabase Auth (which
-  // has its own rate limiting), not through a route on this server, so a
-  // single general-purpose limiter covers everything this middleware sees.
+  // has its own rate limiting), not through a route on this server. The
+  // general limiter below is keyed by authenticated user id where one is
+  // available (looked up further down) rather than client IP: many officers
+  // sharing one office network share one public IP, and an IP-keyed limit
+  // sized for a single pilot user would let one officer's normal browsing
+  // exhaust the whole office's shared budget. Only pre-auth traffic (the
+  // login page itself, the public callback route) has no user id yet and
+  // falls back to IP-keying, which is fine since Supabase Auth's own
+  // rate limiting is the real defence for the sign-in flow itself.
   const clientKey = clientKeyFromHeaders(request.headers);
-  const rateLimit = checkRateLimit(`general:${clientKey}`, 120, 60); // 120 requests / min per client
-
-  if (!rateLimit.allowed) {
-    const response = new NextResponse("Too many requests. Please slow down and try again shortly.", {
-      status: 429,
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-    });
-    return applySecurityHeaders(response);
-  }
 
   const isPublicApi = PUBLIC_API_PATHS.has(pathname);
   if (isPublicApi) {
+    const rateLimit = checkRateLimit(`general:ip:${clientKey}`, 120, 60);
+    if (!rateLimit.allowed) {
+      const response = new NextResponse("Too many requests. Please slow down and try again shortly.", {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      });
+      return applySecurityHeaders(response);
+    }
     return applySecurityHeaders(NextResponse.next());
   }
 
@@ -85,6 +91,20 @@ export async function proxy(request: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    // Each authenticated officer gets their own 120-requests/minute budget,
+    // independent of every other officer on the same network. Only a request
+    // with no session yet (e.g. loading /login itself) falls back to an
+    // IP-keyed budget.
+    const rateLimitKey = user ? `general:user:${user.id}` : `general:ip:${clientKey}`;
+    const rateLimit = checkRateLimit(rateLimitKey, 120, 60);
+    if (!rateLimit.allowed) {
+      const response = new NextResponse("Too many requests. Please slow down and try again shortly.", {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      });
+      return applySecurityHeaders(response);
+    }
 
     const isPublicPage = PUBLIC_PATHS.has(pathname);
 

@@ -199,7 +199,7 @@ export default function MethodologyPage() {
           <li>Sessions are managed by signed, HTTP-only Supabase Auth cookies (not readable from browser JavaScript).</li>
           <li>All application routes and API endpoints are protected by server-side middleware; unauthenticated requests are redirected to sign-in.</li>
           <li>Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS in production) are applied to every response.</li>
-          <li>Basic rate limiting is applied to every route, with a stricter limit on the sign-in endpoint.</li>
+          <li>Basic rate limiting is applied to every route, keyed per signed-in officer rather than per network address — so officers sharing an office network do not share one budget. Sign-in itself goes directly from the browser to Supabase Auth, which applies its own rate limiting there.</li>
           <li>No scenario queries are stored, no analytics or third-party trackers are included, and there is no facility to upload confidential investigation records.</li>
         </ul>
       </Section>
