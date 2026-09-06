@@ -40,18 +40,92 @@ const NORMALIZED_TAGS = CONCEPT_TAGS.map((tag) => {
   return { ...tag, normalizedSynonyms: [...new Set([...base, ...variants])] };
 });
 
+/** An officer ruling something out ("there was no diversion of funds") reads,
+ * to pure substring matching, identically to an officer alleging it ("there
+ * was a diversion of funds") — both contain "diversion of funds". Checked as
+ * whole words (never substring) so domain words like "noticee" can't
+ * collide with the cue "not". Deliberately conservative: only negation
+ * words immediately before the matched phrase are considered, within a
+ * short word window — negation stated after the phrase ("diversion was
+ * alleged but not established") is a known miss, preferred over the false
+ * suppressions a wider or bidirectional window would risk. The window is
+ * kept tight (not sentence-wide) because this domain's own vocabulary is
+ * full of a different, non-negating pattern that a looser window would
+ * wrongly catch: "never flagged AS a related party dealing" or "no record
+ * OF the purchases" negate the disclosure/documentation verb, not the
+ * underlying related-party-transaction or purchase-transaction concept —
+ * the concept is exactly what's being alleged. Both were confirmed
+ * regressions during tuning and are now excluded by keeping the window
+ * short enough that the cue must sit right next to the match, with at
+ * most one or two intervening words (e.g. "no genuine diversion"). */
+const NEGATION_WORD_CUES = new Set([
+  "no",
+  "not",
+  "never",
+  "none",
+  "without",
+  "nil",
+  "didn",
+  "doesn",
+  "wasn",
+  "weren",
+  "isn",
+  "aren",
+  "couldn",
+  "shouldn",
+  "wouldn",
+  "hasn",
+  "haven",
+  "hadn",
+]);
+const NEGATION_PHRASE_CUES = ["no evidence of", "nothing to suggest", "unable to establish", "not established", "ruled out"];
+// Single negation words must sit close to the match (at most a couple of
+// intervening words, e.g. "no genuine diversion"); the multi-word phrase
+// cues above are unambiguous enough on their own to allow a wider gap.
+const NEGATION_WORD_WINDOW = 3;
+const NEGATION_PHRASE_WINDOW = 6;
+
+function hasPrecedingNegation(sentenceNormalized: string, matchIndex: number): boolean {
+  const precedingWords = sentenceNormalized.slice(0, matchIndex).trim().split(" ").filter(Boolean);
+  if (precedingWords.slice(-NEGATION_WORD_WINDOW).some((w) => NEGATION_WORD_CUES.has(w))) return true;
+  const phraseWindowText = precedingWords.slice(-NEGATION_PHRASE_WINDOW).join(" ");
+  return NEGATION_PHRASE_CUES.some((p) => phraseWindowText.includes(p));
+}
+
+/** Splits on sentence-ending punctuation so a negation earlier in one
+ * sentence can never suppress a genuine, separately-stated match in the
+ * next ("There was no diversion of funds. Related party transactions were
+ * not disclosed." must still detect the RPT concept normally). */
+function splitIntoSentences(text: string): string[] {
+  return text
+    .split(/[.!?;\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 /**
  * Deterministic keyword/synonym detection: for each controlled-vocabulary
  * concept tag, check whether any of its synonym phrases appear as a
- * substring of the normalized scenario text. No ML, no external calls.
+ * substring of the normalized scenario text, ignoring occurrences that are
+ * themselves negated in the scenario's own wording. No ML, no external
+ * calls.
  */
 export function detectConcepts(freeText: string): DetectedConcept[] {
-  const normalized = normalizeText(freeText);
-  if (!normalized) return [];
+  const sentences = splitIntoSentences(freeText)
+    .map(normalizeText)
+    .filter(Boolean);
+  if (sentences.length === 0) return [];
 
   const results: DetectedConcept[] = [];
   for (const tag of NORMALIZED_TAGS) {
-    const matchedPhrases = tag.normalizedSynonyms.filter((syn) => normalized.includes(syn));
+    const matchedPhrases: string[] = [];
+    for (const syn of tag.normalizedSynonyms) {
+      const matchedNonNegated = sentences.some((sentence) => {
+        const idx = sentence.indexOf(syn);
+        return idx !== -1 && !hasPrecedingNegation(sentence, idx);
+      });
+      if (matchedNonNegated) matchedPhrases.push(syn);
+    }
     if (matchedPhrases.length > 0) {
       results.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases });
     }
