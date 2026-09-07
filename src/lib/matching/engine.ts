@@ -3,7 +3,7 @@ import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from 
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import type { AnalysisResult, ConfidenceLevel, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
+import type { AnalysisResult, ConfidenceLevel, ContraryOnlyProvisionResult, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
 import { EXCLUDED_PUBLICATION_STATUSES } from "@/lib/publicationLifecycle";
 
@@ -48,6 +48,34 @@ const FINAL_ORDER_DISPOSITIONS = new Set<FindingStatus>([
 ]);
 export function isFinalOrderFinding(status: FindingStatus): boolean {
   return FINAL_ORDER_DISPOSITIONS.has(status);
+}
+
+export type SupportCategory = "Final merits support" | "Interim / prima facie" | "Contextual / unresolved";
+
+/** Every finding grouped into the "Supporting precedent(s)" section
+ * (i.e. any non-negative status) was previously presented as one
+ * undifferentiated list — a bare "Alleged" finding (no merits assessment
+ * of any kind) sat visually alongside a "Confirmed at interim" one (an
+ * actual, if not-yet-final, adjudication), inviting the same weight to
+ * be read into both. This function splits that section into three
+ * genuinely distinct categories so the UI/exports can subdivide it:
+ *   - "Final merits support": UPHELD_STATUSES - already shown separately
+ *     above as upheldPrecedents, but classified here too for completeness.
+ *   - "Interim / prima facie": some assessment has actually happened
+ *     (an interim order, or a prima facie view formed), just not a final
+ *     one.
+ *   - "Contextual / unresolved": UNRESOLVED_STATUSES - no merits
+ *     assessment has been reached at all (a bare allegation, an
+ *     inconclusive investigation, or a decision on an unrelated
+ *     preliminary point only).
+ * Assumes a non-negative status (i.e. a finding that would appear in
+ * supportingPrecedents/upheldPrecedents, never contraryPrecedents) - a
+ * NEGATIVE_STATUSES status falls through to "Interim / prima facie",
+ * which is not meaningful for it; callers should never pass one. */
+export function supportCategory(status: FindingStatus): SupportCategory {
+  if (UPHELD_STATUSES.has(status)) return "Final merits support";
+  if (UNRESOLVED_STATUSES.has(status)) return "Contextual / unresolved";
+  return "Interim / prima facie";
 }
 
 /** Orders two scored findings for DISPLAY PURPOSES ONLY (which precedent
@@ -465,6 +493,7 @@ export function analyzeScenario(
   }
 
   const provisionResults: ProvisionResult[] = [];
+  const contraryOnlyProvisionResults: ContraryOnlyProvisionResult[] = [];
   for (const [provisionId, findings] of findingsByProvision.entries()) {
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
@@ -477,7 +506,21 @@ export function analyzeScenario(
     // precedents. See the same requirement applied to the independent
     // global contrary-precedent search below (isMateriallyRelevantContrary).
     const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.finding.findingStatus) && f.substantiveCategoriesMatched >= 1);
-    if (supporting.length === 0) continue; // provision only has contrary evidence here — not "potentially relevant" on its own
+    if (supporting.length === 0) {
+      // This provision matched ONLY contrary findings for this scenario —
+      // never silently dropped: a provision considered and NOT confirmed
+      // on materially similar facts elsewhere is itself information an
+      // officer needs, surfaced as a distinct caution signal rather than
+      // folded into (or confused with) "potentially relevant" results.
+      if (contrary.length > 0) {
+        contraryOnlyProvisionResults.push({
+          provision,
+          contraryPrecedents: contrary.slice(0, 3).map(toPrecedentRef),
+          note: `No supporting precedent for this provision was identified in the currently structured corpus for this scenario. ${contrary.length} materially comparable precedent${contrary.length > 1 ? "s were" : " was"} found where this provision was considered and NOT confirmed on similar facts, so this provision may warrant caution rather than reliance, and the underlying order(s) should be examined for whether the same distinguishing factors are present here.`,
+        });
+      }
+      continue;
+    }
 
     // Prefer the highest-scoring RESOLVED finding (anything other than
     // Alleged/Inconclusive/Procedural observation) as the anchor for
@@ -519,6 +562,9 @@ export function analyzeScenario(
   }
 
   provisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.supportingPrecedents[0], b.supportingPrecedents[0]));
+  contraryOnlyProvisionResults.sort((a, b) =>
+    compareByFactualScoreThenFinality(a.contraryPrecedents[0], b.contraryPrecedents[0])
+  );
 
   // Independently retrieve contrary precedents for fund-movement / allotment
   // style scenarios, per the pilot's explicit safeguard, even if they did
@@ -611,10 +657,15 @@ export function analyzeScenario(
     query,
     detectedConceptLabels: unique(detected.map((c) => c.label)),
     provisionResults,
+    contraryOnlyProvisionResults,
     globalContraryPrecedents,
     contraryPrecedentSearchNote,
     applicableGuardrails,
-    hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
+    hasResults:
+      provisionResults.length > 0 ||
+      contraryOnlyProvisionResults.length > 0 ||
+      globalContraryPrecedents.length > 0 ||
+      fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,
     semanticAssist: corrections,
     completeness,

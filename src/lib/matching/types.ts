@@ -140,6 +140,22 @@ export interface ProvisionResult {
   applicableVersionNote: string;
 }
 
+/** A provision that matched ONLY contrary (not-confirmed/withdrawn)
+ * findings for this scenario — no supporting precedent exists, so it is
+ * never listed in AnalysisResult.provisionResults (which represents
+ * "potentially relevant, with supporting precedent"). Previously such a
+ * provision was silently dropped entirely: an officer investigating facts
+ * materially similar to a matter where this exact provision was
+ * considered and NOT confirmed had no way to learn that from this tool.
+ * Surfaced separately here instead, as a caution/contrary-treatment
+ * signal rather than a "this may apply" one — see
+ * AnalysisResult.contraryOnlyProvisionResults. */
+export interface ContraryOnlyProvisionResult {
+  provision: LegalProvision;
+  contraryPrecedents: PrecedentRef[];
+  note: string;
+}
+
 export interface GuardrailNote {
   id: string;
   provisionOrIssue: string;
@@ -152,6 +168,12 @@ export interface AnalysisResult {
   query: ScenarioQuery;
   detectedConceptLabels: string[];
   provisionResults: ProvisionResult[];
+  /** Provisions whose ONLY materially-relevant matches were contrary
+   * (not-confirmed/withdrawn) findings — see ContraryOnlyProvisionResult.
+   * Never merged into provisionResults, which represents "potentially
+   * relevant, with supporting precedent"; this is a distinct "warranting
+   * caution" signal. */
+  contraryOnlyProvisionResults: ContraryOnlyProvisionResult[];
   globalContraryPrecedents: PrecedentRef[];
   /** Set only when the independent contrary-precedent safeguard actually ran
    * (the scenario contains a broad trigger concept such as preferential

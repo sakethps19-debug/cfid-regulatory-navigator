@@ -15,6 +15,7 @@ import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengthDisplay";
 import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import { findingMaturityTier } from "@/lib/findingMaturity";
+import { supportCategory } from "@/lib/matching/engine";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -301,7 +302,7 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.finding.findingStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
@@ -326,6 +327,21 @@ export function resultToText(result: AnalysisResult): string {
       for (const group of pr.missingFacts) {
         lines.push(`  Per ${group.recordId} (${group.scenarioTitle}):`);
         for (const m of group.gaps) lines.push(`    - ${m}`);
+      }
+    }
+  }
+  if (result.contraryOnlyProvisionResults.length > 0) {
+    lines.push("----------------------------------------");
+    lines.push("Provisions warranting caution (contrary treatment identified, no supporting precedent):");
+    for (const cp of result.contraryOnlyProvisionResults) {
+      lines.push(`  ${cp.provision.instrument} · ${cp.provision.provisionNumber}: ${cp.note}`);
+      for (const c of cp.contraryPrecedents) {
+        lines.push(
+          `    - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`
+        );
+        for (const item of c.finding.ingredientsNotEstablished) {
+          lines.push(`        Legal ingredient not established (this precedent's own outcome): ${item}`);
+        }
       }
     }
   }
@@ -407,6 +423,7 @@ export function resultToCsv(result: AnalysisResult): string {
   rows.push(csvRow([]));
   rows.push(
     csvRow([
+      "Row type",
       "Instrument",
       "Provision number",
       "Subject",
@@ -416,13 +433,17 @@ export function resultToCsv(result: AnalysisResult): string {
       "Matched factual ingredients",
       "Supporting precedent record IDs",
       "Supporting precedents record verification maturity (per precedent)",
+      "Supporting precedents support category (per precedent)",
       "Missing facts / evidence (per cited precedent, never a universal requirement)",
+      "Contrary-only note (only set for 'Warranting caution' rows)",
+      "Contrary precedent record IDs (only set for 'Warranting caution' rows)",
     ])
   );
   for (const pr of sorted) {
     const reviewedCount = pr.supportingPrecedents.filter((s) => s.finding.humanLegalReviewCompleted).length;
     rows.push(
       csvRow([
+        "Potentially relevant",
         pr.provision.instrument,
         pr.provision.provisionNumber,
         pr.provision.subject ?? "",
@@ -432,7 +453,30 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
         pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
+        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${supportCategory(s.finding.findingStatus)}`).join("; "),
         pr.missingFacts.map((group) => `${group.recordId}: ${group.gaps.join(" / ")}`).join("; "),
+        "",
+        "",
+      ])
+    );
+  }
+  for (const cp of result.contraryOnlyProvisionResults) {
+    rows.push(
+      csvRow([
+        "Warranting caution (contrary only, no supporting precedent)",
+        cp.provision.instrument,
+        cp.provision.provisionNumber,
+        cp.provision.subject ?? "",
+        "",
+        "0",
+        "0 of 0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        cp.note,
+        cp.contraryPrecedents.map((c) => c.finding.recordId).join("; "),
       ])
     );
   }
@@ -1072,6 +1116,9 @@ export function ScenarioAnalyzerClient() {
                             <FindingMaturityBadge finding={s.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
                           </div>
+                          <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-[var(--status-green-text)]">
+                            {supportCategory(s.finding.findingStatus)}
+                          </p>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{s.finding.scenarioTitle}</p>
                           <PublicationWarningNote status={s.finding.publicationStatus} />
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
@@ -1315,6 +1362,62 @@ export function ScenarioAnalyzerClient() {
               })}
             </div>
           ))}
+
+          {result.contraryOnlyProvisionResults.length > 0 && (
+            <article className="rounded-sm bg-[var(--status-amber-bg)] p-4 ring-1 border-[var(--status-amber-ring)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--status-amber-text)]">
+                Provisions warranting caution: contrary treatment identified, no supporting precedent
+              </h3>
+              <p className="mt-1 text-sm text-[var(--status-amber-text)]">
+                For these provisions, the only materially comparable precedents on record were NOT confirmed on
+                similar facts, and no supporting precedent exists in this pilot&apos;s corpus. This is not a
+                statement that the provision does not apply here, it is a signal that similar facts were examined
+                elsewhere and the provision was not made out on them, so the underlying order(s) should be examined
+                for whether the same distinguishing factors are present in this scenario.
+              </p>
+              <ul className="mt-3 space-y-3">
+                {result.contraryOnlyProvisionResults.map((cp) => (
+                  <li key={cp.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-amber-ring)]">
+                    <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                      {cp.provision.instrument} · {cp.provision.provisionNumber}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{cp.provision.subject}</p>
+                    <p className="mt-1.5 text-xs text-[var(--status-amber-text)]">{cp.note}</p>
+                    <ul className="mt-2 space-y-2">
+                      {cp.contraryPrecedents.map((c) => (
+                        <li key={c.finding.recordId} className="rounded-lg bg-[var(--status-amber-bg)]/60 p-2.5 ring-1 border-[var(--status-amber-ring)]">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status={c.finding.findingStatus} />
+                            <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
+                            <FindingMaturityBadge finding={c.finding} />
+                            <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
+                          <PublicationWarningNote status={c.finding.publicationStatus} />
+                          {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[var(--status-amber-text)]">{c.distinguishingNote}</p>}
+                          {c.finding.ingredientsNotEstablished.length > 0 && (
+                            <div className="mt-1" title="Curated legal analysis specific to this precedent's own case, never a statement about the scenario you entered.">
+                              <span className="text-xs font-semibold text-[var(--color-ink-700)]">
+                                Legal ingredients not established (this precedent&apos;s own outcome):
+                              </span>
+                              <ul className="mt-0.5 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
+                                {c.finding.ingredientsNotEstablished.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          <div className="mt-1">
+                            <SourceLink href={c.finding.officialSourceUrl} />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )}
 
           {(result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) && (
             <article className="rounded-sm bg-[var(--status-red-bg)] p-4  ring-1 border-[var(--status-red-ring)] sm:p-6">
