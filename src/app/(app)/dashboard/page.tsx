@@ -58,6 +58,13 @@ export default async function DashboardPage() {
     return acc;
   }, {});
   const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
+  // Derived directly from which orders scenario findings actually reference
+  // -- never assumed from the absence of a "pending" queue entry. An order
+  // can be indexed without yet having a structured finding for reasons this
+  // count doesn't need to know; it only states what's actually on file.
+  const orderIdsWithFindings = new Set(scenarioFindings.flatMap((f) => f.orderIds));
+  const ordersWithStructuredFindings = orders.filter((o) => orderIdsWithFindings.has(o.id)).length;
+  const legallyReviewedFindingsCount = scenarioFindings.filter((f) => f.humanLegalReviewCompleted).length;
   const recentAndSignificant = pickRecentAndSignificant(scenarioFindings, orders);
   const reversalsCount = interimFinalReversals(scenarioFindings).length;
 
@@ -89,6 +96,14 @@ export default async function DashboardPage() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-3 rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
+        Structured-analysis coverage: {ordersWithStructuredFindings} of {orders.length} indexed orders currently
+        have scenario findings.{" "}
+        {legallyReviewedFindingsCount === 0
+          ? "None of the current scenario findings have yet been legally reviewed or signed off by a CFID officer."
+          : `${legallyReviewedFindingsCount} of ${scenarioFindings.length} scenario findings have been legally reviewed; the rest have not.`}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -133,19 +148,22 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {matterLinkingStats.map((s) => (
-          <Card key={s.label}>
-            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{s.value}</div>
-            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{s.label}</div>
-          </Card>
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-[var(--color-ink-500)]">
-        A matter can span several individual orders (interim, confirmatory, final, adjudication, or otherwise); most
-        orders are not yet linked to a matter, and that count grows only as relationships already known from official
-        sources are recorded, never guessed from company name or order dates.
-      </p>
+      <Card className="mt-8">
+        <h2 className="text-sm font-semibold text-[var(--color-ink-900)]">Matter linking</h2>
+        <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+          {matterLinkingStats.map((s) => (
+            <div key={s.label}>
+              <dt className="text-xs text-[var(--color-ink-500)]">{s.label}</dt>
+              <dd className="text-lg font-semibold text-[var(--color-ink-900)]">{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-xs text-[var(--color-ink-500)]">
+          A matter can span several individual orders (interim, confirmatory, final, adjudication, or otherwise);
+          most orders are not yet linked to a matter, and that count grows only as relationships already known from
+          official sources are recorded, never guessed from company name or order dates.
+        </p>
+      </Card>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -194,7 +212,9 @@ export default async function DashboardPage() {
               </li>
             ) : (
               <li>
-                <span className="font-medium text-[var(--color-ink-700)]">Every indexed order has been broken down into scenario findings.</span>{" "}
+                <span className="font-medium text-[var(--color-ink-700)]">
+                  {ordersWithStructuredFindings} of {orders.length} indexed orders currently have scenario findings.
+                </span>{" "}
                 <span className="text-[var(--color-ink-700)]">
                   Newly added orders go through the same process, see{" "}
                   <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
