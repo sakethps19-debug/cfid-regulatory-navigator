@@ -106,6 +106,7 @@ function mapFinding(
     category: row.category,
     scenarioTitle: row.scenario_title,
     factualPattern: row.factual_pattern,
+    allegationText: row.allegation_text,
     provisionsConsideredRaw: row.provisions_considered_raw,
     provisionIds: provisionLinks.map((l) => l.provisionId),
     provisionLinks,
@@ -567,12 +568,13 @@ export async function orderRelationshipsForOrder(orderId: string): Promise<Order
   return all.filter((r) => r.fromOrderId === orderId || r.toOrderId === orderId);
 }
 
-function mapValidationIssue(row: ValidationIssueRow, orderCaseName: string | null): ValidationIssue {
+function mapValidationIssue(row: ValidationIssueRow, orderCaseName: string | null, findingRecordId: string | null): ValidationIssue {
   return {
     id: row.id,
     orderId: row.order_id,
     orderCaseName,
     findingId: row.finding_id,
+    findingRecordId,
     issueType: row.issue_type,
     severity: row.severity === "error" || row.severity === "info" ? row.severity : "warning",
     description: row.description,
@@ -584,14 +586,24 @@ function mapValidationIssue(row: ValidationIssueRow, orderCaseName: string | nul
 
 export async function getValidationIssues(): Promise<ValidationIssue[]> {
   const supabase = await createClient();
-  const [{ data: issueRows, error: issuesError }, { data: orderRows, error: ordersError }] = await Promise.all([
-    supabase.from("validation_issues").select("*").order("severity", { ascending: true }),
-    supabase.from("orders").select("id, case_name"),
-  ]);
+  const [{ data: issueRows, error: issuesError }, { data: orderRows, error: ordersError }, { data: findingRows, error: findingsError }] =
+    await Promise.all([
+      supabase.from("validation_issues").select("*").order("severity", { ascending: true }),
+      supabase.from("orders").select("id, case_name"),
+      supabase.from("scenario_findings").select("id, record_id"),
+    ]);
   if (issuesError) throw issuesError;
   if (ordersError) throw ordersError;
+  if (findingsError) throw findingsError;
   const caseNameById = new Map((orderRows ?? []).map((o) => [o.id, o.case_name]));
-  return (issueRows ?? []).map((row) => mapValidationIssue(row, row.order_id ? (caseNameById.get(row.order_id) ?? null) : null));
+  const findingRecordIdById = new Map((findingRows ?? []).map((f) => [f.id, f.record_id]));
+  return (issueRows ?? []).map((row) =>
+    mapValidationIssue(
+      row,
+      row.order_id ? (caseNameById.get(row.order_id) ?? null) : null,
+      row.finding_id ? (findingRecordIdById.get(row.finding_id) ?? null) : null
+    )
+  );
 }
 
 const MAX_FLAG_NOTE_LENGTH = 2000;

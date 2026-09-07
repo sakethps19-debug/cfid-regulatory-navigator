@@ -134,6 +134,14 @@ export interface ScenarioFinding {
   category: string | null;
   scenarioTitle: string;
   factualPattern: string;
+  /** The specific legal allegation/charge text (scenario_findings.
+   * allegation_text) — distinct from factualPattern (what happened) and
+   * provisionsConsideredRaw (which provisions were cited): this is what the
+   * order alleges was done wrong. Null where not yet transcribed. Optional
+   * (rather than a plain string | null) so the many existing test fixtures
+   * built before this field existed remain valid without updating all of
+   * them — same reasoning as provisionLinks[].relationship. */
+  allegationText?: string | null;
   provisionsConsideredRaw: string | null; // original text from workbook
   provisionIds: string[]; // parsed canonical provision ids, instrument-qualified — every provision this finding cites, for display/listing purposes
   /** Same links as provisionIds, but each carries justifyingTags: the
@@ -304,6 +312,10 @@ export interface ValidationIssue {
   orderId: string | null;
   orderCaseName: string | null;
   findingId: string | null;
+  /** scenario_findings.record_id (e.g. "SSSL-03") for findingId, resolved
+   * for display — never itself the join key, findingId (the raw uuid)
+   * remains that. Null when findingId is null or resolution failed. */
+  findingRecordId: string | null;
   issueType: string;
   severity: "error" | "warning" | "info";
   description: string;

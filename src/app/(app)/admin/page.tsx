@@ -107,6 +107,24 @@ export default async function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+      <Card className="mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Legal Review Queue</h3>
+            <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+              Every scenario finding with its full verification and review record, filterable by review-pending or
+              unverified status, so a human legal reviewer can validate each finding without needing raw table
+              access. Read-only.
+            </p>
+          </div>
+          <Link
+            href="/admin/legal-review-queue"
+            className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
+          >
+            Open Legal Review Queue →
+          </Link>
+        </div>
+      </Card>
 
       <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Processing: official-link verification stages</h2>
       <p className="mb-3 text-sm text-[var(--color-ink-700)]">
