@@ -46,8 +46,28 @@ const FINAL_ORDER_DISPOSITIONS = new Set<FindingStatus>([
   "Partly Confirmed in Final Order",
   "Not Confirmed in Final Order",
 ]);
-function isFinalOrderFinding(status: FindingStatus): boolean {
+export function isFinalOrderFinding(status: FindingStatus): boolean {
   return FINAL_ORDER_DISPOSITIONS.has(status);
+}
+
+/** Orders two scored findings for DISPLAY PURPOSES ONLY (which precedent
+ * appears first, which three make the top-3-per-provision cut) — never for
+ * anything officer-facing. Sorts by factual-overlap score first; a
+ * finding's procedural stage (final vs. interim/unresolved) only breaks an
+ * EXACT tie on that score, never overrides a genuinely higher factual
+ * score. This is the deliberate replacement for a former `score *= 1.15`
+ * finality multiplier folded directly into the score: that multiplier let
+ * procedural stage make two fact patterns look "more factually similar"
+ * than they actually were (a interim-stage finding scoring 9 could be
+ * outranked by a final-order finding scoring merely 8, since 8*1.15=9.2) —
+ * exactly the dimension-conflation this scoring model must not have. A
+ * secondary, ties-only tiebreak has no such effect: it can only ever
+ * reorder findings that are already factually equal, which is a legitimate
+ * display preference (an equally-on-point final order is more citable than
+ * an equally-on-point interim one), not a factual-similarity claim. */
+export function compareByFactualScoreThenFinality(a: { score: number; finding: ScenarioFinding }, b: { score: number; finding: ScenarioFinding }): number {
+  if (a.score !== b.score) return b.score - a.score;
+  return Number(isFinalOrderFinding(b.finding.findingStatus)) - Number(isFinalOrderFinding(a.finding.findingStatus));
 }
 
 function humanizeTag(id: string): string {
@@ -171,9 +191,13 @@ function scoreFinding(
   // free-text detection would have been.
   if (evidenceFilter && finding.evidenceTypes.includes(evidenceFilter)) score += 1;
 
-  const isFinal = isFinalOrderFinding(finding.findingStatus);
-  if (isFinal) score *= 1.15;
-
+  // score is a pure factual-overlap measure — deliberately never adjusted
+  // for procedural stage (final/interim) or historical disposition. Those
+  // are separate dimensions, shown separately (see StatusBadge /
+  // findingStatusLabel) and must never be able to make one fact pattern
+  // read as more or less factually similar than another. Display-order
+  // ties are broken by finality separately, see
+  // compareByFactualScoreThenFinality — never by adjusting this number.
   const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
   const matchedIngredients = unique(matchedIds.map((id) => detectedLabelById.get(id) ?? id));
   const toLabels = (ids: string[]) => unique(ids.map((id) => detectedLabelById.get(id) ?? id));
@@ -222,26 +246,38 @@ function mergeMatchedByCategory(refs: { matchedByCategory: MatchedByCategory }[]
   };
 }
 
+/** Derives the officer-facing factual-overlap tier (High/Medium/Low,
+ * displayed as "Strong/Moderate/Limited factual overlap" — see
+ * matchStrengthDisplay.ts) PURELY from how many independent factual
+ * categories (transaction type, actor role, conduct, evidence) overlap.
+ * This is one of three deliberately independent dimensions this engine
+ * exposes about a precedent — the other two are its procedural stage
+ * (final/interim/etc, via isFinalOrderFinding) and its historical
+ * disposition (confirmed/not confirmed/unresolved, via the finding's own
+ * findingStatus, both already shown separately through StatusBadge /
+ * findingStatusLabel). Neither of those may influence the tier computed
+ * here: a precedent's procedural stage or disposition never makes its
+ * FACTS more or less similar to the entered scenario, only how much
+ * weight to give that similarity — a judgment call left to the officer,
+ * informed by the separately-shown stage/disposition, not pre-decided by
+ * collapsing everything into one number. (This function previously also
+ * used isFinalOrderFinding to unlock the High tier and UNRESOLVED_STATUSES
+ * to force a hard cap at Low — both removed for exactly this reason.) */
 function deriveConfidence(best: ScoredFinding, supportCount: number): { level: ConfidenceLevel; reasons: string[] } {
   const reasons: string[] = [];
-  const isFinal = isFinalOrderFinding(best.finding.findingStatus);
-  if (isFinal) {
-    reasons.push(`The strongest matching precedent's own finding status ("${best.finding.findingStatus}") reflects a final-order determination.`);
-  } else {
-    reasons.push(`The strongest matching precedent's own finding status ("${best.finding.findingStatus}") does not reflect a final-order determination.`);
-  }
   reasons.push(`${best.categoriesMatched} independent factual categories (transaction type, actor role, conduct, evidence) overlap with the facts stated.`);
   if (supportCount > 1) reasons.push(`${supportCount} scenario findings support this provision.`);
-
-  const isUnresolved = UNRESOLVED_STATUSES.has(best.finding.findingStatus);
+  reasons.push(
+    `This reflects factual overlap only; it says nothing about this precedent's own procedural stage or historical disposition, shown separately above and never used to compute this figure.`
+  );
+  if (UNRESOLVED_STATUSES.has(best.finding.findingStatus)) {
+    reasons.push(
+      `Separately: the strongest matching precedent carries the status "${best.finding.findingStatus}", no determination has been reached on the merits either way. That is a fact about the precedent's own disposition, not about how closely its facts resemble the entered scenario, so it does not change the factual-overlap figure above, but it should weigh heavily in how much this precedent is relied on.`
+    );
+  }
 
   let level: ConfidenceLevel;
-  if (isUnresolved) {
-    level = "Low";
-    reasons.push(
-      `The strongest matching precedent carries the status "${best.finding.findingStatus}": no determination has been reached on the merits either way, and this cannot therefore count as more than a weak signal, whatever the extent of factual overlap.`
-    );
-  } else if (best.categoriesMatched >= 3 && (isFinal || best.score >= 9)) {
+  if (best.categoriesMatched >= 3 && best.score >= 9) {
     level = "High";
   } else if (best.substantiveCategoriesMatched >= 2) {
     level = "Medium";
@@ -353,7 +389,7 @@ export function analyzeScenario(
   const scored = publishedScenarioFindings
     .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter, evidenceFilter))
     .filter((s) => s.score >= MIN_FINDING_SCORE)
-    .sort((a, b) => b.score - a.score);
+    .sort(compareByFactualScoreThenFinality);
 
   // A category counts as "detected" either from free-text concept detection
   // or from the officer explicitly selecting the corresponding dropdown —
@@ -433,7 +469,7 @@ export function analyzeScenario(
     });
   }
 
-  provisionResults.sort((a, b) => b.supportingPrecedents[0].score - a.supportingPrecedents[0].score);
+  provisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.supportingPrecedents[0], b.supportingPrecedents[0]));
 
   // Independently retrieve contrary precedents for fund-movement / allotment
   // style scenarios, per the pilot's explicit safeguard, even if they did
@@ -459,7 +495,7 @@ export function analyzeScenario(
       // conduct overlap, never merely a shared actor role, evidence type, or
       // the bare presence of a generic trigger word like "fraud"/"company".
       .filter((sf) => sf.score >= MIN_FINDING_SCORE && sf.substantiveCategoriesMatched >= 1)
-      .sort((a, b) => b.score - a.score);
+      .sort(compareByFactualScoreThenFinality);
 
     for (const sf of materiallyRelevantContrary) {
       globalContraryPrecedents.push({

@@ -8,7 +8,7 @@
 // confirmed_at_interim/inconclusive/procedural_observation). Finality must
 // instead come from the finding's own curated findingStatus.
 import { describe, expect, it } from "vitest";
-import { analyzeScenario } from "@/lib/matching/engine";
+import { analyzeScenario, isFinalOrderFinding } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
 
 function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; provisionIds: string[] }): ScenarioFinding {
@@ -61,7 +61,23 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 }
 
 describe("explicit finality (findingStatus, not finalParagraphReferences presence)", () => {
+  // isFinalOrderFinding is now tested directly (a pure function of
+  // findingStatus alone) rather than by scanning deriveConfidence's
+  // reasons text — that text no longer mentions finality at all, by
+  // design: finality is a separate dimension from factual overlap and
+  // must never leak into the factual-overlap reasoning (see the
+  // dimension-separation fix in engine.ts, deriveConfidence). Finality
+  // itself, and its use as a display-order tiebreak, are still real and
+  // still tested — just through the current correct channels.
   it("does NOT treat a Confirmed-at-interim finding as final, even though it carries a final paragraph reference", () => {
+    expect(isFinalOrderFinding("Confirmed at interim")).toBe(false);
+  });
+
+  it("DOES treat a Confirmed in Final Order finding as final, even without a populated final paragraph reference", () => {
+    expect(isFinalOrderFinding("Confirmed in Final Order")).toBe(true);
+  });
+
+  it("a finding whose status is not final is still fully scored and surfaced by the engine (finality is not required to appear at all, only to be labelled correctly)", () => {
     const provision = makeProvision({ id: "TEST-PROV-INTERIM-WITH-REF" });
     const interimWithFinalRef = makeFinding({
       recordId: "SYN-INTERIM-01",
@@ -78,28 +94,7 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
     );
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-INTERIM-WITH-REF");
     expect(pr).toBeDefined();
-    // The confidence-basis text must say finality was NOT established from this status.
-    expect(pr!.confidenceReasons.join(" ")).toContain('"Confirmed at interim") does not reflect a final-order determination');
-  });
-
-  it("DOES treat a Confirmed in Final Order finding as final, even without a populated final paragraph reference", () => {
-    const provision = makeProvision({ id: "TEST-PROV-FINAL-NO-REF" });
-    const finalNoRef = makeFinding({
-      recordId: "SYN-FINAL-01",
-      provisionIds: ["TEST-PROV-FINAL-NO-REF"],
-      findingStatus: "Confirmed in Final Order",
-      finalParagraphReferences: null,
-      interimParagraphReferences: "Para 12",
-    });
-    const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
-      [finalNoRef],
-      [provision],
-      []
-    );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-FINAL-NO-REF");
-    expect(pr).toBeDefined();
-    expect(pr!.confidenceReasons.join(" ")).toContain('"Confirmed in Final Order") reflects a final-order determination');
+    expect(pr!.supportingPrecedents[0]?.finding.findingStatus).toBe("Confirmed at interim");
   });
 
   it("treats a Not Confirmed in Final Order finding as final too (a final order rejecting the allegation is still a final-order determination)", () => {

@@ -284,7 +284,19 @@ export default function MethodologyPage() {
           <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with, a provision is never suggested merely because it appeared elsewhere in the same order.</li>
           <li>Retrieve supporting precedents (status Confirmed in Final Order / Prima facie / Partly Confirmed in Final Order) and contrary precedents (status Not Confirmed in Final Order) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
           <li>Assemble a missing-facts checklist from each matched finding&apos;s recorded evidentiary gaps.</li>
-          <li>Derive a factual-overlap level (displayed as &quot;Strong&quot;, &quot;Moderate&quot; or &quot;Limited&quot; factual overlap; internally still scored High/Medium/Low) from how many independent factual categories overlap and whether the best match is a final or interim-only finding. This measures how strongly the entered facts overlap with a precedent&apos;s recorded facts, not the likelihood that a violation occurred, deliberately not labelled &quot;confidence&quot; on screen, since that reads too easily as an assessment of legal likelihood.</li>
+          <li>
+            Derive a factual-overlap level (displayed as &quot;Strong&quot;, &quot;Moderate&quot; or &quot;Limited&quot; factual overlap;
+            internally still scored High/Medium/Low) from how many independent factual categories overlap ONLY,
+            namely transaction type, actor role, conduct, and evidence. This measures how strongly the entered facts overlap
+            with a precedent&apos;s recorded facts, not the likelihood that a violation occurred, deliberately not
+            labelled &quot;confidence&quot; on screen, since that reads too easily as an assessment of legal
+            likelihood. This tool deliberately treats factual overlap, procedural stage (final / interim / allegation
+            only, etc.), and historical disposition (confirmed / not confirmed / no merits determination) as three
+            independent dimensions, shown separately: a precedent&apos;s procedural stage or disposition never
+            changes its factual-overlap figure, only how much weight an officer should give that overlap. Where two
+            precedents have identical factual overlap, the one from a final order is listed first as a display
+            preference only, never as a boost to the overlap figure itself.
+          </li>
         </ol>
         <p>
           The underlying data (orders, scenario findings, provisions, legal tests, directions, and the fact-element

@@ -1,9 +1,22 @@
 // A finding with status "Alleged", "Inconclusive", or "Procedural
 // observation" has had no determination made on the merits either way. It
 // still shows in results (with its true status badge, per StatusBadge.tsx —
-// never hidden), but must not drive a provision to High confidence purely
-// on keyword/category overlap, since that would read an untested allegation
-// as settled precedent.
+// never hidden).
+//
+// This file previously asserted that such a status hard-capped the
+// factual-overlap ("confidence") tier at Low, regardless of how strong the
+// actual category overlap was — e.g. a genuinely 4-category, full-overlap
+// "Alleged" finding used to be forced to read as "Low confidence" purely
+// because of its own disposition. That was itself an instance of the exact
+// defect a later correctness pass (see engine.ts, deriveConfidence's
+// docstring) identified and removed: procedural disposition contaminating
+// the factual-overlap measure. Under the corrected architecture, factual
+// overlap and disposition are two independent, separately-displayed
+// dimensions (see StatusBadge for disposition, the factual-overlap badge
+// for the overlap tier) — a strong factual match on an unresolved
+// allegation now correctly reads as "strong factual overlap" AND
+// separately, honestly, "Alleged" (untested), rather than one number
+// silently blending the two and hiding which was which.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -61,8 +74,8 @@ function makeProvision(overrides: Partial<LegalProvision>): LegalProvision {
   };
 }
 
-describe("Confidence tiering — unresolved finding statuses", () => {
-  it("caps confidence at Low when the only supporting finding is 'Alleged', even with full category overlap", () => {
+describe("Factual-overlap tiering is independent of disposition (Alleged/Inconclusive/Procedural observation)", () => {
+  it("a full 4-category overlap on an 'Alleged' finding reaches High factual overlap — its own status is reported separately, not blended into the tier", () => {
     const provision = makeProvision({ id: "MOCK-PROVISION" });
     const finding = makeFinding({
       findingStatus: "Alleged",
@@ -80,11 +93,15 @@ describe("Confidence tiering — unresolved finding statuses", () => {
       []
     );
     const pr = result.provisionResults.find((p) => p.provision.id === provision.id);
-    expect(pr?.confidence).toBe("Low");
+    expect(pr?.confidence).toBe("High");
+    // The finding's own disposition is still visible — separately, not as
+    // part of the tier computation — as a caveat in the reasons and as the
+    // finding's own findingStatus (rendered via StatusBadge elsewhere).
     expect(pr?.confidenceReasons.join(" ")).toMatch(/Alleged/);
+    expect(pr?.supportingPrecedents[0]?.finding.findingStatus).toBe("Alleged");
   });
 
-  it("caps confidence at Low when the only supporting finding is 'Inconclusive'", () => {
+  it("a 2-category overlap on an 'Inconclusive' finding reaches Medium factual overlap on its overlap alone, not Low by virtue of its status", () => {
     const provision = makeProvision({ id: "MOCK-PROVISION" });
     const finding = makeFinding({
       findingStatus: "Inconclusive",
@@ -100,10 +117,10 @@ describe("Confidence tiering — unresolved finding statuses", () => {
       []
     );
     const pr = result.provisionResults.find((p) => p.provision.id === provision.id);
-    expect(pr?.confidence).toBe("Low");
+    expect(pr?.confidence).toBe("Medium");
   });
 
-  it("still reaches High confidence when a genuinely resolved (Upheld) finding also supports the provision, even if a higher-scoring Alleged finding matches too", () => {
+  it("prefers a genuinely resolved (Upheld) finding over a higher-scoring Alleged one as the confidence-reasoning anchor, and reports that resolved finding's own (here more modest) factual overlap honestly", () => {
     const provision = makeProvision({ id: "MOCK-PROVISION" });
     const allegedFinding = makeFinding({
       recordId: "MOCK-ALLEGED",
@@ -131,6 +148,12 @@ describe("Confidence tiering — unresolved finding statuses", () => {
       []
     );
     const pr = result.provisionResults.find((p) => p.provision.id === provision.id);
-    expect(pr?.confidence).toBe("High");
+    // The resolved finding is the anchor (its own 3-category, score-8
+    // overlap — it has no evidenceTypes tag, unlike the alleged one — falls
+    // short of the score>=9 threshold for High, so Medium is the honest
+    // reading of ITS overlap, not a value borrowed from the higher-scoring
+    // but unresolved alternative).
+    expect(pr?.confidence).toBe("Medium");
+    expect(pr?.supportingPrecedents.some((s) => s.finding.recordId === "MOCK-UPHELD")).toBe(true);
   });
 });
