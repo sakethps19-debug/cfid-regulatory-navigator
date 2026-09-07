@@ -17,6 +17,7 @@ import type {
   PublicationStatus,
   ResidualOrderRow,
   ScenarioFinding,
+  StructuredFindingCoverageGap,
   ValidationIssue,
   VerifiedCfidOrderRow,
 } from "@/types/domain";
@@ -776,4 +777,76 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     searchableFindingsCount: searchableFindingsCount ?? 0,
     findingsHumanLegallyReviewed: findingsHumanLegallyReviewed ?? 0,
   };
+}
+
+/** A prioritized (never mass-generated/arbitrary-order) queue of orders
+ * that currently contribute ZERO structured findings to Scenario Analyzer
+ * retrieval — computed the same way ProcessingMetrics.
+ * ordersContributingStructuredFindings is (by actual presence in
+ * scenario_findings.order_id/final_order_id), never by processing_stage
+ * alone. A live audit found this matters: all 89 orders currently carry
+ * processing_stage "citations_checked" (which isDeepAnalyzed() treats as
+ * complete), yet 10 of them have no linked finding at all — the stage
+ * label cannot be trusted on its own to answer "does this order actually
+ * contribute anything an officer can retrieve".
+ *
+ * Priority is genuinely reasoned, not an arbitrary/default ordering:
+ *   1. The entire matter (by caseName) is unrepresented — no other order
+ *      for this case contributes a finding either. Highest priority: an
+ *      officer researching this company gets nothing at all right now.
+ *   2. A confirmatory/revocation order for an otherwise-covered matter —
+ *      this specific order may finalize or supersede an outcome the app
+ *      currently only reflects via an earlier order, a real correctness
+ *      risk (a stale interim/original status shown after a final outcome
+ *      exists), not merely an incompleteness.
+ *   3. Any other order within an already-covered matter — lowest
+ *      priority, since the matter itself is already represented.
+ * Within a tier, most recently dated order first (more likely to be
+ * queried against current facts). */
+export async function getStructuredFindingCoverageGaps(): Promise<StructuredFindingCoverageGap[]> {
+  const supabase = await createClient();
+  const [allOrders, { data: orderRefRows, error }] = await Promise.all([
+    getOrders(),
+    supabase.from("scenario_findings").select("order_id, final_order_id"),
+  ]);
+  if (error) throw error;
+
+  const coveredOrderIds = new Set(
+    (orderRefRows ?? []).flatMap((r) => [r.order_id, r.final_order_id].filter((v): v is string => Boolean(v)))
+  );
+  const coveredCaseNames = new Set(allOrders.filter((o) => coveredOrderIds.has(o.id)).map((o) => o.caseName));
+
+  return allOrders
+    .filter((o) => !coveredOrderIds.has(o.id))
+    .map((order): StructuredFindingCoverageGap => {
+      const caseHasOtherStructuredFindings = coveredCaseNames.has(order.caseName);
+      if (!caseHasOtherStructuredFindings) {
+        return {
+          order,
+          caseHasOtherStructuredFindings,
+          priorityTier: 1,
+          priorityReason:
+            "No structured finding exists yet for this matter at all: not merely this specific order, the entire case is currently unrepresented in the Scenario Analyzer.",
+        };
+      }
+      if (order.orderStage === "Confirmatory order" || order.orderStage === "Revocation order") {
+        return {
+          order,
+          caseHasOtherStructuredFindings,
+          priorityTier: 2,
+          priorityReason: `This ${order.orderStage.toLowerCase()} may finalize or supersede an outcome the app currently only reflects via an earlier order in the same matter; its own outcome has not yet been captured as a structured finding.`,
+        };
+      }
+      return {
+        order,
+        caseHasOtherStructuredFindings,
+        priorityTier: 3,
+        priorityReason:
+          "An earlier order in this matter already contributes structured findings; this specific order's own outcome has not yet been separately analysed.",
+      };
+    })
+    .sort((a, b) => {
+      if (a.priorityTier !== b.priorityTier) return a.priorityTier - b.priorityTier;
+      return (b.order.orderDate ?? "").localeCompare(a.order.orderDate ?? "");
+    });
 }

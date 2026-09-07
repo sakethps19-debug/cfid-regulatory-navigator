@@ -117,6 +117,33 @@ export interface Order {
   normalizedMatterName: string | null;
 }
 
+/** One order that currently contributes ZERO structured findings to
+ * Scenario Analyzer retrieval — computed by actual presence (an order id
+ * absent from every scenario_findings.order_id/final_order_id), never
+ * from processing_stage alone: a live audit found all 89 orders labelled
+ * "citations_checked" (which isDeepAnalyzed() treats as complete) while 10
+ * of them had no linked finding at all, so the stage label cannot be
+ * trusted on its own for this purpose. See getStructuredFindingCoverageGaps
+ * in data.ts, the Admin Processing Dashboard's "Structured-finding coverage
+ * gaps" section — a genuinely prioritized queue, not a mass-generated flat
+ * list. */
+export interface StructuredFindingCoverageGap {
+  order: Order;
+  /** Whether ANY OTHER order sharing this order's caseName already
+   * contributes a structured finding. false means the entire matter is
+   * currently unrepresented, not merely this specific order within an
+   * already-covered one — the highest-priority case. */
+  caseHasOtherStructuredFindings: boolean;
+  /** 1 = matter entirely uncovered; 2 = a confirmatory/revocation order
+   * whose own (potentially superseding) outcome is not yet reflected even
+   * though the matter has earlier coverage; 3 = any other order within an
+   * already-covered matter. Lower is higher priority. */
+  priorityTier: 1 | 2 | 3;
+  /** Plain-language reason for this specific row's tier — never a bare
+   * number, so an officer can see WHY it was prioritized this way. */
+  priorityReason: string;
+}
+
 /** A Matter is distinct from an Order: one matter/investigation can span
  * several individual orders (interim, confirmatory, final, adjudication,
  * etc.). Populated only from relationships already established via

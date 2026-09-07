@@ -20,6 +20,7 @@ export default async function LawLibraryInstrumentPage({
 
   const instrumentProvisions = sortByProvisionNumber(provisions.filter((p) => p.instrument === instrument.name));
   if (instrumentProvisions.length === 0) notFound();
+  const verifiedCount = instrumentProvisions.filter((p) => p.currentTextVerificationStatus === "Officially verified").length;
 
   return (
     <div>
@@ -30,7 +31,7 @@ export default async function LawLibraryInstrumentPage({
         title={instrument.name}
         description={`${instrument.issuingAuthority} · ${instrumentProvisions.length} provision${
           instrumentProvisions.length === 1 ? "" : "s"
-        } cited or applied in orders analysed for this pilot, in ascending order of provision number.`}
+        } cited or applied in orders analysed for this pilot, in ascending order of provision number. ${verifiedCount} of ${instrumentProvisions.length} are officially verified against the official source; the rest are order-cited text only or require verification, marked per card below.`}
         action={
           instrument.officialSourceUrl ? (
             <SourceLink href={instrument.officialSourceUrl}>Official source for this instrument</SourceLink>

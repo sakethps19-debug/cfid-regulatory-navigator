@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
-import { getDataChangeLog, getProcessingMetrics, getValidationIssues } from "@/lib/data";
+import { Card, SourceLink } from "@/components/Card";
+import { getDataChangeLog, getProcessingMetrics, getStructuredFindingCoverageGaps, getValidationIssues } from "@/lib/data";
+
+const COVERAGE_GAP_TIER_LABELS: Record<1 | 2 | 3, string> = {
+  1: "Tier 1: matter entirely uncovered",
+  2: "Tier 2: confirmatory/revocation order, outcome not yet reflected",
+  3: "Tier 3: order within an already-covered matter",
+};
 
 export default async function AdminDashboardPage() {
-  const [metrics, issues, changeLog] = await Promise.all([getProcessingMetrics(), getValidationIssues(), getDataChangeLog()]);
+  const [metrics, issues, changeLog, coverageGaps] = await Promise.all([
+    getProcessingMetrics(),
+    getValidationIssues(),
+    getDataChangeLog(),
+    getStructuredFindingCoverageGaps(),
+  ]);
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
 
   // Grouped under Corpus / Processing / Review, per the same distinction
@@ -85,6 +96,42 @@ export default async function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+
+      {coverageGaps.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">
+            Structured-finding coverage gaps: prioritized queue ({coverageGaps.length})
+          </h3>
+          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+            The {coverageGaps.length} orders behind &quot;Orders contributing structured findings&quot; above, computed
+            by actual presence in scenario_findings, never by processing_stage alone: every one of these currently
+            carries processing_stage &quot;Citations checked&quot;, the stage isDeepAnalyzed() otherwise treats as
+            complete, yet none has a linked finding. Ordered by genuine priority tier, not insertion order or a
+            mass-generated default; within a tier, most recently dated order first.
+          </p>
+          <div className="mt-3 space-y-2">
+            {coverageGaps.map((g) => (
+              <Card key={g.order.id} className="text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-[var(--color-ink-900)]">{g.order.caseName}</span>
+                  <span className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
+                    {COVERAGE_GAP_TIER_LABELS[g.priorityTier]}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                  {g.order.orderStage}
+                  {g.order.orderNumber ? ` (${g.order.orderNumber})` : ""}
+                  {g.order.orderDate ? ` · ${g.order.orderDate}` : " · no order date on file"}
+                </p>
+                <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{g.priorityReason}</p>
+                <div className="mt-1.5">
+                  <SourceLink href={g.order.officialUrl} />
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Processing</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
