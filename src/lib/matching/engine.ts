@@ -3,7 +3,7 @@ import { CONTRARY_PRECEDENT_TRIGGER_TAGS } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
+import type { AnalysisResult, ConfidenceLevel, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
 
 const NEGATIVE_STATUSES = new Set(["Not Confirmed in Final Order", "Withdrawn"]);
@@ -73,6 +73,12 @@ interface ScoredFinding {
    * display labels — used where the specific tag identity matters (e.g.
    * buildWhyRelevant's fund-movement-only check), not just its human text. */
   matchedIds: string[];
+  /** matchedIngredients split back out by the category it was matched
+   * against (transaction type / actor role / alleged conduct / evidence
+   * type) — surfaced in the UI's "Why was this result retrieved?" panel so
+   * an officer can see not just that something matched but what kind of
+   * fact it was. */
+  matchedByCategory: MatchedByCategory;
   categoriesMatched: number;
   substantiveCategoriesMatched: number;
 }
@@ -123,6 +129,13 @@ function scoreFinding(
 
   const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
   const matchedIngredients = unique(matchedIds.map((id) => detectedLabelById.get(id) ?? id));
+  const toLabels = (ids: string[]) => unique(ids.map((id) => detectedLabelById.get(id) ?? id));
+  const matchedByCategory: MatchedByCategory = {
+    transactionTypes: toLabels(transactionOverlap),
+    actorRoles: toLabels(actorOverlap),
+    allegedConduct: toLabels(conductOverlap),
+    evidenceTypes: toLabels(evidenceOverlap),
+  };
 
   const categoriesMatched = [transactionOverlap, actorOverlap, conductOverlap, evidenceOverlap].filter(
     (arr) => arr.length > 0
@@ -139,7 +152,7 @@ function scoreFinding(
   // see deriveConfidence.
   const substantiveCategoriesMatched = [transactionOverlap, conductOverlap].filter((arr) => arr.length > 0).length;
 
-  return { finding, score, matchedIngredients, matchedIds, categoriesMatched, substantiveCategoriesMatched };
+  return { finding, score, matchedIngredients, matchedIds, matchedByCategory, categoriesMatched, substantiveCategoriesMatched };
 }
 
 function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
@@ -147,8 +160,18 @@ function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
     finding: sf.finding,
     score: sf.score,
     matchedFactualIngredients: sf.matchedIngredients,
+    matchedByCategory: sf.matchedByCategory,
     ingredientsNotEstablished: ingredientsNotEstablished(sf.finding, sf.matchedIngredients),
     distinguishingNote: buildDistinguishingNote(sf.finding),
+  };
+}
+
+function mergeMatchedByCategory(refs: { matchedByCategory: MatchedByCategory }[]): MatchedByCategory {
+  return {
+    transactionTypes: unique(refs.flatMap((r) => r.matchedByCategory.transactionTypes)),
+    actorRoles: unique(refs.flatMap((r) => r.matchedByCategory.actorRoles)),
+    allegedConduct: unique(refs.flatMap((r) => r.matchedByCategory.allegedConduct)),
+    evidenceTypes: unique(refs.flatMap((r) => r.matchedByCategory.evidenceTypes)),
   };
 }
 
@@ -302,6 +325,7 @@ export function analyzeScenario(
       provision,
       whyRelevant: buildWhyRelevant(provision, best),
       matchedFactualIngredients: unique(supporting.flatMap((s) => s.matchedIngredients)),
+      matchedByCategory: mergeMatchedByCategory(supporting),
       supportingPrecedents: supporting.slice(0, 3).map(toPrecedentRef),
       contraryPrecedents: contrary.slice(0, 3).map(toPrecedentRef),
       upheldPrecedents: upheld.slice(0, 5).map(toPrecedentRef),
@@ -329,6 +353,7 @@ export function analyzeScenario(
           finding: f,
           score: 0,
           matchedFactualIngredients: [],
+          matchedByCategory: { transactionTypes: [], actorRoles: [], allegedConduct: [], evidenceTypes: [] },
           ingredientsNotEstablished: ingredientsNotEstablished(f, []),
           distinguishingNote: buildDistinguishingNote(f),
         });

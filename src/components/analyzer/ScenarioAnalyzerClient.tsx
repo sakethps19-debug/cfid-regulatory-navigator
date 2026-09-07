@@ -160,7 +160,7 @@ function resultToText(result: AnalysisResult): string {
     lines.push("----------------------------------------");
     lines.push(`${pr.provision.instrument} · ${pr.provision.provisionNumber}`);
     lines.push(`Subject: ${pr.provision.subject}`);
-    lines.push(`Confidence: ${pr.confidence}`);
+    lines.push(`Retrieval confidence: ${pr.confidence}`);
     lines.push(`Why potentially relevant: ${pr.whyRelevant}`);
     lines.push(`Applicable provision version: ${pr.applicableVersionNote}`);
     lines.push(`Factual ingredients matched: ${pr.matchedFactualIngredients.join("; ") || "none"}`);
@@ -204,6 +204,21 @@ function resultToText(result: AnalysisResult): string {
     }
   }
   lines.push("");
+  const allReferencedFindings = [...new Map(
+    [
+      ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
+      ...result.globalContraryPrecedents,
+    ].map((p) => [p.finding.recordId, p.finding])
+  ).values()];
+  const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
+  lines.push(
+    "This result is based on the currently structured portion of the indexed case register; indexed orders that have not yet been deeply analysed are not represented here."
+  );
+  lines.push(
+    legallyReviewedCount === 0
+      ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
+      : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`
+  );
   lines.push(
     "This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
   );
@@ -233,7 +248,7 @@ function resultToCsv(result: AnalysisResult): string {
       "Instrument",
       "Provision number",
       "Subject",
-      "Confidence",
+      "Retrieval confidence",
       "Supporting precedent count",
       "Matched factual ingredients",
       "Supporting precedent record IDs",
@@ -464,8 +479,28 @@ export function ScenarioAnalyzerClient() {
         const violationParagraph = buildViolationParagraph(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
+        // Every finding referenced anywhere in this result, deduplicated —
+        // used only to check whether ANY of them has actually been legally
+        // reviewed, never to claim the result as a whole "is reviewed".
+        const allReferencedFindings = [...new Map(
+          [
+            ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
+            ...result.globalContraryPrecedents,
+          ].map((p) => [p.finding.recordId, p.finding])
+        ).values()];
+        const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
         return (
         <div className="space-y-6">
+          {result.hasResults && (
+            <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
+              This result is based on the currently structured portion of the indexed case register; indexed orders
+              that have not yet been deeply analysed are not represented here.{" "}
+              {legallyReviewedCount === 0
+                ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
+                : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`}
+            </div>
+          )}
+
           {result.semanticAssist.length > 0 && (
             <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
               <span className="font-semibold text-[var(--color-ink-700)]">Read as: </span>
@@ -483,6 +518,9 @@ export function ScenarioAnalyzerClient() {
             <div className="rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
               <span className="font-semibold">Concepts detected in your scenario: </span>
               {result.detectedConceptLabels.join(", ")}
+              <p className="mt-1 text-xs font-normal text-[var(--color-gold-800)]/80">
+                This is a classification of the entered text by the engine, not an established fact.
+              </p>
             </div>
           )}
 
@@ -781,14 +819,49 @@ export function ScenarioAnalyzerClient() {
                   onClick={() => toggleExpanded(key)}
                   className="mt-4 text-sm font-medium text-[var(--color-gold-700)] hover:underline"
                 >
-                  {isExpanded ? "Hide reasoning" : "Show reasoning / confidence basis"}
+                  {isExpanded ? "Hide" : "Why was this result retrieved?"}
                 </button>
                 {isExpanded && (
-                  <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-[var(--color-ink-700)]">
-                    {pr.confidenceReasons.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
+                  <div className="mt-2 space-y-3 rounded-md border border-[var(--color-border)] bg-[var(--color-neutral-50)] p-3">
+                    {(
+                      [
+                        ["Matched transaction type", pr.matchedByCategory.transactionTypes],
+                        ["Matched actor / role", pr.matchedByCategory.actorRoles],
+                        ["Matched alleged conduct", pr.matchedByCategory.allegedConduct],
+                        ["Matched evidence indicators", pr.matchedByCategory.evidenceTypes],
+                      ] as const
+                    )
+                      .filter(([, items]) => items.length > 0)
+                      .map(([label, items]) => (
+                        <div key={label}>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{label}</span>
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            {items.map((i) => (
+                              <span key={i} className="rounded-sm bg-white px-2 py-0.5 text-xs text-[var(--color-ink-700)] ring-1 ring-inset ring-[var(--color-border)]">
+                                {i}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Match source</span>
+                      <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
+                        <li>Matched from the entered scenario text against the curated concept vocabulary (never an external search).</li>
+                        {actorFilter && <li>The &quot;Actor / role&quot; filter was set and may have added to this result&apos;s score.</li>}
+                        {scenarioTypeFilter && <li>The &quot;Scenario type&quot; filter was set and may have added to this result&apos;s score.</li>}
+                        {result.semanticAssist.length > 0 && <li>One or more terms in the entered text were spelling-corrected before matching (see &quot;Read as&quot; above).</li>}
+                      </ul>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Retrieval confidence basis</span>
+                      <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-[var(--color-ink-700)]">
+                        {pr.confidenceReasons.map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 )}
               </article>
             );

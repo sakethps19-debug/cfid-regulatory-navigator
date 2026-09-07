@@ -14,10 +14,23 @@ export interface ScenarioQuery {
 
 export type ConfidenceLevel = "High" | "Medium" | "Low";
 
+/** matchedFactualIngredients split back out by the kind of fact each
+ * ingredient is — surfaced in the UI's "Why was this result retrieved?"
+ * panel (see engine.ts scoreFinding) so a match is shown as what kind of
+ * thing it is (a transaction type, an actor role, an alleged-conduct
+ * category, or an evidence type), not just a flat list of labels. */
+export interface MatchedByCategory {
+  transactionTypes: string[];
+  actorRoles: string[];
+  allegedConduct: string[];
+  evidenceTypes: string[];
+}
+
 export interface PrecedentRef {
   finding: ScenarioFinding;
   score: number;
   matchedFactualIngredients: string[];
+  matchedByCategory: MatchedByCategory;
   /** This precedent's own fact-element tags that the entered scenario did
    * NOT establish — i.e. what else this precedent required that the query
    * doesn't mention. Read as "not (yet) established by your facts", not as
@@ -33,6 +46,7 @@ export interface ProvisionResult {
   provision: LegalProvision;
   whyRelevant: string;
   matchedFactualIngredients: string[];
+  matchedByCategory: MatchedByCategory;
   supportingPrecedents: PrecedentRef[];
   contraryPrecedents: PrecedentRef[];
   /** Matching precedents whose outcome was actually "Confirmed in Final

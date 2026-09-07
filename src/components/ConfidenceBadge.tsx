@@ -15,7 +15,7 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
     <span
       className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${STYLES[level]}`}
     >
-      {level} confidence
+      {level} retrieval confidence
     </span>
   );
 }

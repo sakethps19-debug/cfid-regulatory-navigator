@@ -21,7 +21,7 @@ export default function MethodologyPage() {
           their own allow-listed email. Given a factual scenario, it identifies potentially applicable SEBI Act
           sections, regulations and other provisions; matching factual ingredients; supporting CFID orders with
           paragraph references; contrary or negative precedents; the procedural status of each finding; missing facts
-          or evidence; a confidence level; and links to official source documents.
+          or evidence; a retrieval-confidence level; and links to official source documents.
         </p>
         <p>
           <strong>This is a research-assistance tool.</strong> It does not make findings of guilt and does not
@@ -199,7 +199,7 @@ export default function MethodologyPage() {
           <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with, a provision is never suggested merely because it appeared elsewhere in the same order.</li>
           <li>Retrieve supporting precedents (status Confirmed in Final Order / Prima facie / Partly Confirmed in Final Order) and contrary precedents (status Not Confirmed in Final Order) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
           <li>Assemble a missing-facts checklist from each matched finding&apos;s recorded evidentiary gaps.</li>
-          <li>Derive a High / Medium / Low confidence level from how many independent factual categories overlap and whether the best match is a final or interim-only finding.</li>
+          <li>Derive a High / Medium / Low retrieval-confidence level from how many independent factual categories overlap and whether the best match is a final or interim-only finding. This measures how strongly the entered facts overlap with a precedent&apos;s recorded facts, not the likelihood that a violation occurred.</li>
         </ol>
         <p>
           The underlying data (orders, scenario findings, provisions, legal tests, directions, and the fact-element
