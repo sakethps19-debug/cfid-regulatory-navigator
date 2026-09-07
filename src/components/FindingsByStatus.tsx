@@ -75,7 +75,27 @@ function PublicationStatusBadge({ status }: { status: string }) {
   );
 }
 
-function FindingRow({ finding }: { finding: ScenarioFinding }) {
+// Labels for finding_provisions.relationship, when a caller (e.g. a
+// provision detail page) supplies a per-finding relationship via
+// provisionRelationship. "alleged" means the provision was cited/considered
+// in this finding but is not itself what the disposition turned on;
+// upheld/not_upheld means this specific provision was the basis of the
+// finding's outcome. Distinct from the finding's own overall findingStatus,
+// which can rest on some provisions and not others within the same finding.
+const PROVISION_RELATIONSHIP_LABELS: Record<string, string> = {
+  alleged: "Cited in this finding",
+  upheld: "Basis of the confirmed outcome",
+  not_upheld: "Basis of the not-confirmed outcome",
+};
+
+function FindingRow({
+  finding,
+  relationship,
+}: {
+  finding: ScenarioFinding;
+  relationship?: string;
+}) {
+  const relationshipLabel = relationship ? PROVISION_RELATIONSHIP_LABELS[relationship] : undefined;
   return (
     <li className="rounded-lg border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -83,6 +103,11 @@ function FindingRow({ finding }: { finding: ScenarioFinding }) {
         <PublicationStatusBadge status={finding.publicationStatus} />
         <span className="text-sm font-semibold text-[var(--color-ink-900)]">{finding.recordId}</span>
         <span className="text-sm text-[var(--color-ink-700)]">{finding.caseName}</span>
+        {relationshipLabel && (
+          <span className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
+            {relationshipLabel}
+          </span>
+        )}
       </div>
       <p className="mt-1 text-sm font-medium text-[var(--color-ink-900)]">{finding.scenarioTitle}</p>
       <p className="mt-1 text-sm text-[var(--color-ink-700)]">{finding.factualPattern}</p>
@@ -98,7 +123,17 @@ function FindingRow({ finding }: { finding: ScenarioFinding }) {
   );
 }
 
-export function FindingsByStatus({ findings }: { findings: ScenarioFinding[] }) {
+export function FindingsByStatus({
+  findings,
+  provisionRelationship,
+}: {
+  findings: ScenarioFinding[];
+  /** Optional: given a finding, returns how a specific provision (the
+   * caller's context, e.g. a provision detail page) related to it - see
+   * PROVISION_RELATIONSHIP_LABELS. Omit when there is no single provision
+   * in context (e.g. an order detail page listing every finding). */
+  provisionRelationship?: (finding: ScenarioFinding) => string | undefined;
+}) {
   if (findings.length === 0) {
     return <p className="text-sm text-[var(--color-ink-500)]">No scenario findings are linked to this item in the pilot data.</p>;
   }
@@ -114,7 +149,7 @@ export function FindingsByStatus({ findings }: { findings: ScenarioFinding[] }) 
             <p className="text-xs text-[var(--color-ink-500)]">{hint}</p>
             <ul className="mt-2 space-y-2">
               {items.map((f) => (
-                <FindingRow key={f.recordId} finding={f} />
+                <FindingRow key={f.recordId} finding={f} relationship={provisionRelationship?.(f)} />
               ))}
             </ul>
           </div>

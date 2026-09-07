@@ -30,6 +30,16 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
   );
   const regulatorSlug = provision.issuingAuthority ? regulatorSlugForAuthority(provision.issuingAuthority) : null;
 
+  // How THIS provision specifically related to each finding that cites it -
+  // "upheld"/"not_upheld" means this provision was the basis of the
+  // finding's outcome, "alleged" (or unset, for findings not yet carrying
+  // this data) means it was cited/considered without being that basis.
+  const relationshipByFindingRecordId = new Map<string, string | undefined>(
+    findings.map((f) => [f.recordId, f.provisionLinks.find((l) => l.provisionId === provision.id)?.relationship]),
+  );
+  const appliedCount = [...relationshipByFindingRecordId.values()].filter((r) => r === "upheld" || r === "not_upheld").length;
+  const citedOnlyCount = findings.length - appliedCount;
+
   return (
     <div>
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-[var(--color-ink-500)]">
@@ -177,11 +187,18 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
             );
           })}
         </div>
+        {(appliedCount > 0 || citedOnlyCount > 0) && (
+          <p className="mt-3 text-xs text-[var(--color-ink-500)]">
+            Of these, this specific provision was the basis of the finding&apos;s outcome in {appliedCount} finding
+            {appliedCount === 1 ? "" : "s"}; in {citedOnlyCount} other{citedOnlyCount === 1 ? "" : "s"} it was cited
+            or considered alongside other provisions without itself being the basis of that finding&apos;s outcome.
+          </p>
+        )}
       </Card>
 
       <Card>
         <h2 className="mb-4 text-base font-semibold text-[var(--color-ink-900)]">Scenario findings under this provision</h2>
-        <FindingsByStatus findings={findings} />
+        <FindingsByStatus findings={findings} provisionRelationship={(f) => relationshipByFindingRecordId.get(f.recordId)} />
       </Card>
     </div>
   );

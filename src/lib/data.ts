@@ -96,7 +96,7 @@ function mapOrder(row: OrderRow, noticeesCount: number): Order {
 
 function mapFinding(
   row: ScenarioFindingRow,
-  provisionLinks: { provisionId: string; justifyingTags: string[] }[],
+  provisionLinks: { provisionId: string; justifyingTags: string[]; relationship?: string }[],
   orderIds: string[]
 ): ScenarioFinding {
   return {
@@ -232,18 +232,23 @@ export async function getScenarioFindings(): Promise<ScenarioFinding[]> {
     supabase.from("scenario_findings").select("*").order("record_id", { ascending: true }),
     supabase
       .from("finding_provisions")
-      .select("finding_id, provision_id, justifying_tags, legal_provisions(canonical_id)"),
+      .select("finding_id, provision_id, justifying_tags, relationship, legal_provisions(canonical_id)"),
   ]);
   if (findingsError) throw findingsError;
   if (linksError) throw linksError;
 
-  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[] }[]>();
+  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[]; relationship?: string }[]>();
   for (const link of linkRows ?? []) {
-    const row = link as { finding_id: string; justifying_tags: string[] | null; legal_provisions: { canonical_id: string } | null };
+    const row = link as {
+      finding_id: string;
+      justifying_tags: string[] | null;
+      relationship: string | null;
+      legal_provisions: { canonical_id: string } | null;
+    };
     const canonicalId = row.legal_provisions?.canonical_id;
     if (!canonicalId) continue;
     const list = provisionLinksByFinding.get(row.finding_id) ?? [];
-    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [] });
+    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [], relationship: row.relationship ?? undefined });
     provisionLinksByFinding.set(row.finding_id, list);
   }
 
@@ -488,18 +493,23 @@ export async function searchScenarioFindingsFullText(query: string): Promise<Sce
       .limit(8),
     supabase
       .from("finding_provisions")
-      .select("finding_id, provision_id, justifying_tags, legal_provisions(canonical_id)"),
+      .select("finding_id, provision_id, justifying_tags, relationship, legal_provisions(canonical_id)"),
   ]);
   if (findingsError) throw findingsError;
   if (linksError) throw linksError;
 
-  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[] }[]>();
+  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[]; relationship?: string }[]>();
   for (const link of linkRows ?? []) {
-    const row = link as { finding_id: string; justifying_tags: string[] | null; legal_provisions: { canonical_id: string } | null };
+    const row = link as {
+      finding_id: string;
+      justifying_tags: string[] | null;
+      relationship: string | null;
+      legal_provisions: { canonical_id: string } | null;
+    };
     const canonicalId = row.legal_provisions?.canonical_id;
     if (!canonicalId) continue;
     const list = provisionLinksByFinding.get(row.finding_id) ?? [];
-    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [] });
+    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [], relationship: row.relationship ?? undefined });
     provisionLinksByFinding.set(row.finding_id, list);
   }
 

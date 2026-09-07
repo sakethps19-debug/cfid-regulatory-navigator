@@ -146,8 +146,19 @@ export interface ScenarioFinding {
    * provisionIds so that a multi-issue finding (e.g. one bundling
    * fictitious sales together with an unrelated Compliance Officer
    * vacancy) doesn't surface a narrow, topically-specific provision for a
-   * query that only matched on the OTHER, unrelated conduct. */
-  provisionLinks: { provisionId: string; justifyingTags: string[] }[];
+   * query that only matched on the OTHER, unrelated conduct.
+   *
+   * relationship (from finding_provisions.relationship) says how THIS
+   * provision specifically was treated within this finding: "alleged"
+   * means it was cited/considered but is not itself the basis of the
+   * finding's disposition; "upheld"/"not_upheld" means this particular
+   * provision was the one the order's disposition actually turned on.
+   * A single finding routinely cites several provisions where only one or
+   * two are "upheld" and the rest are contextual "alleged" citations, so
+   * this is a per-provision distinction, not the same thing as the
+   * finding's overall findingStatus. Optional because many existing test
+   * fixtures construct provisionLinks without it. */
+  provisionLinks: { provisionId: string; justifyingTags: string[]; relationship?: string }[];
   noticeeActors: string[];
   findingStatus: FindingStatus;
   interimParagraphReferences: string | null;
