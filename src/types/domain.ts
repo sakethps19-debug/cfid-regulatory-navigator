@@ -280,6 +280,21 @@ export interface ValidationIssue {
   createdAt: string;
 }
 
+/** An audit-trail entry for a curated-data correction (a conduct tag fixed,
+ * a transaction type restored, etc.) applied directly against the
+ * database. See supabase/migrations/0012_data_change_log.sql. */
+export interface DataChangeLogEntry {
+  id: string;
+  tableName: string;
+  recordRef: string;
+  fieldName: string;
+  oldValue: string | null;
+  newValue: string | null;
+  reason: string;
+  changedBy: string;
+  changedAt: string;
+}
+
 export interface LegalInstrument {
   id: string;
   name: string;

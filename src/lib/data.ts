@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  DataChangeLogEntry,
   DirectionOutcome,
   FindingStatus,
   LegalInstrument,
@@ -600,6 +601,25 @@ export async function flagScenarioResult(input: {
   });
   if (insertError) return { ok: false, error: insertError.message };
   return { ok: true };
+}
+
+/** Audit trail of curated-data corrections (conduct-tag fixes, restored
+ * transaction types, etc.) — see supabase/migrations/0012_data_change_log.sql. */
+export async function getDataChangeLog(): Promise<DataChangeLogEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("data_change_log").select("*").order("changed_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    tableName: row.table_name,
+    recordRef: row.record_ref,
+    fieldName: row.field_name,
+    oldValue: row.old_value,
+    newValue: row.new_value,
+    reason: row.reason,
+    changedBy: row.changed_by,
+    changedAt: row.changed_at,
+  }));
 }
 
 export async function getLegalInstruments(): Promise<LegalInstrument[]> {

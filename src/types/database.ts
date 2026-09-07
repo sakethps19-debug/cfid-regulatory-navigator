@@ -31,6 +31,42 @@ export type Database = {
         }
         Relationships: []
       }
+      data_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          reason: string
+          record_ref: string
+          table_name: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          reason: string
+          record_ref: string
+          table_name: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          reason?: string
+          record_ref?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       finding_provisions: {
         Row: {
           finding_id: string

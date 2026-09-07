@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { getProcessingMetrics, getValidationIssues } from "@/lib/data";
+import { getDataChangeLog, getProcessingMetrics, getValidationIssues } from "@/lib/data";
 
 export default async function AdminDashboardPage() {
-  const [metrics, issues] = await Promise.all([getProcessingMetrics(), getValidationIssues()]);
+  const [metrics, issues, changeLog] = await Promise.all([getProcessingMetrics(), getValidationIssues(), getDataChangeLog()]);
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
 
   const rows: { label: string; value: number; hint?: string }[] = [
@@ -100,6 +100,24 @@ export default async function AdminDashboardPage() {
             className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
           >
             View all validation issues →
+          </Link>
+        </div>
+      </Card>
+
+      <Card className="mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Curated-data change log</h2>
+            <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {changeLog.length} corrections recorded — every conduct tag, transaction type, or similar curated field
+              changed directly against the database, with what it was, what it became, and why.
+            </p>
+          </div>
+          <Link
+            href="/admin/change-log"
+            className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
+          >
+            View change log →
           </Link>
         </div>
       </Card>
