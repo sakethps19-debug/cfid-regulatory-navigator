@@ -8,6 +8,12 @@ import { sortByProvisionNumber } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority, type RegulatorSlug } from "@/lib/regulators";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
+const VERIFICATION_STATUS_SHORT_LABELS: Record<LegalProvision["currentTextVerificationStatus"], string> = {
+  "Requires verification": "Unverified",
+  "Order-cited text only": "Order-cited",
+  "Officially verified": "Verified",
+};
+
 const STATUS_ORDER: FindingStatus[] = [
   "Alleged",
   "Prima facie",
@@ -98,6 +104,25 @@ export function LawLibraryClient({
     return map;
   }, [instruments, provisionCountByInstrument]);
 
+  // The most-cited provisions per regulator — a preview shown directly on
+  // the landing/browse cards below, rather than leaving each card as just a
+  // title and one stat line with the rest of its space empty.
+  const topProvisionsByRegulator = useMemo(() => {
+    const map = new Map<RegulatorSlug, LegalProvision[]>();
+    for (const p of provisions) {
+      const slug = regulatorSlugByInstrumentName.get(p.instrument);
+      if (!slug) continue;
+      map.set(slug, [...(map.get(slug) ?? []), p]);
+    }
+    for (const [slug, items] of map) {
+      map.set(
+        slug,
+        [...items].sort((a, b) => (findingsByProvision.get(b.id)?.length ?? 0) - (findingsByProvision.get(a.id)?.length ?? 0)).slice(0, 3)
+      );
+    }
+    return map;
+  }, [provisions, regulatorSlugByInstrumentName, findingsByProvision]);
+
   const isFiltering = query.trim().length > 0 || statusFilter !== "all";
 
   const filtered = useMemo(() => {
@@ -166,20 +191,29 @@ export function LawLibraryClient({
                     const ownFindings = findingsByProvision.get(p.id) ?? [];
                     const counts = new Map<FindingStatus, number>();
                     for (const f of ownFindings) counts.set(f.findingStatus, (counts.get(f.findingStatus) ?? 0) + 1);
+                    const relatedOrderCount = new Set(ownFindings.flatMap((f) => f.orderIds)).size;
                     return (
                       <li key={p.id}>
                         <Link href={`/provisions/${p.id}`} className="block px-4 py-3 hover:bg-[var(--color-gold-50)]">
-                          <div className="font-medium text-[var(--color-ink-900)]">{p.provisionNumber}</div>
+                          <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <div className="font-medium text-[var(--color-ink-900)]">{p.provisionNumber}</div>
+                            <span className="text-xs text-[var(--color-ink-500)]">
+                              {VERIFICATION_STATUS_SHORT_LABELS[p.currentTextVerificationStatus]}
+                            </span>
+                          </div>
                           <div className="text-sm text-[var(--color-ink-700)]">{p.subject}</div>
-                          {counts.size > 0 && (
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {[...counts.entries()].map(([status, n]) => (
-                                <span key={status} className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
-                                  {n} {findingStatusLabel(status).toLowerCase()}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            {[...counts.entries()].map(([status, n]) => (
+                              <span key={status} className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
+                                {n} {findingStatusLabel(status).toLowerCase()}
+                              </span>
+                            ))}
+                            {relatedOrderCount > 0 && (
+                              <span className="text-xs text-[var(--color-ink-500)]">
+                                {relatedOrderCount} related order{relatedOrderCount === 1 ? "" : "s"}
+                              </span>
+                            )}
+                          </div>
                         </Link>
                       </li>
                     );
@@ -195,6 +229,7 @@ export function LawLibraryClient({
           {(Object.keys(REGULATOR_LABELS) as RegulatorSlug[]).map((slug) => {
             const stats = byRegulator.get(slug);
             if (!stats) return null;
+            const topProvisions = topProvisionsByRegulator.get(slug) ?? [];
             return (
               <Link key={slug} href={`/law-library/${slug}`}>
                 <Card className="h-full transition hover:ring-1 hover:ring-[var(--color-gold-600)]">
@@ -203,6 +238,18 @@ export function LawLibraryClient({
                     {stats.instrumentCount} instrument{stats.instrumentCount === 1 ? "" : "s"} · {stats.provisionCount}{" "}
                     provision{stats.provisionCount === 1 ? "" : "s"} cited
                   </p>
+                  {topProvisions.length > 0 && (
+                    <div className="mt-3 space-y-1.5 border-t border-[var(--color-border)] pt-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                        Most-cited provisions
+                      </p>
+                      {topProvisions.map((p) => (
+                        <p key={p.id} className="truncate text-xs text-[var(--color-ink-700)]">
+                          <span className="font-medium">{p.provisionNumber}</span> · {p.subject}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               </Link>
             );
