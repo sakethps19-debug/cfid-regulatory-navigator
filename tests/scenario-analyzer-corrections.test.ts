@@ -5,7 +5,11 @@
 // disappear entirely — it stays available as a separate, clearly-labelled
 // fact about that specific precedent. Fixtures are entirely synthetic
 // (not modelled on any real order) to prove the separation is structural,
-// not a special case for one precedent.
+// not a special case for one precedent. The conduct tag used
+// (fund_diversion) is drawn from the real curated vocabulary rather than
+// an arbitrary made-up id, since scenarioTypeSignal is now resolved
+// against that same vocabulary (see buildEffectiveScenarioConcepts in
+// engine.ts) and a fabricated id would simply be ignored.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -67,7 +71,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const genuineGapFinding = makeFinding({
     recordId: "SYN-GAP",
     provisionIds: ["TEST-PROV-1"],
-    allegedConduct: ["synthetic_test_conduct"],
+    allegedConduct: ["fund_diversion"],
     evidentiaryGaps: ["Genuine outstanding evidence: independent verification of the transaction."],
     precedentOutcomeNote: null,
   });
@@ -75,14 +79,14 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const resolvedFinding = makeFinding({
     recordId: "SYN-RESOLVED",
     provisionIds: ["TEST-PROV-1"],
-    allegedConduct: ["synthetic_test_conduct"],
+    allegedConduct: ["fund_diversion"],
     evidentiaryGaps: [],
     precedentOutcomeNote: RESOLVED_TEXT,
   });
 
   function run(findings: ScenarioFinding[]) {
     return analyzeScenario(
-      { freeText: "irrelevant free text", scenarioTypeFilter: "synthetic_test_conduct" },
+      { freeText: "irrelevant free text", scenarioTypeSignal: "fund_diversion" },
       findings,
       [provision],
       []

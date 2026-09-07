@@ -14,9 +14,9 @@ const MAX_SCENARIO_LENGTH = 4000;
 export async function POST(request: NextRequest) {
   let body: {
     freeText?: unknown;
-    actorFilter?: unknown;
-    scenarioTypeFilter?: unknown;
-    evidenceFilter?: unknown;
+    actorSignal?: unknown;
+    scenarioTypeSignal?: unknown;
+    evidenceSignal?: unknown;
     conductPeriod?: unknown;
     entityOrIssuer?: unknown;
     amountInvolved?: unknown;
@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
   if (!freeText.trim()) {
     return NextResponse.json({ error: "Please describe a factual scenario." }, { status: 400 });
   }
-  const actorFilter = typeof body.actorFilter === "string" && body.actorFilter ? body.actorFilter : null;
-  const scenarioTypeFilter =
-    typeof body.scenarioTypeFilter === "string" && body.scenarioTypeFilter ? body.scenarioTypeFilter : null;
-  const evidenceFilter = typeof body.evidenceFilter === "string" && body.evidenceFilter ? body.evidenceFilter : null;
+  const actorSignal = typeof body.actorSignal === "string" && body.actorSignal ? body.actorSignal : null;
+  const scenarioTypeSignal =
+    typeof body.scenarioTypeSignal === "string" && body.scenarioTypeSignal ? body.scenarioTypeSignal : null;
+  const evidenceSignal = typeof body.evidenceSignal === "string" && body.evidenceSignal ? body.evidenceSignal : null;
   const MAX_DESCRIPTIVE_FIELD_LENGTH = 200;
   const conductPeriod =
     typeof body.conductPeriod === "string" && body.conductPeriod ? body.conductPeriod.slice(0, MAX_DESCRIPTIVE_FIELD_LENGTH) : null;
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     searchScenarioFindingsFullText(correctedText),
   ]);
   const result = analyzeScenario(
-    { freeText, actorFilter, scenarioTypeFilter, evidenceFilter, conductPeriod, entityOrIssuer, amountInvolved },
+    { freeText, actorSignal, scenarioTypeSignal, evidenceSignal, conductPeriod, entityOrIssuer, amountInvolved },
     scenarioFindings,
     provisions,
     legalTests,

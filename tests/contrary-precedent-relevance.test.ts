@@ -141,7 +141,7 @@ describe("per-provision contrary precedents: material relevance required", () =>
       actorRoles: ["promoter"],
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted by the promoter.", actorFilter: "promoter" },
+      { freeText: "Company funds were diverted by the promoter.", actorSignal: "promoter" },
       [supporting, weakContrary],
       [provision],
       []

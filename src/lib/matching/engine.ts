@@ -1,5 +1,5 @@
 import type { FindingStatus, LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
-import { CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
+import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
@@ -72,6 +72,44 @@ export function compareByFactualScoreThenFinality(a: { score: number; finding: S
 
 function humanizeTag(id: string): string {
   return id.replace(/_/g, " ");
+}
+
+/** The single canonical list of concepts this query asserts, merging
+ * free-text detection with the officer's explicit dropdown selections
+ * (actor role / scenario type / evidence indicator). Every downstream
+ * step — scoring, matched-ingredient display, justifyingTags checks,
+ * contrary-precedent matching, evidence presentation — reads from this
+ * one list, so a dropdown selection can never diverge from what typing
+ * the same fact in free text would have produced (previously, a
+ * dropdown selection added an ad hoc score bonus but was invisible in
+ * "matched factual ingredients"/"why relevant" unless the same fact was
+ * ALSO independently free-text-detected — a real transparency gap, since
+ * fixed here).
+ *
+ * A dropdown selection is architecturally a SIGNAL, not an exclusionary
+ * filter: it asserts a fact about the entered scenario exactly as if the
+ * officer had typed it, and is scored on exactly the same per-category
+ * weight as free-text detection (see scoreFinding) — it never removes a
+ * finding that fails to match it. Already-detected ids are not
+ * duplicated. Unrecognized signal ids (not present in CONCEPT_TAGS) are
+ * silently ignored rather than throwing, since this is fed directly from
+ * user-controlled dropdown values. */
+export function buildEffectiveScenarioConcepts(
+  detected: DetectedConcept[],
+  actorSignal: string | null,
+  scenarioTypeSignal: string | null,
+  evidenceSignal: string | null
+): DetectedConcept[] {
+  const merged = [...detected];
+  const seenIds = new Set(detected.map((c) => c.id));
+  for (const signalId of [actorSignal, scenarioTypeSignal, evidenceSignal]) {
+    if (!signalId || seenIds.has(signalId)) continue;
+    const tag = CONCEPT_TAGS.find((t) => t.id === signalId);
+    if (!tag) continue;
+    merged.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases: [] });
+    seenIds.add(tag.id);
+  }
+  return merged;
 }
 
 /** A precedent's own fact-element tags that were NOT part of what matched
@@ -159,37 +197,19 @@ function isGenuineEvidentiaryGap(text: string): boolean {
   return !/^none outstanding/i.test(text.trim());
 }
 
-function scoreFinding(
-  finding: ScenarioFinding,
-  detected: DetectedConcept[],
-  actorFilter: string | null,
-  scenarioTypeFilter: string | null,
-  evidenceFilter: string | null
-): ScoredFinding {
-  const detectedIds = new Set(detected.map((c) => c.id));
-  const detectedLabelById = new Map(detected.map((c) => [c.id, c.label]));
+function scoreFinding(finding: ScenarioFinding, effectiveConcepts: DetectedConcept[]): ScoredFinding {
+  // effectiveConcepts already merges free-text detection with the
+  // officer's dropdown selections (see buildEffectiveScenarioConcepts) —
+  // both are scored identically here, on the same per-category weight,
+  // since a dropdown selection is a signal asserting the same kind of
+  // fact free text would, not a separate boost mechanism.
+  const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+  const detectedLabelById = new Map(effectiveConcepts.map((c) => [c.id, c.label]));
 
   const transactionOverlap = finding.transactionTypes.filter((t) => detectedIds.has(t));
   const actorOverlap = finding.actorRoles.filter((a) => detectedIds.has(a));
   const conductOverlap = finding.allegedConduct.filter((c) => detectedIds.has(c));
   const evidenceOverlap = finding.evidenceTypes.filter((e) => detectedIds.has(e));
-
-  let score = transactionOverlap.length * 3 + actorOverlap.length * 2 + conductOverlap.length * 3 + evidenceOverlap.length * 1;
-
-  if (actorFilter && finding.actorRoles.includes(actorFilter)) score += 2;
-  // scenarioTypeFilter is the dropdown labelled "Scenario type" in the UI —
-  // it filters against allegedConduct (the alleged violation/scenario
-  // category, e.g. "fraudulent preferential allotment"), never
-  // transactionTypes (the underlying transaction subject-matter, e.g.
-  // "financial statement disclosure" — not itself a violation, and a
-  // frequent source of confusion when this filter used to be labelled
-  // "Transaction type" and filtered on that field instead).
-  if (scenarioTypeFilter && finding.allegedConduct.includes(scenarioTypeFilter)) score += 3;
-  // Same weight as a matched evidence-type overlap above (weight 1) — an
-  // explicitly selected evidence indicator is exact-match confirmation of
-  // the same kind of fact, not a stronger signal than the equivalent
-  // free-text detection would have been.
-  if (evidenceFilter && finding.evidenceTypes.includes(evidenceFilter)) score += 1;
 
   // score is a pure factual-overlap measure — deliberately never adjusted
   // for procedural stage (final/interim) or historical disposition. Those
@@ -198,6 +218,7 @@ function scoreFinding(
   // read as more or less factually similar than another. Display-order
   // ties are broken by finality separately, see
   // compareByFactualScoreThenFinality — never by adjusting this number.
+  const score = transactionOverlap.length * 3 + actorOverlap.length * 2 + conductOverlap.length * 3 + evidenceOverlap.length * 1;
   const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
   const matchedIngredients = unique(matchedIds.map((id) => detectedLabelById.get(id) ?? id));
   const toLabels = (ids: string[]) => unique(ids.map((id) => detectedLabelById.get(id) ?? id));
@@ -374,10 +395,18 @@ export function analyzeScenario(
   // so the UI can disclose it.
   const { correctedText, corrections } = applySemanticAssist(query.freeText);
   const detected = detectConcepts(correctedText);
-  const detectedIds = new Set(detected.map((c) => c.id));
-  const actorFilter = query.actorFilter || null;
-  const scenarioTypeFilter = query.scenarioTypeFilter || null;
-  const evidenceFilter = query.evidenceFilter || null;
+  const actorSignal = query.actorSignal || null;
+  const scenarioTypeSignal = query.scenarioTypeSignal || null;
+  const evidenceSignal = query.evidenceSignal || null;
+  // The single canonical concept list every downstream step below reads
+  // from — see buildEffectiveScenarioConcepts. detectedIds (used for
+  // justifyingTags gating and the fund-movement-only check in
+  // buildWhyRelevant) is deliberately drawn from this merged list too,
+  // not from `detected` alone, so a dropdown-selected fact is treated
+  // identically to the same fact typed in free text everywhere, not just
+  // in scoring.
+  const effectiveConcepts = buildEffectiveScenarioConcepts(detected, actorSignal, scenarioTypeSignal, evidenceSignal);
+  const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
 
   // Publication/quarantine lifecycle: Draft, Quarantined and Withdrawn
   // findings never reach the matching engine, in either the deterministic
@@ -387,19 +416,17 @@ export function analyzeScenario(
   const publishedFullTextCandidates = fullTextCandidates.filter((f) => !EXCLUDED_PUBLICATION_STATUSES.has(f.publicationStatus));
 
   const scored = publishedScenarioFindings
-    .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter, evidenceFilter))
+    .map((f) => scoreFinding(f, effectiveConcepts))
     .filter((s) => s.score >= MIN_FINDING_SCORE)
     .sort(compareByFactualScoreThenFinality);
 
-  // A category counts as "detected" either from free-text concept detection
-  // or from the officer explicitly selecting the corresponding dropdown —
-  // selecting a filter is itself a stated fact, not merely a search
-  // narrower. Order matches the UI's own category order.
+  // A category counts as "detected" either from free-text concept
+  // detection or from the officer explicitly selecting the corresponding
+  // dropdown — selecting a dropdown value is itself a stated fact, not
+  // merely a search narrower (see buildEffectiveScenarioConcepts). Order
+  // matches the UI's own category order.
   const ALL_KINDS: ConceptKind[] = ["transaction", "actor", "conduct", "evidence"];
-  const detectedKindSet = new Set<ConceptKind>(detected.map((c) => c.kind));
-  if (actorFilter) detectedKindSet.add("actor");
-  if (scenarioTypeFilter) detectedKindSet.add("conduct");
-  if (evidenceFilter) detectedKindSet.add("evidence");
+  const detectedKindSet = new Set<ConceptKind>(effectiveConcepts.map((c) => c.kind));
   const completeness: ScenarioCompleteness = {
     detected: ALL_KINDS.filter((k) => detectedKindSet.has(k)),
     notStated: ALL_KINDS.filter((k) => !detectedKindSet.has(k)),
@@ -489,7 +516,7 @@ export function analyzeScenario(
     const alreadyShownIds = new Set(provisionResults.flatMap((pr) => pr.contraryPrecedents.map((c) => c.finding.recordId)));
     const materiallyRelevantContrary = publishedScenarioFindings
       .filter((f) => NEGATIVE_STATUSES.has(f.findingStatus) && !alreadyShownIds.has(f.recordId))
-      .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter, evidenceFilter))
+      .map((f) => scoreFinding(f, effectiveConcepts))
       // Same material-relevance bar as every supporting precedent and the
       // per-provision contrary list above: a genuine transaction-type or
       // conduct overlap, never merely a shared actor role, evidence type, or

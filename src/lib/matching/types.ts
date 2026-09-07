@@ -4,18 +4,31 @@ import type { WordCorrection } from "./fuzzyMatch";
 
 export interface ScenarioQuery {
   freeText: string;
-  actorFilter?: string | null;
-  /** Optional exact-match boost against a finding's allegedConduct (the
-   * "Scenario type" dropdown in the UI, e.g. "Fraudulent/sham preferential
-   * allotment") — never the underlying transactionTypes field, which
-   * describes transaction subject matter (e.g. "financial statement
-   * disclosure") rather than a violation/scenario category. */
-  scenarioTypeFilter?: string | null;
-  /** Optional exact-match boost against a finding's evidenceTypes (the
-   * "Evidence indicator" dropdown in the UI) — lets an officer who already
-   * knows what documentary evidence exists point the matcher at it directly,
-   * rather than relying only on free-text detection. */
-  evidenceFilter?: string | null;
+  /** Optional dropdown selection from the curated actor-role vocabulary
+   * (e.g. "Related party"). Despite the UI grouping it under "Optional
+   * filters", this is architecturally a SIGNAL, not an exclusionary
+   * filter: selecting it asserts that fact about the entered scenario
+   * exactly as if the officer had typed it, and is folded into the same
+   * canonical concept set free-text detection produces (see
+   * buildEffectiveScenarioConcepts in engine.ts) — it never removes a
+   * finding that fails to match it. Renamed from the former
+   * `actorFilter` for this reason. */
+  actorSignal?: string | null;
+  /** Optional dropdown selection from the curated alleged-conduct
+   * vocabulary (the "Scenario type" dropdown in the UI, e.g.
+   * "Fraudulent/sham preferential allotment") — never the underlying
+   * transactionTypes field, which describes transaction subject matter
+   * (e.g. "financial statement disclosure") rather than a
+   * violation/scenario category. Same signal-not-filter semantics as
+   * actorSignal above; renamed from the former `scenarioTypeFilter`. */
+  scenarioTypeSignal?: string | null;
+  /** Optional dropdown selection from the curated evidence-type
+   * vocabulary (the "Evidence indicator" dropdown in the UI) — lets an
+   * officer who already knows what documentary evidence exists assert it
+   * directly, rather than relying only on free-text detection. Same
+   * signal-not-filter semantics as actorSignal above; renamed from the
+   * former `evidenceFilter`. */
+  evidenceSignal?: string | null;
   /** Descriptive-only fields carried through to the result and any export,
    * never used in scoring: there is no curated data to reliably match a
    * conduct period, entity name or amount against, and attempting fuzzy

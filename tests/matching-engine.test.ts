@@ -18,8 +18,8 @@ const FORBIDDEN_PHRASES = [
   "established a violation",
 ];
 
-function run(freeText: string, actorFilter?: string, scenarioTypeFilter?: string): AnalysisResult {
-  return analyzeScenario({ freeText, actorFilter, scenarioTypeFilter }, scenarioFindings, provisions, legalTests);
+function run(freeText: string, actorSignal?: string, scenarioTypeSignal?: string): AnalysisResult {
+  return analyzeScenario({ freeText, actorSignal, scenarioTypeSignal }, scenarioFindings, provisions, legalTests);
 }
 
 function allRecordIds(result: AnalysisResult): string[] {

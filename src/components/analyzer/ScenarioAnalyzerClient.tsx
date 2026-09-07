@@ -51,11 +51,14 @@ function groupByFramework(provisionResults: ProvisionResult[]): { label: string;
 }
 
 const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
-// "Scenario type" filters on allegedConduct (the alleged violation/scenario
-// category, e.g. "Fraudulent/sham preferential allotment") -- deliberately
-// NOT the "transaction" kind tags, which describe transaction subject
-// matter (e.g. "Financial statement disclosure") rather than a violation.
-// Offering those here read as claiming disclosure itself is a violation.
+// "Scenario type" asserts an allegedConduct fact (the alleged violation/
+// scenario category, e.g. "Fraudulent/sham preferential allotment") --
+// deliberately NOT the "transaction" kind tags, which describe transaction
+// subject matter (e.g. "Financial statement disclosure") rather than a
+// violation. Offering those here read as claiming disclosure itself is a
+// violation. This dropdown is a SIGNAL (see buildEffectiveScenarioConcepts
+// in engine.ts), not an exclusionary filter, despite the "Optional facts"
+// section it lives in still being colloquially thought of as filters.
 const SCENARIO_TYPE_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "conduct");
 const EVIDENCE_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "evidence");
 
@@ -137,6 +140,8 @@ const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_
 ];
 
 const EVIDENCE_LABEL_BY_ID = new Map(EVIDENCE_OPTIONS.map((o) => [o.id, o.label]));
+const ACTOR_LABEL_BY_ID = new Map(ACTOR_OPTIONS.map((o) => [o.id, o.label]));
+const SCENARIO_TYPE_LABEL_BY_ID = new Map(SCENARIO_TYPE_OPTIONS.map((o) => [o.id, o.label]));
 
 function evidenceLabel(id: string): string {
   return EVIDENCE_LABEL_BY_ID.get(id) ?? id.replace(/_/g, " ");
@@ -427,9 +432,9 @@ export function resultToCsv(result: AnalysisResult): string {
 
 export function ScenarioAnalyzerClient() {
   const [freeText, setFreeText] = useState("");
-  const [actorFilter, setActorFilter] = useState("");
-  const [scenarioTypeFilter, setScenarioTypeFilter] = useState("");
-  const [evidenceFilter, setEvidenceFilter] = useState("");
+  const [actorSignal, setActorSignal] = useState("");
+  const [scenarioTypeSignal, setScenarioTypeSignal] = useState("");
+  const [evidenceSignal, setEvidenceSignal] = useState("");
   const [conductPeriod, setConductPeriod] = useState("");
   const [entityOrIssuer, setEntityOrIssuer] = useState("");
   const [amountInvolved, setAmountInvolved] = useState("");
@@ -480,9 +485,9 @@ export function ScenarioAnalyzerClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           freeText,
-          actorFilter,
-          scenarioTypeFilter,
-          evidenceFilter,
+          actorSignal,
+          scenarioTypeSignal,
+          evidenceSignal,
           conductPeriod,
           entityOrIssuer,
           amountInvolved,
@@ -504,9 +509,9 @@ export function ScenarioAnalyzerClient() {
 
   function handleReset() {
     setFreeText("");
-    setActorFilter("");
-    setScenarioTypeFilter("");
-    setEvidenceFilter("");
+    setActorSignal("");
+    setScenarioTypeSignal("");
+    setEvidenceSignal("");
     setConductPeriod("");
     setEntityOrIssuer("");
     setAmountInvolved("");
@@ -582,19 +587,19 @@ export function ScenarioAnalyzerClient() {
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-navy-900)] text-[10px] font-semibold text-white">
               3
             </span>
-            <span className="text-sm font-semibold text-[var(--color-ink-900)]">Optional filters</span>
+            <span className="text-sm font-semibold text-[var(--color-ink-900)]">Optional facts (adds to your scenario, does not exclude results)</span>
           </div>
         </div>
 
         <div className="mt-2 grid gap-4 pl-7 sm:grid-cols-3">
           <div>
-            <label htmlFor="actorFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
+            <label htmlFor="actorSignal" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Actor / role (optional)
             </label>
             <select
-              id="actorFilter"
-              value={actorFilter}
-              onChange={(e) => setActorFilter(e.target.value)}
+              id="actorSignal"
+              value={actorSignal}
+              onChange={(e) => setActorSignal(e.target.value)}
               className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
             >
               <option value="">Any</option>
@@ -606,13 +611,13 @@ export function ScenarioAnalyzerClient() {
             </select>
           </div>
           <div>
-            <label htmlFor="scenarioTypeFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
+            <label htmlFor="scenarioTypeSignal" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Scenario type (optional)
             </label>
             <select
-              id="scenarioTypeFilter"
-              value={scenarioTypeFilter}
-              onChange={(e) => setScenarioTypeFilter(e.target.value)}
+              id="scenarioTypeSignal"
+              value={scenarioTypeSignal}
+              onChange={(e) => setScenarioTypeSignal(e.target.value)}
               className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
             >
               <option value="">Any</option>
@@ -624,13 +629,13 @@ export function ScenarioAnalyzerClient() {
             </select>
           </div>
           <div>
-            <label htmlFor="evidenceFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
+            <label htmlFor="evidenceSignal" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Evidence indicator (optional)
             </label>
             <select
-              id="evidenceFilter"
-              value={evidenceFilter}
-              onChange={(e) => setEvidenceFilter(e.target.value)}
+              id="evidenceSignal"
+              value={evidenceSignal}
+              onChange={(e) => setEvidenceSignal(e.target.value)}
               className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
             >
               <option value="">Any</option>
@@ -1240,9 +1245,27 @@ export function ScenarioAnalyzerClient() {
                       <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Match source</span>
                       <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
                         <li>Matched from the entered scenario text against the curated concept vocabulary (never an external search).</li>
-                        {actorFilter && <li>The &quot;Actor / role&quot; filter was set and may have added to this result&apos;s score.</li>}
-                        {scenarioTypeFilter && <li>The &quot;Scenario type&quot; filter was set and may have added to this result&apos;s score.</li>}
-                        {evidenceFilter && <li>The &quot;Evidence indicator&quot; filter was set and may have added to this result&apos;s score.</li>}
+                        {actorSignal && (
+                          <li>
+                            &quot;Actor / role: {ACTOR_LABEL_BY_ID.get(actorSignal) ?? actorSignal}&quot; was selected and was treated as an
+                            asserted fact of this scenario for matching, on the same footing as text you typed. It does not exclude any
+                            result that fails to match it.
+                          </li>
+                        )}
+                        {scenarioTypeSignal && (
+                          <li>
+                            &quot;Scenario type: {SCENARIO_TYPE_LABEL_BY_ID.get(scenarioTypeSignal) ?? scenarioTypeSignal}&quot; was
+                            selected and was treated as an asserted fact of this scenario for matching, on the same footing as text you
+                            typed. It does not exclude any result that fails to match it.
+                          </li>
+                        )}
+                        {evidenceSignal && (
+                          <li>
+                            &quot;Evidence indicator: {evidenceLabel(evidenceSignal)}&quot; was selected and was treated as an asserted
+                            fact of this scenario for matching, on the same footing as text you typed. It does not exclude any result
+                            that fails to match it.
+                          </li>
+                        )}
                         {result.semanticAssist.length > 0 && <li>One or more terms in the entered text were spelling-corrected before matching (see &quot;Read as&quot; above).</li>}
                       </ul>
                     </div>

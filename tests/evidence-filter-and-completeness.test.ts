@@ -1,9 +1,11 @@
-// Guards two Round-H additions to the matching engine: (1) the new
-// "Evidence indicator" dropdown (evidenceFilter) boosts a finding's score
-// exactly like the existing actor/scenario-type filters, and (2) the
-// scenario-completeness summary correctly reports which of the four
-// fact-element categories were touched (by free text OR an explicit filter)
-// versus not mentioned at all — never treating "not stated" as "absent".
+// Guards two matching-engine behaviors: (1) the "Evidence indicator"
+// dropdown (evidenceSignal) contributes to a finding's score exactly like a
+// free-text evidence mention would, via the unified effective-concepts
+// representation (see buildEffectiveScenarioConcepts in engine.ts) — never
+// as an exclusionary filter — and (2) the scenario-completeness summary
+// correctly reports which of the four fact-element categories were touched
+// (by free text OR an explicit dropdown selection) versus not mentioned at
+// all — never treating "not stated" as "absent".
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -57,8 +59,8 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
   };
 }
 
-describe("evidenceFilter", () => {
-  it("boosts a finding whose evidenceTypes includes the selected filter, even with no free-text evidence mention", () => {
+describe("evidenceSignal", () => {
+  it("boosts a finding whose evidenceTypes includes the selected signal, even with no free-text evidence mention", () => {
     const provision = makeProvision({ id: "TEST-PROV-EVID" });
     const withEvidence = makeFinding({
       recordId: "SYN-EVID-01",
@@ -74,7 +76,7 @@ describe("evidenceFilter", () => {
     });
 
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted.", evidenceFilter: "bank_statements_flow" },
+      { freeText: "Company funds were diverted.", evidenceSignal: "bank_statements_flow" },
       [withEvidence, withoutEvidence],
       [provision],
       []
@@ -107,9 +109,9 @@ describe("scenario completeness", () => {
     expect(result.completeness.detected).not.toEqual(expect.arrayContaining(result.completeness.notStated));
   });
 
-  it("counts an explicitly selected filter as detected even absent from free text", () => {
+  it("counts an explicitly selected signal as detected even absent from free text", () => {
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted.", actorFilter: "promoter" },
+      { freeText: "Company funds were diverted.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
