@@ -140,8 +140,16 @@ function evidenceLabel(id: string): string {
   return EVIDENCE_LABEL_BY_ID.get(id) ?? id.replace(/_/g, " ");
 }
 
+type EvidenceMatrixRecordKind = "upheld" | "supporting" | "contrary";
+
 interface EvidenceMatrix {
-  records: { recordId: string }[];
+  /** kind reflects which list(s) this record was drawn from — a record
+   * appearing in more than one (e.g. both upheld and supporting) keeps
+   * whichever is listed first in the precedence upheld > supporting >
+   * contrary, since a genuinely upheld precedent is the strongest fact
+   * worth flagging in the column header, never left ambiguous as to
+   * whether the column is a supporting or a contrary record. */
+  records: { recordId: string; kind: EvidenceMatrixRecordKind }[];
   rows: { evidenceId: string; evidenceLabel: string; presentInYourFacts: boolean; presentByRecordId: Record<string, boolean> }[];
 }
 
@@ -154,24 +162,31 @@ interface EvidenceMatrix {
  * recorded evidence tag between them; a single precedent already has its
  * evidence indicators listed under "Matched evidence indicators" above, and
  * a table with nothing to compare would just be noise. */
-function buildEvidenceMatrix(pr: ProvisionResult): EvidenceMatrix | null {
-  const seen = new Map<string, ProvisionResult["upheldPrecedents"][number]>();
-  for (const p of [...pr.upheldPrecedents, ...pr.supportingPrecedents, ...pr.contraryPrecedents]) {
-    if (!seen.has(p.finding.recordId)) seen.set(p.finding.recordId, p);
+export function buildEvidenceMatrix(pr: ProvisionResult): EvidenceMatrix | null {
+  const seen = new Map<string, { record: ProvisionResult["upheldPrecedents"][number]; kind: EvidenceMatrixRecordKind }>();
+  const grouped: [ProvisionResult["upheldPrecedents"], EvidenceMatrixRecordKind][] = [
+    [pr.upheldPrecedents, "upheld"],
+    [pr.supportingPrecedents, "supporting"],
+    [pr.contraryPrecedents, "contrary"],
+  ];
+  for (const [group, kind] of grouped) {
+    for (const p of group) {
+      if (!seen.has(p.finding.recordId)) seen.set(p.finding.recordId, { record: p, kind });
+    }
   }
   const records = [...seen.values()];
   if (records.length < 2) return null;
-  const evidenceIds = [...new Set(records.flatMap((r) => r.finding.evidenceTypes))];
+  const evidenceIds = [...new Set(records.flatMap(({ record }) => record.finding.evidenceTypes))];
   if (evidenceIds.length === 0) return null;
   return {
-    records: records.map((r) => ({ recordId: r.finding.recordId })),
+    records: records.map(({ record, kind }) => ({ recordId: record.finding.recordId, kind })),
     rows: evidenceIds.map((id) => {
       const label = evidenceLabel(id);
       return {
         evidenceId: id,
         evidenceLabel: label,
         presentInYourFacts: pr.matchedByCategory.evidenceTypes.includes(label),
-        presentByRecordId: Object.fromEntries(records.map((r) => [r.finding.recordId, r.finding.evidenceTypes.includes(id)])),
+        presentByRecordId: Object.fromEntries(records.map(({ record }) => [record.finding.recordId, record.finding.evidenceTypes.includes(id)])),
       };
     }),
   };
@@ -1157,7 +1172,9 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             Which evidence indicators are recorded against each precedent below, drawn from this
                             pilot&apos;s curated tagging of those findings, not from the facts you entered. The
-                            &quot;Your facts&quot; column shows only what your own scenario touched on.
+                            &quot;Your facts&quot; column shows only what your own scenario touched on; every other
+                            column is labelled Confirmed / Supporting / Contrary so it is never ambiguous which kind
+                            of precedent that evidence was recorded against.
                           </p>
                           <div className="mt-1.5 overflow-x-auto">
                             <table className="min-w-full border-collapse text-xs">
@@ -1175,6 +1192,17 @@ export function ScenarioAnalyzerClient() {
                                       className="border-b border-[var(--color-border)] px-2 py-1 text-left font-semibold text-[var(--color-ink-700)]"
                                     >
                                       {r.recordId}
+                                      <span
+                                        className={`ml-1 font-normal normal-case ${
+                                          r.kind === "contrary"
+                                            ? "text-[var(--status-red-text)]"
+                                            : r.kind === "upheld"
+                                              ? "text-[var(--status-green-text)]"
+                                              : "text-[var(--color-ink-500)]"
+                                        }`}
+                                      >
+                                        ({r.kind === "upheld" ? "confirmed" : r.kind})
+                                      </span>
                                     </th>
                                   ))}
                                 </tr>
