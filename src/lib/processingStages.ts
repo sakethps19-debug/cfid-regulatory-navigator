@@ -61,12 +61,12 @@ export function isDeepAnalyzed(stage: ProcessingStage): boolean {
 export const PROCESSING_STAGE_STYLES: Record<ProcessingStage, string> = {
   indexed: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
   awaiting_retrieval: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
-  retrieval_attempted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  retrieval_attempted: "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
   retrieval_failed: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
-  downloaded: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
-  text_extracted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
-  scenario_findings_extracted: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
-  citations_checked: "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
+  downloaded: "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
+  text_extracted: "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
+  scenario_findings_extracted: "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
+  citations_checked: "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
   legally_reviewed: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
   needs_manual_review: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
 };

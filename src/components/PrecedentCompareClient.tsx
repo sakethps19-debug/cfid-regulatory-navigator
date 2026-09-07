@@ -10,12 +10,22 @@ const DEFAULT_LEFT_ID = "SSSL-02";
 const DEFAULT_RIGHT_ID = "SSSL-03";
 const MAX_VISIBLE_MATCHES = 30;
 
-const FIELDS: { label: string; render: (f: ScenarioFinding) => React.ReactNode }[] = [
+interface CompareField {
+  label: string;
+  render: (f: ScenarioFinding) => React.ReactNode;
+  /** Long free-text fields get a collapse/expand toggle rather than
+   * rendering in full by default — a factual pattern can run to several
+   * paragraphs, which made both the table and (especially) the mobile
+   * stacked view very long to scroll past just to reach the next field. */
+  long?: boolean;
+}
+
+const FIELDS: CompareField[] = [
   { label: "Case", render: (f) => f.caseName },
   { label: "Category", render: (f) => f.category },
   { label: "Scenario title", render: (f) => f.scenarioTitle },
-  { label: "Factual pattern", render: (f) => f.factualPattern },
-  { label: "Provisions considered", render: (f) => f.provisionsConsideredRaw },
+  { label: "Factual pattern", render: (f) => f.factualPattern, long: true },
+  { label: "Provisions considered", render: (f) => f.provisionsConsideredRaw, long: true },
   { label: "Noticees / actors", render: (f) => f.noticeeActors.join("; ") },
   { label: "Finding status", render: (f) => <StatusBadge status={f.findingStatus} /> },
   { label: "Interim paragraph references", render: (f) => f.interimParagraphReferences ?? "-" },
@@ -25,6 +35,32 @@ const FIELDS: { label: string; render: (f: ScenarioFinding) => React.ReactNode }
   { label: "Outcome in this precedent", render: (f) => f.precedentOutcomeNote ?? "-" },
   { label: "Official source", render: (f) => <SourceLink href={f.officialSourceUrl} /> },
 ];
+
+const LONG_TEXT_PREVIEW_CHARS = 220;
+
+/** Renders a field's value, truncating with a Show more/less toggle for
+ * fields flagged `long` when the rendered value is a plain string past the
+ * preview length -- badges, links and short values render exactly as
+ * before, untouched. */
+function FieldValue({ field, finding }: { field: CompareField; finding: ScenarioFinding }) {
+  const [expanded, setExpanded] = useState(false);
+  const value = field.render(finding);
+  if (!field.long || typeof value !== "string" || value.length <= LONG_TEXT_PREVIEW_CHARS) {
+    return <>{value}</>;
+  }
+  return (
+    <div>
+      {expanded ? value : `${value.slice(0, LONG_TEXT_PREVIEW_CHARS)}…`}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="ml-1.5 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+      >
+        {expanded ? "Show less" : "Show more"}
+      </button>
+    </div>
+  );
+}
 
 function findingLabel(f: ScenarioFinding): string {
   return `${f.recordId} · ${f.caseName}: ${f.scenarioTitle}`;
@@ -164,26 +200,56 @@ export function PrecedentCompareClient({ findings }: { findings: ScenarioFinding
       )}
 
       {left && right && (
-        <div className="mt-6 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
-          <table className="w-full min-w-[640px] divide-y divide-[var(--color-border)] text-sm">
-            <thead>
-              <tr className="bg-[var(--color-neutral-50)]">
-                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">Field</th>
-                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{left.recordId}</th>
-                <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{right.recordId}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {FIELDS.map((field) => (
-                <tr key={field.label}>
-                  <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-[var(--color-ink-700)]">{field.label}</td>
-                  <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">{field.render(left)}</td>
-                  <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">{field.render(right)}</td>
+        <>
+          {/* Desktop/tablet: side-by-side table. */}
+          <div className="mt-6 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
+            <table className="w-full min-w-[640px] divide-y divide-[var(--color-border)] text-sm">
+              <thead>
+                <tr className="bg-[var(--color-neutral-50)]">
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">Field</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{left.recordId}</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[var(--color-ink-700)]">{right.recordId}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {FIELDS.map((field, i) => (
+                  <tr key={field.label} className={i % 2 === 1 ? "bg-[var(--color-neutral-50)]/50" : undefined}>
+                    <td className="whitespace-nowrap px-4 py-3 align-top font-medium text-[var(--color-ink-700)]">{field.label}</td>
+                    <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">
+                      <FieldValue field={field} finding={left} />
+                    </td>
+                    <td className="px-4 py-3 align-top text-[var(--color-ink-900)]">
+                      <FieldValue field={field} finding={right} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: an unusably wide 3-column table becomes, per field, a
+              small "Earlier stage / Later stage"-style stack -- Finding A's
+              value directly above Finding B's, field by field. */}
+          <div className="mt-6 space-y-4 md:hidden">
+            {FIELDS.map((field, i) => (
+              <div key={field.label} className={`rounded-sm p-3 border border-[var(--color-border)] ${i % 2 === 1 ? "bg-[var(--color-neutral-50)]/50" : "bg-white"}`}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{field.label}</p>
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-[var(--color-ink-500)]">{left.recordId}</p>
+                  <div className="mt-0.5 text-sm text-[var(--color-ink-900)]">
+                    <FieldValue field={field} finding={left} />
+                  </div>
+                </div>
+                <div className="mt-2.5 border-t border-[var(--color-border)] pt-2.5">
+                  <p className="text-xs font-medium text-[var(--color-ink-500)]">{right.recordId}</p>
+                  <div className="mt-0.5 text-sm text-[var(--color-ink-900)]">
+                    <FieldValue field={field} finding={right} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

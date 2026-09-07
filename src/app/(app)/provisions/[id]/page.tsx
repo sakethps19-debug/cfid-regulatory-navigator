@@ -94,7 +94,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                       v.status === "officially_verified"
                         ? "text-[var(--status-green-text)]"
                         : v.status === "order_cited_text_only"
-                          ? "text-[#1c4a56]"
+                          ? "text-[var(--status-blue-text)]"
                           : "text-[var(--color-gold-700)]"
                     }`}
                   >

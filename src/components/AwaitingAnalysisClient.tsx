@@ -73,7 +73,7 @@ function VerifiedOrdersTable({ rows }: { rows: VerifiedCfidOrderRow[] }) {
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
+      <div className="mt-4 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
         <table className="w-full min-w-[820px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
             <tr className="bg-[var(--color-neutral-50)]">
@@ -106,6 +106,29 @@ function VerifiedOrdersTable({ rows }: { rows: VerifiedCfidOrderRow[] }) {
           </tbody>
         </table>
         {filtered.length === 0 && <p className="p-4 text-sm text-[var(--color-ink-500)]">No rows match this filter.</p>}
+      </div>
+
+      <div className="mt-4 space-y-2.5 md:hidden">
+        {filtered.map((r) => (
+          <div key={r.id} className="rounded-sm bg-white p-3 border border-[var(--color-border)]">
+            <div className="font-medium text-[var(--color-ink-900)]">{r.caseName}</div>
+            <div className="mt-0.5 font-mono text-xs text-[var(--color-ink-700)]">{r.orderIdentifier}</div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${ANALYSIS_STYLES[r.analysisStatus]}`}>
+                {ANALYSIS_LABELS[r.analysisStatus]}
+              </span>
+              {r.analysisStatus === "deep_analyzed" && r.linkedOrderIds[0] && (
+                <Link href={`/orders/${r.linkedOrderIds[0]}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
+                  View →
+                </Link>
+              )}
+            </div>
+            <div className="mt-1.5">
+              <SourceLink href={r.officialUrl} />
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && <p className="rounded-sm bg-white p-4 text-sm text-[var(--color-ink-500)] border border-[var(--color-border)]">No rows match this filter.</p>}
       </div>
     </div>
   );
@@ -163,7 +186,7 @@ function ResidualTable({ rows }: { rows: ResidualOrderRow[] }) {
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
+      <div className="mt-4 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
         <table className="w-full min-w-[820px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
             <tr className="bg-[var(--color-neutral-50)]">
@@ -191,6 +214,22 @@ function ResidualTable({ rows }: { rows: ResidualOrderRow[] }) {
           </tbody>
         </table>
         {filtered.length === 0 && <p className="p-4 text-sm text-[var(--color-ink-500)]">No rows match this filter.</p>}
+      </div>
+
+      <div className="mt-4 space-y-2.5 md:hidden">
+        {filtered.map((r) => (
+          <div key={r.id} className="rounded-sm bg-white p-3 border border-[var(--color-border)]">
+            <div className="font-medium text-[var(--color-ink-900)]">{r.caseOrOrderName}</div>
+            <span className={`mt-1.5 inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${RESIDUAL_STYLES[r.status]}`}>
+              {RESIDUAL_LABELS[r.status]}
+            </span>
+            <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{r.reason}</p>
+            <div className="mt-1.5">
+              {r.officialUrl ? <SourceLink href={r.officialUrl} /> : <span className="text-xs text-[var(--color-ink-300)]">No official link on file</span>}
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && <p className="rounded-sm bg-white p-4 text-sm text-[var(--color-ink-500)] border border-[var(--color-border)]">No rows match this filter.</p>}
       </div>
     </div>
   );

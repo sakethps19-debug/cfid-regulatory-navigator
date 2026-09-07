@@ -7,16 +7,27 @@ export default async function AdminDashboardPage() {
   const [metrics, issues, changeLog] = await Promise.all([getProcessingMetrics(), getValidationIssues(), getDataChangeLog()]);
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
 
-  const rows: { label: string; value: number; hint?: string }[] = [
+  // Grouped under Corpus / Processing / Review, per the same distinction
+  // the rest of the app draws between "how much is indexed", "where each
+  // order stands in the pipeline", and "has a human actually signed off" —
+  // three genuinely different questions that a single flat grid of ten
+  // equally-weighted numbers made harder to tell apart at a glance.
+  const corpusRows: { label: string; value: number; hint?: string }[] = [
     { label: "Total orders indexed", value: metrics.totalIndexed, hint: "Every row in Verified_CFID_Order_Links.xlsx, not a claim this is every CFID order that exists" },
+    { label: "Scenario findings created", value: metrics.scenarioFindingsCreated },
+    { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far, not the complete CFID law library" },
+  ];
+
+  const processingRows: { label: string; value: number; hint?: string }[] = [
     { label: "Deep-analyzed", value: metrics.deepAnalyzedCount, hint: "Actually opened, read, and broken into scenario findings with paragraph citations, this is what powers the Scenario Analyzer for these orders" },
-    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing, see \"Deep-analyzed\" above" },
     { label: "Awaiting retrieval", value: metrics.awaitingRetrieval, hint: "Indexed and CFID-tag-checked, but no retrieval attempt has been made or recorded for these specific orders yet, not a failure" },
     { label: "Retrieval failed", value: metrics.retrievalFailures, hint: "A genuine, individually recorded retrieval attempt was made and failed, distinct from \"awaiting retrieval\"" },
     { label: "Retrieved but not yet deep-analyzed", value: metrics.midPipelineCount, hint: "Document retrieved and in progress (attempted / downloaded / text extracted / scenario findings extracted), but citations have not yet been checked, genuinely earlier-stage than \"Deep-analyzed\" above" },
     { label: "Needs manual review", value: metrics.needsManualReview },
-    { label: "Scenario findings created", value: metrics.scenarioFindingsCreated },
-    { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far, not the complete CFID law library" },
+  ];
+
+  const reviewRows: { label: string; value: number; hint?: string }[] = [
+    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing, see \"Deep-analyzed\" above" },
     { label: "Official law texts verified", value: metrics.officialLawTextsVerified, hint: "provision_versions confirmed against an official source" },
   ];
 
@@ -43,8 +54,9 @@ export default async function AdminDashboardPage() {
         description="Live counts computed directly from the database on every page load; nothing here is cached or estimated."
       />
 
+      <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Corpus</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map((r) => (
+        {corpusRows.map((r) => (
           <Card key={r.label}>
             <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
             <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
@@ -53,7 +65,29 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Official-link verification stages</h2>
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Processing</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {processingRows.map((r) => (
+          <Card key={r.label}>
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
+            {r.hint && <div className="mt-1 text-xs text-[var(--color-ink-500)]">{r.hint}</div>}
+          </Card>
+        ))}
+      </div>
+
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Review</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {reviewRows.map((r) => (
+          <Card key={r.label}>
+            <div className="text-2xl font-semibold text-[var(--color-gold-800)] sm:text-3xl">{r.value}</div>
+            <div className="mt-1 text-sm text-[var(--color-ink-700)]">{r.label}</div>
+            {r.hint && <div className="mt-1 text-xs text-[var(--color-ink-500)]">{r.hint}</div>}
+          </Card>
+        ))}
+      </div>
+
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Processing: official-link verification stages</h2>
       <p className="mb-3 text-sm text-[var(--color-ink-700)]">
         &quot;89 official links verified&quot; is not one fact, it collapses several distinct checkpoints. Each row
         below is a separate, honestly-tracked stage; a high count at one stage is never a claim that a later stage
@@ -84,10 +118,11 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <Card className="mt-6">
+      <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Validation</h2>
+      <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Validation issues</h2>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Validation issues</h3>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
               {issues.length} recorded, {unresolvedIssues} unresolved, each traceable back to a specific order or
               source row. Issues are marked resolved once their underlying condition no longer holds (e.g. an
@@ -107,7 +142,7 @@ export default async function AdminDashboardPage() {
       <Card className="mt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Curated-data change log</h2>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Curated-data change log</h3>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
               {changeLog.length} corrections recorded: every conduct tag, transaction type, or similar curated field
               changed directly against the database, with what it was, what it became, and why.

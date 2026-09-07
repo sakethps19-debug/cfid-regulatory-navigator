@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
+import { PROCESSING_STAGE_LABELS, PROCESSING_STAGE_ORDER, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -10,10 +11,73 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** A collapsed-by-default variant of Section, for material that's useful
+ * reference but not what a first-time reader needs to see immediately —
+ * native <details>/<summary>, no JS state needed. */
+function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="mb-6">
+      <details>
+        <summary className="cursor-pointer text-base font-semibold text-[var(--color-ink-900)] marker:text-[var(--color-gold-600)]">
+          {title}
+        </summary>
+        <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
+      </details>
+    </Card>
+  );
+}
+
+const FLOW_STEPS = [
+  "Scenario entered",
+  "Concepts detected",
+  "Provisions matched",
+  "Supporting / contrary precedents",
+  "Missing evidence checklist",
+  "Qualified, non-conclusive output",
+];
+
+const PROCESSING_STAGE_HINTS: Record<(typeof PROCESSING_STAGE_ORDER)[number], string> = {
+  indexed: "Order identified and recorded; no document retrieval attempted yet.",
+  awaiting_retrieval: "Queued for document retrieval; no attempt recorded yet.",
+  retrieval_attempted: "A retrieval attempt was made and recorded for this specific order.",
+  retrieval_failed: "A retrieval attempt was made and failed, with a recorded reason.",
+  downloaded: "The source document was downloaded.",
+  text_extracted: "Text was extracted from the downloaded document.",
+  scenario_findings_extracted: "Scenario findings were drafted from the extracted text.",
+  citations_checked: "Findings and their paragraph citations were checked against the source order (counts as deep-analyzed).",
+  legally_reviewed: "Reviewed and signed off by a CFID officer — a further, distinct step, not a precondition for deep analysis.",
+  needs_manual_review: "Flagged for manual review before further automated processing continues.",
+};
+
 export default function MethodologyPage() {
   return (
     <div>
       <PageHeader title="Methodology &amp; Limitations" description="How this pilot works, what it does not do, and how to extend it." />
+
+      <div className="mb-6 rounded-sm bg-[var(--color-gold-50)] p-3.5 text-sm text-[var(--status-amber-text)] ring-1 border-[var(--status-amber-ring)]">
+        <strong>This is a research-assistance tool, not a legal decision-maker.</strong> It does not make findings of
+        guilt and does not conclude that a violation has occurred merely because a scenario resembles an earlier
+        order. Every output is a deterministic research aid based on the entered facts and the currently indexed
+        corpus; it must be reviewed against the underlying official sources before any reliance is placed on it.
+      </div>
+
+      <Card className="mb-6">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">How a scenario becomes an output</h2>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {FLOW_STEPS.map((step, i) => (
+            <div key={step} className="flex items-center gap-2">
+              <span className="rounded-sm bg-[var(--color-neutral-50)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
+                {step}
+              </span>
+              {i < FLOW_STEPS.length - 1 && <span className="text-[var(--color-ink-300)]" aria-hidden>→</span>}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-[var(--color-ink-500)]">
+          Every step is deterministic (see &quot;How the Scenario Analyzer works&quot; below) — no step is an
+          unexplained black box, and no step concludes that a violation occurred.
+        </p>
+      </Card>
 
       <Section title="Purpose and scope">
         <p>
@@ -24,10 +88,8 @@ export default function MethodologyPage() {
           or evidence; a retrieval-confidence level; and links to official source documents.
         </p>
         <p>
-          <strong>This is a research-assistance tool.</strong> It does not make findings of guilt and does not
-          conclude that a violation has occurred merely because a scenario resembles an earlier order. All output uses
-          careful language such as &quot;potentially relevant&quot; and &quot;prima facie similarity&quot; and never
-          asserts that a regulation has definitely been violated.
+          All output uses careful language such as &quot;potentially relevant&quot; and &quot;prima facie
+          similarity&quot; and never asserts that a regulation has definitely been violated.
         </p>
       </Section>
 
@@ -54,7 +116,30 @@ export default function MethodologyPage() {
         </p>
       </Section>
 
-      <Section title="Verified CFID Orders and the Residual register">
+      <Card className="mb-6">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Processing stages</h2>
+        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+          Where each order currently stands in the pipeline; see the Admin Processing Dashboard for live counts.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[480px] text-sm">
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {PROCESSING_STAGE_ORDER.map((stage) => (
+                <tr key={stage}>
+                  <td className="whitespace-nowrap py-2 pr-3 align-top">
+                    <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${PROCESSING_STAGE_STYLES[stage]}`}>
+                      {PROCESSING_STAGE_LABELS[stage]}
+                    </span>
+                  </td>
+                  <td className="py-2 text-[var(--color-ink-700)]">{PROCESSING_STAGE_HINTS[stage]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <CollapsibleSection title="Verified CFID Orders and the Residual register">
         <p>
           <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative starting list of confirmed CFID orders
           for this pilot: every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
@@ -94,7 +179,7 @@ export default function MethodologyPage() {
           reference or official URL is recorded as a <code>validation_issues</code> row rather than shown as
           settled.
         </p>
-      </Section>
+      </CollapsibleSection>
 
       <Section title="Permitted sources">
         <p>Only the following are used as sources of legal or factual content in this pilot:</p>
@@ -115,7 +200,7 @@ export default function MethodologyPage() {
         </p>
       </Section>
 
-      <Section title="Statutory text sourced from orders">
+      <CollapsibleSection title="Statutory text sourced from orders">
         <p>
           Many CFID orders reproduce the &quot;relevant provisions&quot; verbatim before applying them to the facts.
           For every provision in the Law Library, this tool prefers a real quotation from an order on file over an
@@ -142,7 +227,7 @@ export default function MethodologyPage() {
           surrounding context and confirmed before being written to <code>provision_versions</code>, following the
           same standard described above for any other source.
         </p>
-      </Section>
+      </CollapsibleSection>
 
       <Section title="Critical legal safeguards">
         <ul className="list-inside list-disc space-y-1">

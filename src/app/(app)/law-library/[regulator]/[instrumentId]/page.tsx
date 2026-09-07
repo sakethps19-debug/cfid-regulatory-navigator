@@ -53,7 +53,7 @@ export default async function LawLibraryInstrumentPage({
             </div>
             <p className="mt-1 flex-1 text-sm text-[var(--color-ink-700)]">{p.subject ?? "Subject not recorded."}</p>
             {p.currentTextVerificationStatus === "Order-cited text only" ? (
-              <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-[#1c4a56]">
+              <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-[var(--status-blue-text)]">
                 {p.currentTextVerificationStatus}
               </p>
             ) : (
