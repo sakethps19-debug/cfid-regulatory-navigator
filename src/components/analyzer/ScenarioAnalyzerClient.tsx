@@ -344,9 +344,33 @@ function csvRow(values: string[]): string {
  * counterpart to resultToText's narrative report. Deliberately omits the
  * upheld/contrary precedent breakdown and missing-facts detail that the
  * text export carries (those don't collapse into flat rows cleanly);
- * "Export as text" or "Print" remain the complete record. */
+ * "Export as text" or "Print" remain the complete record.
+ *
+ * Carries the same research-only / not-a-finding-of-guilt disclaimer and
+ * legal-review status as the text export, as leading single-column rows
+ * before the header row — a CSV is routinely forwarded, pasted into a
+ * spreadsheet, or viewed on its own, detached from the page it came from,
+ * so it must not read as a bare violation table with no caveat attached. */
 function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
+  rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
+  rows.push(csvRow([`Generated: ${new Date().toLocaleString()}`]));
+  const sorted = [...result.provisionResults].sort((a, b) =>
+    compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
+  );
+  const referencedFindings = [...new Map(sorted.flatMap((pr) => pr.supportingPrecedents).map((s) => [s.finding.recordId, s.finding])).values()];
+  const legallyReviewedCount = referencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
+  rows.push(
+    csvRow([
+      legallyReviewedCount === 0
+        ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
+        : `${legallyReviewedCount} of ${referencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`,
+    ])
+  );
+  rows.push(
+    csvRow(["This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."])
+  );
+  rows.push(csvRow([]));
   rows.push(
     csvRow([
       "Instrument",
@@ -358,9 +382,6 @@ function resultToCsv(result: AnalysisResult): string {
       "Supporting precedent record IDs",
       "Missing facts / evidence",
     ])
-  );
-  const sorted = [...result.provisionResults].sort((a, b) =>
-    compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
   );
   for (const pr of sorted) {
     rows.push(
