@@ -68,6 +68,10 @@ interface ScoredFinding {
   finding: ScenarioFinding;
   score: number;
   matchedIngredients: string[];
+  /** Same overlap as matchedIngredients but as raw concept-tag ids, not
+   * display labels — used where the specific tag identity matters (e.g.
+   * buildWhyRelevant's fund-movement-only check), not just its human text. */
+  matchedIds: string[];
   categoriesMatched: number;
   substantiveCategoriesMatched: number;
 }
@@ -109,11 +113,8 @@ function scoreFinding(
   const isFinal = !!finding.finalParagraphReferences;
   if (isFinal) score *= 1.15;
 
-  const matchedIngredients = unique(
-    [...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap].map(
-      (id) => detectedLabelById.get(id) ?? id
-    )
-  );
+  const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
+  const matchedIngredients = unique(matchedIds.map((id) => detectedLabelById.get(id) ?? id));
 
   const categoriesMatched = [transactionOverlap, actorOverlap, conductOverlap, evidenceOverlap].filter(
     (arr) => arr.length > 0
@@ -130,7 +131,7 @@ function scoreFinding(
   // see deriveConfidence.
   const substantiveCategoriesMatched = [transactionOverlap, conductOverlap].filter((arr) => arr.length > 0).length;
 
-  return { finding, score, matchedIngredients, categoriesMatched, substantiveCategoriesMatched };
+  return { finding, score, matchedIngredients, matchedIds, categoriesMatched, substantiveCategoriesMatched };
 }
 
 function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
@@ -179,13 +180,47 @@ function deriveConfidence(best: ScoredFinding, supportCount: number): { level: C
   return { level, reasons };
 }
 
+// Conduct tags describing HOW money moved, with no inherent connection to
+// the securities market or the investing public on their own — unlike tags
+// such as fictitious_sales_or_revenue or non_disclosure_of_information,
+// which directly implicate what investors were told or shown. When the
+// ONLY matched ingredients driving a match are these, and the provision is
+// a broad securities-fraud clause (PFUTP 3/4, SEBI Act 12A), the pairing
+// can look like a mismatch to a reader expecting those provisions to be
+// about securities trading specifically — even where the cited precedent's
+// own order drew that connection itself (e.g. an undisclosed diversion
+// found to misrepresent the company's true financial position to the
+// investing public). buildWhyRelevant makes that link explicit instead of
+// leaving the reader to wonder why a pure fund-movement fact pattern
+// attracted a securities-fraud provision.
+const PURE_FUND_MOVEMENT_TAGS = new Set([
+  "fund_diversion",
+  "circular_fund_movement",
+  "fund_routed_personal_account",
+  "fund_transfer_personal_account",
+  "fund_transfer_promoter_entity",
+]);
+
+function isBroadSecuritiesFraudProvision(provisionId: string): boolean {
+  return /^(PFUTP-3|PFUTP-4|SEBI-ACT-12A|SEBI-ACT-11-2-e)/.test(provisionId);
+}
+
 function buildWhyRelevant(provision: LegalProvision, best: ScoredFinding): string {
   const ingredientText = best.matchedIngredients.length > 0 ? best.matchedIngredients.join("; ") : "the general subject matter";
-  return (
+  let text =
     `Potentially relevant because the entered facts share factual ingredients with a prior CFID scenario finding ` +
     `(${best.finding.recordId}) considered under this provision — specifically: ${ingredientText}. ` +
-    `This is a prima facie similarity only and does not by itself establish that the provision applies.`
-  );
+    `This is a prima facie similarity only and does not by itself establish that the provision applies.`;
+
+  const matchedOnlyFundMovement = best.matchedIds.length > 0 && best.matchedIds.every((id) => PURE_FUND_MOVEMENT_TAGS.has(id));
+  if (matchedOnlyFundMovement && isBroadSecuritiesFraudProvision(provision.id)) {
+    text +=
+      ` This provision is a general securities-fraud clause, not one specific to fund movement — it is cited here ` +
+      `because the source order itself treated the fund movement in ${best.finding.recordId} as fraud connected to ` +
+      `dealing in securities (e.g. by misrepresenting the company's financial position to investors), not because ` +
+      `fund movement alone automatically attracts it. Check the source order to see the specific basis before relying on this.`;
+  }
+  return text;
 }
 
 export function analyzeScenario(
