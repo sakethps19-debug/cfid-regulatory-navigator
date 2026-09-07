@@ -1,4 +1,5 @@
 import type { FindingStatus } from "@/types/domain";
+import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 // Drawn from the consolidated semantic-status tokens in globals.css — never
 // the sole signal (the status text itself is always shown alongside the
@@ -18,7 +19,7 @@ const STYLES: Record<FindingStatus, string> = {
 export function StatusBadge({ status }: { status: FindingStatus }) {
   return (
     <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${STYLES[status]}`}>
-      {status}
+      {findingStatusLabel(status)}
     </span>
   );
 }

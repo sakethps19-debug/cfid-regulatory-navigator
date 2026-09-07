@@ -9,6 +9,7 @@ import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildViolationParagraph } from "@/lib/provisionCitationParagraph";
+import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -266,7 +267,7 @@ function resultToText(result: AnalysisResult): string {
       lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
-          `  - [${u.finding.findingStatus}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(u.finding.findingStatus)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
         );
       }
     } else {
@@ -275,7 +276,7 @@ function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${s.finding.findingStatus}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
@@ -285,7 +286,7 @@ function resultToText(result: AnalysisResult): string {
       lines.push("Contrary precedent(s):");
       for (const c of pr.contraryPrecedents) {
         lines.push(
-          `  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
       }
     }
@@ -301,7 +302,7 @@ function resultToText(result: AnalysisResult): string {
       lines.push(`  ${result.contraryPrecedentSearchNote}`);
     } else {
       for (const c of result.globalContraryPrecedents) {
-        lines.push(`  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
         if (c.materialRelevanceNote) lines.push(`      ${c.materialRelevanceNote}`);
       }
     }

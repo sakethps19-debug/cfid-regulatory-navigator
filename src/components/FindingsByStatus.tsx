@@ -1,38 +1,41 @@
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SourceLink } from "@/components/Card";
+import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 // A Record keyed by every FindingStatus, not a plain array of hand-picked
 // statuses — so adding a new status to the domain type forces a compile
 // error here instead of silently dropping its findings from this section
 // (as previously happened for confirmed_at_interim, alleged, inconclusive,
 // procedural_observation and withdrawn — 18 of 80 findings, invisible with
-// no error and no "not linked" message).
+// no error and no "not linked" message). Titles reuse findingStatusLabel
+// (order-stage-first, e.g. "Final order · Confirmed") for consistency with
+// the StatusBadge shown on every finding elsewhere in the app.
 export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> = {
-  "Confirmed in Final Order": { title: "Confirmed in Final Order", hint: "Confirmed in a final order." },
+  "Confirmed in Final Order": { title: findingStatusLabel("Confirmed in Final Order"), hint: "Confirmed in a final order." },
   "Partly Confirmed in Final Order": {
-    title: "Partly Confirmed in Final Order",
+    title: findingStatusLabel("Partly Confirmed in Final Order"),
     hint: "Confirmed in part in a final order; see the qualification for what was excluded.",
   },
   "Not Confirmed in Final Order": {
-    title: "Not Confirmed in Final Order",
+    title: findingStatusLabel("Not Confirmed in Final Order"),
     hint: "Rejected in a final order; an important contrary/negative precedent.",
   },
   "Confirmed at interim": {
-    title: "Confirmed at interim",
+    title: findingStatusLabel("Confirmed at interim"),
     hint: "Confirmed by a confirmatory interim order; not yet a final determination.",
   },
   "Prima facie": {
-    title: "Prima facie findings",
+    title: findingStatusLabel("Prima facie"),
     hint: "Interim-stage findings only, not a final determination.",
   },
-  Alleged: { title: "Alleged", hint: "Raised in the SCN; not yet adjudicated at any stage." },
+  Alleged: { title: findingStatusLabel("Alleged"), hint: "Raised in the SCN; not yet adjudicated at any stage." },
   "Procedural observation": {
-    title: "Procedural observation",
+    title: findingStatusLabel("Procedural observation"),
     hint: "A procedural point in the order, not a substantive finding on the merits.",
   },
-  Inconclusive: { title: "Inconclusive", hint: "The order reached no determination either way." },
-  Withdrawn: { title: "Withdrawn", hint: "Withdrawn during the proceedings." },
+  Inconclusive: { title: findingStatusLabel("Inconclusive"), hint: "The order reached no determination either way." },
+  Withdrawn: { title: findingStatusLabel("Withdrawn"), hint: "Withdrawn during the proceedings." },
 };
 
 // Display order: final-order outcomes first, then interim/pending, then

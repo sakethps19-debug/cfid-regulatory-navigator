@@ -6,6 +6,7 @@ import type { FindingStatus, LegalInstrument, LegalProvision, ScenarioFinding } 
 import { Card } from "@/components/Card";
 import { sortByProvisionNumber } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority, type RegulatorSlug } from "@/lib/regulators";
+import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 const STATUS_ORDER: FindingStatus[] = [
   "Alleged",
@@ -145,7 +146,7 @@ export function LawLibraryClient({
               statusFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
-            {s}
+            {findingStatusLabel(s)}
           </button>
         ))}
       </div>
@@ -174,7 +175,7 @@ export function LawLibraryClient({
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               {[...counts.entries()].map(([status, n]) => (
                                 <span key={status} className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
-                                  {n} {status.toLowerCase()}
+                                  {n} {findingStatusLabel(status).toLowerCase()}
                                 </span>
                               ))}
                             </div>
