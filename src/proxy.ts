@@ -5,7 +5,30 @@ import { checkRateLimit, clientKeyFromHeaders } from "@/lib/security/rateLimit";
 const PUBLIC_PATHS = new Set(["/login"]);
 const PUBLIC_API_PATHS = new Set(["/api/auth/callback"]);
 
+/** The Supabase project origin(s) the CSP's connect-src must allow, derived
+ * from NEXT_PUBLIC_SUPABASE_URL rather than hardcoded to one project id —
+ * so a preview deployment pointed at a different Supabase project (or a
+ * future project migration) gets the correct origin automatically, and a
+ * stale hardcoded id can never silently keep pointing at the wrong project.
+ * Still strict: only an https:// origin is accepted (rejects http, any
+ * wildcard, and any value that isn't a clean origin), and on any parse
+ * failure this fails closed to just 'self' — never wildcards, never a
+ * dangerously permissive fallback. */
+export function supabaseConnectSrcOrigins(): string {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:") return "";
+    const host = parsed.host;
+    return `https://${host} wss://${host}`;
+  } catch {
+    return "";
+  }
+}
+
 function applySecurityHeaders(response: NextResponse): NextResponse {
+  const supabaseOrigins = supabaseConnectSrcOrigins();
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -30,9 +53,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
       "img-src 'self' data:",
       "font-src 'self'",
       // Supabase Auth/PostgREST/Realtime calls go directly from the browser
-      // to this specific Supabase project — scoped by exact origin, never a
-      // wildcard, so no other host can be reached even if injected.
-      "connect-src 'self' https://aytcrvaagqxyetqckbvb.supabase.co wss://aytcrvaagqxyetqckbvb.supabase.co",
+      // to this specific Supabase project — scoped by exact origin (derived
+      // from NEXT_PUBLIC_SUPABASE_URL, see supabaseConnectSrcOrigins above),
+      // never a wildcard, so no other host can be reached even if injected.
+      `connect-src 'self'${supabaseOrigins ? ` ${supabaseOrigins}` : ""}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

@@ -1011,8 +1011,11 @@ export function ScenarioAnalyzerClient() {
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
                           {s.ingredientsNotEstablished.length > 0 && (
-                            <p className="mt-1 text-xs text-[var(--status-amber-text)]">
-                              Also required in this precedent (not established by your facts):{" "}
+                            <p
+                              className="mt-1 text-xs text-[var(--status-amber-text)]"
+                              title="This does not mean the fact is absent. It means the current scenario does not establish or mention it."
+                            >
+                              Facts not stated in the entered scenario, also required in this precedent:{" "}
                               {s.ingredientsNotEstablished.join("; ")}
                             </p>
                           )}
@@ -1228,8 +1231,11 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
                             Potentially distinguishing features
                           </p>
-                          <p className="mt-0.5 text-xs text-[var(--status-red-text)]">
-                            Also on record for this precedent, not established by your facts:{" "}
+                          <p
+                            className="mt-0.5 text-xs text-[var(--status-red-text)]"
+                            title="This does not mean the fact is absent. It means the current scenario does not establish or mention it."
+                          >
+                            Facts not stated in the entered scenario, also on record for this precedent:{" "}
                             {c.ingredientsNotEstablished.join("; ")}
                           </p>
                         </>
