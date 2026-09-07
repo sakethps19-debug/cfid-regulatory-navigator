@@ -55,7 +55,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         <span>/</span>
         <span>{provision.provisionNumber}</span>
         <span className="mx-1 text-[var(--color-border)]">·</span>
-        <Link href="/provisions" className="text-[var(--color-gold-700)] hover:underline">
+        <Link href="/law-library" className="text-[var(--color-gold-700)] hover:underline">
           Search all provisions
         </Link>
       </div>

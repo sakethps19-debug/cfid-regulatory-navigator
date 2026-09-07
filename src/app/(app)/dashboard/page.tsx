@@ -17,8 +17,8 @@ import { formatDate } from "@/lib/formatDate";
 const STAT_ITEMS = [
   { label: "Orders indexed (case-library universe)", href: "/case-library" },
   { label: "Orders deeply analysed", href: "/library" },
-  { label: "Scenario findings", href: "/provisions" },
-  { label: "Provisions currently indexed", href: "/provisions" },
+  { label: "Scenario findings", href: "/law-library" },
+  { label: "Provisions currently indexed", href: "/law-library" },
 ];
 
 // Strict chronology, latest order first — no status priority, no preference
@@ -158,8 +158,8 @@ export default async function DashboardPage() {
               </span>
             </li>
             <li>
-              <Link href="/provisions" className="font-medium text-[var(--color-gold-700)] hover:underline">
-                Browse the Provision Explorer →
+              <Link href="/law-library" className="font-medium text-[var(--color-gold-700)] hover:underline">
+                Browse the Law Library →
               </Link>{" "}
               <span className="text-[var(--color-ink-700)]">search any provision by number, instrument, or the underlying facts.</span>
             </li>

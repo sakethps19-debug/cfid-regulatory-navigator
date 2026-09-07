@@ -1,16 +1,8 @@
-import { PageHeader } from "@/components/PageHeader";
-import { ProvisionExplorerClient } from "@/components/ProvisionExplorerClient";
-import { getProvisions, getScenarioFindings } from "@/lib/data";
+import { redirect } from "next/navigation";
 
-export default async function ProvisionExplorerPage() {
-  const [provisions, findings] = await Promise.all([getProvisions(), getScenarioFindings()]);
-  return (
-    <div>
-      <PageHeader
-        title="Provision Explorer"
-        description="Every SEBI Act section, PFUTP/LODR/ICDR provision, Companies Act provision and accounting standard actually cited or applied in the analysed CFID orders — searchable by provision, instrument, or the underlying facts (e.g. related-party transactions, diversion of issue proceeds, Audit Committee composition). Select any provision to see its alleged, prima facie, confirmed-in-final-order, partly-confirmed-in-final-order, not-confirmed-in-final-order and procedural findings separately. This page works identically for every provision — none is treated as more central than another."
-      />
-      <ProvisionExplorerClient provisions={provisions} findings={findings} />
-    </div>
-  );
+// Provision Explorer was merged into Law Library (same underlying provision
+// index, now searchable/filterable from the Law Library home page) — keep
+// this route alive as a redirect so old links and bookmarks still resolve.
+export default function ProvisionsPage() {
+  redirect("/law-library");
 }

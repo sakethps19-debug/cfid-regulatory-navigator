@@ -1,5 +1,5 @@
 // Guards the ascending-numeric ordering used everywhere provisions/sections
-// are listed (Law Library, Provision Explorer, Scenario Analyzer). A plain
+// are listed (Law Library, Scenario Analyzer). A plain
 // string sort would put "Regulation 17(8)" before "Regulation 4(1)(a)"
 // because "1" < "4" character-by-character — these fixtures are the exact
 // failure mode reported against the live data.

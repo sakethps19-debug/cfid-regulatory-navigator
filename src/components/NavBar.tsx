@@ -9,7 +9,6 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/analyzer", label: "Scenario Analyzer" },
   { href: "/case-library", label: "Case Library" },
   { href: "/law-library", label: "Law Library" },
-  { href: "/provisions", label: "Provision Explorer" },
   { href: "/compare", label: "Precedent Comparison" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
 ];

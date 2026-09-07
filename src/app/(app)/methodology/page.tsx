@@ -148,7 +148,7 @@ export default function MethodologyPage() {
         <ul className="list-inside list-disc space-y-1">
           <li>
             <span className="font-medium">Identical-numbering data-integrity check.</span> Whenever two provisions
-            from different instruments share or overlap in their numbering, the Provision Explorer flags this
+            from different instruments share or overlap in their numbering, the Law Library flags this
             automatically as coincidental similar numbering — never as a parent/sub-clause relationship, which is
             only ever reported when both provisions belong to the <em>same</em> instrument. PFUTP Regulation 4(2)(e)
             (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board and management
