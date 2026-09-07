@@ -66,7 +66,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const genuineGapFinding = makeFinding({
     recordId: "SYN-GAP",
     provisionIds: ["TEST-PROV-1"],
-    transactionTypes: ["synthetic_test_transaction"],
+    allegedConduct: ["synthetic_test_conduct"],
     evidentiaryGaps: ["Genuine outstanding evidence: independent verification of the transaction."],
     precedentOutcomeNote: null,
   });
@@ -74,14 +74,14 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const resolvedFinding = makeFinding({
     recordId: "SYN-RESOLVED",
     provisionIds: ["TEST-PROV-1"],
-    transactionTypes: ["synthetic_test_transaction"],
+    allegedConduct: ["synthetic_test_conduct"],
     evidentiaryGaps: [],
     precedentOutcomeNote: RESOLVED_TEXT,
   });
 
   function run(findings: ScenarioFinding[]) {
     return analyzeScenario(
-      { freeText: "irrelevant free text", transactionTypeFilter: "synthetic_test_transaction" },
+      { freeText: "irrelevant free text", scenarioTypeFilter: "synthetic_test_conduct" },
       findings,
       [provision],
       []

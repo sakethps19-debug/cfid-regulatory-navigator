@@ -45,7 +45,12 @@ function groupByFramework(provisionResults: ProvisionResult[]): { label: string;
 }
 
 const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
-const TRANSACTION_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "transaction");
+// "Scenario type" filters on allegedConduct (the alleged violation/scenario
+// category, e.g. "Fraudulent/sham preferential allotment") -- deliberately
+// NOT the "transaction" kind tags, which describe transaction subject
+// matter (e.g. "Financial statement disclosure") rather than a violation.
+// Offering those here read as claiming disclosure itself is a violation.
+const SCENARIO_TYPE_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "conduct");
 
 const EXAMPLE_SCENARIOS = [
   {
@@ -67,6 +72,38 @@ const EXAMPLE_SCENARIOS = [
   {
     label: "Rights issue funds diverted",
     text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
+  },
+  {
+    label: "Related-party transaction not disclosed",
+    text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
+  },
+  {
+    label: "Non-disclosure of material information",
+    text: "The company failed to disclose material information to the stock exchanges within the time required, and appears to have withheld or delayed disclosure of facts that were known to its board and senior management at the relevant time.",
+  },
+  {
+    label: "False corporate announcement",
+    text: "The company made a stock exchange announcement about an acquisition and future revenue projections that turned out to be unsubstantiated, with no supporting documentation for the claims made in the announcement.",
+  },
+  {
+    label: "Compliance Officer vacancy",
+    text: "The position of Compliance Officer / Company Secretary remained vacant for an extended period without a proper appointment, and no interim arrangement was disclosed to the stock exchanges.",
+  },
+  {
+    label: "False CEO/CFO certification",
+    text: "The Chief Executive Officer and Chief Financial Officer signed the quarterly compliance certification despite being aware of misstatements in the financial statements, and the certificate was not duly signed in accordance with the applicable regulation.",
+  },
+  {
+    label: "Director duties / non-cooperation",
+    text: "The independent directors failed to raise concerns despite red flags in the related-party transactions placed before the board, and the company did not cooperate with the investigation, failing to produce records called for by summons.",
+  },
+  {
+    label: "Statutory auditor negligence",
+    text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
+  },
+  {
+    label: "Price/market manipulation",
+    text: "A group of connected trading accounts executed synchronized trades in the company's shares with no genuine change in beneficial ownership, creating an artificial appearance of trading volume and inducing other investors to deal in the security.",
   },
 ];
 
@@ -226,7 +263,7 @@ function resultToCsv(result: AnalysisResult): string {
 export function ScenarioAnalyzerClient() {
   const [freeText, setFreeText] = useState("");
   const [actorFilter, setActorFilter] = useState("");
-  const [transactionTypeFilter, setTransactionTypeFilter] = useState("");
+  const [scenarioTypeFilter, setScenarioTypeFilter] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -271,7 +308,7 @@ export function ScenarioAnalyzerClient() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ freeText, actorFilter, transactionTypeFilter }),
+        body: JSON.stringify({ freeText, actorFilter, scenarioTypeFilter }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -290,7 +327,7 @@ export function ScenarioAnalyzerClient() {
   function handleReset() {
     setFreeText("");
     setActorFilter("");
-    setTransactionTypeFilter("");
+    setScenarioTypeFilter("");
     setResult(null);
     setError(null);
   }
@@ -314,7 +351,7 @@ export function ScenarioAnalyzerClient() {
           id="scenario"
           value={freeText}
           onChange={(e) => setFreeText(e.target.value)}
-          rows={7}
+          rows={4}
           maxLength={4000}
           placeholder="Describe the facts you want to research, e.g. transactions, actors involved, disclosures made or omitted, and any evidence you already have..."
           className="mt-2 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
@@ -352,17 +389,17 @@ export function ScenarioAnalyzerClient() {
             </select>
           </div>
           <div>
-            <label htmlFor="txFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
-              Transaction type (optional)
+            <label htmlFor="scenarioTypeFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
+              Scenario type (optional)
             </label>
             <select
-              id="txFilter"
-              value={transactionTypeFilter}
-              onChange={(e) => setTransactionTypeFilter(e.target.value)}
+              id="scenarioTypeFilter"
+              value={scenarioTypeFilter}
+              onChange={(e) => setScenarioTypeFilter(e.target.value)}
               className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
             >
               <option value="">Any</option>
-              {TRANSACTION_OPTIONS.map((o) => (
+              {SCENARIO_TYPE_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
                 </option>

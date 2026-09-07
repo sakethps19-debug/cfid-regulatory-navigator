@@ -12,7 +12,7 @@ import {
 const MAX_SCENARIO_LENGTH = 4000;
 
 export async function POST(request: NextRequest) {
-  let body: { freeText?: unknown; actorFilter?: unknown; transactionTypeFilter?: unknown };
+  let body: { freeText?: unknown; actorFilter?: unknown; scenarioTypeFilter?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Please describe a factual scenario." }, { status: 400 });
   }
   const actorFilter = typeof body.actorFilter === "string" && body.actorFilter ? body.actorFilter : null;
-  const transactionTypeFilter =
-    typeof body.transactionTypeFilter === "string" && body.transactionTypeFilter ? body.transactionTypeFilter : null;
+  const scenarioTypeFilter =
+    typeof body.scenarioTypeFilter === "string" && body.scenarioTypeFilter ? body.scenarioTypeFilter : null;
 
   // Same typo-correction pre-pass the matching engine applies internally
   // (see lib/matching/fuzzyMatch.ts) is applied here too, so the Postgres
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     searchScenarioFindingsFullText(correctedText),
   ]);
   const result = analyzeScenario(
-    { freeText, actorFilter, transactionTypeFilter },
+    { freeText, actorFilter, scenarioTypeFilter },
     scenarioFindings,
     provisions,
     legalTests,

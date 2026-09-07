@@ -12,8 +12,8 @@ const FORBIDDEN_PHRASES = [
   "sebi will take action",
 ];
 
-function run(freeText: string, actorFilter?: string, transactionTypeFilter?: string): AnalysisResult {
-  return analyzeScenario({ freeText, actorFilter, transactionTypeFilter }, scenarioFindings, provisions, legalTests);
+function run(freeText: string, actorFilter?: string, scenarioTypeFilter?: string): AnalysisResult {
+  return analyzeScenario({ freeText, actorFilter, scenarioTypeFilter }, scenarioFindings, provisions, legalTests);
 }
 
 function allRecordIds(result: AnalysisResult): string[] {

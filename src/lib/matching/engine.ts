@@ -96,7 +96,7 @@ function scoreFinding(
   finding: ScenarioFinding,
   detected: DetectedConcept[],
   actorFilter: string | null,
-  transactionTypeFilter: string | null
+  scenarioTypeFilter: string | null
 ): ScoredFinding {
   const detectedIds = new Set(detected.map((c) => c.id));
   const detectedLabelById = new Map(detected.map((c) => [c.id, c.label]));
@@ -109,7 +109,14 @@ function scoreFinding(
   let score = transactionOverlap.length * 3 + actorOverlap.length * 2 + conductOverlap.length * 3 + evidenceOverlap.length * 1;
 
   if (actorFilter && finding.actorRoles.includes(actorFilter)) score += 2;
-  if (transactionTypeFilter && finding.transactionTypes.includes(transactionTypeFilter)) score += 3;
+  // scenarioTypeFilter is the dropdown labelled "Scenario type" in the UI —
+  // it filters against allegedConduct (the alleged violation/scenario
+  // category, e.g. "fraudulent preferential allotment"), never
+  // transactionTypes (the underlying transaction subject-matter, e.g.
+  // "financial statement disclosure" — not itself a violation, and a
+  // frequent source of confusion when this filter used to be labelled
+  // "Transaction type" and filtered on that field instead).
+  if (scenarioTypeFilter && finding.allegedConduct.includes(scenarioTypeFilter)) score += 3;
 
   const isFinal = !!finding.finalParagraphReferences;
   if (isFinal) score *= 1.15;
@@ -243,10 +250,10 @@ export function analyzeScenario(
   const detected = detectConcepts(correctedText);
   const detectedIds = new Set(detected.map((c) => c.id));
   const actorFilter = query.actorFilter || null;
-  const transactionTypeFilter = query.transactionTypeFilter || null;
+  const scenarioTypeFilter = query.scenarioTypeFilter || null;
 
   const scored = scenarioFindings
-    .map((f) => scoreFinding(f, detected, actorFilter, transactionTypeFilter))
+    .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter))
     .filter((s) => s.score >= MIN_FINDING_SCORE)
     .sort((a, b) => b.score - a.score);
 

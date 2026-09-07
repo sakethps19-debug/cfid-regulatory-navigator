@@ -4,7 +4,12 @@ import type { WordCorrection } from "./fuzzyMatch";
 export interface ScenarioQuery {
   freeText: string;
   actorFilter?: string | null;
-  transactionTypeFilter?: string | null;
+  /** Optional exact-match boost against a finding's allegedConduct (the
+   * "Scenario type" dropdown in the UI, e.g. "Fraudulent/sham preferential
+   * allotment") — never the underlying transactionTypes field, which
+   * describes transaction subject matter (e.g. "financial statement
+   * disclosure") rather than a violation/scenario category. */
+  scenarioTypeFilter?: string | null;
 }
 
 export type ConfidenceLevel = "High" | "Medium" | "Low";
