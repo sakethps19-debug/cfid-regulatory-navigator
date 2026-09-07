@@ -144,6 +144,10 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         {provision.officialSource && (
           <div className="mt-4">
             <SourceLink href={provision.officialSource}>Official statutory source</SourceLink>
+            <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+              A link being on file is not by itself proof that the stored text above has been checked against it,
+              see &quot;Current-text verification status&quot; above for whether that check has actually happened.
+            </p>
           </div>
         )}
         {similar.length > 0 && (
