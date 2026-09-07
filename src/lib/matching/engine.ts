@@ -7,6 +7,15 @@ import { formatDate } from "@/lib/formatDate";
 
 const NEGATIVE_STATUSES = new Set(["Not upheld", "Withdrawn"]);
 const UPHELD_STATUSES = new Set(["Upheld", "Partly upheld"]);
+// A finding with one of these statuses has had NO merits determination made
+// either way — "Alleged" is a bare, untested allegation; "Inconclusive" is an
+// investigation that could not determine the answer; "Procedural observation"
+// decides only a preliminary/jurisdictional point, not the underlying
+// conduct. These still show (with their true status badge, never hidden) as
+// weak supporting evidence, but must never drive a provision to High
+// confidence on keyword overlap alone — that would read an untested
+// allegation as settled precedent. See deriveConfidence.
+const UNRESOLVED_STATUSES = new Set(["Alleged", "Inconclusive", "Procedural observation"]);
 const MIN_FINDING_SCORE = 3; // require at least one meaningful (weight-3) category match
 
 function humanizeTag(id: string): string {
@@ -145,8 +154,15 @@ function deriveConfidence(best: ScoredFinding, supportCount: number): { level: C
   reasons.push(`${best.categoriesMatched} independent factual categories (transaction type, actor role, conduct, evidence) overlap with the scenario.`);
   if (supportCount > 1) reasons.push(`${supportCount} scenario findings support this provision.`);
 
+  const isUnresolved = UNRESOLVED_STATUSES.has(best.finding.findingStatus);
+
   let level: ConfidenceLevel;
-  if (best.categoriesMatched >= 3 && (isFinal || best.score >= 9)) {
+  if (isUnresolved) {
+    level = "Low";
+    reasons.push(
+      `The strongest matching precedent has status "${best.finding.findingStatus}" — no determination has been made on the merits either way, so this cannot count as more than a weak signal regardless of how many factual categories overlap.`
+    );
+  } else if (best.categoriesMatched >= 3 && (isFinal || best.score >= 9)) {
     level = "High";
   } else if (best.substantiveCategoriesMatched >= 2) {
     level = "Medium";
@@ -219,7 +235,13 @@ export function analyzeScenario(
     const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.finding.findingStatus));
     if (supporting.length === 0) continue; // provision only has contrary evidence here — not "potentially relevant" on its own
 
-    const best = supporting[0];
+    // Prefer the highest-scoring RESOLVED finding (anything other than
+    // Alleged/Inconclusive/Procedural observation) as the anchor for
+    // confidence — a genuinely upheld precedent should not be shadowed by a
+    // higher-scoring but merely-alleged one for the same provision. Only
+    // fall back to the raw top-scoring finding when every supporting finding
+    // is unresolved, in which case deriveConfidence caps confidence at Low.
+    const best = supporting.find((s) => !UNRESOLVED_STATUSES.has(s.finding.findingStatus)) ?? supporting[0];
     const { level, reasons } = deriveConfidence(best, supporting.length);
     const provisionVersions = provisionVersionsByProvisionId.get(provisionId) ?? [];
     const upheld = findings.filter((f) => UPHELD_STATUSES.has(f.finding.findingStatus));
