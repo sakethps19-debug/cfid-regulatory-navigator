@@ -2,7 +2,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { FindingStatus, Order, ScenarioFinding } from "@/types/domain";
+import { GROUP_ORDER } from "@/components/FindingsByStatus";
+import type { Order, ScenarioFinding } from "@/types/domain";
 import {
   getMatters,
   getOrderRelationships,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/data";
 import { isDeepAnalyzed } from "@/lib/processingStages";
 import { formatDate } from "@/lib/formatDate";
+import { interimFinalReversals } from "@/lib/precedentShifts";
 
 const STAT_ITEMS = [
   { label: "Orders indexed (case-library universe)", href: "/case-library" },
@@ -60,6 +62,7 @@ export default async function DashboardPage() {
   }, {});
   const verifiedPendingCount = verifiedCfidOrders.filter((v) => v.analysisStatus === "verified_pending_analysis").length;
   const recentAndSignificant = pickRecentAndSignificant(scenarioFindings, orders);
+  const reversalsCount = interimFinalReversals(scenarioFindings).length;
 
   const ordersPerMatter = new Map<string, number>();
   for (const o of orders) {
@@ -94,15 +97,18 @@ export default async function DashboardPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Scenario finding status breakdown</h2>
+          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+            Final-order outcomes first, then interim/pending, then procedural — same ordering used throughout the app.
+          </p>
           <dl className="mt-4 space-y-2">
-            {(Object.keys(statusCounts) as FindingStatus[])
-              .sort((a, b) => statusCounts[b] - statusCounts[a])
-              .map((s) => (
-                <div key={s} className="flex items-center justify-between text-sm">
-                  <dt className="text-[var(--color-ink-700)]">{s}</dt>
-                  <dd className="font-semibold text-[var(--color-ink-900)]">{statusCounts[s]}</dd>
-                </div>
-              ))}
+            {GROUP_ORDER.filter((s) => (statusCounts[s] ?? 0) > 0).map((s) => (
+              <div key={s} className="flex items-center justify-between text-sm">
+                <dt>
+                  <StatusBadge status={s} />
+                </dt>
+                <dd className="font-semibold text-[var(--color-ink-900)]">{statusCounts[s]}</dd>
+              </div>
+            ))}
           </dl>
         </Card>
 
@@ -162,6 +168,25 @@ export default async function DashboardPage() {
                 Browse the Law Library →
               </Link>{" "}
               <span className="text-[var(--color-ink-700)]">search any provision by number, instrument, or the underlying facts.</span>
+            </li>
+            {reversalsCount > 0 && (
+              <li>
+                <Link href="/compare" className="font-medium text-[var(--color-gold-700)] hover:underline">
+                  {reversalsCount} interim → final reversal{reversalsCount === 1 ? "" : "s"} on file →
+                </Link>{" "}
+                <span className="text-[var(--color-ink-700)]">
+                  scenarios raised at an earlier stage and then not confirmed at final disposition, compared side by
+                  side with what changed.
+                </span>
+              </li>
+            )}
+            <li>
+              <Link href="/fraud-test" className="font-medium text-[var(--color-gold-700)] hover:underline">
+                Fraud Doctrine Analyser →
+              </Link>{" "}
+              <span className="text-[var(--color-ink-700)]">
+                apply the Supreme Court&apos;s PFUTP Regulation 2(1)(c) &quot;fraud&quot; test to a fact pattern.
+              </span>
             </li>
             {verifiedPendingCount > 0 ? (
               <li>
