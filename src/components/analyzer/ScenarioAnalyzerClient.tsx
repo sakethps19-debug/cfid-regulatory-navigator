@@ -70,8 +70,8 @@ const EXAMPLE_SCENARIOS = [
   },
 ];
 
-function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -171,6 +171,56 @@ function resultToText(result: AnalysisResult): string {
     "This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
   );
   return lines.join("\n");
+}
+
+/** Escapes a single CSV field per RFC 4180: wrap in quotes and double any
+ * embedded quote whenever the value contains a comma, quote, or newline. */
+function csvField(value: string): string {
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function csvRow(values: string[]): string {
+  return values.map(csvField).join(",");
+}
+
+/** One row per provision result — the structured, spreadsheet-importable
+ * counterpart to resultToText's narrative report. Deliberately omits the
+ * upheld/contrary precedent breakdown and missing-facts detail that the
+ * text export carries (those don't collapse into flat rows cleanly);
+ * "Export as text" or "Print" remain the complete record. */
+function resultToCsv(result: AnalysisResult): string {
+  const rows: string[] = [];
+  rows.push(
+    csvRow([
+      "Instrument",
+      "Provision number",
+      "Subject",
+      "Confidence",
+      "Supporting precedent count",
+      "Matched factual ingredients",
+      "Supporting precedent record IDs",
+      "Missing facts / evidence",
+    ])
+  );
+  const sorted = [...result.provisionResults].sort((a, b) =>
+    compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
+  );
+  for (const pr of sorted) {
+    rows.push(
+      csvRow([
+        pr.provision.instrument,
+        pr.provision.provisionNumber,
+        pr.provision.subject ?? "",
+        pr.confidence,
+        String(pr.supportingPrecedents.length),
+        pr.matchedFactualIngredients.join("; "),
+        pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
+        pr.missingFacts.join("; "),
+      ])
+    );
+  }
+  return rows.join("\r\n");
 }
 
 export function ScenarioAnalyzerClient() {
@@ -352,6 +402,15 @@ export function ScenarioAnalyzerClient() {
               >
                 Export as text
               </button>
+              {result.provisionResults.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => downloadTextFile("cfid-scenario-analysis.csv", resultToCsv(result), "text/csv;charset=utf-8")}
+                  className="rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+                >
+                  Export as CSV
+                </button>
+              )}
             </>
           )}
         </div>
