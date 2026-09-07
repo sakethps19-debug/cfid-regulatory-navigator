@@ -28,10 +28,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <Link href="/case-library" className="text-[var(--color-gold-700)] hover:underline">
           ← Back to Case Library
         </Link>
-        <span className="mx-1 text-[var(--color-border)]">·</span>
-        <Link href="/orders" className="text-[var(--color-gold-700)] hover:underline">
-          Search by Order
-        </Link>
       </div>
       <PageHeader title={order.caseName} description={`${order.orderStage} · ${formatDate(order.orderDate)}`} />
 

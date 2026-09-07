@@ -12,7 +12,6 @@ const PRIMARY_NAV_ITEMS = [
   { href: "/provisions", label: "Provision Explorer" },
   { href: "/compare", label: "Precedent Comparison" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
-  { href: "/orders", label: "Search by Order" },
 ];
 
 const SECONDARY_NAV_ITEMS = [

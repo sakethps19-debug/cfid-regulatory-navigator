@@ -15,7 +15,7 @@ export default async function CaseLibraryPage() {
     <div>
       <PageHeader
         title="Case Library"
-        description={`All ${orders.length} orders from the authoritative CFID order register (see Methodology for how it's compiled), with their current processing stage. ${deepAnalyzedCount} of ${orders.length} have reached "Citations checked" — broken down into scenario findings with paragraph citations. A further "Legally reviewed" stage is reached only once a CFID officer has reviewed and signed off on that analysis; no order has reached it yet.${pendingClause}`}
+        description={`All ${orders.length} orders from the authoritative CFID order register (see Methodology for how it's compiled), with their current processing stage, order stage, date and scope. ${deepAnalyzedCount} of ${orders.length} have reached "Citations checked" — broken down into scenario findings with paragraph citations, and their case name links through to the full breakdown. A further "Legally reviewed" stage is reached only once a CFID officer has reviewed and signed off on that analysis; no order has reached it yet.${pendingClause} Search across case name, order number and scope note, or filter by processing stage, to find a specific order.`}
       />
       <CaseLibraryClient orders={orders} />
     </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Order, ProcessingStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
+import { formatDate } from "@/lib/formatDate";
 import { isDeepAnalyzed, PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
 
 const STAGE_LABELS = PROCESSING_STAGE_SHORT_LABELS;
@@ -35,9 +36,10 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
   }, [orders]);
 
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return orders.filter((o) => {
       if (stageFilter !== "all" && o.processingStage !== stageFilter) return false;
-      if (query.trim() && !o.caseName.toLowerCase().includes(query.trim().toLowerCase())) return false;
+      if (q && ![o.caseName, o.orderNumber, o.scopeNote].some((field) => field?.toLowerCase().includes(q))) return false;
       return true;
     });
   }, [orders, stageFilter, query]);
@@ -66,49 +68,65 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
         ))}
         <input
           type="search"
-          placeholder="Search case name…"
+          placeholder="Search case name, order number, or scenario keywords…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="ml-auto rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
         />
       </div>
+      <p className="mt-3 text-xs text-[var(--color-ink-500)]">
+        {filtered.length} of {orders.length} orders shown.
+      </p>
 
-      <div className="mt-4 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
-        <table className="w-full min-w-[900px] divide-y divide-[var(--color-border)] text-sm">
+      <div className="mt-2 overflow-x-auto rounded-sm bg-white border border-[var(--color-border)]">
+        <table className="w-full min-w-[1000px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
             <tr className="bg-[var(--color-neutral-50)]">
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case name</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order number</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Stage</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Date</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Processing stage</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Link</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {filtered.map((o) => (
-              <tr key={o.id}>
-                <td className="px-3 py-2 align-top font-medium text-[var(--color-ink-900)]">
-                  {isDeepAnalyzed(o.processingStage) ? (
-                    <Link href={`/orders/${o.id}`} className="text-[var(--color-gold-700)] hover:underline">
-                      {o.caseName}
-                    </Link>
-                  ) : (
-                    o.caseName
-                  )}
-                </td>
-                <td className="px-3 py-2 align-top font-mono text-xs text-[var(--color-ink-700)]">{o.orderNumber ?? "—"}</td>
-                <td className="whitespace-nowrap px-3 py-2 align-top">
-                  <span
-                    className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
-                    title={o.retrievalFailureReason ?? undefined}
-                  >
-                    {STAGE_LABELS[o.processingStage]}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 align-top">
-                  <SourceLink href={o.officialUrl} />
-                </td>
-              </tr>
-            ))}
+            {filtered.map((o) => {
+              const deepAnalyzed = isDeepAnalyzed(o.processingStage);
+              return (
+                <tr key={o.id}>
+                  <td className="px-3 py-2 align-top font-medium text-[var(--color-ink-900)]">
+                    {deepAnalyzed ? (
+                      <Link href={`/orders/${o.id}`} className="text-[var(--color-gold-700)] hover:underline">
+                        {o.caseName}
+                      </Link>
+                    ) : (
+                      o.caseName
+                    )}
+                    {deepAnalyzed && o.scopeNote && (
+                      <p className="mt-0.5 max-w-md text-xs font-normal text-[var(--color-ink-500)]">{o.scopeNote}</p>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    <span className="inline-block rounded-sm bg-[var(--color-gold-100)] px-2 py-0.5 text-xs font-semibold text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-600)]/50">
+                      {o.orderStage}
+                    </span>
+                    <div className="mt-1 font-mono text-xs text-[var(--color-ink-700)]">{o.orderNumber ?? "—"}</div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 align-top text-[var(--color-ink-700)]">{formatDate(o.orderDate) || "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-2 align-top">
+                    <span
+                      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
+                      title={o.retrievalFailureReason ?? undefined}
+                    >
+                      {STAGE_LABELS[o.processingStage]}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 align-top">
+                    <SourceLink href={o.officialUrl} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 && <p className="p-4 text-sm text-[var(--color-ink-500)]">No rows match this filter.</p>}

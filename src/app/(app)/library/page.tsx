@@ -38,7 +38,7 @@ export default async function LibraryPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <SourceLink href={o.officialUrl} />
               <Link href={`/orders/${o.id}`} className="text-sm font-medium text-[var(--color-gold-700)] hover:underline">
-                View in Search by Order →
+                View full breakdown →
               </Link>
             </div>
           </Card>
