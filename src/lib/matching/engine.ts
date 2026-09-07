@@ -1,4 +1,4 @@
-import type { LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
+import type { FindingStatus, LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import { CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
@@ -27,6 +27,27 @@ const UPHELD_STATUSES = new Set(["Confirmed in Final Order", "Partly Confirmed i
 // allegation as settled precedent. See deriveConfidence.
 const UNRESOLVED_STATUSES = new Set(["Alleged", "Inconclusive", "Procedural observation"]);
 const MIN_FINDING_SCORE = 3; // require at least one meaningful (weight-3) category match
+
+// A finding is "final" only when its own explicit, curated findingStatus
+// records an actual final-order disposition — confirmed, partly confirmed,
+// or explicitly rejected there. This is deliberately NOT the presence of a
+// finalParagraphReferences citation string: that field can be populated for
+// a finding whose own status is still Confirmed-at-interim/Prima
+// facie/Inconclusive/Procedural observation (e.g. a forward-reference to
+// where a related allegation was later dealt with), which would otherwise
+// let an interim finding masquerade as final. Confirmed against live data:
+// BGDL-01, GENSOL-01/02/03, RHFL-01, LINDE-01/02, EROS-01, ZEE-LOC-01,
+// PIFL-01, SIL-01, NAGL-01, PDCL-01, LSIL-01, MFL-02, BGL-PREF-04 and
+// BHSL-PROC-01 all currently carry a final_paragraph_references value while
+// their own finding_status is not a final-order disposition.
+const FINAL_ORDER_DISPOSITIONS = new Set<FindingStatus>([
+  "Confirmed in Final Order",
+  "Partly Confirmed in Final Order",
+  "Not Confirmed in Final Order",
+]);
+function isFinalOrderFinding(status: FindingStatus): boolean {
+  return FINAL_ORDER_DISPOSITIONS.has(status);
+}
 
 function humanizeTag(id: string): string {
   return id.replace(/_/g, " ");
@@ -139,7 +160,7 @@ function scoreFinding(
   // free-text detection would have been.
   if (evidenceFilter && finding.evidenceTypes.includes(evidenceFilter)) score += 1;
 
-  const isFinal = !!finding.finalParagraphReferences;
+  const isFinal = isFinalOrderFinding(finding.findingStatus);
   if (isFinal) score *= 1.15;
 
   const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
@@ -192,11 +213,11 @@ function mergeMatchedByCategory(refs: { matchedByCategory: MatchedByCategory }[]
 
 function deriveConfidence(best: ScoredFinding, supportCount: number): { level: ConfidenceLevel; reasons: string[] } {
   const reasons: string[] = [];
-  const isFinal = !!best.finding.finalParagraphReferences;
+  const isFinal = isFinalOrderFinding(best.finding.findingStatus);
   if (isFinal) {
-    reasons.push("The strongest matching precedent is drawn from a final order.");
+    reasons.push(`The strongest matching precedent's own finding status ("${best.finding.findingStatus}") reflects a final-order determination.`);
   } else {
-    reasons.push("The strongest matching precedent is drawn from an interim (prima facie) order only.");
+    reasons.push(`The strongest matching precedent's own finding status ("${best.finding.findingStatus}") does not reflect a final-order determination.`);
   }
   reasons.push(`${best.categoriesMatched} independent factual categories (transaction type, actor role, conduct, evidence) overlap with the facts stated.`);
   if (supportCount > 1) reasons.push(`${supportCount} scenario findings support this provision.`);
@@ -405,7 +426,7 @@ export function analyzeScenario(
     for (const title of GUARDRAIL_TRIGGERS[id] ?? []) guardrailTitles.add(title);
   }
   const hasInterimOnly = provisionResults.some((pr) =>
-    pr.supportingPrecedents.some((s) => !s.finding.finalParagraphReferences)
+    pr.supportingPrecedents.some((s) => !isFinalOrderFinding(s.finding.findingStatus))
   );
   if (hasInterimOnly) guardrailTitles.add(ALWAYS_ON_INTERIM_GUARDRAIL);
 
