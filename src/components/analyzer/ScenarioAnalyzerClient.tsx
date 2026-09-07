@@ -70,9 +70,9 @@ const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_
     text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
   },
   {
-    label: "Non-disclosure of material information",
+    label: "Promoter's personal derivative trades as revenue",
     group: "Financial reporting",
-    text: "The company failed to disclose material information to the stock exchanges within the time required, and appears to have withheld or delayed disclosure of facts that were known to its board and senior management at the relevant time.",
+    text: "The promoter's personal derivative transactions were recorded in the company's own standalone financial statements as if they were the company's own sales and purchases, resulting in inflated sales and inflated profit for the company.",
   },
   {
     label: "False corporate announcement",
