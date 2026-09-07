@@ -37,7 +37,15 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "revenue_recognition",
     kind: "transaction",
     label: "Revenue recognition / classification",
-    synonyms: ["revenue recognition", "classified as revenue", "included in revenue", "operating revenue", "revenue from operations", "foreign exchange gain classified as revenue", "interest income classified as revenue", "overstated sales", "overstated revenue", "understated"],
+    // "understated" alone was previously a synonym here - a bare,
+    // completely generic word with no connection to revenue whatsoever
+    // ("the risk was understated", "the liability was understated"), so
+    // any scenario using it in an unrelated sense was wrongly tagged as
+    // touching revenue recognition. Replaced with the qualified phrases
+    // ("understated revenue"/"understated sales"), matching the existing
+    // "overstated sales"/"overstated revenue" pattern - see the P1-10/11
+    // controlled-vocabulary precision audit.
+    synonyms: ["revenue recognition", "classified as revenue", "included in revenue", "operating revenue", "revenue from operations", "foreign exchange gain classified as revenue", "interest income classified as revenue", "overstated sales", "overstated revenue", "understated revenue", "understated sales"],
   },
   {
     id: "derivative_transaction",
@@ -183,7 +191,17 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "managing_director", kind: "actor", label: "Managing Director", synonyms: ["managing director", "md"] },
   { id: "executive_director", kind: "actor", label: "Executive Director", synonyms: ["executive director", "whole-time director", "wtd"] },
   { id: "independent_director", kind: "actor", label: "Independent Director", synonyms: ["independent director"] },
-  { id: "director_general", kind: "actor", label: "Non-executive director", synonyms: ["non-executive director", "director", "board member"] },
+  // Bare "director" was previously a synonym here - since matching is
+  // substring-based (see conceptExtraction.ts), it matched inside every
+  // OTHER director-role phrase too ("managing director", "executive
+  // director", "independent director", "nominee director"), so a
+  // scenario naming one specific director role was always ALSO
+  // double-counted as a "Non-executive director" match, inflating actor
+  // overlap on a role the text never actually asserted. Removed - a bare,
+  // unqualified "the director" no longer detects an actor role, which is
+  // more honest than guessing at "non-executive" specifically. See the
+  // P1-10/11 controlled-vocabulary precision audit.
+  { id: "director_general", kind: "actor", label: "Non-executive director", synonyms: ["non-executive director", "board member"] },
   {
     id: "nominee_director",
     kind: "actor",
@@ -205,7 +223,28 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     label: "Preferential allottee (non-promoter)",
     synonyms: ["allottee", "allottees", "non-promoter allottee", "third-party allottee", "preferential allottee"],
   },
-  { id: "related_party_counterparty", kind: "actor", label: "Related party", synonyms: ["related party", "counterparty", "vendor", "customer entity", "connected entity"] },
+  // "vendor" and bare "counterparty" were previously synonyms here - both
+  // are ordinary, generic commercial-transaction vocabulary with no
+  // inherent connection to a REGULATORY related-party relationship (an
+  // arm's-length vendor dispute would have wrongly tagged this actor
+  // role). Removed and replaced with qualified phrases that actually
+  // assert the connection - see the P1-10/11 controlled-vocabulary
+  // precision audit, and tests/false-positive-vocabulary.test.ts.
+  {
+    id: "related_party_counterparty",
+    kind: "actor",
+    label: "Related party",
+    synonyms: [
+      "related party",
+      "connected entity",
+      "connected counterparty",
+      "related counterparty",
+      "counterparty that is a related party",
+      "vendor that is a related party",
+      "related-party vendor",
+      "customer entity that is a related party",
+    ],
+  },
   { id: "chairman", kind: "actor", label: "Chairman", synonyms: ["chairman", "chairperson", "executive chairman", "non-executive chairman", "chairman-cum-managing director"] },
   { id: "cfo", kind: "actor", label: "Chief Financial Officer", synonyms: ["cfo", "chief financial officer"] },
   { id: "ceo", kind: "actor", label: "Chief Executive Officer", synonyms: ["ceo", "chief executive officer"] },

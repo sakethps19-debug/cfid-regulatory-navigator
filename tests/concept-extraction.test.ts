@@ -116,7 +116,15 @@ describe("detectConcepts — negation handling", () => {
   });
 
   it("does not let 'no record of X' suppress detection of X itself", () => {
-    const text = "Tax filings showed no record of the purchases the company claimed to have made from this vendor.";
+    // Regression note: this test previously used bare "vendor" as its
+    // vehicle for related_party_counterparty - "vendor" was removed from
+    // that tag's synonyms (P1-10/11 controlled-vocabulary precision
+    // audit) because an ordinary arm's-length vendor mention has no
+    // inherent connection to a REGULATORY related-party relationship.
+    // Rewritten to use a genuine related-party phrase instead, so this
+    // test still exercises the actual "no record of X" negation-window
+    // behavior it names, on a concept the phrase legitimately signals.
+    const text = "Tax filings showed no record of the transactions the company claimed to have made with this related party.";
     const detected = detectConcepts(text);
     expect(detected.map((d) => d.id)).toContain("related_party_counterparty");
   });
