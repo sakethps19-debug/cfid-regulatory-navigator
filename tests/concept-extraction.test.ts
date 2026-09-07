@@ -11,12 +11,12 @@ import { detectConcepts } from "@/lib/matching/conceptExtraction";
 describe("detectConcepts — singular/plural robustness", () => {
   it("matches the plural synonym on file", () => {
     const detected = detectConcepts("The company recorded fictitious sales.");
-    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 
   it("also matches when the scenario uses the singular form", () => {
     const detected = detectConcepts("The company recorded a fictitious sale.");
-    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 
   it("matches a singular-form synonym written as plural in the scenario", () => {
@@ -41,7 +41,7 @@ describe("detectConcepts — the exact example-chip regression", () => {
     const text =
       "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.";
     const detected = detectConcepts(text);
-    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 });
 
@@ -54,7 +54,7 @@ describe("detectConcepts — officer-phrasing spot checks", () => {
     const text =
       "There were several fictitiously booked sale transactions and the buyers deny ever having bought anything from the company, and its balance sheet lists assets nobody can actually verify exist.";
     const detected = detectConcepts(text);
-    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 
   it("detects price manipulation from a plain-English synchronized-trading description", () => {
@@ -124,7 +124,7 @@ describe("detectConcepts — negation handling", () => {
   it("still matches a synonym that itself begins with a negation word ('no genuine sale')", () => {
     const text = "There was no genuine sale underlying these recorded transactions.";
     const detected = detectConcepts(text);
-    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_assets");
+    expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 
   it("does not suppress a genuine same-sentence match across a contrastive conjunction ('not established, though X was confirmed')", () => {

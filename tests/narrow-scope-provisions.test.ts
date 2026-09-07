@@ -92,7 +92,7 @@ describe("Narrow-scope provisions — Regulation 6 / Compliance Officer bundling
   // fictitious sales together with an unrelated Compliance Officer vacancy.
   const multiIssueFinding = makeFinding({
     recordId: "MOCK-MULTI-01",
-    allegedConduct: ["fictitious_sales_or_assets", "compliance_officer_deficiency"],
+    allegedConduct: ["fictitious_sales_or_revenue", "compliance_officer_deficiency"],
     provisionIds: [complianceOfficerProvision.id, fraudProvision.id],
   });
 

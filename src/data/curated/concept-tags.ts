@@ -205,7 +205,25 @@ export const CONCEPT_TAGS: ConceptTag[] = [
 
   // ----- Alleged conduct -----
   { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
-  { id: "fictitious_sales_or_assets", kind: "conduct", label: "Fictitious sales or assets", synonyms: ["fictitious sales", "bogus sales", "non-genuine sales", "fake sales", "sham sales", "fictitious assets", "non-genuine assets", "bogus assets", "overstated assets", "inflated assets", "fictitious revenue", "bogus revenue", "no genuine revenue", "not genuine", "no genuine business", "sales were fictitious", "sale was fictitious", "sales figures were fictitious", "revenue was fictitious", "assets were fictitious", "not genuine sales", "sales that were not genuine", "revenue that was not genuine", "revenue was not genuine", "assets that were not genuine", "assets were not genuine", "sales did not actually take place", "sales never took place", "sales never actually occurred", "no genuine underlying transaction", "no genuine sale", "no genuine transaction", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported", "deny having bought", "deny ever having bought", "denied ever buying", "denies ever having transacted", "never actually bought anything", "counterparty denies buying", "cannot actually verify exist", "cannot be verified to exist", "nobody can verify exist"] },
+  // Split from a single "fictitious_sales_or_assets" tag after a user
+  // correctly pointed out that SSSL-02 (a sham preferential allotment
+  // backed by a fictitious receivable, no revenue transaction at all) was
+  // surfacing for "fictitious sales" queries purely because sales-side and
+  // asset-side fabrication shared one tag ID. The two fact patterns are
+  // genuinely distinguishable in the precedent library (e.g. DHFL-02's
+  // fictitious loan-book assets have no revenue/sales dimension at all;
+  // ARCOTECH-01's fictitious sales/purchases have no independent asset
+  // dimension), so a query about one no longer pulls in a precedent that
+  // only has the other. Generic recording-verb phrasing ("fictitiously
+  // booked", "recorded fictitiously") is intentionally kept on both tags —
+  // it genuinely doesn't specify sales vs. assets, and many real findings
+  // (e.g. SSSL-01, SKT-01) legitimately have both. The bare, over-broad
+  // "not genuine" / "no genuine business" synonyms were dropped entirely
+  // (not carried into either split tag) as too generic to reliably signal
+  // either fact pattern — the same over-broad-bare-synonym problem found
+  // and fixed once already for "related party" (see related_party_misrepresentation).
+  { id: "fictitious_sales_or_revenue", kind: "conduct", label: "Fictitious sales or revenue", synonyms: ["fictitious sales", "bogus sales", "non-genuine sales", "fake sales", "sham sales", "fictitious revenue", "bogus revenue", "no genuine revenue", "sales were fictitious", "sale was fictitious", "sales figures were fictitious", "revenue was fictitious", "not genuine sales", "sales that were not genuine", "revenue that was not genuine", "revenue was not genuine", "sales did not actually take place", "sales never took place", "sales never actually occurred", "no genuine underlying transaction", "no genuine sale", "no genuine transaction", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported", "deny having bought", "deny ever having bought", "denied ever buying", "denies ever having transacted", "never actually bought anything", "counterparty denies buying"] },
+  { id: "fictitious_or_nongenuine_assets", kind: "conduct", label: "Fictitious or non-genuine assets", synonyms: ["fictitious assets", "non-genuine assets", "bogus assets", "overstated assets", "inflated assets", "assets were fictitious", "assets that were not genuine", "assets were not genuine", "cannot actually verify exist", "cannot be verified to exist", "nobody can verify exist", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported"] },
   { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "failed to furnish", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses"] },
   { id: "non_cooperation_with_investigation", kind: "conduct", label: "Non-cooperation with investigation", synonyms: ["non-cooperation", "did not cooperate", "failed to produce records", "did not respond to summons", "denied access", "withheld", "refused to share", "refused to hand over"] },
   { id: "related_party_misrepresentation", kind: "conduct", label: "Related-party misrepresentation", synonyms: ["misrepresented related party", "false rpt disclosure", "rpt not genuine"] },
