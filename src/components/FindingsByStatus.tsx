@@ -79,14 +79,21 @@ function PublicationStatusBadge({ status }: { status: string }) {
 // Labels for finding_provisions.relationship, when a caller (e.g. a
 // provision detail page) supplies a per-finding relationship via
 // provisionRelationship. "alleged" means the provision was cited/considered
-// in this finding but is not itself what the disposition turned on;
-// upheld/not_upheld means this specific provision was the basis of the
-// finding's outcome. Distinct from the finding's own overall findingStatus,
-// which can rest on some provisions and not others within the same finding.
+// in this finding but is not recorded as itself what the disposition
+// turned on; upheld/not_upheld means this specific provision IS recorded
+// as that basis. This is a curated data-entry classification (871 rows
+// audited: the majority were deliberately set per-provision, not merely
+// copied from the finding's own overall status — see
+// docs/finding-provisions-relationship-audit.md), not an independent legal
+// verification — see each finding's own human-legal-review status.
+// "upheld"/"not_upheld" here does NOT mean a final order specifically: the
+// finding this provision belongs to can be at any procedural stage
+// (confirmed_at_interim included), shown separately via that finding's own
+// StatusBadge, never implied by this label alone.
 const PROVISION_RELATIONSHIP_LABELS: Record<string, string> = {
   alleged: "Cited in this finding",
-  upheld: "Basis of the confirmed outcome",
-  not_upheld: "Basis of the not-confirmed outcome",
+  upheld: "Recorded as basis of this finding's own disposition",
+  not_upheld: "Recorded as basis of this finding's own (not-confirmed) disposition",
 };
 
 function FindingRow({

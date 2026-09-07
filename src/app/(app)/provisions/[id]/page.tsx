@@ -193,9 +193,13 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         </div>
         {(appliedCount > 0 || citedOnlyCount > 0) && (
           <p className="mt-3 text-xs text-[var(--color-ink-500)]">
-            Of these, this specific provision was the basis of the finding&apos;s outcome in {appliedCount} finding
-            {appliedCount === 1 ? "" : "s"}; in {citedOnlyCount} other{citedOnlyCount === 1 ? "" : "s"} it was cited
-            or considered alongside other provisions without itself being the basis of that finding&apos;s outcome.
+            Of these, this specific provision is recorded as the basis of the finding&apos;s own disposition in{" "}
+            {appliedCount} finding{appliedCount === 1 ? "" : "s"}; in {citedOnlyCount} other{citedOnlyCount === 1 ? "" : "s"}{" "}
+            it is recorded as cited or considered alongside other provisions without itself being that basis. This is
+            a curated data-entry classification, not an independent legal verification of which provision an order
+            actually turned on, see each finding&apos;s human-legal-review status below, and it never means a final
+            order specifically, a finding recorded this way can be at any procedural stage, shown separately on each
+            finding.
           </p>
         )}
       </Card>

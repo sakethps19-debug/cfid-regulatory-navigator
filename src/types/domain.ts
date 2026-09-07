@@ -157,13 +157,20 @@ export interface ScenarioFinding {
    * query that only matched on the OTHER, unrelated conduct.
    *
    * relationship (from finding_provisions.relationship) says how THIS
-   * provision specifically was treated within this finding: "alleged"
-   * means it was cited/considered but is not itself the basis of the
-   * finding's disposition; "upheld"/"not_upheld" means this particular
-   * provision was the one the order's disposition actually turned on.
-   * A single finding routinely cites several provisions where only one or
-   * two are "upheld" and the rest are contextual "alleged" citations, so
-   * this is a per-provision distinction, not the same thing as the
+   * provision specifically is RECORDED as having been treated within this
+   * finding: "alleged" means it is recorded as cited/considered but not
+   * itself the basis of the finding's disposition; "upheld"/"not_upheld"
+   * means this particular provision is recorded as the one the finding's
+   * disposition actually turned on. This is curated data entry (see
+   * docs/finding-provisions-relationship-audit.md for the full audit of
+   * all 871 rows, most genuinely set per-provision rather than copied from
+   * the finding's overall status), NOT an independent legal verification —
+   * check the finding's own humanLegalReviewCompleted before relying on
+   * it, and never read "upheld" as implying a FINAL order specifically:
+   * the finding it belongs to can be at any procedural stage. A single
+   * finding routinely cites several provisions where only one or two carry
+   * "upheld"/"not_upheld" and the rest are contextual "alleged" citations,
+   * so this is a per-provision distinction, not the same thing as the
    * finding's overall findingStatus. Optional because many existing test
    * fixtures construct provisionLinks without it. */
   provisionLinks: { provisionId: string; justifyingTags: string[]; relationship?: string }[];

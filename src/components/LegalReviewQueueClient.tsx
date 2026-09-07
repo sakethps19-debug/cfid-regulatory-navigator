@@ -47,17 +47,22 @@ function VerificationBadge({ verified, label }: { verified: boolean; label: stri
   );
 }
 
-/** Per-provision cited-only vs outcome-determining summary for this
- * finding, from provisionLinks[].relationship (see
+/** Per-provision cited-only vs recorded-basis-of-disposition summary for
+ * this finding, from provisionLinks[].relationship (see
  * src/app/(app)/provisions/[id]/page.tsx for the same distinction applied
- * to a single provision) — "upheld"/"not_upheld" means the provision was
- * the basis of this finding's own disposition, "alleged" or unset means it
- * was cited/considered without being that basis. */
+ * to a single provision, and docs/finding-provisions-relationship-audit.md
+ * for the full audit of this field) — "upheld"/"not_upheld" means the
+ * provision is RECORDED as the basis of this finding's own disposition,
+ * "alleged" or unset means it is recorded as cited/considered without
+ * being that basis. This is curated data entry, not independent legal
+ * verification (see the finding's own human-legal-review status), and
+ * "recorded" here never implies a final order specifically — this finding
+ * can be at any procedural stage. */
 export function provisionRelationshipSummary(finding: ScenarioFinding): string {
   const total = finding.provisionLinks.length;
   if (total === 0) return "No provisions mapped";
-  const outcomeDetermining = finding.provisionLinks.filter((l) => l.relationship === "upheld" || l.relationship === "not_upheld").length;
-  return `${outcomeDetermining} of ${total} provision${total === 1 ? "" : "s"} outcome-determining, ${total - outcomeDetermining} cited/considered only`;
+  const recordedAsBasis = finding.provisionLinks.filter((l) => l.relationship === "upheld" || l.relationship === "not_upheld").length;
+  return `${recordedAsBasis} of ${total} provision${total === 1 ? "" : "s"} recorded as basis of disposition, ${total - recordedAsBasis} cited/considered only`;
 }
 
 function humanize(id: string): string {
