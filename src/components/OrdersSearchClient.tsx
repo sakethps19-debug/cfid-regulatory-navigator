@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Order } from "@/types/domain";
 import { Card } from "@/components/Card";
+import { formatDate } from "@/lib/formatDate";
 
 export function OrdersSearchClient({ orders }: { orders: Order[] }) {
   const [query, setQuery] = useState("");
@@ -36,7 +37,7 @@ export function OrdersSearchClient({ orders }: { orders: Order[] }) {
                 {o.orderStage}
               </span>
               <h2 className="mt-2 text-base font-semibold text-[var(--color-ink-900)]">{o.caseName}</h2>
-              <p className="mt-1 text-sm text-[var(--color-ink-700)]">{o.orderDate}</p>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">{formatDate(o.orderDate)}</p>
               <p className="mt-1 font-mono text-xs text-[var(--color-ink-500)]">{o.orderNumber}</p>
               <p className="mt-2 text-sm text-[var(--color-ink-700)]">{o.scopeNote}</p>
             </Card>

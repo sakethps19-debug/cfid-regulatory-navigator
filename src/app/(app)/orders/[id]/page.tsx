@@ -5,6 +5,7 @@ import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
 import { directionsForCase, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
+import { formatDate } from "@/lib/formatDate";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,7 +33,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           Search by Order
         </Link>
       </div>
-      <PageHeader title={order.caseName} description={`${order.orderStage} · ${order.orderDate}`} />
+      <PageHeader title={order.caseName} description={`${order.orderStage} · ${formatDate(order.orderDate)}`} />
 
       {relationships.map((r) => {
         const otherOrderId = r.fromOrderId === order.id ? r.toOrderId : r.fromOrderId;
@@ -75,7 +76,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                       </p>
                     )}
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-                      {sibling.orderStage} · {sibling.orderDate ?? "Date not yet confirmed"}
+                      {sibling.orderStage} · {sibling.orderDate ? formatDate(sibling.orderDate) : "Date not yet confirmed"}
                     </p>
                     <p className="mt-1 text-xs text-[var(--color-ink-500)]">{sibling.proceduralStatus}</p>
                   </div>

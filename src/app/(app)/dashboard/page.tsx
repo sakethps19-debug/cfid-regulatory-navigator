@@ -12,6 +12,7 @@ import {
   getVerifiedCfidOrders,
 } from "@/lib/data";
 import { isDeepAnalyzed } from "@/lib/processingStages";
+import { formatDate } from "@/lib/formatDate";
 
 const STAT_ITEMS = [
   { label: "Orders indexed (case-library universe)", href: "/case-library" },
@@ -117,7 +118,7 @@ export default async function DashboardPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={f.findingStatus} />
                   <span className="font-medium text-[var(--color-ink-900)]">{f.caseName}</span>
-                  <span className="text-xs text-[var(--color-ink-500)]">{latestDate}</span>
+                  <span className="text-xs text-[var(--color-ink-500)]">{formatDate(latestDate)}</span>
                 </div>
                 <p className="mt-1 text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
                 <div className="mt-1">

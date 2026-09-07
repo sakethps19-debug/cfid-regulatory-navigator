@@ -3,6 +3,7 @@ import { CONTRARY_PRECEDENT_TRIGGER_TAGS, NARROW_SCOPE_PROVISION_TAGS } from "@/
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
+import { formatDate } from "@/lib/formatDate";
 
 const NEGATIVE_STATUSES = new Set(["Not upheld", "Withdrawn"]);
 const UPHELD_STATUSES = new Set(["Upheld", "Partly upheld"]);
@@ -45,7 +46,7 @@ function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
   const verified = versions.filter((v) => v.status === "officially_verified" && v.effectiveFrom);
   if (verified.length > 0) {
     const v = verified[verified.length - 1];
-    return `Applicable version: ${v.versionLabel} (effective ${v.effectiveFrom}${v.effectiveTo ? ` to ${v.effectiveTo}` : " onward"}), officially verified.`;
+    return `Applicable version: ${v.versionLabel} (effective ${formatDate(v.effectiveFrom)}${v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : " onward"}), officially verified.`;
   }
   const orderCited = versions.find((v) => v.status === "order_cited_text_only" && v.exactText);
   if (orderCited) {

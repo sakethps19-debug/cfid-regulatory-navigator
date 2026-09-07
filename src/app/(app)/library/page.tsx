@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { getOrders, getProvisions, getVerifiedCfidOrders } from "@/lib/data";
 import { isDeepAnalyzed } from "@/lib/processingStages";
+import { formatDate } from "@/lib/formatDate";
 
 export default async function LibraryPage() {
   const [allOrders, provisions, verifiedCfidOrders] = await Promise.all([getOrders(), getProvisions(), getVerifiedCfidOrders()]);
@@ -30,7 +31,7 @@ export default async function LibraryPage() {
           <Card key={o.id}>
             <h3 className="text-base font-semibold text-[var(--color-ink-900)]">{o.caseName}</h3>
             <p className="text-sm text-[var(--color-ink-700)]">
-              {o.orderStage} · {o.orderDate}
+              {o.orderStage} · {formatDate(o.orderDate)}
             </p>
             <p className="mt-1 font-mono text-xs text-[var(--color-ink-500)]">{o.orderNumber}</p>
             <p className="mt-2 text-sm text-[var(--color-ink-700)]">{o.authority}</p>

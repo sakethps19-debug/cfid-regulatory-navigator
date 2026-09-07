@@ -7,6 +7,7 @@ import { findingsForProvision, getProvisionById, getProvisionVersions, getProvis
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority } from "@/lib/regulators";
+import { formatDate } from "@/lib/formatDate";
 
 const RELATION_TEXT: Record<string, string> = {
   similarly_numbered_different_instrument: "distinct similarly-numbered provision in a different instrument",
@@ -74,8 +75,8 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-ink-500)]">
                   <span className="font-semibold">{v.versionLabel}</span>
                   <span>
-                    {v.effectiveFrom ? `Effective from ${v.effectiveFrom}` : ""}
-                    {v.effectiveTo ? ` to ${v.effectiveTo}` : v.effectiveFrom ? " (current)" : ""}
+                    {v.effectiveFrom ? `Effective from ${formatDate(v.effectiveFrom)}` : ""}
+                    {v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : v.effectiveFrom ? " (current)" : ""}
                   </span>
                 </div>
                 {v.exactText ? (
