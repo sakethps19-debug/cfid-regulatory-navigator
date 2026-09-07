@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
+import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { SourceLink } from "@/components/Card";
 
 const DEFAULT_LEFT_ID = "SSSL-02";
@@ -28,6 +29,7 @@ const FIELDS: CompareField[] = [
   { label: "Provisions considered", render: (f) => f.provisionsConsideredRaw, long: true },
   { label: "Noticees / actors", render: (f) => f.noticeeActors.join("; ") },
   { label: "Finding status", render: (f) => <StatusBadge status={f.findingStatus} /> },
+  { label: "Human legal review", render: (f) => <LegalReviewBadge reviewed={f.humanLegalReviewCompleted} /> },
   { label: "Interim paragraph references", render: (f) => f.interimParagraphReferences ?? "-" },
   { label: "Final paragraph references", render: (f) => f.finalParagraphReferences ?? "-" },
   { label: "Qualification / note", render: (f) => f.qualification ?? "-" },

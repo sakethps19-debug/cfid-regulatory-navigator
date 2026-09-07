@@ -1,6 +1,7 @@
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SourceLink } from "@/components/Card";
+import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 // A Record keyed by every FindingStatus, not a plain array of hand-picked
@@ -101,6 +102,7 @@ function FindingRow({
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={finding.findingStatus} />
         <PublicationStatusBadge status={finding.publicationStatus} />
+        <LegalReviewBadge reviewed={finding.humanLegalReviewCompleted} />
         <span className="text-sm font-semibold text-[var(--color-ink-900)]">{finding.recordId}</span>
         <span className="text-sm text-[var(--color-ink-700)]">{finding.caseName}</span>
         {relationshipLabel && (

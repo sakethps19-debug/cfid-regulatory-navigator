@@ -12,3 +12,10 @@ export const EXCLUDED_PUBLICATION_STATUSES = new Set<PublicationStatus>(["Draft"
 export function isSearchableFinding(finding: ScenarioFinding): boolean {
   return !EXCLUDED_PUBLICATION_STATUSES.has(finding.publicationStatus);
 }
+
+/** Short, export-friendly label for a finding's human_legal_review_completed
+ * status — the plain-text counterpart to LegalReviewBadge.tsx, used in the
+ * text/CSV exports so the same maturity signal survives outside the app. */
+export function legalReviewLabel(reviewed: boolean): string {
+  return reviewed ? "legally reviewed" : "review pending";
+}
