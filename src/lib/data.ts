@@ -697,6 +697,9 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     { count: scenarioFindingsCreated },
     { count: legalProvisionsIdentified },
     { count: officialLawTextsVerified },
+    { count: searchableFindingsCount },
+    { count: findingsHumanLegallyReviewed },
+    { data: orderRefRows },
   ] = await Promise.all([
     supabase.from("orders").select("*", { count: "exact", head: true }),
     supabase.from("orders").select("*", { count: "exact", head: true }).not("official_url", "is", null),
@@ -721,7 +724,21 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     supabase.from("scenario_findings").select("*", { count: "exact", head: true }),
     supabase.from("legal_provisions").select("*", { count: "exact", head: true }),
     supabase.from("provision_versions").select("*", { count: "exact", head: true }).eq("status", "officially_verified"),
+    supabase
+      .from("scenario_findings")
+      .select("*", { count: "exact", head: true })
+      .in("publication_status", ["published_to_search", "published_with_warning"]),
+    supabase.from("scenario_findings").select("*", { count: "exact", head: true }).eq("human_legal_review_completed", true),
+    // Distinct orders actually contributing a structured finding — via
+    // EITHER order_id (interim) or final_order_id (final), matching how
+    // getScenarioFindings() itself computes a finding's orderIds. Counting
+    // order_id alone undercounts: a finding recorded only against its final
+    // order still means that final order participates in retrieval.
+    supabase.from("scenario_findings").select("order_id, final_order_id"),
   ]);
+  const ordersContributingStructuredFindings = new Set(
+    (orderRefRows ?? []).flatMap((r) => [r.order_id, r.final_order_id].filter((v): v is string => Boolean(v)))
+  ).size;
   return {
     totalIndexed: totalIndexed ?? 0,
     officialUrlSupplied: officialUrlSupplied ?? 0,
@@ -743,5 +760,8 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
     scenarioFindingsCreated: scenarioFindingsCreated ?? 0,
     legalProvisionsIdentified: legalProvisionsIdentified ?? 0,
     officialLawTextsVerified: officialLawTextsVerified ?? 0,
+    ordersContributingStructuredFindings,
+    searchableFindingsCount: searchableFindingsCount ?? 0,
+    findingsHumanLegallyReviewed: findingsHumanLegallyReviewed ?? 0,
   };
 }

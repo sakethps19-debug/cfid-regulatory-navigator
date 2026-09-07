@@ -14,6 +14,11 @@ export default async function AdminDashboardPage() {
   // equally-weighted numbers made harder to tell apart at a glance.
   const corpusRows: { label: string; value: number; hint?: string }[] = [
     { label: "Total orders indexed", value: metrics.totalIndexed, hint: "Every row in Verified_CFID_Order_Links.xlsx, not a claim this is every CFID order that exists" },
+    {
+      label: "Orders contributing structured findings",
+      value: metrics.ordersContributingStructuredFindings,
+      hint: `Of the ${metrics.totalIndexed} indexed above, only these actually contribute at least one finding to Scenario Analyzer retrieval; an indexed order is not automatically one the analyzer can match against, see "Deep-analyzed" below for where the remainder currently stand`,
+    },
     { label: "Scenario findings created", value: metrics.scenarioFindingsCreated },
     { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far, not the complete CFID law library" },
   ];
@@ -27,7 +32,16 @@ export default async function AdminDashboardPage() {
   ];
 
   const reviewRows: { label: string; value: number; hint?: string }[] = [
-    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing, see \"Deep-analyzed\" above" },
+    {
+      label: "Orders at \"legally reviewed\" pipeline stage",
+      value: metrics.fullyExtracted,
+      hint: "An order-level processing-pipeline stage: this order's document work is complete, not itself a claim about any individual finding, see the finding-level row below for that",
+    },
+    {
+      label: "Scenario findings human-legally-reviewed",
+      value: metrics.findingsHumanLegallyReviewed,
+      hint: `${metrics.findingsHumanLegallyReviewed} of ${metrics.searchableFindingsCount} searchable scenario findings have completed human legal review by a CFID officer; a finding can be searchable in the Scenario Analyzer long before it has been legally reviewed, this is the per-finding fact, not the order-pipeline stage above`,
+    },
     { label: "Official law texts verified", value: metrics.officialLawTextsVerified, hint: "provision_versions confirmed against an official source" },
   ];
 

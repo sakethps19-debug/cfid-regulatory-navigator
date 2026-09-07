@@ -5,6 +5,7 @@ import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
+import { EXCLUDED_PUBLICATION_STATUSES } from "@/lib/publicationLifecycle";
 
 // Draft, Quarantined and Withdrawn findings are excluded from the matching
 // engine entirely — not merely down-ranked — per the publication/quarantine
@@ -12,8 +13,8 @@ import { formatDate } from "@/lib/formatDate";
 // warning" is deliberately still included: the UI must show the warning
 // visibly on that precedent rather than hiding it, since silently excluding
 // it would be no different from quietly disagreeing with an officer's own
-// decision to keep it visible with a caution attached.
-const EXCLUDED_PUBLICATION_STATUSES = new Set(["Draft", "Quarantined", "Withdrawn"]);
+// decision to keep it visible with a caution attached. See
+// src/lib/publicationLifecycle.ts, the single source of truth for this set.
 
 const NEGATIVE_STATUSES = new Set(["Not Confirmed in Final Order", "Withdrawn"]);
 const UPHELD_STATUSES = new Set(["Confirmed in Final Order", "Partly Confirmed in Final Order"]);

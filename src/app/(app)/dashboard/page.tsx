@@ -14,6 +14,7 @@ import {
 } from "@/lib/data";
 import { formatDate } from "@/lib/formatDate";
 import { interimFinalReversals } from "@/lib/precedentShifts";
+import { isSearchableFinding } from "@/lib/publicationLifecycle";
 
 const STAT_ITEMS = [
   { label: "Orders", href: "/case-library" },
@@ -64,7 +65,8 @@ export default async function DashboardPage() {
   // count doesn't need to know; it only states what's actually on file.
   const orderIdsWithFindings = new Set(scenarioFindings.flatMap((f) => f.orderIds));
   const ordersWithStructuredFindings = orders.filter((o) => orderIdsWithFindings.has(o.id)).length;
-  const legallyReviewedFindingsCount = scenarioFindings.filter((f) => f.humanLegalReviewCompleted).length;
+  const searchableFindings = scenarioFindings.filter(isSearchableFinding);
+  const legallyReviewedFindingsCount = searchableFindings.filter((f) => f.humanLegalReviewCompleted).length;
   const recentAndSignificant = pickRecentAndSignificant(scenarioFindings, orders);
   const reversalsCount = interimFinalReversals(scenarioFindings).length;
 
@@ -102,8 +104,8 @@ export default async function DashboardPage() {
         Structured-analysis coverage: {ordersWithStructuredFindings} of {orders.length} indexed orders currently
         have scenario findings.{" "}
         {legallyReviewedFindingsCount === 0
-          ? "None of the current scenario findings have yet been legally reviewed or signed off by a CFID officer."
-          : `${legallyReviewedFindingsCount} of ${scenarioFindings.length} scenario findings have been legally reviewed; the rest have not.`}
+          ? "None of the current searchable scenario findings have yet been legally reviewed or signed off by a CFID officer."
+          : `${legallyReviewedFindingsCount} of ${searchableFindings.length} searchable scenario findings have been legally reviewed; the rest have not.`}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">

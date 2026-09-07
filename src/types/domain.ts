@@ -397,6 +397,28 @@ export interface ProcessingMetrics {
   scenarioFindingsCreated: number;
   legalProvisionsIdentified: number;
   officialLawTextsVerified: number;
+
+  // ---- Corpus-vs-matching-coverage transparency: an indexed order is not
+  // necessarily one that actually participates in Scenario Analyzer
+  // retrieval, and a searchable finding is not necessarily one a human has
+  // legally reviewed. Both are easy to conflate with the numbers above if
+  // not shown explicitly. ----
+  /** Distinct orders referenced by at least one scenario_findings row (via
+   * either order_id or final_order_id) — i.e. orders that actually
+   * contribute to Scenario Analyzer retrieval, as opposed to merely being
+   * indexed in the case register. Always <= totalIndexed. */
+  ordersContributingStructuredFindings: number;
+  /** scenario_findings rows not excluded from ordinary retrieval by the
+   * publication lifecycle (publication_status not in Draft/Quarantined/
+   * Withdrawn) — mirrors EXCLUDED_PUBLICATION_STATUSES in engine.ts. */
+  searchableFindingsCount: number;
+  /** scenario_findings.human_legal_review_completed = true — a per-finding
+   * fact, distinct from fullyExtracted above (an order-level processing
+   * stage). A finding can be searchable long before it is legally reviewed;
+   * this is the count that answers "has a human actually signed off on
+   * this specific finding", not "has this order's document-pipeline work
+   * completed". */
+  findingsHumanLegallyReviewed: number;
 }
 
 export interface ValidationReport {
