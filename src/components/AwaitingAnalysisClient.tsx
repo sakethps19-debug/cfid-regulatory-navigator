@@ -7,7 +7,7 @@ import { SourceLink } from "@/components/Card";
 
 const ANALYSIS_LABELS: Record<VerifiedOrderAnalysisStatus, string> = {
   deep_analyzed: "Deep-analyzed (in precedent library)",
-  verified_pending_analysis: "Verified — awaiting detailed analysis",
+  verified_pending_analysis: "Verified: awaiting detailed analysis",
 };
 
 const ANALYSIS_STYLES: Record<VerifiedOrderAnalysisStatus, string> = {
@@ -184,7 +184,7 @@ function ResidualTable({ rows }: { rows: ResidualOrderRow[] }) {
                 </td>
                 <td className="px-3 py-2 align-top text-xs text-[var(--color-ink-500)]">{r.reason}</td>
                 <td className="whitespace-nowrap px-3 py-2 align-top">
-                  {r.officialUrl ? <SourceLink href={r.officialUrl} /> : <span className="text-[var(--color-ink-300)]">—</span>}
+                  {r.officialUrl ? <SourceLink href={r.officialUrl} /> : <span className="text-[var(--color-ink-300)]">-</span>}
                 </td>
               </tr>
             ))}

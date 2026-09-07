@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getLegalTests, getScenarioFindings } from "@/lib/data";
 import { FraudTestChecklist } from "./FraudTestChecklist";
 
-const DOCTRINE_ISSUE = "PFUTP 2(1)(c): fraud — inducement/intent test";
+const DOCTRINE_ISSUE = "PFUTP 2(1)(c): fraud (inducement/intent test)";
 
 // Findings that have actually applied this test in this pilot's corpus — not
 // every finding citing PFUTP, only ones that engage the Reliance v. SEBI
@@ -25,7 +25,7 @@ export default async function FraudTestPage() {
         title="Fraud Doctrine Analyser"
         description={
           'A doctrinal aid for testing a fact pattern against the Supreme Court’s "fraud" test under PFUTP Regulation 2(1)(c) ' +
-          "(Reliance Industries Ltd. v. SEBI, 2026 INSC 585) — distinct from the Scenario Analyzer, which matches facts against " +
+          "(Reliance Industries Ltd. v. SEBI, 2026 INSC 585), distinct from the Scenario Analyzer, which matches facts against " +
           "this pilot's precedent findings. This page never matches your facts against precedent automatically; it only helps you " +
           "apply the test yourself and shows how CFID orders in this register have applied it."
         }
@@ -60,7 +60,7 @@ export default async function FraudTestPage() {
       <Card>
         <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Applied in CFID orders in this register</h2>
         <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-          Only orders dated on or after 29 May 2026 could have applied this test — anything earlier relied on the
+          Only orders dated on or after 29 May 2026 could have applied this test; anything earlier relied on the
           pre-Reliance case law (Kanhaiyalal Baldevbhai Patel, Ketan Parekh, Kishore Ajmera, Rakhi Trading) that the
           judgment reconciles.
         </p>

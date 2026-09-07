@@ -25,7 +25,7 @@ function defaultSourceLinkLabel(href: string): string {
 
 export function SourceLink({ href, children }: { href: string; children?: ReactNode }) {
   if (!href) {
-    return <span className="text-xs italic text-[var(--color-ink-300)]">Requires verification — no official link on file</span>;
+    return <span className="text-xs italic text-[var(--color-ink-300)]">Requires verification, no official link on file</span>;
   }
   const label = children ?? defaultSourceLinkLabel(href);
   return (

@@ -8,30 +8,30 @@ export default async function AdminDashboardPage() {
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
 
   const rows: { label: string; value: number; hint?: string }[] = [
-    { label: "Total orders indexed", value: metrics.totalIndexed, hint: "Every row in Verified_CFID_Order_Links.xlsx — not a claim this is every CFID order that exists" },
-    { label: "Deep-analyzed", value: metrics.deepAnalyzedCount, hint: "Actually opened, read, and broken into scenario findings with paragraph citations — this is what powers the Scenario Analyzer for these orders" },
-    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing — see \"Deep-analyzed\" above" },
-    { label: "Awaiting retrieval", value: metrics.awaitingRetrieval, hint: "Indexed and CFID-tag-checked, but no retrieval attempt has been made or recorded for these specific orders yet — not a failure" },
-    { label: "Retrieval failed", value: metrics.retrievalFailures, hint: "A genuine, individually recorded retrieval attempt was made and failed — distinct from \"awaiting retrieval\"" },
-    { label: "Retrieved but not yet deep-analyzed", value: metrics.midPipelineCount, hint: "Document retrieved and in progress (attempted / downloaded / text extracted / scenario findings extracted), but citations have not yet been checked — genuinely earlier-stage than \"Deep-analyzed\" above" },
+    { label: "Total orders indexed", value: metrics.totalIndexed, hint: "Every row in Verified_CFID_Order_Links.xlsx, not a claim this is every CFID order that exists" },
+    { label: "Deep-analyzed", value: metrics.deepAnalyzedCount, hint: "Actually opened, read, and broken into scenario findings with paragraph citations, this is what powers the Scenario Analyzer for these orders" },
+    { label: "Legally reviewed (officer sign-off)", value: metrics.fullyExtracted, hint: "A separate, further step after deep analysis: a CFID officer has reviewed and signed off on the AI-assisted analysis. A low count here does not mean the analysis itself is missing, see \"Deep-analyzed\" above" },
+    { label: "Awaiting retrieval", value: metrics.awaitingRetrieval, hint: "Indexed and CFID-tag-checked, but no retrieval attempt has been made or recorded for these specific orders yet, not a failure" },
+    { label: "Retrieval failed", value: metrics.retrievalFailures, hint: "A genuine, individually recorded retrieval attempt was made and failed, distinct from \"awaiting retrieval\"" },
+    { label: "Retrieved but not yet deep-analyzed", value: metrics.midPipelineCount, hint: "Document retrieved and in progress (attempted / downloaded / text extracted / scenario findings extracted), but citations have not yet been checked, genuinely earlier-stage than \"Deep-analyzed\" above" },
     { label: "Needs manual review", value: metrics.needsManualReview },
     { label: "Scenario findings created", value: metrics.scenarioFindingsCreated },
-    { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far — not the complete CFID law library" },
+    { label: "Legal provisions identified", value: metrics.legalProvisionsIdentified, hint: "Only from orders analysed so far, not the complete CFID law library" },
     { label: "Official law texts verified", value: metrics.officialLawTextsVerified, hint: "provision_versions confirmed against an official source" },
   ];
 
   const linkVerificationRows: { label: string; value: number; hint?: string }[] = [
-    { label: "Official SEBI URL supplied", value: metrics.officialUrlSupplied, hint: "A link is on file for the order — nothing more" },
-    { label: "URL format validated", value: metrics.urlFormatValidated, hint: "The supplied link is a well-formed http(s) URL — not a claim the page was opened" },
-    { label: "CFID identifier present in record", value: metrics.cfidIdentifierPresent, hint: 'The order’s own identifier/number contains "CFID" — a claim about the record, not the document' },
-    { label: "CFID identifier absent from record", value: metrics.cfidVerificationFailures, hint: "Tracked, never silently dropped — absence alone is not exclusionary (see cfid_verification_basis)" },
+    { label: "Official SEBI URL supplied", value: metrics.officialUrlSupplied, hint: "A link is on file for the order, nothing more" },
+    { label: "URL format validated", value: metrics.urlFormatValidated, hint: "The supplied link is a well-formed http(s) URL, not a claim the page was opened" },
+    { label: "CFID identifier present in record", value: metrics.cfidIdentifierPresent, hint: 'The order’s own identifier/number contains "CFID", a claim about the record, not the document' },
+    { label: "CFID identifier absent from record", value: metrics.cfidVerificationFailures, hint: "Tracked, never silently dropped; absence alone is not exclusionary (see cfid_verification_basis)" },
     { label: "Document actually opened/retrieved", value: metrics.documentActuallyRetrieved, hint: "The only stage that reflects a completed retrieval, not merely a supplied or validated link" },
     { label: "Document metadata confirmed from source", value: metrics.documentMetadataConfirmed, hint: "Date/number/authority confirmed directly from the opened document, not just the source workbook" },
     { label: "Complete document on file (audit record)", value: metrics.completeDocumentOnFile, hint: "A formal source_documents row recording a successful retrieval, with checksum and retrieval timestamp" },
   ];
 
   const residualRows: { label: string; value: number; hint?: string }[] = [
-    { label: "Residual: awaiting link", value: metrics.residualPendingLink, hint: "Exclusion/pending-link register — never a precedent source" },
+    { label: "Residual: awaiting link", value: metrics.residualPendingLink, hint: "Exclusion/pending-link register, never a precedent source" },
     { label: "Residual: confirmed duplicates", value: metrics.residualDuplicates, hint: "Same verified order referenced twice in the source workbook" },
     { label: "Residual: confirmed not CFID", value: metrics.residualNotCfid, hint: "Order number does not identify a CFID investigation" },
   ];
@@ -40,7 +40,7 @@ export default async function AdminDashboardPage() {
     <div>
       <PageHeader
         title="Admin Processing Dashboard"
-        description="Live counts computed directly from the database on every page load — nothing here is cached or estimated."
+        description="Live counts computed directly from the database on every page load; nothing here is cached or estimated."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,7 +55,7 @@ export default async function AdminDashboardPage() {
 
       <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Official-link verification stages</h2>
       <p className="mb-3 text-sm text-[var(--color-ink-700)]">
-        &quot;89 official links verified&quot; is not one fact — it collapses several distinct checkpoints. Each row
+        &quot;89 official links verified&quot; is not one fact, it collapses several distinct checkpoints. Each row
         below is a separate, honestly-tracked stage; a high count at one stage is never a claim that a later stage
         has also happened.
       </p>
@@ -71,7 +71,7 @@ export default async function AdminDashboardPage() {
 
       <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Residual register (never a source of case-library orders)</h2>
       <p className="mb-3 text-sm text-[var(--color-ink-700)]">
-        Kept as three separate counts, never combined with the verified case-library counts above — a residual entry
+        Kept as three separate counts, never combined with the verified case-library counts above; a residual entry
         only ever becomes a case-library order if it is subsequently verified and moved.
       </p>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -89,7 +89,7 @@ export default async function AdminDashboardPage() {
           <div>
             <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Validation issues</h2>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {issues.length} recorded, {unresolvedIssues} unresolved — each traceable back to a specific order or
+              {issues.length} recorded, {unresolvedIssues} unresolved, each traceable back to a specific order or
               source row. Issues are marked resolved once their underlying condition no longer holds (e.g. an
               &quot;awaiting retrieval&quot; note once that order&apos;s retrieval succeeds); the remainder are
               genuinely open items such as residual-register entries still awaiting a link.
@@ -109,7 +109,7 @@ export default async function AdminDashboardPage() {
           <div>
             <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Curated-data change log</h2>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {changeLog.length} corrections recorded — every conduct tag, transaction type, or similar curated field
+              {changeLog.length} corrections recorded: every conduct tag, transaction type, or similar curated field
               changed directly against the database, with what it was, what it became, and why.
             </p>
           </div>

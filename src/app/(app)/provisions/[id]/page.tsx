@@ -59,7 +59,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
           Search all provisions
         </Link>
       </div>
-      <PageHeader title={`${provision.instrument} — ${provision.provisionNumber}`} description={provision.subject ?? undefined} />
+      <PageHeader title={`${provision.instrument} · ${provision.provisionNumber}`} description={provision.subject ?? undefined} />
 
       <Card className="mb-6">
         <h2 className="mb-2 text-base font-semibold text-[var(--color-ink-900)]">Statutory text</h2>
@@ -101,7 +101,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                     {v.status === "officially_verified"
                       ? "✓ Verified against official source"
                       : v.status === "order_cited_text_only"
-                        ? "As reproduced verbatim in a CFID order — not independently checked against the official source"
+                        ? "As reproduced verbatim in a CFID order, not independently checked against the official source"
                         : "⚠ Requires verification"}
                   </span>
                   {v.sourceUrl && <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>}
@@ -120,7 +120,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Orders in which considered</dt>
-            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.ordersConsidered.join(", ") || "—"}</dd>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.ordersConsidered.join(", ") || "-"}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Current-text verification status</dt>
@@ -138,14 +138,14 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         )}
         {similar.length > 0 && (
           <div className="mt-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[#7a5310] ring-1 border-[#dfc98f]">
-            <strong>Data-integrity check — similarly-numbered provisions:</strong> the following{" "}
+            <strong>Data-integrity check: similarly-numbered provisions.</strong> The following{" "}
             {similar.length === 1 ? "provision is" : "provisions are"} distinct from this one and must not be
             conflated with it, even though the numbering looks alike:
             <ul className="mt-1.5 list-inside list-disc space-y-0.5">
               {similar.map((s) => (
                 <li key={s.provision.id}>
                   <Link href={`/provisions/${s.provision.id}`} className="underline">
-                    {s.provision.instrument} — {s.provision.provisionNumber}
+                    {s.provision.instrument} · {s.provision.provisionNumber}
                   </Link>{" "}
                   ({RELATION_TEXT[s.relation]})
                 </li>
@@ -159,7 +159,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Track record</h2>
         <p className="mt-1 text-sm text-[var(--color-ink-700)]">
           Cited in {findings.length} scenario finding{findings.length === 1 ? "" : "s"} in this pilot&apos;s precedent
-          library, by outcome — not a claim about how this provision has fared across every SEBI order, only the
+          library, by outcome, not a claim about how this provision has fared across every SEBI order, only the
           ones analysed here.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

@@ -586,7 +586,7 @@ export async function flagScenarioResult(input: {
   if (!findingRow) return { ok: false, error: "That finding could not be found." };
 
   const note = input.note.trim().slice(0, MAX_FLAG_NOTE_LENGTH);
-  const description = `User-reported: ${note || "(no note provided)"} — flagged by ${
+  const description = `User-reported: ${note || "(no note provided)"}, flagged by ${
     user.email ?? "unknown user"
   } against provision ${input.provisionCanonicalId}, finding ${findingRow.record_id} (${findingRow.case_name}).`;
 

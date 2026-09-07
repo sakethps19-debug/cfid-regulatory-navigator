@@ -25,7 +25,7 @@ const LIMB_1_FACTORS: Factor[] = [
   {
     id: "l1-manipulation-established",
     label: "The factum of manipulation itself is cogently and sufficiently established from the facts (non-genuine transactions, artificial price/volume)",
-    source: "SEBI v. Rakhi Trading (P) Ltd., (2018) 13 SCC 753, para 78 — inducement then presumed, no separate proof required",
+    source: "SEBI v. Rakhi Trading (P) Ltd., (2018) 13 SCC 753, para 78, inducement then presumed, no separate proof required",
   },
 ];
 
@@ -56,7 +56,7 @@ const LIMB_2_FACTORS: Factor[] = [
   },
   {
     id: "l2-blatant",
-    label: "Blatant misconduct clear from the attending circumstances — e.g. fabricated documents, deliberately false certifications, concealment inconsistent with any innocent explanation",
+    label: "Blatant misconduct clear from the attending circumstances, e.g. fabricated documents, deliberately false certifications, concealment inconsistent with any innocent explanation",
     source: "Reliance v. SEBI para 175(ii)",
   },
   {
@@ -110,13 +110,13 @@ export function FraudTestChecklist() {
     if (limb1Satisfied && limb2Satisfied) {
       return {
         tone: "satisfied" as const,
-        text: "Both limbs have at least one selection — on these selections the fraud test may be satisfied without needing to fall back on the other limb.",
+        text: "Both limbs have at least one selection: on these selections the fraud test may be satisfied without needing to fall back on the other limb.",
       };
     }
     if (limb1Satisfied) {
       return {
         tone: "satisfied" as const,
-        text: "Limb (i) — injury/inducement — has a selection. Per Reliance v. SEBI para 175(i), that alone is enough; deceitful intent does not additionally need to be proved.",
+        text: "Limb (i), injury/inducement, has a selection. Per Reliance v. SEBI para 175(i), that alone is enough; deceitful intent does not additionally need to be proved.",
       };
     }
     if (limb2Satisfied) {
@@ -124,13 +124,13 @@ export function FraudTestChecklist() {
         tone: limb2Count >= 2 ? ("satisfied" as const) : ("borderline" as const),
         text:
           limb2Count >= 2
-            ? "Limb (ii) — intent from attending circumstances — has multiple selections. Per Reliance v. SEBI para 175(ii), cogent circumstantial intent alone is enough; injury does not additionally need to be proved."
-            : "Only one limb (ii) factor is selected. The Supreme Court treated intent as something to be inferred from the cumulative effect of several factors (Ketan Parekh para 20) — a single factor alone may be a weak signal.",
+            ? "Limb (ii), intent from attending circumstances, has multiple selections. Per Reliance v. SEBI para 175(ii), cogent circumstantial intent alone is enough; injury does not additionally need to be proved."
+            : "Only one limb (ii) factor is selected. The Supreme Court treated intent as something to be inferred from the cumulative effect of several factors (Ketan Parekh para 20); a single factor alone may be a weak signal.",
       };
     }
     return {
       tone: "not-satisfied" as const,
-      text: "Neither limb has a selection. Per Reliance v. SEBI, manipulation, cornering, or an accounting irregularity alone — without established injury/inducement or cogent evidence of intent — does not by itself establish fraud under PFUTP Regulation 2(1)(c).",
+      text: "Neither limb has a selection. Per Reliance v. SEBI, manipulation, cornering, or an accounting irregularity alone, without established injury/inducement or cogent evidence of intent, does not by itself establish fraud under PFUTP Regulation 2(1)(c).",
     };
   }, [limb1Count, limb2Count]);
 
@@ -144,20 +144,20 @@ export function FraudTestChecklist() {
     <div>
       <p className="text-xs text-[var(--color-ink-500)]">
         Tick whichever of the facts below are actually present in your scenario. This checklist mirrors the specific
-        factors the Supreme Court and the case law it cites used to decide the two limbs — it does not interpret free
+        factors the Supreme Court and the case law it cites used to decide the two limbs; it does not interpret free
         text, match against precedent, or call any external service. Nothing is saved.
       </p>
 
       <div className="mt-4 grid gap-6 md:grid-cols-2">
         <div>
-          <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (i) — Injury from inducement</h3>
+          <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (i): Injury from inducement</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">Any one of these, on its own, is sufficient for this limb.</p>
           <FactorList factors={LIMB_1_FACTORS} checked={checked} onToggle={toggle} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (ii) — Intent from attending circumstances</h3>
+          <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (ii): Intent from attending circumstances</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            No single factor is automatically decisive — the court draws an inference from their cumulative effect.
+            No single factor is automatically decisive; the court draws an inference from their cumulative effect.
           </p>
           <FactorList factors={LIMB_2_FACTORS} checked={checked} onToggle={toggle} />
         </div>
@@ -166,7 +166,7 @@ export function FraudTestChecklist() {
       <div className={`mt-5 rounded-sm p-3 text-sm ring-1 ring-inset ${toneClasses}`}>
         <p className="font-semibold">{result.text}</p>
         <p className="mt-1.5 text-xs opacity-90">
-          This is a prima facie doctrinal read of your own selections only — not a finding, not a match against this
+          This is a prima facie doctrinal read of your own selections only, not a finding, not a match against this
           pilot&apos;s precedents, and not a substitute for a CFID officer&apos;s own legal judgment.
         </p>
       </div>

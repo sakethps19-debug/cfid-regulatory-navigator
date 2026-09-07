@@ -79,13 +79,13 @@ export function InterimFinalReversalsClient({ findings, orders }: { findings: Sc
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-md border border-[var(--color-gold-600)]/40 bg-[var(--color-gold-50)]/60 p-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold-800)]">
-                    Earlier stage — <StageOrderLink order={interimOrder} fallbackLabel="order not in this register" />
+                    Earlier stage: <StageOrderLink order={interimOrder} fallbackLabel="order not in this register" />
                   </div>
                   <p className="mt-1.5 text-sm text-[var(--color-ink-700)]">{f.interimParagraphReferences}</p>
                 </div>
                 <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-neutral-50)] p-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-700)]">
-                    Final disposition — <StageOrderLink order={finalOrder} fallbackLabel="order not in this register" />
+                    Final disposition: <StageOrderLink order={finalOrder} fallbackLabel="order not in this register" />
                   </div>
                   <p className="mt-1.5 text-sm text-[var(--color-ink-700)]">{f.finalParagraphReferences}</p>
                 </div>

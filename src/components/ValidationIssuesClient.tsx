@@ -82,7 +82,7 @@ export function ValidationIssuesClient({ issues }: { issues: ValidationIssue[] }
                 </td>
                 <td className="px-3 py-2 align-top font-mono text-xs text-[var(--color-ink-700)]">{i.issueType}</td>
                 <td className="px-3 py-2 align-top text-[var(--color-ink-700)]">{i.description}</td>
-                <td className="px-3 py-2 align-top text-xs text-[var(--color-ink-500)]">{i.orderCaseName ?? i.sourceRowRef ?? "—"}</td>
+                <td className="px-3 py-2 align-top text-xs text-[var(--color-ink-500)]">{i.orderCaseName ?? i.sourceRowRef ?? "-"}</td>
               </tr>
             ))}
           </tbody>

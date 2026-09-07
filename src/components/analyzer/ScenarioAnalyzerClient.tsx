@@ -84,7 +84,7 @@ function downloadTextFile(filename: string, content: string, mimeType = "text/pl
 
 function resultToText(result: AnalysisResult): string {
   const lines: string[] = [];
-  lines.push("CFID Regulatory Navigator — Scenario Analysis (research assistance only)");
+  lines.push("CFID Regulatory Navigator: Scenario Analysis (research assistance only)");
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push("");
   lines.push("Scenario:");
@@ -98,7 +98,7 @@ function resultToText(result: AnalysisResult): string {
     for (const group of groupByFramework(result.provisionResults)) {
       lines.push(`  ${group.label}:`);
       for (const pr of group.items) {
-        lines.push(`    - ${pr.provision.provisionNumber} [${pr.confidence} confidence] — ${pr.provision.subject ?? ""}`);
+        lines.push(`    - ${pr.provision.provisionNumber} [${pr.confidence} confidence]: ${pr.provision.subject ?? ""}`);
       }
     }
     lines.push("");
@@ -107,7 +107,7 @@ function resultToText(result: AnalysisResult): string {
       result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
     );
     if (violationParagraph.length > 0) {
-      lines.push("Potential regulatory framework(s) violated — summary paragraph (prima facie only, not a finding):");
+      lines.push("Potential regulatory framework(s) violated: summary paragraph (prima facie only, not a finding):");
       lines.push(
         `Based on the facts entered, the entity has, prima facie, potentially violated ${violationParagraph
           .map((v) => `${v.sentence} of the ${v.instrument}`)
@@ -121,7 +121,7 @@ function resultToText(result: AnalysisResult): string {
   );
   for (const pr of sortedForExport) {
     lines.push("----------------------------------------");
-    lines.push(`${pr.provision.instrument} — ${pr.provision.provisionNumber}`);
+    lines.push(`${pr.provision.instrument} · ${pr.provision.provisionNumber}`);
     lines.push(`Subject: ${pr.provision.subject}`);
     lines.push(`Confidence: ${pr.confidence}`);
     lines.push(`Why potentially relevant: ${pr.whyRelevant}`);
@@ -131,16 +131,16 @@ function resultToText(result: AnalysisResult): string {
       lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
-          `  - [${u.finding.findingStatus}] ${u.finding.recordId} — ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) — ${u.finding.officialSourceUrl}`
+          `  - [${u.finding.findingStatus}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
         );
       }
     } else {
-      lines.push("Confirmed in Final Order in prior case(s): none in this pilot's precedent library — treat as unproven on these facts alone.");
+      lines.push("Confirmed in Final Order in prior case(s): none in this pilot's precedent library, treat as unproven on these facts alone.");
     }
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${s.finding.findingStatus}] ${s.finding.recordId} — ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) — ${s.finding.officialSourceUrl}`
+        `  - [${s.finding.findingStatus}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
@@ -150,7 +150,7 @@ function resultToText(result: AnalysisResult): string {
       lines.push("Contrary precedent(s):");
       for (const c of pr.contraryPrecedents) {
         lines.push(
-          `  - [${c.finding.findingStatus}] ${c.finding.recordId} — ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) — ${c.finding.officialSourceUrl}`
+          `  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
       }
     }
@@ -163,7 +163,7 @@ function resultToText(result: AnalysisResult): string {
     lines.push("----------------------------------------");
     lines.push("Additional contrary precedents retrieved for fund-movement / allotment style facts:");
     for (const c of result.globalContraryPrecedents) {
-      lines.push(`  - [${c.finding.findingStatus}] ${c.finding.recordId} — ${c.finding.scenarioTitle} — ${c.finding.officialSourceUrl}`);
+      lines.push(`  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
     }
   }
   lines.push("");
@@ -250,14 +250,14 @@ export function ScenarioAnalyzerClient() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setFlagError(data.error ?? "Could not submit this flag — please try again.");
+        setFlagError(data.error ?? "Could not submit this flag, please try again.");
         return;
       }
       setFlagged((prev) => new Set(prev).add(pr.provision.id));
       setFlagOpenKey(null);
       setFlagNote("");
     } catch {
-      setFlagError("Could not submit this flag — please try again.");
+      setFlagError("Could not submit this flag, please try again.");
     } finally {
       setFlagSubmitting(false);
     }
@@ -316,7 +316,7 @@ export function ScenarioAnalyzerClient() {
           onChange={(e) => setFreeText(e.target.value)}
           rows={7}
           maxLength={4000}
-          placeholder="Describe the facts you want to research — e.g. transactions, actors involved, disclosures made or omitted, and any evidence you already have..."
+          placeholder="Describe the facts you want to research, e.g. transactions, actors involved, disclosures made or omitted, and any evidence you already have..."
           className="mt-2 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
         />
         <div className="mt-2 flex flex-wrap gap-2">
@@ -437,8 +437,8 @@ export function ScenarioAnalyzerClient() {
                   {i > 0 && ", "}
                   &quot;{c.original}&quot; → &quot;{c.corrected}&quot;
                 </span>
-              ))}{" "}
-              — for matching only; your text as entered is unchanged below.
+              ))}
+              {" "}(for matching only; your text as entered is unchanged below).
             </div>
           )}
 
@@ -452,7 +452,7 @@ export function ScenarioAnalyzerClient() {
           {!result.hasResults && (
             <div className="rounded-sm bg-white p-6 text-sm text-[var(--color-ink-700)] border border-[var(--color-border)]">
               No potentially relevant provisions were identified from this pilot&apos;s analysed precedents using the
-              facts entered. This does not mean no provision applies — it means the pilot&apos;s precedent library
+              facts entered. This does not mean no provision applies, it means the pilot&apos;s precedent library
               does not contain a comparable factual pattern. Try adding more detail about the transaction type,
               actors involved, or the nature of the alleged conduct.
             </div>
@@ -462,14 +462,14 @@ export function ScenarioAnalyzerClient() {
             <div className="rounded-sm border border-[var(--color-border)] bg-white">
               <div className="border-b border-[var(--color-border)] bg-[var(--color-navy-950)] px-4 py-2.5 sm:px-6">
                 <p className="text-sm font-semibold text-white">
-                  Potential regulatory framework{frameworkGroups.length === 1 ? "" : "s"} implicated —{" "}
+                  Potential regulatory framework{frameworkGroups.length === 1 ? "" : "s"} implicated:{" "}
                   {result.provisionResults.length} provision{result.provisionResults.length === 1 ? "" : "s"} across{" "}
                   {frameworkGroups.length} instrument{frameworkGroups.length === 1 ? "" : "s"}
-                  {" — "}
+                  {" · "}
                   {result.provisionResults.filter((pr) => pr.upheldPrecedents.length > 0).length} with a prior case confirmed in a final order
                 </p>
                 <p className="mt-1 text-xs text-white/70">
-                  Prima facie / potentially relevant only — not a finding that any provision has actually been violated.
+                  Prima facie / potentially relevant only, not a finding that any provision has actually been violated.
                 </p>
               </div>
               <div className="divide-y divide-[var(--color-border)]">
@@ -505,7 +505,7 @@ export function ScenarioAnalyzerClient() {
           {violationParagraph.length > 0 && (
             <div className="rounded-sm border border-[var(--color-border)] bg-white p-4 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
-                Potential regulatory framework(s) violated — summary paragraph
+                Potential regulatory framework(s) violated: summary paragraph
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-900)]">
                 Based on the facts entered, the entity has, prima facie, potentially violated{" "}
@@ -519,7 +519,7 @@ export function ScenarioAnalyzerClient() {
               </p>
               <p className="mt-2 text-xs text-[var(--color-ink-500)]">
                 Phrased the way a CFID order states its provisions-violated summary, built only from the provisions
-                listed above — this is still prima facie similarity only, not a finding that any provision has
+                listed above, this is still prima facie similarity only, not a finding that any provision has
                 actually been violated. See the detailed analysis below for each provision&apos;s own supporting and
                 contrary precedents before relying on this summary.
               </p>
@@ -543,7 +543,7 @@ export function ScenarioAnalyzerClient() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
-                      {pr.provision.instrument} — {pr.provision.provisionNumber}
+                      {pr.provision.instrument} · {pr.provision.provisionNumber}
                     </h3>
                     <p className="text-sm text-[var(--color-ink-700)]">{pr.provision.subject}</p>
                   </div>
@@ -556,7 +556,7 @@ export function ScenarioAnalyzerClient() {
                 <div className="mt-2">
                   {flagged.has(pr.provision.id) ? (
                     <p className="text-xs text-[var(--color-ink-500)]">
-                      Flagged for review — thank you. An officer will check this provision against the facts above.
+                      Flagged for review, thank you. An officer will check this provision against the facts above.
                     </p>
                   ) : flagOpenKey === key ? (
                     <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-neutral-50)] p-2.5">
@@ -603,7 +603,7 @@ export function ScenarioAnalyzerClient() {
                       }}
                       className="text-xs font-medium text-[var(--color-ink-500)] underline decoration-dotted hover:text-[var(--color-ink-700)]"
                     >
-                      This doesn&apos;t look right — flag for review
+                      This doesn&apos;t look right, flag for review
                     </button>
                   )}
                 </div>
@@ -650,7 +650,7 @@ export function ScenarioAnalyzerClient() {
                   ) : (
                     <p className="mt-1 text-sm text-[#204a2e]">
                       Only alleged, interim, or otherwise-not-yet-confirmed findings exist for this provision in the
-                      pilot&apos;s precedent library — treat as unproven on these facts alone until a final order is
+                      pilot&apos;s precedent library, treat as unproven on these facts alone until a final order is
                       on record.
                     </p>
                   )}
@@ -724,7 +724,7 @@ export function ScenarioAnalyzerClient() {
                       Missing facts / evidence in the present scenario
                     </h4>
                     <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                      Outstanding evidence relevant to comparing your scenario against these precedents — never a
+                      Outstanding evidence relevant to comparing your scenario against these precedents, never a
                       cited precedent&apos;s own historical outcome, which is shown separately under that precedent
                       above.
                     </p>
@@ -762,7 +762,7 @@ export function ScenarioAnalyzerClient() {
           {result.globalContraryPrecedents.length > 0 && (
             <article className="rounded-sm bg-[#f1e3df] p-4  ring-1 border-[#dcaa9a] sm:p-6">
               <h3 className="text-base font-semibold text-[#7a2a1f]">
-                Additional contrary precedent(s) — fund-movement / allotment facts
+                Additional contrary precedent(s): fund-movement / allotment facts
               </h3>
               <p className="mt-1 text-sm text-[#7a2a1f]">
                 Because the scenario involves preferential allotment, circular funding, alleged front entities, or
@@ -793,7 +793,7 @@ export function ScenarioAnalyzerClient() {
               <p className="mt-1 text-sm text-[var(--color-ink-700)]">
                 These findings matched the words of your scenario in a full-text search of the database but did not
                 score highly enough on the curated fact-element tags above to be ranked as a match. They are not
-                scored or ordered by relevance — review them yourself before relying on them.
+                scored or ordered by relevance, review them yourself before relying on them.
               </p>
               <ul className="mt-3 space-y-2">
                 {result.fullTextSupplementalFindings.map((f) => (

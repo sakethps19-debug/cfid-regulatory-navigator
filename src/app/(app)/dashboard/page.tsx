@@ -77,7 +77,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`${orders.length} orders, ${scenarioFindings.length} scenario findings and ${provisions.length} provisions are currently indexed, each with a supplied official SEBI/MCA source link. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} orders, ${scenarioFindings.length} scenario findings and ${provisions.length} provisions are currently indexed, each with a supplied official SEBI/MCA source link. This is a research-assistance tool, it does not make findings of guilt.`}
       />
 
       <div className="grid grid-cols-3 gap-4">
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Scenario finding status breakdown</h2>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            Final-order outcomes first, then interim/pending, then procedural — same ordering used throughout the app.
+            Final-order outcomes first, then interim/pending, then procedural: same ordering used throughout the app.
           </p>
           <dl className="mt-4 space-y-2">
             {GROUP_ORDER.filter((s) => (statusCounts[s] ?? 0) > 0).map((s) => (
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Recent and significant findings</h2>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            The 6 most recently dated findings across all analysed orders, latest first — strict chronology only, no
+            The 6 most recently dated findings across all analysed orders, latest first, strict chronology only, no
             other ordering.
           </p>
           <ul className="mt-3 space-y-2">
@@ -144,7 +144,7 @@ export default async function DashboardPage() {
       <p className="mt-2 text-xs text-[var(--color-ink-500)]">
         A matter can span several individual orders (interim, confirmatory, final, adjudication, or otherwise); most
         orders are not yet linked to a matter, and that count grows only as relationships already known from official
-        sources are recorded — never guessed from company name or order dates.
+        sources are recorded, never guessed from company name or order dates.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -196,7 +196,7 @@ export default async function DashboardPage() {
               <li>
                 <span className="font-medium text-[var(--color-ink-700)]">Every indexed order has been broken down into scenario findings.</span>{" "}
                 <span className="text-[var(--color-ink-700)]">
-                  Newly added orders go through the same process — see{" "}
+                  Newly added orders go through the same process, see{" "}
                   <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
                     Orders Awaiting Analysis
                   </Link>
@@ -212,7 +212,7 @@ export default async function DashboardPage() {
             Every count on this page is a live, uncached query against the database. The underlying orders,
             provisions and case law are sourced only from the official SEBI website, the official MCA website,
             official sources for notified accounting standards, and Supreme Court/SAT judgments obtained from their
-            official sources — never law-firm articles, blogs, news reports, or commercial databases. See how the
+            official sources, never law-firm articles, blogs, news reports, or commercial databases. See how the
             analysis is built, what it does and does not do, and its known limitations.
           </p>
           <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-[var(--color-gold-700)] hover:underline">

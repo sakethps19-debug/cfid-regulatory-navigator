@@ -44,14 +44,14 @@ function buildDistinguishingNote(finding: ScenarioFinding): string | undefined {
     parts.push(`Facts on record that distinguished this matter: ${finding.evidentiaryGaps.join("; ")}.`);
   }
   if (parts.length === 0) {
-    return `This precedent (${finding.recordId}) was not confirmed in a final order on its own facts — it should be examined for whether the same distinguishing factors are present before being treated as controlling here.`;
+    return `This precedent (${finding.recordId}) was not confirmed in a final order on its own facts; it should be examined for whether the same distinguishing factors are present before being treated as controlling here.`;
   }
   return `This precedent may be distinguishable on the following grounds: ${parts.join(" ")}`;
 }
 
 function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
   if (versions.length === 0) {
-    return "No provision-version record on file — the in-force text should be verified directly against the official SEBI or MCA source before any reliance is placed on it.";
+    return "No provision-version record on file: the in-force text should be verified directly against the official SEBI or MCA source before any reliance is placed on it.";
   }
   const verified = versions.filter((v) => v.status === "officially_verified" && v.effectiveFrom);
   if (verified.length > 0) {
@@ -60,9 +60,9 @@ function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
   }
   const orderCited = versions.find((v) => v.status === "order_cited_text_only" && v.exactText);
   if (orderCited) {
-    return `Text on file is extracted verbatim from a CFID order (${orderCited.versionLabel}) and has not been independently checked against the official source — it should not be assumed to be the current in-force text; the official source should be confirmed before any reliance is placed on it.`;
+    return `Text on file is extracted verbatim from a CFID order (${orderCited.versionLabel}) and has not been independently checked against the official source; it should not be assumed to be the current in-force text; the official source should be confirmed before any reliance is placed on it.`;
   }
-  return "The version of this provision applicable at the time of the conduct in question has not been independently verified — the current statutory text should not be assumed to have applied; the official source should be confirmed before any reliance is placed on it.";
+  return "The version of this provision applicable at the time of the conduct in question has not been independently verified; the current statutory text should not be assumed to have applied; the official source should be confirmed before any reliance is placed on it.";
 }
 
 interface ScoredFinding {
@@ -162,7 +162,7 @@ function deriveConfidence(best: ScoredFinding, supportCount: number): { level: C
   if (isUnresolved) {
     level = "Low";
     reasons.push(
-      `The strongest matching precedent carries the status "${best.finding.findingStatus}" — no determination has been reached on the merits either way, and this cannot therefore count as more than a weak signal, whatever the extent of factual overlap.`
+      `The strongest matching precedent carries the status "${best.finding.findingStatus}": no determination has been reached on the merits either way, and this cannot therefore count as more than a weak signal, whatever the extent of factual overlap.`
     );
   } else if (best.categoriesMatched >= 3 && (isFinal || best.score >= 9)) {
     level = "High";
@@ -172,10 +172,10 @@ function deriveConfidence(best: ScoredFinding, supportCount: number): { level: C
     level = "Low";
     if (best.categoriesMatched > best.substantiveCategoriesMatched) {
       reasons.push(
-        "Beyond that, the overlap is confined to actor role and/or evidence type — a shared actor (e.g. a promoter) or evidence type recurs across many unrelated violations and is a weak signal on its own; what this precedent specifically required, and whether the facts stated establish it, should be examined."
+        "Beyond that, the overlap is confined to actor role and/or evidence type: a shared actor (e.g. a promoter) or evidence type recurs across many unrelated violations and is a weak signal on its own; what this precedent specifically required, and whether the facts stated establish it, should be examined."
       );
     } else {
-      reasons.push("Only a single factual category overlaps — this should be treated as a weak signal requiring further review.");
+      reasons.push("Only a single factual category overlaps; this should be treated as a weak signal requiring further review.");
     }
   }
   return { level, reasons };
@@ -210,13 +210,13 @@ function buildWhyRelevant(provision: LegalProvision, best: ScoredFinding): strin
   const ingredientText = best.matchedIngredients.length > 0 ? best.matchedIngredients.join("; ") : "the general subject matter";
   let text =
     `On a prima facie reading, the facts stated share factual ingredients with a prior CFID scenario finding ` +
-    `(${best.finding.recordId}) considered in terms of this provision — namely: ${ingredientText}. ` +
+    `(${best.finding.recordId}) considered in terms of this provision, namely: ${ingredientText}. ` +
     `This is a prima facie similarity only and does not, by itself, establish that the provision applies.`;
 
   const matchedOnlyFundMovement = best.matchedIds.length > 0 && best.matchedIds.every((id) => PURE_FUND_MOVEMENT_TAGS.has(id));
   if (matchedOnlyFundMovement && isBroadSecuritiesFraudProvision(provision.id)) {
     text +=
-      ` This provision is a general securities-fraud clause and is not confined to fund movement as such — it is cited ` +
+      ` This provision is a general securities-fraud clause and is not confined to fund movement as such; it is cited ` +
       `here because the underlying order treated the fund movement in ${best.finding.recordId} as fraud in connection ` +
       `with dealing in securities (for instance, by misrepresenting the Company's true financial position to investors), ` +
       `and not on the footing that fund movement alone attracts it. The source order should be examined for the specific basis before any reliance is placed on this.`;

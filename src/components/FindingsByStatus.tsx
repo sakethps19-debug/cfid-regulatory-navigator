@@ -16,7 +16,7 @@ export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> 
   },
   "Not Confirmed in Final Order": {
     title: "Not Confirmed in Final Order",
-    hint: "Rejected in a final order — an important contrary/negative precedent.",
+    hint: "Rejected in a final order; an important contrary/negative precedent.",
   },
   "Confirmed at interim": {
     title: "Confirmed at interim",
@@ -24,7 +24,7 @@ export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> 
   },
   "Prima facie": {
     title: "Prima facie findings",
-    hint: "Interim-stage findings only — not a final determination.",
+    hint: "Interim-stage findings only, not a final determination.",
   },
   Alleged: { title: "Alleged", hint: "Raised in the SCN; not yet adjudicated at any stage." },
   "Procedural observation": {

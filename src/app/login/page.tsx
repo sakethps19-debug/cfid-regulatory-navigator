@@ -41,7 +41,7 @@ function LoginForm() {
       }
       if (!data.session) {
         setNotice(
-          "Account created. Check your email to confirm your address, then sign in — access is still limited to " +
+          "Account created. Check your email to confirm your address, then sign in; access is still limited to " +
             "authorised email addresses even after confirmation."
         );
         setMode("sign_in");
@@ -167,7 +167,7 @@ export default function LoginPage() {
           <path d="M8 23.5 12 27l9-10" stroke="var(--color-gold-100)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <h1 className="text-2xl font-semibold">CFID Regulatory Navigator</h1>
-        <p className="mt-2 text-sm text-[var(--color-gold-100)]">Internal legal-research pilot — authorised access only.</p>
+        <p className="mt-2 text-sm text-[var(--color-gold-100)]">Internal legal-research pilot, authorised access only.</p>
       </div>
       <Suspense fallback={null}>
         <LoginForm />

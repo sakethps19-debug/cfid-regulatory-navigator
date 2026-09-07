@@ -122,7 +122,7 @@ export function LawLibraryClient({
     <div>
       <input
         type="search"
-        placeholder='Search by provision, instrument, or facts — e.g. "related party transactions", "diversion of issue proceeds", "Audit Committee composition"…'
+        placeholder='Search by provision, instrument, or facts, e.g. "related party transactions", "diversion of issue proceeds", "Audit Committee composition"…'
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="block w-full max-w-2xl rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"

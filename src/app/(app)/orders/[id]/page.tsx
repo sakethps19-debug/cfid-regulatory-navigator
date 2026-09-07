@@ -54,8 +54,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <Card className="mb-6">
           <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Other orders in the same matter</h2>
           <p className="mb-4 text-sm text-[var(--color-ink-700)]">
-            One matter/investigation can span several individual orders — interim, confirmatory, final, adjudication,
-            or otherwise. Each stays independently visible with its own procedural status; a later order is never
+            One matter/investigation can span several individual orders (interim, confirmatory, final, adjudication,
+            or otherwise). Each stays independently visible with its own procedural status; a later order is never
             treated as silently overwriting an earlier one.
           </p>
           <ul className="space-y-3">
@@ -68,7 +68,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </p>
                     {!sibling.officialOrderTitle && (
                       <p className="text-xs italic text-[var(--color-ink-300)]">
-                        Exact official order title not yet captured — showing the matter/case name.
+                        Exact official order title not yet captured, showing the matter/case name.
                       </p>
                     )}
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">

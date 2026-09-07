@@ -12,7 +12,7 @@ export default async function DataChangeLogPage() {
       </Link>
       <PageHeader
         title="Curated-Data Change Log"
-        description="Every correction made directly to curated fields (conduct tags, transaction types, and similar) outside the normal import pipeline — what changed, from what to what, and why. Nothing here is silently overwritten: a record's tagging history stays visible even after it's corrected."
+        description="Every correction made directly to curated fields (conduct tags, transaction types, and similar) outside the normal import pipeline: what changed, from what to what, and why. Nothing here is silently overwritten: a record's tagging history stays visible even after it's corrected."
       />
       <DataChangeLogClient entries={entries} />
     </div>

@@ -38,7 +38,7 @@ export default function MethodologyPage() {
             Verified CFID Orders
           </a>{" "}
           register has been confirmed to contain &quot;CFID&quot; in its own order number, then opened, read, and
-          broken down into individual scenario findings with paragraph citations — see the{" "}
+          broken down into individual scenario findings with paragraph citations, see the{" "}
           <a href="/dashboard" className="text-[var(--color-gold-700)] underline">
             Dashboard
           </a>{" "}
@@ -57,9 +57,9 @@ export default function MethodologyPage() {
       <Section title="Verified CFID Orders and the Residual register">
         <p>
           <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative starting list of confirmed CFID orders
-          for this pilot — every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
+          for this pilot: every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
           row is either <strong>deep-analyzed</strong> (broken down into the full scenario-finding analysis that
-          powers the Scenario Analyzer) or still <strong>awaiting detailed analysis</strong> — a row awaiting
+          powers the Scenario Analyzer) or still <strong>awaiting detailed analysis</strong>, a row awaiting
           analysis is not treated as a source of scenario findings or provision matches until that analysis is done.
           The{" "}
           <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
@@ -86,8 +86,8 @@ export default function MethodologyPage() {
         <p>
           <strong>Procedure for adding a newly analysed order later:</strong> confirm the order number contains
           &quot;CFID&quot; from the order document itself, retrieve the order from the official SEBI website, extract
-          its scenario findings, provisions and paragraph references exactly as they appear in the order — never
-          inferred or invented — and insert them into the relational database (see{" "}
+          its scenario findings, provisions and paragraph references exactly as they appear in the order (never
+          inferred or invented), and insert them into the relational database (see{" "}
           <code>scripts/db/build-import-sql.ts</code> and <code>scripts/db/run-import.ts</code>) with{" "}
           <code>processing_stage</code> updated to <code>legally_reviewed</code>. Every write goes through the
           service role and is subject to the same validation the pilot library was: a citation without a paragraph
@@ -123,7 +123,7 @@ export default function MethodologyPage() {
           chronologically <strong>latest</strong> order that actually quotes it (not merely cites it) is used.
         </p>
         <p>
-          Each such entry is labelled <strong>&quot;As reproduced verbatim in a CFID order&quot;</strong> — visibly
+          Each such entry is labelled <strong>&quot;As reproduced verbatim in a CFID order&quot;</strong>, visibly
           distinct from an <strong>&quot;officially verified&quot;</strong> entry sourced and checked directly
           against the official SEBI/MCA source, and from a provision still marked &quot;Requires verification&quot;
           because no verbatim quote has yet been found anywhere in the register. Order-sourced text is not
@@ -135,7 +135,7 @@ export default function MethodologyPage() {
           searchable text, e.g. via <code>pdftotext -layout</code>), run{" "}
           <code>npx tsx scripts/db/find-provision-quote-candidates.ts --order-id &lt;id&gt; --text &lt;file&gt;</code>{" "}
           to surface candidate quotations near each provision&apos;s citation. This script only ever produces a
-          report — it never writes to the database. A first automated pass at this extraction, done without
+          report; it never writes to the database. A first automated pass at this extraction, done without
           per-candidate human review, produced multiple confirmed false positives (commentary mistaken for the
           provision&apos;s own text, one provision&apos;s citation matching a different provision&apos;s quote,
           a paraphrase mistaken for a verbatim quote). Every candidate must therefore be read in its full
@@ -149,18 +149,18 @@ export default function MethodologyPage() {
           <li>
             <span className="font-medium">Identical-numbering data-integrity check.</span> Whenever two provisions
             from different instruments share or overlap in their numbering, the Law Library flags this
-            automatically as coincidental similar numbering — never as a parent/sub-clause relationship, which is
+            automatically as coincidental similar numbering, never as a parent/sub-clause relationship, which is
             only ever reported when both provisions belong to the <em>same</em> instrument. PFUTP Regulation 4(2)(e)
             (manipulation of the price of a security) and LODR Regulation 4(2)(e)(i) (board and management
             responsibility for true and fair financial statements) are one instance of this generic check, not a
-            special case — the same logic runs for every provision pair in the library, regardless of instrument or
+            special case: the same logic runs for every provision pair in the library, regardless of instrument or
             clause number.
           </li>
           <li>Observations in interim orders are always treated as prima facie findings only.</li>
           <li>Where a final order exists, it is displayed prominently and controls over an inconsistent interim finding.</li>
           <li>
             Circular movement of funds is treated as an indicator, not a complete conclusion. The engine always
-            surfaces the guardrail checklist — commercial purpose, accounting treatment, bank-flow evidence, timing,
+            surfaces the guardrail checklist: commercial purpose, accounting treatment, bank-flow evidence, timing,
             counterparty identity, third-party examination, recording in audited accounts, flow-back, ultimate
             economic benefit, and whether distinct transactions were improperly clubbed.
           </li>
@@ -169,7 +169,7 @@ export default function MethodologyPage() {
             for any one order.</span> Any finding with a negative or partly-negative status (not confirmed in
             final order, partly confirmed in final order, withdrawn, inconclusive) is eligible to surface as a contrary precedent whenever a query
             scenario materially matches its facts. The Seacoast final order&apos;s rejection of the ₹0.52 crore cash
-            preferential-allotment allegation is one example of this — it surfaces for scenarios involving
+            preferential-allotment allegation is one example of this: it surfaces for scenarios involving
             preferential allotment, circular funding, alleged front entities, or unexplained fund movements, and is
             never forced into results it does not factually match.
           </li>
@@ -178,13 +178,13 @@ export default function MethodologyPage() {
 
       <Section title="How the Scenario Analyzer works (zero-cost architecture)">
         <p>
-          The matching engine is entirely deterministic — there is no call to any paid AI API and no external network
+          The matching engine is entirely deterministic: there is no call to any paid AI API and no external network
           request at analysis time. It works in the following steps:
         </p>
         <ol className="list-inside list-decimal space-y-1">
           <li>Normalize the entered scenario text (lowercase, strip punctuation, collapse whitespace).</li>
           <li>
-            Semantic-assist pre-pass: correct likely typos against the curated concept vocabulary — a bounded
+            Semantic-assist pre-pass: correct likely typos against the curated concept vocabulary, a bounded
             edit-distance spelling fix (e.g. &quot;prefrential&quot; → &quot;preferential&quot;), never a guess at
             meaning, applied only to correct spelling of a word the matcher already recognizes. Every correction made
             is disclosed in the results (&quot;Read as…&quot;); the text displayed back to you is never altered. See{" "}
@@ -196,7 +196,7 @@ export default function MethodologyPage() {
           </li>
           <li>Score every deep-analyzed scenario finding by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
           <li>Prefer findings drawn from a final order over an interim-only finding.</li>
-          <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with — a provision is never suggested merely because it appeared elsewhere in the same order.</li>
+          <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with, a provision is never suggested merely because it appeared elsewhere in the same order.</li>
           <li>Retrieve supporting precedents (status Confirmed in Final Order / Prima facie / Partly Confirmed in Final Order) and contrary precedents (status Not Confirmed in Final Order) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
           <li>Assemble a missing-facts checklist from each matched finding&apos;s recorded evidentiary gaps.</li>
           <li>Derive a High / Medium / Low confidence level from how many independent factual categories overlap and whether the best match is a final or interim-only finding.</li>
@@ -204,7 +204,7 @@ export default function MethodologyPage() {
         <p>
           The underlying data (orders, scenario findings, provisions, legal tests, directions, and the fact-element
           tags used for matching) lives in a Postgres database (Supabase), reachable only by an authenticated,
-          allow-listed user via Row-Level Security — there is no anonymous read or write access, and no service-role
+          allow-listed user via Row-Level Security; there is no anonymous read or write access, and no service-role
           key is ever present in browser code. <code>src/lib/data.ts</code> is the single data-access boundary the
           rest of the app calls through; every page fetches through it rather than querying Supabase directly.
         </p>
@@ -212,13 +212,13 @@ export default function MethodologyPage() {
 
       <Section title="Architecture (zero-cost, no paid LLM dependency)">
         <p>
-          The matching engine itself is entirely deterministic — analyzing a scenario never calls any paid AI API and
+          The matching engine itself is entirely deterministic: analyzing a scenario never calls any paid AI API and
           makes no external network request beyond the database query for candidate findings. An LLM may assist a
           human during development or one-off data extraction, but the deployed application does not depend on paid
           LLM API credits to function: the same deterministic engine that ran against the static pilot library runs
           unchanged against the live database. The one addition since the pilot launch, the semantic-assist
           typo-correction pre-pass described above, is itself a bounded, deterministic, zero-cost edit-distance check
-          against the existing curated vocabulary — not an LLM call — and every correction it makes is disclosed
+          against the existing curated vocabulary (not an LLM call), and every correction it makes is disclosed
           rather than applied silently. The code is structured so an optional LLM re-ranking or explanation step
           could be added later behind a feature flag, called only if an API key is configured, while keeping the
           deterministic engine as the default and as the safeguard against fabricated citations.
@@ -227,10 +227,10 @@ export default function MethodologyPage() {
 
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
-          <li>The deep-analyzed scenario-finding library covers only the orders marked &quot;deep-analyzed&quot; on the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page — any order still awaiting analysis contributes no scenario findings yet. Results for facts outside the analysed corpus will correctly show no match rather than a fabricated one.</li>
-          <li>None of this analysis has yet been legally reviewed and signed off by a CFID officer — that is a separate, further step (see the Dashboard and Admin Processing Dashboard for the current legally-reviewed count).</li>
-          <li>Keyword/synonym matching cannot capture every phrasing of a scenario — try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
-          <li>Provision &quot;current text&quot; is not reproduced or guaranteed current — always verify against the official SEBI/MCA source before relying on it.</li>
+          <li>The deep-analyzed scenario-finding library covers only the orders marked &quot;deep-analyzed&quot; on the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page; any order still awaiting analysis contributes no scenario findings yet. Results for facts outside the analysed corpus will correctly show no match rather than a fabricated one.</li>
+          <li>None of this analysis has yet been legally reviewed and signed off by a CFID officer, that is a separate, further step (see the Dashboard and Admin Processing Dashboard for the current legally-reviewed count).</li>
+          <li>Keyword/synonym matching cannot capture every phrasing of a scenario, try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
+          <li>Provision &quot;current text&quot; is not reproduced or guaranteed current, always verify against the official SEBI/MCA source before relying on it.</li>
           <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>
           <li>No user data, scenario queries, or analytics are stored or transmitted anywhere by this application.</li>
         </ul>
@@ -242,7 +242,7 @@ export default function MethodologyPage() {
           <li>Sessions are managed by signed, HTTP-only Supabase Auth cookies (not readable from browser JavaScript).</li>
           <li>All application routes and API endpoints are protected by server-side middleware; unauthenticated requests are redirected to sign-in.</li>
           <li>Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS in production) are applied to every response.</li>
-          <li>Basic rate limiting is applied to every route, keyed per signed-in officer rather than per network address — so officers sharing an office network do not share one budget. Sign-in itself goes directly from the browser to Supabase Auth, which applies its own rate limiting there.</li>
+          <li>Basic rate limiting is applied to every route, keyed per signed-in officer rather than per network address, so officers sharing an office network do not share one budget. Sign-in itself goes directly from the browser to Supabase Auth, which applies its own rate limiting there.</li>
           <li>No scenario queries are stored, no analytics or third-party trackers are included, and there is no facility to upload confidential investigation records.</li>
         </ul>
       </Section>

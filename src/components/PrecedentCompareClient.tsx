@@ -18,16 +18,16 @@ const FIELDS: { label: string; render: (f: ScenarioFinding) => React.ReactNode }
   { label: "Provisions considered", render: (f) => f.provisionsConsideredRaw },
   { label: "Noticees / actors", render: (f) => f.noticeeActors.join("; ") },
   { label: "Finding status", render: (f) => <StatusBadge status={f.findingStatus} /> },
-  { label: "Interim paragraph references", render: (f) => f.interimParagraphReferences ?? "—" },
-  { label: "Final paragraph references", render: (f) => f.finalParagraphReferences ?? "—" },
-  { label: "Qualification / note", render: (f) => f.qualification ?? "—" },
-  { label: "Missing facts / evidence (present-scenario gaps)", render: (f) => (f.evidentiaryGaps.length ? f.evidentiaryGaps.join("; ") : "—") },
-  { label: "Outcome in this precedent", render: (f) => f.precedentOutcomeNote ?? "—" },
+  { label: "Interim paragraph references", render: (f) => f.interimParagraphReferences ?? "-" },
+  { label: "Final paragraph references", render: (f) => f.finalParagraphReferences ?? "-" },
+  { label: "Qualification / note", render: (f) => f.qualification ?? "-" },
+  { label: "Missing facts / evidence (present-scenario gaps)", render: (f) => (f.evidentiaryGaps.length ? f.evidentiaryGaps.join("; ") : "-") },
+  { label: "Outcome in this precedent", render: (f) => f.precedentOutcomeNote ?? "-" },
   { label: "Official source", render: (f) => <SourceLink href={f.officialSourceUrl} /> },
 ];
 
 function findingLabel(f: ScenarioFinding): string {
-  return `${f.recordId} — ${f.caseName}: ${f.scenarioTitle}`;
+  return `${f.recordId} · ${f.caseName}: ${f.scenarioTitle}`;
 }
 
 function FindingPicker({
@@ -107,13 +107,13 @@ function FindingPicker({
               title={findingLabel(f)}
             >
               <span className="font-mono text-xs text-[var(--color-ink-500)]">{f.recordId}</span>
-              {" — "}
+              {" · "}
               {f.caseName}: {f.scenarioTitle}
             </button>
           ))}
           {totalMatchCount > MAX_VISIBLE_MATCHES && (
             <p className="border-t border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-ink-500)]">
-              {totalMatchCount - MAX_VISIBLE_MATCHES} more match{totalMatchCount - MAX_VISIBLE_MATCHES === 1 ? "" : "es"} — keep typing to narrow it down.
+              {totalMatchCount - MAX_VISIBLE_MATCHES} more match{totalMatchCount - MAX_VISIBLE_MATCHES === 1 ? "" : "es"}, keep typing to narrow it down.
             </p>
           )}
         </div>

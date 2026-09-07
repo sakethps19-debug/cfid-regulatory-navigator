@@ -19,8 +19,8 @@ export default async function ComparePage() {
       <section>
         <h2 className="font-serif text-xl font-semibold text-[var(--color-ink-900)]">Interim → final reversals</h2>
         <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)]">
-          Every scenario in the register that was actually raised at an earlier stage — a genuine paragraph citation
-          from that earlier order is on file, not just a note that no such order exists in this register — and then
+          Every scenario in the register that was actually raised at an earlier stage (a genuine paragraph citation
+          from that earlier order is on file, not just a note that no such order exists in this register), and then
           not confirmed in the final disposition, shown side by side with what changed between the two. {reversals.length}{" "}
           of {scenarioFindings.length} scenario findings meet both conditions; a negative final outcome with nothing
           comparable on file for an earlier stage (e.g. an allegation raised for the first time in the final order) is
