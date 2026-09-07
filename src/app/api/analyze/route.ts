@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { analyzeScenario } from "@/lib/matching/engine";
+import { applySemanticAssist } from "@/lib/matching/fuzzyMatch";
 import {
   getLegalTests,
   getProvisionVersionsByProvisionId,
@@ -26,12 +27,19 @@ export async function POST(request: NextRequest) {
   const transactionTypeFilter =
     typeof body.transactionTypeFilter === "string" && body.transactionTypeFilter ? body.transactionTypeFilter : null;
 
+  // Same typo-correction pre-pass the matching engine applies internally
+  // (see lib/matching/fuzzyMatch.ts) is applied here too, so the Postgres
+  // full-text fallback search benefits from it as well — a misspelled
+  // "prefrential allotment" should not silently skip the full-text
+  // supplemental search just because the raw query doesn't match anything.
+  const { correctedText } = applySemanticAssist(freeText);
+
   const [scenarioFindings, provisions, legalTests, provisionVersionsByProvisionId, fullTextCandidates] = await Promise.all([
     getScenarioFindings(),
     getProvisions(),
     getLegalTests(),
     getProvisionVersionsByProvisionId(),
-    searchScenarioFindingsFullText(freeText),
+    searchScenarioFindingsFullText(correctedText),
   ]);
   const result = analyzeScenario(
     { freeText, actorFilter, transactionTypeFilter },

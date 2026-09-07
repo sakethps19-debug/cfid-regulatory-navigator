@@ -429,6 +429,19 @@ export function ScenarioAnalyzerClient() {
         );
         return (
         <div className="space-y-6">
+          {result.semanticAssist.length > 0 && (
+            <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
+              <span className="font-semibold text-[var(--color-ink-700)]">Read as: </span>
+              {result.semanticAssist.map((c, i) => (
+                <span key={`${c.original}-${i}`}>
+                  {i > 0 && ", "}
+                  &quot;{c.original}&quot; → &quot;{c.corrected}&quot;
+                </span>
+              ))}{" "}
+              — for matching only; your text as entered is unchanged below.
+            </div>
+          )}
+
           {result.detectedConceptLabels.length > 0 && (
             <div className="rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
               <span className="font-semibold">Concepts detected in your scenario: </span>

@@ -1,4 +1,5 @@
 import type { FindingStatus, LegalProvision, ProvisionVersion, ScenarioFinding } from "@/types/domain";
+import type { WordCorrection } from "./fuzzyMatch";
 
 export interface ScenarioQuery {
   freeText: string;
@@ -69,4 +70,12 @@ export interface AnalysisResult {
    * A complement, never a replacement, for the deterministic engine — shown
    * separately in the UI as "also worth reviewing", not scored or ranked. */
   fullTextSupplementalFindings: ScenarioFinding[];
+  /** Likely-typo spelling corrections applied to the entered free text
+   * before concept detection ran (see lib/matching/fuzzyMatch.ts) — a
+   * bounded-edit-distance fix against the curated concept vocabulary, never
+   * a guess at meaning. Shown to the user for transparency; the matching
+   * itself remains fully deterministic and this never changes what is
+   * displayed back as the entered scenario. Empty when no correction was
+   * needed. */
+  semanticAssist: WordCorrection[];
 }

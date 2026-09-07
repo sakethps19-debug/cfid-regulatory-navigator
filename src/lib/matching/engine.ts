@@ -2,6 +2,7 @@ import type { LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } fro
 import { CONTRARY_PRECEDENT_TRIGGER_TAGS } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
+import { applySemanticAssist } from "./fuzzyMatch";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
 
@@ -231,7 +232,15 @@ export function analyzeScenario(
   provisionVersionsByProvisionId: Map<string, ProvisionVersion[]> = new Map(),
   fullTextCandidates: ScenarioFinding[] = []
 ): AnalysisResult {
-  const detected = detectConcepts(query.freeText);
+  // Semantic-assist pre-pass: fix likely typos against the curated
+  // vocabulary before concept detection runs, so a scenario like
+  // "prefrential allotment" is still read as "preferential allotment". Never
+  // used for anything shown back to the user as their entered text (query
+  // below still carries the original, untouched freeText) — only for
+  // concept detection, and every correction made is returned in the result
+  // so the UI can disclose it.
+  const { correctedText, corrections } = applySemanticAssist(query.freeText);
+  const detected = detectConcepts(correctedText);
   const detectedIds = new Set(detected.map((c) => c.id));
   const actorFilter = query.actorFilter || null;
   const transactionTypeFilter = query.transactionTypeFilter || null;
@@ -376,5 +385,6 @@ export function analyzeScenario(
     applicableGuardrails,
     hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,
+    semanticAssist: corrections,
   };
 }

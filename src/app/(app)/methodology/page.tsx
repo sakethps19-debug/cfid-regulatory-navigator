@@ -184,6 +184,13 @@ export default function MethodologyPage() {
         <ol className="list-inside list-decimal space-y-1">
           <li>Normalize the entered scenario text (lowercase, strip punctuation, collapse whitespace).</li>
           <li>
+            Semantic-assist pre-pass: correct likely typos against the curated concept vocabulary — a bounded
+            edit-distance spelling fix (e.g. &quot;prefrential&quot; → &quot;preferential&quot;), never a guess at
+            meaning, applied only to correct spelling of a word the matcher already recognizes. Every correction made
+            is disclosed in the results (&quot;Read as…&quot;); the text displayed back to you is never altered. See{" "}
+            <code>src/lib/matching/fuzzyMatch.ts</code>.
+          </li>
+          <li>
             Detect factual concepts (transaction types, actor roles, evidence types, alleged conduct) using a
             controlled synonym dictionary of keyword and phrase matches.
           </li>
@@ -209,8 +216,11 @@ export default function MethodologyPage() {
           makes no external network request beyond the database query for candidate findings. An LLM may assist a
           human during development or one-off data extraction, but the deployed application does not depend on paid
           LLM API credits to function: the same deterministic engine that ran against the static pilot library runs
-          unchanged against the live database. The code is structured so an optional LLM re-ranking or explanation
-          step could be added later behind a feature flag, called only if an API key is configured, while keeping the
+          unchanged against the live database. The one addition since the pilot launch, the semantic-assist
+          typo-correction pre-pass described above, is itself a bounded, deterministic, zero-cost edit-distance check
+          against the existing curated vocabulary — not an LLM call — and every correction it makes is disclosed
+          rather than applied silently. The code is structured so an optional LLM re-ranking or explanation step
+          could be added later behind a feature flag, called only if an API key is configured, while keeping the
           deterministic engine as the default and as the safeguard against fabricated citations.
         </p>
       </Section>
