@@ -10,6 +10,7 @@ import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
+import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengthDisplay";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -234,7 +235,7 @@ export function resultToText(result: AnalysisResult): string {
     for (const group of groupByFramework(result.provisionResults)) {
       lines.push(`  ${group.label}:`);
       for (const pr of group.items) {
-        lines.push(`    - ${pr.provision.provisionNumber} [${pr.confidence} confidence]: ${pr.provision.subject ?? ""}`);
+        lines.push(`    - ${pr.provision.provisionNumber} [${matchStrengthLabel(pr.confidence)}]: ${pr.provision.subject ?? ""}`);
       }
     }
     lines.push("");
@@ -259,7 +260,7 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("----------------------------------------");
     lines.push(`${pr.provision.instrument} · ${pr.provision.provisionNumber}`);
     lines.push(`Subject: ${pr.provision.subject}`);
-    lines.push(`Retrieval confidence: ${pr.confidence}`);
+    lines.push(`Factual overlap: ${matchStrengthLabel(pr.confidence)} (${MATCH_STRENGTH_EXPLAINER})`);
     lines.push(`Why potentially relevant: ${pr.whyRelevant}`);
     lines.push(`Applicable provision version: ${pr.applicableVersionNote}`);
     lines.push(`Factual ingredients matched: ${pr.matchedFactualIngredients.join("; ") || "none"}`);
@@ -376,7 +377,7 @@ export function resultToCsv(result: AnalysisResult): string {
       "Instrument",
       "Provision number",
       "Subject",
-      "Retrieval confidence",
+      "Factual overlap (not a legal-confidence rating)",
       "Supporting precedent count",
       "Matched factual ingredients",
       "Supporting precedent record IDs",
@@ -389,7 +390,7 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.provision.instrument,
         pr.provision.provisionNumber,
         pr.provision.subject ?? "",
-        pr.confidence,
+        matchStrengthLabel(pr.confidence),
         String(pr.supportingPrecedents.length),
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
@@ -830,7 +831,8 @@ export function ScenarioAnalyzerClient() {
                 </p>
                 <p className="mt-1 text-xs text-white/70">
                   Prima facie factual similarity only, not a finding that the entered scenario has violated any
-                  provision or that the ingredients of any violation have been established.
+                  provision or that the ingredients of any violation have been established. The badge shown on
+                  each provision below {MATCH_STRENGTH_EXPLAINER}
                 </p>
               </div>
               <div className="divide-y divide-[var(--color-border)]">
@@ -1202,7 +1204,7 @@ export function ScenarioAnalyzerClient() {
                       </ul>
                     </div>
                     <div>
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Retrieval confidence basis</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Factual-overlap basis</span>
                       <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-[var(--color-ink-700)]">
                         {pr.confidenceReasons.map((r, i) => (
                           <li key={i}>{r}</li>

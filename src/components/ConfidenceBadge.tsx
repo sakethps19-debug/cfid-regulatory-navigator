@@ -1,4 +1,5 @@
 import type { ConfidenceLevel } from "@/lib/matching/types";
+import { matchStrengthLabel } from "@/lib/matchStrengthDisplay";
 
 // Deliberately unequal visual weight — High is a solid, dark-filled badge
 // that reads at a glance among a page of many results; Low is quiet and
@@ -15,7 +16,7 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
     <span
       className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${STYLES[level]}`}
     >
-      {level} retrieval confidence
+      {matchStrengthLabel(level)}
     </span>
   );
 }
