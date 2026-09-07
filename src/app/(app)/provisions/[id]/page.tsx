@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { FindingsByStatus } from "@/components/FindingsByStatus";
+import { FindingsByStatus, GROUP_INFO, GROUP_ORDER } from "@/components/FindingsByStatus";
 import { findingsForProvision, getProvisionById, getProvisionVersions, getProvisions } from "@/lib/data";
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
@@ -153,6 +153,30 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
             </ul>
           </div>
         )}
+      </Card>
+
+      <Card className="mb-6">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Track record</h2>
+        <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+          Cited in {findings.length} scenario finding{findings.length === 1 ? "" : "s"} in this pilot&apos;s precedent
+          library, by outcome — not a claim about how this provision has fared across every SEBI order, only the
+          ones analysed here.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {GROUP_ORDER.map((status) => {
+            const count = findings.filter((f) => f.findingStatus === status).length;
+            if (count === 0) return null;
+            return (
+              <span
+                key={status}
+                className="rounded-sm bg-[var(--color-neutral-100)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-700)]"
+                title={GROUP_INFO[status].hint}
+              >
+                {GROUP_INFO[status].title}: {count}
+              </span>
+            );
+          })}
+        </div>
       </Card>
 
       <Card>
