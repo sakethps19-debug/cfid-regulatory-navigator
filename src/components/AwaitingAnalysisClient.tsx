@@ -11,8 +11,8 @@ const ANALYSIS_LABELS: Record<VerifiedOrderAnalysisStatus, string> = {
 };
 
 const ANALYSIS_STYLES: Record<VerifiedOrderAnalysisStatus, string> = {
-  deep_analyzed: "bg-[#e6ede3] text-[#204a2e] border-[#a9c2a0]",
-  verified_pending_analysis: "bg-[#f5ecd9] text-[#7a5310] border-[#dfc98f]",
+  deep_analyzed: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] border-[var(--status-green-ring)]",
+  verified_pending_analysis: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] border-[var(--status-amber-ring)]",
 };
 
 const RESIDUAL_LABELS: Record<ResidualEntryStatus, string> = {
@@ -22,9 +22,9 @@ const RESIDUAL_LABELS: Record<ResidualEntryStatus, string> = {
 };
 
 const RESIDUAL_STYLES: Record<ResidualEntryStatus, string> = {
-  pending_link: "bg-[#f5ecd9] text-[#7a5310] border-[#dfc98f]",
+  pending_link: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] border-[var(--status-amber-ring)]",
   duplicate_of_verified: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] border-[var(--color-border)]",
-  not_cfid: "bg-[#f1e3df] text-[#7a2a1f] border-[#dcaa9a]",
+  not_cfid: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] border-[var(--status-red-ring)]",
 };
 
 type Tab = "verified" | "residual";
@@ -131,7 +131,7 @@ function ResidualTable({ rows }: { rows: ResidualOrderRow[] }) {
 
   return (
     <div>
-      <div className="mb-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[#7a5310] ring-1 border-[#dfc98f]">
+      <div className="mb-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[var(--status-amber-text)] ring-1 border-[var(--status-amber-ring)]">
         This register is an exclusion and pending-link list only. Nothing here is used as a substantive CFID
         precedent unless it is subsequently verified and moved into the Verified CFID Orders list above.
       </div>

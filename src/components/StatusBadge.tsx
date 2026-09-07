@@ -1,15 +1,18 @@
 import type { FindingStatus } from "@/types/domain";
 
+// Drawn from the consolidated semantic-status tokens in globals.css — never
+// the sole signal (the status text itself is always shown alongside the
+// colour).
 const STYLES: Record<FindingStatus, string> = {
-  Alleged: "bg-[#eeece4] text-[#5a5647] ring-[#d5cfba]",
-  "Prima facie": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-  "Confirmed at interim": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-  "Confirmed in Final Order": "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
-  "Partly Confirmed in Final Order": "bg-[#e2ecee] text-[#1c4a56] ring-[#a3c6cd]",
-  "Not Confirmed in Final Order": "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
-  Withdrawn: "bg-[#eeece4] text-[#7a7566] ring-[#d5cfba]",
-  Inconclusive: "bg-[#eeece4] text-[#5a5647] ring-[#d5cfba]",
-  "Procedural observation": "bg-[#ece3ee] text-[#4a2e5c] ring-[#c7abd1]",
+  Alleged: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] ring-[var(--status-neutral-ring)]",
+  "Prima facie": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  "Confirmed at interim": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  "Confirmed in Final Order": "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
+  "Partly Confirmed in Final Order": "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)] ring-[var(--status-blue-ring)]",
+  "Not Confirmed in Final Order": "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
+  Withdrawn: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] ring-[var(--status-neutral-ring)]",
+  Inconclusive: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] ring-[var(--status-neutral-ring)]",
+  "Procedural observation": "bg-[var(--status-purple-bg)] text-[var(--status-purple-text)] ring-[var(--status-purple-ring)]",
 };
 
 export function StatusBadge({ status }: { status: FindingStatus }) {

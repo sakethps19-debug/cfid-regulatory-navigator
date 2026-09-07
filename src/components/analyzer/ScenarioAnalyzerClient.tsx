@@ -60,57 +60,72 @@ const COMPLETENESS_LABELS: Record<string, string> = {
   evidence: "evidence indicator",
 };
 
-const EXAMPLE_SCENARIOS = [
+const TEMPLATE_GROUP_ORDER = ["Financial reporting", "Fund flows", "Governance & disclosure"] as const;
+
+const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number] }[] = [
   {
     label: "Fictitious sales/assets",
+    group: "Financial reporting",
     text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
   },
   {
-    label: "Preferential allotment / circular funding",
-    text: "A preferential allotment of shares was allegedly financed through a circular chain of loans and advances. The loans are recorded in the company's audited accounts, but it is unclear whether the third-party lenders were ever examined, and the allottees appear to have kept the sale proceeds from the shares.",
-  },
-  {
-    label: "Funds via personal account",
-    text: "Company funds, including statutory and operating payments, were routed through the promoter's personal bank account without clear board approval or disclosure.",
-  },
-  {
-    label: "Audit Committee lapse",
-    text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
-  },
-  {
-    label: "Rights issue funds diverted",
-    text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
-  },
-  {
-    label: "Related-party transaction not disclosed",
-    text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
-  },
-  {
     label: "Non-disclosure of material information",
+    group: "Financial reporting",
     text: "The company failed to disclose material information to the stock exchanges within the time required, and appears to have withheld or delayed disclosure of facts that were known to its board and senior management at the relevant time.",
   },
   {
     label: "False corporate announcement",
+    group: "Financial reporting",
     text: "The company made a stock exchange announcement about an acquisition and future revenue projections that turned out to be unsubstantiated, with no supporting documentation for the claims made in the announcement.",
   },
   {
+    label: "Statutory auditor negligence",
+    group: "Financial reporting",
+    text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
+  },
+  {
+    label: "Preferential allotment / circular funding",
+    group: "Fund flows",
+    text: "A preferential allotment of shares was allegedly financed through a circular chain of loans and advances. The loans are recorded in the company's audited accounts, but it is unclear whether the third-party lenders were ever examined, and the allottees appear to have kept the sale proceeds from the shares.",
+  },
+  {
+    label: "Funds via personal account",
+    group: "Fund flows",
+    text: "Company funds, including statutory and operating payments, were routed through the promoter's personal bank account without clear board approval or disclosure.",
+  },
+  {
+    label: "Rights issue funds diverted",
+    group: "Fund flows",
+    text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
+  },
+  {
+    label: "Audit Committee lapse",
+    group: "Governance & disclosure",
+    text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
+  },
+  {
+    label: "Related-party transaction not disclosed",
+    group: "Governance & disclosure",
+    text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
+  },
+  {
     label: "Compliance Officer vacancy",
+    group: "Governance & disclosure",
     text: "The position of Compliance Officer / Company Secretary remained vacant for an extended period without a proper appointment, and no interim arrangement was disclosed to the stock exchanges.",
   },
   {
     label: "False CEO/CFO certification",
+    group: "Governance & disclosure",
     text: "The Chief Executive Officer and Chief Financial Officer signed the quarterly compliance certification despite being aware of misstatements in the financial statements, and the certificate was not duly signed in accordance with the applicable regulation.",
   },
   {
     label: "Director duties / non-cooperation",
+    group: "Governance & disclosure",
     text: "The independent directors failed to raise concerns despite red flags in the related-party transactions placed before the board, and the company did not cooperate with the investigation, failing to produce records called for by summons.",
   },
   {
-    label: "Statutory auditor negligence",
-    text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
-  },
-  {
     label: "Price/market manipulation",
+    group: "Governance & disclosure",
     text: "A group of connected trading accounts executed synchronized trades in the company's shares with no genuine change in beneficial ownership, creating an artificial appearance of trading volume and inducing other investors to deal in the security.",
   },
 ];
@@ -167,7 +182,7 @@ function buildEvidenceMatrix(pr: ProvisionResult): EvidenceMatrix | null {
 function PublicationWarningNote({ status }: { status: string }) {
   if (status !== "Published with warning") return null;
   return (
-    <p className="mt-1 text-xs font-semibold text-[#7a5310]">
+    <p className="mt-1 text-xs font-semibold text-[var(--status-amber-text)]">
       Published with warning: this finding has a recorded caution attached, review it directly before relying on it.
     </p>
   );
@@ -458,33 +473,68 @@ export function ScenarioAnalyzerClient() {
 
   return (
     <div id="scenario-analyzer-top" className="space-y-6">
-      <form onSubmit={handleAnalyze} className="rounded-sm bg-white p-4 border border-[var(--color-border)] sm:p-6">
-        <label htmlFor="scenario" className="block text-sm font-medium text-[var(--color-ink-700)]">
-          Describe the factual scenario
-        </label>
+      <form onSubmit={handleAnalyze} className="rounded-sm bg-white p-5 border border-[var(--color-border)] sm:p-7">
+        <div className="flex items-baseline gap-2">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-navy-900)] text-[10px] font-semibold text-white">
+            1
+          </span>
+          <label htmlFor="scenario" className="text-sm font-semibold text-[var(--color-ink-900)]">
+            Describe the scenario
+          </label>
+        </div>
+        <p className="mt-1 pl-7 text-xs leading-relaxed text-[var(--color-muted)]">
+          Enter only information that may lawfully be processed in this pilot. Include, where you know them: the
+          actors involved, transactions, timing, disclosures made or omitted, accounting treatment, and any evidence
+          already available.
+        </p>
         <textarea
           id="scenario"
           value={freeText}
           onChange={(e) => setFreeText(e.target.value)}
-          rows={4}
+          rows={5}
           maxLength={4000}
-          placeholder="Describe the facts you want to research, e.g. transactions, actors involved, disclosures made or omitted, and any evidence you already have..."
-          className="mt-2 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+          placeholder="e.g. Company funds were routed through the promoter's personal bank account between FY2021-22 and FY2023-24 without Board approval, and the transaction was not disclosed as a related-party transaction in the annual report..."
+          className="mt-2.5 block w-full rounded-md border border-[var(--color-border)] px-3 py-2.5 text-[0.95rem] leading-relaxed text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-100)]"
         />
-        <div className="mt-2 flex flex-wrap gap-2">
-          {EXAMPLE_SCENARIOS.map((ex) => (
-            <button
-              type="button"
-              key={ex.label}
-              onClick={() => setFreeText(ex.text)}
-              className="rounded-sm border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-ink-700)] hover:border-[var(--color-gold-600)] hover:text-[var(--color-gold-700)]"
-            >
-              {ex.label}
-            </button>
-          ))}
+
+        <div className="mt-5">
+          <div className="flex items-baseline gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-navy-900)] text-[10px] font-semibold text-white">
+              2
+            </span>
+            <span className="text-sm font-semibold text-[var(--color-ink-900)]">Templates (optional)</span>
+          </div>
+          <div className="mt-2 space-y-3 pl-7">
+            {TEMPLATE_GROUP_ORDER.map((group) => (
+              <div key={group}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">{group}</p>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {EXAMPLE_SCENARIOS.filter((ex) => ex.group === group).map((ex) => (
+                    <button
+                      type="button"
+                      key={ex.label}
+                      onClick={() => setFreeText(ex.text)}
+                      className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-700)] hover:border-[var(--color-gold-600)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-700)]"
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-5">
+          <div className="flex items-baseline gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-navy-900)] text-[10px] font-semibold text-white">
+              3
+            </span>
+            <span className="text-sm font-semibold text-[var(--color-ink-900)]">Optional filters</span>
+          </div>
+        </div>
+
+        <div className="mt-2 grid gap-4 pl-7 sm:grid-cols-3">
           <div>
             <label htmlFor="actorFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Actor / role (optional)
@@ -541,11 +591,11 @@ export function ScenarioAnalyzerClient() {
           </div>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 pl-7">
           <button
             type="button"
             onClick={() => setShowOptionalFields((v) => !v)}
-            className="text-xs font-medium text-[var(--color-ink-500)] underline decoration-dotted hover:text-[var(--color-ink-700)]"
+            className="min-h-11 text-xs font-medium text-[var(--color-ink-500)] underline decoration-dotted hover:text-[var(--color-ink-700)]"
           >
             {showOptionalFields ? "Hide" : "Add"} conduct period / entity / amount (optional, for your own record)
           </button>
@@ -602,18 +652,18 @@ export function ScenarioAnalyzerClient() {
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className="mt-5 border-t border-[var(--color-border)] pt-4 flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={loading || !freeText.trim()}
-            className="rounded-md bg-[var(--color-gold-700)] px-5 py-2 font-medium text-white transition hover:bg-[var(--color-gold-800)] disabled:opacity-50"
+            className="min-h-11 rounded-md bg-[var(--color-gold-700)] px-6 py-2.5 text-[0.95rem] font-semibold text-white shadow-sm transition hover:bg-[var(--color-gold-800)] disabled:opacity-50"
           >
             {loading ? "Analyzing…" : "Analyze"}
           </button>
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+            className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
           >
             Clear / reset
           </button>
@@ -622,14 +672,14 @@ export function ScenarioAnalyzerClient() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+                className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
               >
                 Print
               </button>
               <button
                 type="button"
                 onClick={() => downloadTextFile("cfid-scenario-analysis.txt", resultToText(result))}
-                className="rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+                className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
               >
                 Export as text
               </button>
@@ -637,7 +687,7 @@ export function ScenarioAnalyzerClient() {
                 <button
                   type="button"
                   onClick={() => downloadTextFile("cfid-scenario-analysis.csv", resultToCsv(result), "text/csv;charset=utf-8")}
-                  className="rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+                  className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
                 >
                   Export as CSV
                 </button>
@@ -648,7 +698,7 @@ export function ScenarioAnalyzerClient() {
       </form>
 
       {error && (
-        <div role="alert" className="rounded-md bg-[#f1e3df] px-4 py-3 text-sm text-[#7a2a1f] ring-1 border-[#dcaa9a]">
+        <div role="alert" className="rounded-md bg-[var(--status-red-bg)] px-4 py-3 text-sm text-[var(--status-red-text)] ring-1 border-[var(--status-red-ring)]">
           {error}
         </div>
       )}
@@ -769,7 +819,7 @@ export function ScenarioAnalyzerClient() {
                             <span className="font-medium text-[var(--color-ink-900)]">{pr.provision.provisionNumber}</span>
                             <span className="flex items-center gap-2">
                               {pr.upheldPrecedents.length > 0 && (
-                                <span className="rounded-sm bg-[#e6ede3] px-2 py-0.5 text-xs font-semibold text-[#204a2e] ring-1 ring-inset border-[#a9c2a0]">
+                                <span className="rounded-sm bg-[var(--status-green-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-green-text)] ring-1 ring-inset border-[var(--status-green-ring)]">
                                   Final Order ×{pr.upheldPrecedents.length}
                                 </span>
                               )}
@@ -854,7 +904,7 @@ export function ScenarioAnalyzerClient() {
                         className="mt-1 w-full rounded-sm border border-[var(--color-border)] px-2 py-1.5 text-sm text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
                         placeholder="e.g. this provision's subject has nothing to do with the facts I entered"
                       />
-                      {flagError && <p className="mt-1 text-xs text-[#7a2a1f]">{flagError}</p>}
+                      {flagError && <p className="mt-1 text-xs text-[var(--status-red-text)]">{flagError}</p>}
                       <div className="mt-1.5 flex gap-2">
                         <button
                           type="button"
@@ -906,8 +956,8 @@ export function ScenarioAnalyzerClient() {
                   </div>
                 )}
 
-                <div className="mt-4 rounded-lg bg-[#e6ede3] p-3 ring-1 border-[#a9c2a0]">
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-[#204a2e]">
+                <div className="mt-4 rounded-lg bg-[var(--status-green-bg)] p-3 ring-1 border-[var(--status-green-ring)]">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--status-green-text)]">
                     {pr.upheldPrecedents.length > 0
                       ? `Confirmed in Final Order in ${pr.upheldPrecedents.length} prior case${pr.upheldPrecedents.length > 1 ? "s" : ""}`
                       : "Not yet confirmed in a final order in this pilot's precedent library"}
@@ -915,7 +965,7 @@ export function ScenarioAnalyzerClient() {
                   {pr.upheldPrecedents.length > 0 ? (
                     <ul className="mt-2 space-y-2">
                       {pr.upheldPrecedents.map((u) => (
-                        <li key={u.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[#a9c2a0]">
+                        <li key={u.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-green-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={u.finding.findingStatus} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{u.finding.recordId}</span>
@@ -932,7 +982,7 @@ export function ScenarioAnalyzerClient() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1 text-sm text-[#204a2e]">
+                    <p className="mt-1 text-sm text-[var(--status-green-text)]">
                       Only alleged, interim, or otherwise-not-yet-confirmed findings exist for this provision in the
                       pilot&apos;s precedent library, treat as unproven on these facts alone until a final order is
                       on record.
@@ -945,7 +995,7 @@ export function ScenarioAnalyzerClient() {
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Supporting precedent(s)</h4>
                     <ul className="mt-2 space-y-2">
                       {pr.supportingPrecedents.map((s) => (
-                        <li key={s.finding.recordId} className="rounded-lg bg-[#e6ede3]/60 p-3 ring-1 border-[#a9c2a0]">
+                        <li key={s.finding.recordId} className="rounded-lg bg-[var(--status-green-bg)]/60 p-3 ring-1 border-[var(--status-green-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={s.finding.findingStatus} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
@@ -956,13 +1006,13 @@ export function ScenarioAnalyzerClient() {
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
                           {s.ingredientsNotEstablished.length > 0 && (
-                            <p className="mt-1 text-xs text-[#7a5310]">
+                            <p className="mt-1 text-xs text-[var(--status-amber-text)]">
                               Also required in this precedent (not established by your facts):{" "}
                               {s.ingredientsNotEstablished.join("; ")}
                             </p>
                           )}
                           {s.finding.precedentOutcomeNote && (
-                            <p className="mt-1 text-xs italic text-[#204a2e]">
+                            <p className="mt-1 text-xs italic text-[var(--status-green-text)]">
                               Outcome in the cited precedent: {s.finding.precedentOutcomeNote}
                             </p>
                           )}
@@ -981,7 +1031,7 @@ export function ScenarioAnalyzerClient() {
                     ) : (
                       <ul className="mt-2 space-y-2">
                         {pr.contraryPrecedents.map((c) => (
-                          <li key={c.finding.recordId} className="rounded-lg bg-[#f1e3df]/60 p-3 ring-1 border-[#dcaa9a]">
+                          <li key={c.finding.recordId} className="rounded-lg bg-[var(--status-red-bg)]/60 p-3 ring-1 border-[var(--status-red-ring)]">
                             <div className="flex flex-wrap items-center gap-2">
                               <StatusBadge status={c.finding.findingStatus} />
                               <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
@@ -989,7 +1039,7 @@ export function ScenarioAnalyzerClient() {
                             <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
                             <PublicationWarningNote status={c.finding.publicationStatus} />
                             {c.distinguishingNote && (
-                              <p className="mt-1 text-xs font-medium text-[#7a2a1f]">{c.distinguishingNote}</p>
+                              <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>
                             )}
                             <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                               {c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}
@@ -1137,25 +1187,25 @@ export function ScenarioAnalyzerClient() {
           ))}
 
           {result.globalContraryPrecedents.length > 0 && (
-            <article className="rounded-sm bg-[#f1e3df] p-4  ring-1 border-[#dcaa9a] sm:p-6">
-              <h3 className="text-base font-semibold text-[#7a2a1f]">
+            <article className="rounded-sm bg-[var(--status-red-bg)] p-4  ring-1 border-[var(--status-red-ring)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--status-red-text)]">
                 Additional contrary precedent(s): fund-movement / allotment facts
               </h3>
-              <p className="mt-1 text-sm text-[#7a2a1f]">
+              <p className="mt-1 text-sm text-[var(--status-red-text)]">
                 Because the scenario involves preferential allotment, circular funding, alleged front entities, or
                 unexplained fund movements, the following negative precedents are retrieved independently, even where
                 they did not otherwise rank as a top match:
               </p>
               <ul className="mt-3 space-y-2">
                 {result.globalContraryPrecedents.map((c) => (
-                  <li key={c.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[#dcaa9a]">
+                  <li key={c.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-red-ring)]">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={c.finding.findingStatus} />
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
                     <PublicationWarningNote status={c.finding.publicationStatus} />
-                    {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[#7a2a1f]">{c.distinguishingNote}</p>}
+                    {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>}
                     <div className="mt-1">
                       <SourceLink href={c.finding.officialSourceUrl} />
                     </div>

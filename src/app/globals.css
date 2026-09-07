@@ -26,6 +26,42 @@
   --color-neutral-50: #efe9d9;
   --color-neutral-100: #e6dfc9;
 
+  /* Slate text variants, used sparingly alongside --color-ink-* for copy
+     that sits directly on a status-tinted surface below rather than on
+     plain paper. */
+  --color-slate-900: #1f2937;
+  --color-slate-700: #374151;
+  --color-muted: #667085;
+
+  /* Semantic status pairs (surface + on-surface text + ring), consolidated
+     here so every status badge, banner and card across the app draws from
+     one named palette instead of repeating raw hex per component. Each
+     status must always pair its color with a text label — colour is never
+     the only signal. */
+  --status-green-bg: #e7f1ea;
+  --status-green-text: #2f6b4f;
+  --status-green-ring: #a9c2a0;
+
+  --status-blue-bg: #e7f0f8;
+  --status-blue-text: #245a8d;
+  --status-blue-ring: #a9c6dd;
+
+  --status-red-bg: #f8e8e5;
+  --status-red-text: #9e3b32;
+  --status-red-ring: #dcaa9a;
+
+  --status-amber-bg: #f1e8d4;
+  --status-amber-text: #7a5310;
+  --status-amber-ring: #dfc98f;
+
+  --status-purple-bg: #eeeaf4;
+  --status-purple-text: #63527a;
+  --status-purple-ring: #c7abd1;
+
+  --status-neutral-bg: #eeece4;
+  --status-neutral-text: #5a5647;
+  --status-neutral-ring: #d5cfba;
+
   --background: var(--color-paper);
   --foreground: var(--color-ink-900);
 }
@@ -56,6 +92,18 @@ h1, h2, h3 {
 p {
   text-align: justify;
   text-align-last: left;
+}
+
+/* Visible keyboard-focus indicator on every interactive element, not just
+   the ones that happened to get an explicit focus ring class — WCAG 2.4.7. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-gold-600);
+  outline-offset: 2px;
 }
 
 @media print {

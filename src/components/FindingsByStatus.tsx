@@ -57,9 +57,9 @@ export const GROUP_ORDER: FindingStatus[] = [
 // lifecycle (draft, quarantined, withdrawn, or published with a caution).
 const PUBLICATION_STATUS_BADGE_STYLES: Record<string, string> = {
   Draft: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
-  Quarantined: "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
-  "Published with warning": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-  Withdrawn: "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
+  Quarantined: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
+  "Published with warning": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  Withdrawn: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
 };
 
 function PublicationStatusBadge({ status }: { status: string }) {

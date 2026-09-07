@@ -37,7 +37,7 @@ function NavLink({ href, label, active, onClick }: { href: string; label: string
     <Link
       href={href}
       onClick={onClick}
-      className={`rounded-sm px-3 py-2 text-sm font-medium transition ${
+      className={`flex min-h-11 items-center rounded-sm px-3 py-2 text-sm font-medium transition ${
         active
           ? "bg-[var(--color-navy-800)] text-white ring-1 ring-inset ring-[var(--color-gold-600)]/60"
           : "text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
@@ -67,6 +67,16 @@ export function NavBar() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  useEffect(() => {
+    function onEscape(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setMoreOpen(false);
+      setOpen(false);
+    }
+    document.addEventListener("keydown", onEscape);
+    return () => document.removeEventListener("keydown", onEscape);
+  }, []);
+
   async function handleLogout() {
     setSigningOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
@@ -85,7 +95,7 @@ export function NavBar() {
         </Link>
         <button
           type="button"
-          className="rounded-sm p-2 text-white md:hidden"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-sm text-white md:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle navigation menu"
           aria-expanded={open}
@@ -103,7 +113,7 @@ export function NavBar() {
               type="button"
               onClick={() => setMoreOpen((v) => !v)}
               aria-expanded={moreOpen}
-              className={`inline-flex items-center gap-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
+              className={`inline-flex min-h-11 items-center gap-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
                 secondaryActive
                   ? "bg-[var(--color-navy-800)] text-white ring-1 ring-inset ring-[var(--color-gold-600)]/60"
                   : "text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
@@ -121,7 +131,7 @@ export function NavBar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMoreOpen(false)}
-                    className={`block px-3 py-2 text-sm ${
+                    className={`flex min-h-11 items-center px-3 py-2 text-sm ${
                       isActive(item.href)
                         ? "bg-[var(--color-gold-50)] font-medium text-[var(--color-gold-800)]"
                         : "text-[var(--color-ink-700)] hover:bg-[var(--color-gold-50)]"
@@ -137,7 +147,7 @@ export function NavBar() {
             type="button"
             onClick={handleLogout}
             disabled={signingOut}
-            className="ml-2 rounded-sm border border-[var(--color-gold-100)]/30 px-3 py-2 text-sm font-medium text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
+            className="ml-2 min-h-11 rounded-sm border border-[var(--color-gold-100)]/30 px-3 py-2 text-sm font-medium text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
           >
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
@@ -159,7 +169,7 @@ export function NavBar() {
               type="button"
               onClick={handleLogout}
               disabled={signingOut}
-              className="mt-1 rounded-sm border border-[var(--color-gold-100)]/30 px-3 py-2 text-left text-sm font-medium text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
+              className="mt-1 min-h-11 rounded-sm border border-[var(--color-gold-100)]/30 px-3 py-2 text-left text-sm font-medium text-[var(--color-gold-50)]/80 hover:bg-[var(--color-navy-800)] hover:text-white"
             >
               {signingOut ? "Signing out…" : "Sign out"}
             </button>

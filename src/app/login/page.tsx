@@ -8,55 +8,27 @@ const ERROR_MESSAGES: Record<string, string> = {
   not_allowed: "That email is not authorised for this pilot. Contact the administrator to be added.",
 };
 
+// Self-registration was removed: this is an allow-listed internal pilot,
+// and account creation is not required to be self-service (see the UI/UX
+// architecture review). Accounts are provisioned by an administrator;
+// authorisation is still enforced server-side against ALLOWED_EMAILS on
+// every request regardless of how a session was created.
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<"sign_in" | "sign_up">("sign_in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(
     ERROR_MESSAGES[searchParams.get("error") ?? ""] ?? null
   );
-  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setNotice(null);
 
     const supabase = createClient();
-
-    if (mode === "sign_up") {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
-      });
-      if (signUpError) {
-        setError(signUpError.message);
-        setSubmitting(false);
-        return;
-      }
-      if (!data.session) {
-        setNotice(
-          "Account created. Check your email to confirm your address, then sign in; access is still limited to " +
-            "authorised email addresses even after confirmation."
-        );
-        setMode("sign_in");
-        setSubmitting(false);
-        return;
-      }
-      // Supabase returned a session immediately (email confirmation is
-      // disabled on this project). Let the middleware's is_allowed_user()
-      // check on the next request decide whether this account may proceed.
-      const next = searchParams.get("next") || "/dashboard";
-      router.push(next);
-      router.refresh();
-      return;
-    }
-
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
       setError(signInError.message);
@@ -71,38 +43,10 @@ function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm space-y-4 rounded-sm bg-white p-8 shadow-lg border border-[var(--color-border)]"
+      className="w-full max-w-sm space-y-5 rounded-sm border border-[var(--color-border)] bg-[var(--color-paper-raised)] p-8 shadow-lg"
     >
-      <div className="flex gap-2 rounded-md bg-[var(--color-neutral-100)] p-1 text-sm font-medium">
-        <button
-          type="button"
-          onClick={() => {
-            setMode("sign_in");
-            setError(null);
-            setNotice(null);
-          }}
-          className={`flex-1 rounded px-3 py-1.5 transition ${
-            mode === "sign_in" ? "bg-white text-[var(--color-gold-800)] " : "text-[var(--color-ink-500)]"
-          }`}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("sign_up");
-            setError(null);
-            setNotice(null);
-          }}
-          className={`flex-1 rounded px-3 py-1.5 transition ${
-            mode === "sign_up" ? "bg-white text-[var(--color-gold-800)] " : "text-[var(--color-ink-500)]"
-          }`}
-        >
-          First time (create account)
-        </button>
-      </div>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-[var(--color-ink-700)]">
+        <label htmlFor="email" className="block text-sm font-medium text-[var(--color-slate-700)]">
           Email
         </label>
         <input
@@ -113,46 +57,41 @@ function LoginForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+          className="mt-1.5 block w-full min-h-11 rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-100)]"
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-[var(--color-ink-700)]">
+        <label htmlFor="password" className="block text-sm font-medium text-[var(--color-slate-700)]">
           Password
         </label>
         <input
           id="password"
           name="password"
           type="password"
-          autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
+          autoComplete="current-password"
           required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+          className="mt-1.5 block w-full min-h-11 rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold-100)]"
         />
       </div>
       {error && (
-        <p role="alert" className="rounded-md bg-[#f1e3df] px-3 py-2 text-sm text-[#7a2a1f] ring-1 border-[#dcaa9a]">
+        <p role="alert" className="rounded-md bg-[var(--status-red-bg)] px-3 py-2 text-sm text-[var(--status-red-text)] ring-1 ring-inset ring-[var(--status-red-ring)]">
           {error}
         </p>
-      )}
-      {notice && (
-        <p className="rounded-md bg-[var(--color-gold-50)] px-3 py-2 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">{notice}</p>
       )}
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-[var(--color-gold-700)] px-4 py-2 font-medium text-white transition hover:bg-[var(--color-gold-800)] disabled:opacity-60"
+        className="min-h-11 w-full rounded-md bg-[var(--color-gold-700)] px-4 py-2 font-medium text-white transition hover:bg-[var(--color-gold-800)] disabled:opacity-60"
       >
-        {submitting ? "Please wait…" : mode === "sign_up" ? "Create account" : "Sign in"}
+        {submitting ? "Please wait…" : "Sign in"}
       </button>
-      {mode === "sign_up" && (
-        <p className="text-xs text-[var(--color-ink-500)]">
-          Account creation only grants access if this email has already been authorised by the administrator
-          (ALLOWED_EMAILS). Creating an account with any other email will not grant access to any data.
-        </p>
-      )}
+      <p className="text-xs leading-relaxed text-[var(--color-muted)]">
+        Access is not self-service. Contact the administrator to be added as an authorised officer and to receive
+        account credentials.
+      </p>
     </form>
   );
 }
@@ -166,13 +105,13 @@ export default function LoginPage() {
           <path d="M8 8h14M8 13h14M8 18h9" stroke="var(--color-gold-100)" strokeWidth="1.25" strokeLinecap="round" />
           <path d="M8 23.5 12 27l9-10" stroke="var(--color-gold-100)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <h1 className="text-2xl font-semibold">CFID Regulatory Navigator</h1>
+        <h1 className="font-serif text-2xl font-semibold">CFID Regulatory Navigator</h1>
         <p className="mt-2 text-sm text-[var(--color-gold-100)]">Internal legal-research pilot, authorised access only.</p>
       </div>
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
-      <p className="mt-6 max-w-sm text-center text-xs text-[var(--color-gold-100)]">
+      <p className="mt-6 max-w-sm text-center text-xs leading-relaxed text-[var(--color-gold-100)]">
         Enter only information that may lawfully be processed in this pilot. Do not enter confidential, unpublished or
         market-sensitive investigation information.
       </p>

@@ -92,7 +92,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                   <span
                     className={`text-[11px] font-semibold uppercase tracking-wide ${
                       v.status === "officially_verified"
-                        ? "text-[#204a2e]"
+                        ? "text-[var(--status-green-text)]"
                         : v.status === "order_cited_text_only"
                           ? "text-[#1c4a56]"
                           : "text-[var(--color-gold-700)]"
@@ -137,7 +137,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
           </div>
         )}
         {similar.length > 0 && (
-          <div className="mt-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[#7a5310] ring-1 border-[#dfc98f]">
+          <div className="mt-4 rounded-md bg-[var(--color-gold-50)] p-3 text-xs text-[var(--status-amber-text)] ring-1 border-[var(--status-amber-ring)]">
             <strong>Data-integrity check: similarly-numbered provisions.</strong> The following{" "}
             {similar.length === 1 ? "provision is" : "provisions are"} distinct from this one and must not be
             conflated with it, even though the numbering looks alike:

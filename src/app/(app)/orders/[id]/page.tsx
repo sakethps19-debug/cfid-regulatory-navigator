@@ -39,11 +39,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         return (
           <div
             key={r.id}
-            className="mb-4 rounded-md bg-[var(--color-gold-50)] p-3 text-sm text-[#7a5310] ring-1 border-[#dfc98f]"
+            className="mb-4 rounded-md bg-[var(--color-gold-50)] p-3 text-sm text-[var(--status-amber-text)] ring-1 border-[var(--status-amber-ring)]"
           >
             {sentence}
-            {r.note && <span className="block mt-1 text-xs text-[#7a5310]">{r.note}</span>}
-            <Link href={`/orders/${otherOrderId}`} className="mt-1 inline-block font-medium text-[#7a5310] underline">
+            {r.note && <span className="block mt-1 text-xs text-[var(--status-amber-text)]">{r.note}</span>}
+            <Link href={`/orders/${otherOrderId}`} className="mt-1 inline-block font-medium text-[var(--status-amber-text)] underline">
               View the linked order →
             </Link>
           </div>

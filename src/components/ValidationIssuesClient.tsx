@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import type { ValidationIssue } from "@/types/domain";
 
 const SEVERITY_STYLES: Record<ValidationIssue["severity"], string> = {
-  error: "bg-[#f1e3df] text-[#7a2a1f] border-[#dcaa9a]",
-  warning: "bg-[#f5ecd9] text-[#7a5310] border-[#dfc98f]",
+  error: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] border-[var(--status-red-ring)]",
+  warning: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] border-[var(--status-amber-ring)]",
   info: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] border-[var(--color-border)]",
 };
 

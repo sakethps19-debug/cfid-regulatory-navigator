@@ -58,11 +58,11 @@ export function DataChangeLogClient({ entries }: { entries: DataChangeLogEntry[]
             </div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-[#7a2a1f]">Before</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--status-red-text)]">Before</span>
                 <p className="text-sm text-[var(--color-ink-700)]">{renderValue(e.oldValue)}</p>
               </div>
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-[#204a2e]">After</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--status-green-text)]">After</span>
                 <p className="text-sm text-[var(--color-ink-700)]">{renderValue(e.newValue)}</p>
               </div>
             </div>

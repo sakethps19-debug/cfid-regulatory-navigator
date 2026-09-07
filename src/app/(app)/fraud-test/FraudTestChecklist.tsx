@@ -84,10 +84,10 @@ const FACTOR_STATE_OPTIONS: { value: FactorState; label: string }[] = [
 
 const FACTOR_STATE_STYLES: Record<FactorState, string> = {
   "not-stated": "bg-white text-[var(--color-ink-500)] ring-[var(--color-border)]",
-  present: "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
-  unclear: "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-  "requires-verification": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-  "additional-evidence-required": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
+  present: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
+  unclear: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  "requires-verification": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  "additional-evidence-required": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
 };
 
 function FactorList({
@@ -187,9 +187,9 @@ export function FraudTestChecklist() {
       : null;
 
   const toneClasses = {
-    satisfied: "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
-    borderline: "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
-    "not-satisfied": "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
+    satisfied: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
+    borderline: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+    "not-satisfied": "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
   }[result.tone];
 
   return (
