@@ -96,6 +96,16 @@ export interface PrecedentRef {
   materialRelevanceNote?: string;
 }
 
+/** One supporting precedent's own genuine outstanding evidentiary gaps
+ * (relative to the ENTERED SCENARIO), kept attributed to it by record id
+ * rather than merged anonymously with every other precedent's gaps under
+ * the same provision — see ProvisionResult.missingFacts. */
+export interface MissingFactsForPrecedent {
+  recordId: string;
+  scenarioTitle: string;
+  gaps: string[];
+}
+
 export interface ProvisionResult {
   provision: LegalProvision;
   whyRelevant: string;
@@ -113,7 +123,16 @@ export interface ProvisionResult {
   statusesSeen: FindingStatus[];
   confidence: ConfidenceLevel;
   confidenceReasons: string[];
-  missingFacts: string[];
+  /** Outstanding evidentiary gaps, kept attributed to the specific
+   * supporting precedent each gap was recorded against — never merged
+   * into one flat, deduplicated, unattributed list. A precedent's own
+   * evidentiaryGaps describe what that precedent's own record shows as
+   * outstanding for comparing the ENTERED SCENARIO against it, not a
+   * universal requirement every precedent in this provision shares; two
+   * different precedents can (and often do) require different things.
+   * Empty entries (a supporting precedent with no genuine evidentiary
+   * gaps recorded) are omitted, not shown as an empty group. */
+  missingFacts: MissingFactsForPrecedent[];
   /** The provision's recorded text version(s) — surfaced so the officer
    * never assumes the current statutory text applied at the time of the
    * conduct without checking. */
@@ -142,7 +161,6 @@ export interface AnalysisResult {
    * currently on file is materially comparable. Null whenever the safeguard
    * either didn't trigger at all or did find results (shown instead). */
   contraryPrecedentSearchNote: string | null;
-  globalMissingFacts: string[];
   applicableGuardrails: GuardrailNote[];
   hasResults: boolean;
   /** Findings surfaced by Postgres full-text search on the free-text query

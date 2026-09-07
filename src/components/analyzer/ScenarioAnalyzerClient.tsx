@@ -322,8 +322,11 @@ export function resultToText(result: AnalysisResult): string {
       }
     }
     if (pr.missingFacts.length > 0) {
-      lines.push("Missing facts / evidence in the present scenario:");
-      for (const m of pr.missingFacts) lines.push(`  - ${m}`);
+      lines.push("Missing facts / evidence in the present scenario (per cited precedent, never a universal requirement):");
+      for (const group of pr.missingFacts) {
+        lines.push(`  Per ${group.recordId} (${group.scenarioTitle}):`);
+        for (const m of group.gaps) lines.push(`    - ${m}`);
+      }
     }
   }
   if (result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) {
@@ -413,7 +416,7 @@ export function resultToCsv(result: AnalysisResult): string {
       "Matched factual ingredients",
       "Supporting precedent record IDs",
       "Supporting precedents record verification maturity (per precedent)",
-      "Missing facts / evidence",
+      "Missing facts / evidence (per cited precedent, never a universal requirement)",
     ])
   );
   for (const pr of sorted) {
@@ -429,7 +432,7 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
         pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
-        pr.missingFacts.join("; "),
+        pr.missingFacts.map((group) => `${group.recordId}: ${group.gaps.join(" / ")}`).join("; "),
       ])
     );
   }
@@ -1146,18 +1149,28 @@ export function ScenarioAnalyzerClient() {
                       Missing facts / evidence in the present scenario
                     </h4>
                     <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                      Outstanding evidence relevant to comparing your scenario against these precedents, never a
-                      cited precedent&apos;s own historical outcome, which is shown separately under that precedent
-                      above.
+                      Outstanding evidence relevant to comparing your scenario against a specific cited precedent,
+                      grouped by that precedent below (never a universal requirement of this provision itself, and
+                      never a cited precedent&apos;s own historical outcome, which is shown separately under that
+                      precedent above).
                     </p>
-                    <ul className="mt-2 space-y-1">
-                      {pr.missingFacts.map((m, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-ink-700)]">
-                          <input type="checkbox" className="mt-1" />
-                          <span>{m}</span>
-                        </li>
+                    <div className="mt-2 space-y-3">
+                      {pr.missingFacts.map((group) => (
+                        <div key={group.recordId}>
+                          <p className="text-xs font-medium text-[var(--color-ink-700)]">
+                            Per {group.recordId} ({group.scenarioTitle}):
+                          </p>
+                          <ul className="mt-1 space-y-1">
+                            {group.gaps.map((m, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-ink-700)]">
+                                <input type="checkbox" className="mt-1" />
+                                <span>{m}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 

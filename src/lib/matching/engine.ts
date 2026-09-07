@@ -501,7 +501,18 @@ export function analyzeScenario(
       statusesSeen: unique(findings.map((f) => f.finding.findingStatus)),
       confidence: level,
       confidenceReasons: reasons,
-      missingFacts: unique(supporting.flatMap((s) => s.finding.evidentiaryGaps)).filter(isGenuineEvidentiaryGap),
+      // Kept per-precedent (see MissingFactsForPrecedent) rather than
+      // flattened into one shared list — two different supporting
+      // precedents for the same provision can require different things,
+      // and a flat merge would present precedent B's own evidentiary gap
+      // as if it were a universal requirement of the provision itself.
+      missingFacts: supporting
+        .map((s) => ({
+          recordId: s.finding.recordId,
+          scenarioTitle: s.finding.scenarioTitle,
+          gaps: unique(s.finding.evidentiaryGaps.filter(isGenuineEvidentiaryGap)),
+        }))
+        .filter((m) => m.gaps.length > 0),
       provisionVersions,
       applicableVersionNote: buildApplicableVersionNote(provisionVersions),
     });
@@ -550,8 +561,6 @@ export function analyzeScenario(
       contraryPrecedentSearchNote = "No materially comparable contrary precedent was identified in the currently structured corpus.";
     }
   }
-
-  const globalMissingFacts = unique(provisionResults.flatMap((pr) => pr.missingFacts));
 
   const guardrailTitles = new Set<string>();
   for (const id of detectedIds) {
@@ -604,7 +613,6 @@ export function analyzeScenario(
     provisionResults,
     globalContraryPrecedents,
     contraryPrecedentSearchNote,
-    globalMissingFacts,
     applicableGuardrails,
     hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,

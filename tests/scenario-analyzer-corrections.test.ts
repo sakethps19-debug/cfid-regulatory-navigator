@@ -93,17 +93,23 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
     );
   }
 
-  it("keeps genuine missing-facts and a precedent's own resolution separate when both are present", () => {
+  it("keeps genuine missing-facts and a precedent's own resolution separate when both are present, attributed to the precedent that recorded them", () => {
     const result = run([genuineGapFinding, resolvedFinding]);
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
     expect(pr).toBeDefined();
-    expect(pr!.missingFacts).toEqual(["Genuine outstanding evidence: independent verification of the transaction."]);
+    // Only SYN-GAP has a genuine gap - SYN-RESOLVED must not appear as a
+    // group at all (its only evidentiaryGaps entry, if any, is filtered by
+    // isGenuineEvidentiaryGap), and the gap must stay attributed to SYN-GAP.
+    expect(pr!.missingFacts).toEqual([
+      { recordId: "SYN-GAP", scenarioTitle: "Synthetic finding", gaps: ["Genuine outstanding evidence: independent verification of the transaction."] },
+    ]);
   });
 
-  it('never shows "None outstanding" text inside the missing-facts checklist, even when another finding under the same provision has a genuine gap', () => {
+  it('never shows "None outstanding" text inside any precedent\'s missing-facts group, even when another finding under the same provision has a genuine gap', () => {
     const result = run([genuineGapFinding, resolvedFinding]);
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
-    const hasResolvedTextInMissingFacts = pr!.missingFacts.some((m) => m.toLowerCase().startsWith("none outstanding"));
+    const allGaps = pr!.missingFacts.flatMap((g) => g.gaps);
+    const hasResolvedTextInMissingFacts = allGaps.some((m) => m.toLowerCase().startsWith("none outstanding"));
     expect(hasResolvedTextInMissingFacts).toBe(false);
   });
 
@@ -111,8 +117,9 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
     const result = run([resolvedFinding]);
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
     expect(pr).toBeDefined();
-    // No genuine gap exists for this provision — the checklist must be empty,
-    // not populated with the precedent's own outcome note.
+    // No genuine gap exists for this provision — the checklist must have no
+    // groups at all, not a group populated with the precedent's own outcome
+    // note.
     expect(pr!.missingFacts).toEqual([]);
     // The outcome note is still available, but attached to the specific
     // precedent it describes, not folded into the scenario-level checklist.
@@ -130,16 +137,23 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
     });
     const result = run([genuineGapFinding, misEntered]);
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
-    expect(pr!.missingFacts).toEqual(["Genuine outstanding evidence: independent verification of the transaction."]);
-    expect(pr!.missingFacts.some((m) => m.toLowerCase().startsWith("none outstanding"))).toBe(false);
+    // SYN-MISENTERED's own group must not appear at all (its sole gap is
+    // filtered out as the resolved-sentinel text), leaving only SYN-GAP's.
+    expect(pr!.missingFacts).toEqual([
+      { recordId: "SYN-GAP", scenarioTitle: "Synthetic finding", gaps: ["Genuine outstanding evidence: independent verification of the transaction."] },
+    ]);
+    const allGaps = pr!.missingFacts.flatMap((g) => g.gaps);
+    expect(allGaps.some((m) => m.toLowerCase().startsWith("none outstanding"))).toBe(false);
   });
 
-  it("'None outstanding' can never coexist with an outstanding missing-evidence item in the same checklist", () => {
+  it("'None outstanding' can never coexist with an outstanding missing-evidence item in the same precedent's group", () => {
     const result = run([genuineGapFinding, resolvedFinding]);
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
-    const containsResolvedSentinel = pr!.missingFacts.some((m) => m.toLowerCase().startsWith("none outstanding"));
-    const containsGenuineGap = pr!.missingFacts.length > 0;
-    // The two must never both be true for the same checklist.
-    expect(containsResolvedSentinel && containsGenuineGap).toBe(false);
+    for (const group of pr!.missingFacts) {
+      const containsResolvedSentinel = group.gaps.some((m) => m.toLowerCase().startsWith("none outstanding"));
+      const containsGenuineGap = group.gaps.length > 0;
+      // The two must never both be true for the same precedent's group.
+      expect(containsResolvedSentinel && containsGenuineGap).toBe(false);
+    }
   });
 });
