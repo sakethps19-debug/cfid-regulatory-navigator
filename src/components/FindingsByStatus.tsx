@@ -9,13 +9,13 @@ import { SourceLink } from "@/components/Card";
 // procedural_observation and withdrawn — 18 of 80 findings, invisible with
 // no error and no "not linked" message).
 export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> = {
-  Upheld: { title: "Final findings — upheld", hint: "Confirmed in a final order." },
-  "Partly upheld": {
-    title: "Partly upheld findings",
-    hint: "Upheld in part; see the qualification for what was excluded.",
+  "Confirmed in Final Order": { title: "Confirmed in Final Order", hint: "Confirmed in a final order." },
+  "Partly Confirmed in Final Order": {
+    title: "Partly Confirmed in Final Order",
+    hint: "Confirmed in part in a final order; see the qualification for what was excluded.",
   },
-  "Not upheld": {
-    title: "Findings not upheld",
+  "Not Confirmed in Final Order": {
+    title: "Not Confirmed in Final Order",
     hint: "Rejected in a final order — an important contrary/negative precedent.",
   },
   "Confirmed at interim": {
@@ -39,9 +39,9 @@ export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> 
 // procedural — every FindingStatus value from GROUP_INFO appears exactly
 // once, checked by the render loop below never seeing an undefined title.
 export const GROUP_ORDER: FindingStatus[] = [
-  "Upheld",
-  "Partly upheld",
-  "Not upheld",
+  "Confirmed in Final Order",
+  "Partly Confirmed in Final Order",
+  "Not Confirmed in Final Order",
   "Confirmed at interim",
   "Prima facie",
   "Alleged",

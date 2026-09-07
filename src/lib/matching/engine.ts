@@ -5,8 +5,8 @@ import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
 
-const NEGATIVE_STATUSES = new Set(["Not upheld", "Withdrawn"]);
-const UPHELD_STATUSES = new Set(["Upheld", "Partly upheld"]);
+const NEGATIVE_STATUSES = new Set(["Not Confirmed in Final Order", "Withdrawn"]);
+const UPHELD_STATUSES = new Set(["Confirmed in Final Order", "Partly Confirmed in Final Order"]);
 // A finding with one of these statuses has had NO merits determination made
 // either way — "Alleged" is a bare, untested allegation; "Inconclusive" is an
 // investigation that could not determine the answer; "Procedural observation"
@@ -43,7 +43,7 @@ function buildDistinguishingNote(finding: ScenarioFinding): string | undefined {
     parts.push(`Facts that distinguished this case: ${finding.evidentiaryGaps.join("; ")}.`);
   }
   if (parts.length === 0) {
-    return `This precedent (${finding.recordId}) was not upheld on its own facts — check whether the same distinguishing factors are present before treating it as controlling here.`;
+    return `This precedent (${finding.recordId}) was not confirmed in a final order on its own facts — check whether the same distinguishing factors are present before treating it as controlling here.`;
   }
   return `This precedent may be distinguishable because: ${parts.join(" ")}`;
 }

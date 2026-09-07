@@ -49,8 +49,8 @@ export default function MethodologyPage() {
         <p>
           Where a final order exists, its finding is treated as controlling and is displayed prominently; an interim
           order is used to explain the original allegation and how the case developed. Findings are stored at the
-          level of an individual allegation, not the order as a whole, because one transaction may be upheld while
-          another under the same provision is not.
+          level of an individual allegation, not the order as a whole, because one transaction may be confirmed in
+          the final order while another under the same provision is not.
         </p>
       </Section>
 
@@ -166,8 +166,8 @@ export default function MethodologyPage() {
           </li>
           <li>
             <span className="font-medium">Contrary-precedent retrieval is a universal feature, not a special case
-            for any one order.</span> Any finding with a negative or partly-negative status (not upheld, partly
-            upheld, withdrawn, inconclusive) is eligible to surface as a contrary precedent whenever a query
+            for any one order.</span> Any finding with a negative or partly-negative status (not confirmed in
+            final order, partly confirmed in final order, withdrawn, inconclusive) is eligible to surface as a contrary precedent whenever a query
             scenario materially matches its facts. The Seacoast final order&apos;s rejection of the ₹0.52 crore cash
             preferential-allotment allegation is one example of this — it surfaces for scenarios involving
             preferential allotment, circular funding, alleged front entities, or unexplained fund movements, and is
@@ -190,7 +190,7 @@ export default function MethodologyPage() {
           <li>Score every deep-analyzed scenario finding by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
           <li>Prefer findings drawn from a final order over an interim-only finding.</li>
           <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with — a provision is never suggested merely because it appeared elsewhere in the same order.</li>
-          <li>Retrieve supporting precedents (status Upheld / Prima facie / Partly upheld) and contrary precedents (status Not upheld) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
+          <li>Retrieve supporting precedents (status Confirmed in Final Order / Prima facie / Partly Confirmed in Final Order) and contrary precedents (status Not Confirmed in Final Order) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
           <li>Assemble a missing-facts checklist from each matched finding&apos;s recorded evidentiary gaps.</li>
           <li>Derive a High / Medium / Low confidence level from how many independent factual categories overlap and whether the best match is a final or interim-only finding.</li>
         </ol>

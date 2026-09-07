@@ -73,7 +73,7 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     provisionIds,
     provisionLinks,
     noticeeActors: [],
-    findingStatus: "Upheld",
+    findingStatus: "Confirmed in Final Order",
     interimParagraphReferences: "Para 1",
     finalParagraphReferences: "Para 10",
     qualification: null,
@@ -115,7 +115,7 @@ describe("Corpus conduct-tag audit corrections", () => {
     const fraudProvision = makeProvision({ id: "PFUTP-3-a" });
     const lsil01 = makeFinding({
       recordId: "LSIL-01",
-      findingStatus: "Upheld",
+      findingStatus: "Confirmed in Final Order",
       allegedConduct: ["price_manipulation_nexus", "false_business_or_corporate_announcement"],
       provisionIds: [fraudProvision.id],
     });
@@ -128,7 +128,7 @@ describe("Corpus conduct-tag audit corrections", () => {
     const fraudProvision = makeProvision({ id: "PFUTP-3-a" });
     const lsil01 = makeFinding({
       recordId: "LSIL-01",
-      findingStatus: "Upheld",
+      findingStatus: "Confirmed in Final Order",
       allegedConduct: ["price_manipulation_nexus", "false_business_or_corporate_announcement"],
       provisionIds: [fraudProvision.id],
     });
@@ -146,7 +146,7 @@ describe("Corpus conduct-tag audit corrections", () => {
     const fundProvision = makeProvision({ id: "SEBI-ACT-12A-b" });
     const frl01 = makeFinding({
       recordId: "FRL-01",
-      findingStatus: "Partly upheld",
+      findingStatus: "Partly Confirmed in Final Order",
       allegedConduct: ["non_disclosure_of_information"],
       provisionIds: [fundProvision.id],
     });

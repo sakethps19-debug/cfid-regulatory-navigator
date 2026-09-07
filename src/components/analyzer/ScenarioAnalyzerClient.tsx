@@ -128,14 +128,14 @@ function resultToText(result: AnalysisResult): string {
     lines.push(`Applicable provision version: ${pr.applicableVersionNote}`);
     lines.push(`Factual ingredients matched: ${pr.matchedFactualIngredients.join("; ") || "none"}`);
     if (pr.upheldPrecedents.length > 0) {
-      lines.push("Upheld in prior case(s):");
+      lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
           `  - [${u.finding.findingStatus}] ${u.finding.recordId} — ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) — ${u.finding.officialSourceUrl}`
         );
       }
     } else {
-      lines.push("Upheld in prior case(s): none in this pilot's precedent library — treat as unproven on these facts alone.");
+      lines.push("Confirmed in Final Order in prior case(s): none in this pilot's precedent library — treat as unproven on these facts alone.");
     }
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
@@ -453,7 +453,7 @@ export function ScenarioAnalyzerClient() {
                   {result.provisionResults.length} provision{result.provisionResults.length === 1 ? "" : "s"} across{" "}
                   {frameworkGroups.length} instrument{frameworkGroups.length === 1 ? "" : "s"}
                   {" — "}
-                  {result.provisionResults.filter((pr) => pr.upheldPrecedents.length > 0).length} with a prior case actually upheld
+                  {result.provisionResults.filter((pr) => pr.upheldPrecedents.length > 0).length} with a prior case confirmed in a final order
                 </p>
                 <p className="mt-1 text-xs text-white/70">
                   Prima facie / potentially relevant only — not a finding that any provision has actually been violated.
@@ -474,7 +474,7 @@ export function ScenarioAnalyzerClient() {
                             <span className="flex items-center gap-2">
                               {pr.upheldPrecedents.length > 0 && (
                                 <span className="rounded-sm bg-[#e6ede3] px-2 py-0.5 text-xs font-semibold text-[#204a2e] ring-1 ring-inset border-[#a9c2a0]">
-                                  Upheld ×{pr.upheldPrecedents.length}
+                                  Final Order ×{pr.upheldPrecedents.length}
                                 </span>
                               )}
                               <ConfidenceBadge level={pr.confidence} />
@@ -613,8 +613,8 @@ export function ScenarioAnalyzerClient() {
                 <div className="mt-4 rounded-lg bg-[#e6ede3] p-3 ring-1 border-[#a9c2a0]">
                   <h4 className="text-xs font-semibold uppercase tracking-wide text-[#204a2e]">
                     {pr.upheldPrecedents.length > 0
-                      ? `Upheld in ${pr.upheldPrecedents.length} prior case${pr.upheldPrecedents.length > 1 ? "s" : ""}`
-                      : "Not yet upheld in this pilot's precedent library"}
+                      ? `Confirmed in Final Order in ${pr.upheldPrecedents.length} prior case${pr.upheldPrecedents.length > 1 ? "s" : ""}`
+                      : "Not yet confirmed in a final order in this pilot's precedent library"}
                   </h4>
                   {pr.upheldPrecedents.length > 0 ? (
                     <ul className="mt-2 space-y-2">

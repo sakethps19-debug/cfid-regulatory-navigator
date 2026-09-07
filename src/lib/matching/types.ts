@@ -17,7 +17,7 @@ export interface PrecedentRef {
    * doesn't mention. Read as "not (yet) established by your facts", not as
    * a statement that the entered scenario lacks these elements. */
   ingredientsNotEstablished: string[];
-  /** Present only for contrary (status "Not upheld"/"Withdrawn") precedents:
+  /** Present only for contrary (status "Not Confirmed in Final Order"/"Withdrawn") precedents:
    * a plain-language note on why this precedent may be distinguishable on
    * its facts, built from its own qualification text and evidentiary gaps. */
   distinguishingNote?: string;
@@ -29,8 +29,8 @@ export interface ProvisionResult {
   matchedFactualIngredients: string[];
   supportingPrecedents: PrecedentRef[];
   contraryPrecedents: PrecedentRef[];
-  /** Matching precedents whose outcome was actually "Upheld" or "Partly
-   * upheld" — pulled out from supportingPrecedents (which mixes in weaker
+  /** Matching precedents whose outcome was actually "Confirmed in Final
+   * Order" or "Partly Confirmed in Final Order" — pulled out from supportingPrecedents (which mixes in weaker
    * statuses like Alleged/Prima facie) so an officer can see at a glance
    * whether this provision has ever actually been confirmed on similar
    * facts, not just alleged. Drawn from every matching finding for this

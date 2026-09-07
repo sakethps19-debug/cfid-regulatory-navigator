@@ -7,13 +7,19 @@
 // original Links.xlsx compilation is no longer used. Nothing in this file
 // invents facts; it only shapes what the workbooks already contain.
 
+// "Upheld"/"Not upheld" were dropped in favor of final-order language at the
+// user's request, after live-demo feedback that "upheld" read as this tool
+// passing its own legal judgment rather than describing what the order
+// itself records. The underlying database enum (finding_status: 'upheld',
+// 'not_upheld', etc.) is unchanged — only this display type and its label
+// mapping (FINDING_STATUS_LABELS in data.ts) changed.
 export type FindingStatus =
   | "Alleged"
   | "Prima facie"
   | "Confirmed at interim"
-  | "Upheld"
-  | "Partly upheld"
-  | "Not upheld"
+  | "Confirmed in Final Order"
+  | "Partly Confirmed in Final Order"
+  | "Not Confirmed in Final Order"
   | "Withdrawn"
   | "Inconclusive"
   | "Procedural observation";

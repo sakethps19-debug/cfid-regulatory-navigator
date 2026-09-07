@@ -59,10 +59,10 @@ describe("Data integrity: citation traceability", () => {
 });
 
 describe("Data integrity: the Seacoast negative precedent is preserved", () => {
-  it("SSSL-03 is recorded as not upheld, not as upheld or omitted", () => {
+  it("SSSL-03 is recorded as Not Confirmed in Final Order, not as Confirmed in Final Order or omitted", () => {
     const finding = scenarioFindings.find((f) => f.recordId === "SSSL-03");
     expect(finding).toBeDefined();
-    expect(finding?.findingStatus).toBe("Not upheld");
+    expect(finding?.findingStatus).toBe("Not Confirmed in Final Order");
   });
 });
 

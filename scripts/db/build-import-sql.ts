@@ -53,17 +53,17 @@ const ORDER_STAGE_TO_TYPE: Partial<Record<OrderStage, string>> = {
 const FINDING_STATUS_TO_ENUM: Partial<Record<FindingStatus, string>> = {
   Alleged: "alleged",
   "Prima facie": "prima_facie",
-  Upheld: "upheld",
-  "Partly upheld": "partly_upheld",
-  "Not upheld": "not_upheld",
+  "Confirmed in Final Order": "upheld",
+  "Partly Confirmed in Final Order": "partly_upheld",
+  "Not Confirmed in Final Order": "not_upheld",
 };
 
 function provisionRelationshipForFinding(status: FindingStatus): string {
   switch (status) {
-    case "Upheld":
-    case "Partly upheld":
+    case "Confirmed in Final Order":
+    case "Partly Confirmed in Final Order":
       return "upheld";
-    case "Not upheld":
+    case "Not Confirmed in Final Order":
       return "not_upheld";
     case "Prima facie":
     case "Alleged":

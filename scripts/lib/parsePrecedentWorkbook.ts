@@ -97,7 +97,13 @@ function parseScenarioFindings(
   const headerIdx = findHeaderRowIndex(rows, "Record ID");
   const findings: ScenarioFinding[] = [];
   const seenIds = new Set<string>();
-  const validStatuses: FindingStatus[] = ["Alleged", "Prima facie", "Upheld", "Partly upheld", "Not upheld"];
+  const validStatuses: FindingStatus[] = [
+    "Alleged",
+    "Prima facie",
+    "Confirmed in Final Order",
+    "Partly Confirmed in Final Order",
+    "Not Confirmed in Final Order",
+  ];
 
   for (const row of rows.slice(headerIdx + 1)) {
     const recordId = cellText(row[0]);

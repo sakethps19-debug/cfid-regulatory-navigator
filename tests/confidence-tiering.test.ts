@@ -33,7 +33,7 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     provisionIds,
     provisionLinks,
     noticeeActors: [],
-    findingStatus: "Upheld",
+    findingStatus: "Confirmed in Final Order",
     interimParagraphReferences: "Para 1",
     finalParagraphReferences: "Para 10",
     qualification: null,

@@ -11,7 +11,19 @@ import scenarioFindingsJson from "@/data/generated/scenarioFindings.json";
 import provisionsJson from "@/data/generated/provisions.json";
 import legalTestsJson from "@/data/generated/legalTests.json";
 
-type RawFinding = Omit<ScenarioFinding, "provisionLinks"> & { provisionLinks?: ScenarioFinding["provisionLinks"] };
+type RawFinding = Omit<ScenarioFinding, "provisionLinks" | "findingStatus"> & {
+  provisionLinks?: ScenarioFinding["provisionLinks"];
+  findingStatus: string;
+};
+
+// This pilot-era generated JSON predates both per-provision tag attribution
+// and the "Upheld"/"Not upheld" -> final-order-language rename, so both are
+// bridged at load time rather than hand-editing the generated file.
+const LEGACY_STATUS_LABELS: Record<string, ScenarioFinding["findingStatus"]> = {
+  Upheld: "Confirmed in Final Order",
+  "Partly upheld": "Partly Confirmed in Final Order",
+  "Not upheld": "Not Confirmed in Final Order",
+};
 
 // This pilot-era generated JSON predates per-provision tag attribution
 // (finding_provisions.justifying_tags — see engine.ts / migration
@@ -22,6 +34,7 @@ type RawFinding = Omit<ScenarioFinding, "provisionLinks"> & { provisionLinks?: S
 export const scenarioFindings = (scenarioFindingsJson as RawFinding[]).map(
   (f): ScenarioFinding => ({
     ...f,
+    findingStatus: LEGACY_STATUS_LABELS[f.findingStatus] ?? (f.findingStatus as ScenarioFinding["findingStatus"]),
     provisionLinks: f.provisionLinks ?? f.provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] })),
   })
 );

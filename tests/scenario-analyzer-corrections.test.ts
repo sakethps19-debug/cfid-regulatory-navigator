@@ -38,7 +38,7 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
     provisionsConsideredRaw: null,
     provisionLinks,
     noticeeActors: [],
-    findingStatus: "Upheld",
+    findingStatus: "Confirmed in Final Order",
     interimParagraphReferences: null,
     finalParagraphReferences: "Para 1",
     qualification: null,

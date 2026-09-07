@@ -63,7 +63,7 @@ describe("Mandatory scenario 4: preferential allotment financed through circular
   const scenarioText =
     "Preferential allotment allegedly financed through circular transactions, but loans are recorded in audited accounts, third parties were not examined and sale proceeds remain with the allottees.";
 
-  it("retrieves the Seacoast SSSL-03 'Not upheld' finding", () => {
+  it("retrieves the Seacoast SSSL-03 'Not Confirmed in Final Order' finding", () => {
     const result = run(scenarioText);
     expect(result.hasResults).toBe(true);
     expect(allRecordIds(result)).toContain("SSSL-03");
@@ -71,7 +71,7 @@ describe("Mandatory scenario 4: preferential allotment financed through circular
       result.provisionResults.flatMap((pr) => pr.contraryPrecedents).find((p) => p.finding.recordId === "SSSL-03") ??
       result.globalContraryPrecedents.find((p) => p.finding.recordId === "SSSL-03");
     expect(found).toBeDefined();
-    expect(found?.finding.findingStatus).toBe("Not upheld");
+    expect(found?.finding.findingStatus).toBe("Not Confirmed in Final Order");
   });
 
   it("does not produce a definitive violation conclusion anywhere in the generated text", () => {
@@ -142,7 +142,7 @@ describe("Safeguard: PFUTP 4(2)(e) vs LODR 4(2)(e)(i) must remain distinct", () 
 });
 
 describe("Safeguard: interim findings are labelled prima facie", () => {
-  it("every Rajesh Exports finding (interim-only) is Prima facie, never Upheld", () => {
+  it("every Rajesh Exports finding (interim-only) is Prima facie, never Confirmed in Final Order", () => {
     const relFindings = scenarioFindings.filter((f) => f.caseName === "Rajesh Exports Limited");
     expect(relFindings.length).toBeGreaterThan(0);
     for (const f of relFindings) {
@@ -153,10 +153,10 @@ describe("Safeguard: interim findings are labelled prima facie", () => {
 });
 
 describe("Safeguard: final findings override inconsistent interim findings", () => {
-  it("SSSL-03 is stored as 'Not upheld' (the final outcome), not the interim prima facie inference", () => {
+  it("SSSL-03 is stored as 'Not Confirmed in Final Order' (the final outcome), not the interim prima facie inference", () => {
     const finding = scenarioFindings.find((f) => f.recordId === "SSSL-03");
     expect(finding).toBeDefined();
-    expect(finding?.findingStatus).toBe("Not upheld");
+    expect(finding?.findingStatus).toBe("Not Confirmed in Final Order");
     expect(finding?.interimParagraphReferences).not.toBeNull();
     expect(finding?.finalParagraphReferences).not.toBeNull();
   });
@@ -164,7 +164,7 @@ describe("Safeguard: final findings override inconsistent interim findings", () 
   it("SSSL-12 correctly excludes the SSSL-03 allegation despite an otherwise upheld composite finding", () => {
     const finding = scenarioFindings.find((f) => f.recordId === "SSSL-12");
     expect(finding).toBeDefined();
-    expect(finding?.findingStatus).toBe("Partly upheld");
+    expect(finding?.findingStatus).toBe("Partly Confirmed in Final Order");
     expect(finding?.evidentiaryGaps.join(" ")).toMatch(/SSSL-03/);
   });
 });
