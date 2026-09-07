@@ -556,6 +556,52 @@ export async function getValidationIssues(): Promise<ValidationIssue[]> {
   return (issueRows ?? []).map((row) => mapValidationIssue(row, row.order_id ? (caseNameById.get(row.order_id) ?? null) : null));
 }
 
+const MAX_FLAG_NOTE_LENGTH = 2000;
+
+/** Lets a logged-in, allowlisted user flag a Scenario Analyzer result as
+ * looking wrong, writing straight into validation_issues so it appears on
+ * the existing Admin Validation Issues page. Guarded by the
+ * validation_issues_insert_user_flag RLS policy (see migration
+ * 0011_validation_issues_user_flag_insert.sql), which only allows inserting
+ * this exact shape (issue_type/severity fixed, resolved=false) — a user can
+ * never mark an issue resolved or write any other kind of row. */
+export async function flagScenarioResult(input: {
+  findingRecordId: string;
+  provisionCanonicalId: string;
+  note: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+
+  const { data: findingRow, error: findingError } = await supabase
+    .from("scenario_findings")
+    .select("id, record_id, case_name")
+    .eq("record_id", input.findingRecordId)
+    .maybeSingle();
+  if (findingError) throw findingError;
+  if (!findingRow) return { ok: false, error: "That finding could not be found." };
+
+  const note = input.note.trim().slice(0, MAX_FLAG_NOTE_LENGTH);
+  const description = `User-reported: ${note || "(no note provided)"} — flagged by ${
+    user.email ?? "unknown user"
+  } against provision ${input.provisionCanonicalId}, finding ${findingRow.record_id} (${findingRow.case_name}).`;
+
+  const { error: insertError } = await supabase.from("validation_issues").insert({
+    finding_id: findingRow.id,
+    order_id: null,
+    issue_type: "user_flagged_result",
+    severity: "warning",
+    description,
+    source_row_ref: input.provisionCanonicalId,
+    resolved: false,
+  });
+  if (insertError) return { ok: false, error: insertError.message };
+  return { ok: true };
+}
+
 export async function getLegalInstruments(): Promise<LegalInstrument[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("legal_instruments").select("*").order("name", { ascending: true });

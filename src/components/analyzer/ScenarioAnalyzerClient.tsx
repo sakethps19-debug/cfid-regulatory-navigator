@@ -181,6 +181,37 @@ export function ScenarioAnalyzerClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [flagOpenKey, setFlagOpenKey] = useState<string | null>(null);
+  const [flagNote, setFlagNote] = useState("");
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
+  const [flagError, setFlagError] = useState<string | null>(null);
+
+  async function handleFlagSubmit(pr: ProvisionResult) {
+    const findingRecordId = pr.supportingPrecedents[0]?.finding.recordId;
+    if (!findingRecordId) return;
+    setFlagSubmitting(true);
+    setFlagError(null);
+    try {
+      const res = await fetch("/api/flag-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ findingRecordId, provisionCanonicalId: pr.provision.id, note: flagNote }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFlagError(data.error ?? "Could not submit this flag — please try again.");
+        return;
+      }
+      setFlagged((prev) => new Set(prev).add(pr.provision.id));
+      setFlagOpenKey(null);
+      setFlagNote("");
+    } catch {
+      setFlagError("Could not submit this flag — please try again.");
+    } finally {
+      setFlagSubmitting(false);
+    }
+  }
 
   async function handleAnalyze(e: React.FormEvent) {
     e.preventDefault();
@@ -449,6 +480,61 @@ export function ScenarioAnalyzerClient() {
 
                 <p className="mt-3 text-sm text-[var(--color-ink-700)]">{pr.whyRelevant}</p>
                 <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">{pr.applicableVersionNote}</p>
+
+                <div className="mt-2">
+                  {flagged.has(pr.provision.id) ? (
+                    <p className="text-xs text-[var(--color-ink-500)]">
+                      Flagged for review — thank you. An officer will check this provision against the facts above.
+                    </p>
+                  ) : flagOpenKey === key ? (
+                    <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-neutral-50)] p-2.5">
+                      <label className="text-xs font-medium text-[var(--color-ink-700)]" htmlFor={`flag-note-${key}`}>
+                        What looks wrong about this provision for your facts? (optional)
+                      </label>
+                      <textarea
+                        id={`flag-note-${key}`}
+                        value={flagNote}
+                        onChange={(e) => setFlagNote(e.target.value)}
+                        rows={2}
+                        className="mt-1 w-full rounded-sm border border-[var(--color-border)] px-2 py-1.5 text-sm text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+                        placeholder="e.g. this provision's subject has nothing to do with the facts I entered"
+                      />
+                      {flagError && <p className="mt-1 text-xs text-[#7a2a1f]">{flagError}</p>}
+                      <div className="mt-1.5 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleFlagSubmit(pr)}
+                          disabled={flagSubmitting}
+                          className="rounded-sm bg-[var(--color-gold-700)] px-2.5 py-1 text-xs font-medium text-white hover:bg-[var(--color-gold-800)] disabled:opacity-60"
+                        >
+                          {flagSubmitting ? "Submitting…" : "Submit flag"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFlagOpenKey(null);
+                            setFlagError(null);
+                          }}
+                          className="rounded-sm px-2.5 py-1 text-xs font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFlagOpenKey(key);
+                        setFlagNote("");
+                        setFlagError(null);
+                      }}
+                      className="text-xs font-medium text-[var(--color-ink-500)] underline decoration-dotted hover:text-[var(--color-ink-700)]"
+                    >
+                      This doesn&apos;t look right — flag for review
+                    </button>
+                  )}
+                </div>
 
                 {pr.matchedFactualIngredients.length > 0 && (
                   <div className="mt-3">
