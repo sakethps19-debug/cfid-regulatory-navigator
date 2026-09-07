@@ -456,18 +456,19 @@ const CORPUS_BOILERPLATE_TERMS = new Set([
   "noticee", "noticees", "statement", "statements", "transaction", "transactions", "entity", "entities", "via",
 ]);
 
+const MAX_FULL_TEXT_SUPPLEMENTAL_FINDINGS = 8;
+
 /** Tokenizes free text into the distinct, non-boilerplate, non-numeric
- * words a full-text OR query should search on. Returns null when nothing
- * meaningful survives filtering (e.g. an all-numeric or all-boilerplate
- * query), signalling the caller to skip the search entirely. */
-function buildFullTextOrQuery(freeText: string): string | null {
+ * words a full-text OR query should search on. Returns the empty array
+ * when nothing meaningful survives filtering (e.g. an all-numeric or
+ * all-boilerplate query), signalling the caller to skip the search
+ * entirely. */
+function tokenizeForFullTextQuery(freeText: string): string[] {
   const tokens = freeText
     .toLowerCase()
     .split(/[^a-z]+/)
     .filter((t) => t.length >= 3 && !CORPUS_BOILERPLATE_TERMS.has(t));
-  const unique = [...new Set(tokens)].slice(0, 40);
-  if (unique.length === 0) return null;
-  return unique.join(" | ");
+  return [...new Set(tokens)].slice(0, 40);
 }
 
 /** Postgres full-text search over scenario findings' free text (title,
@@ -480,17 +481,24 @@ function buildFullTextOrQuery(freeText: string): string | null {
  * websearch_to_tsquery on the whole paragraph) because websearch_to_tsquery
  * ANDs every bare word together — a multi-sentence scenario description
  * routinely produces 20+ ANDed terms that no single precedent's text will
- * ever contain all of, so the search silently returns nothing. */
+ * ever contain all of, so the search silently returns nothing.
+ *
+ * The Postgres query itself is unranked — an OR match on any one term is
+ * enough to return a row — so every match is fetched (this corpus is a few
+ * dozen findings; there is no pagination cost to worry about) and then
+ * ranked here by how many distinct query terms each finding's own text
+ * actually contains, before the top MAX_FULL_TEXT_SUPPLEMENTAL_FINDINGS are
+ * kept. Without this, the 8 rows shown to the officer were whichever 8 the
+ * database happened to return first, not the 8 most relevant to what they
+ * typed - a real finding could be dropped in favour of one that only
+ * matched on a single, incidental shared word. */
 export async function searchScenarioFindingsFullText(query: string): Promise<ScenarioFinding[]> {
-  const orQuery = buildFullTextOrQuery(query);
-  if (!orQuery) return [];
+  const terms = tokenizeForFullTextQuery(query);
+  if (terms.length === 0) return [];
+  const orQuery = terms.join(" | ");
   const supabase = await createClient();
   const [{ data: findingRows, error: findingsError }, { data: linkRows, error: linksError }] = await Promise.all([
-    supabase
-      .from("scenario_findings")
-      .select("*")
-      .textSearch("search_vector", orQuery, { config: "english" })
-      .limit(8),
+    supabase.from("scenario_findings").select("*").textSearch("search_vector", orQuery, { config: "english" }),
     supabase
       .from("finding_provisions")
       .select("finding_id, provision_id, justifying_tags, relationship, legal_provisions(canonical_id)"),
@@ -513,10 +521,19 @@ export async function searchScenarioFindingsFullText(query: string): Promise<Sce
     provisionLinksByFinding.set(row.finding_id, list);
   }
 
-  return (findingRows ?? []).map((row) => {
-    const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
-    return mapFinding(row, provisionLinksByFinding.get(row.id) ?? [], orderIds);
-  });
+  const matchedTermCount = (row: ScenarioFindingRow): number => {
+    const text = [row.case_name, row.scenario_title, row.factual_pattern, row.category].filter(Boolean).join(" ").toLowerCase();
+    return terms.filter((t) => text.includes(t)).length;
+  };
+
+  return (findingRows ?? [])
+    .map((row) => ({ row, rank: matchedTermCount(row) }))
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, MAX_FULL_TEXT_SUPPLEMENTAL_FINDINGS)
+    .map(({ row }) => {
+      const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
+      return mapFinding(row, provisionLinksByFinding.get(row.id) ?? [], orderIds);
+    });
 }
 
 /** Every order_relationships row (interim<->final, confirmatory, corrigendum,
