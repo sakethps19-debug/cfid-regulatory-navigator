@@ -47,6 +47,17 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
+/* Body/descriptive copy reads closer to a formal case register when
+   justified rather than ragged-right — applied globally to every <p> (page
+   descriptions, card copy, finding summaries, qualifications) since a
+   single-line paragraph is visually unaffected by justification; only text
+   that actually wraps is affected. The final line of a justified block
+   stays left-aligned, matching standard justified-text convention. */
+p {
+  text-align: justify;
+  text-align-last: left;
+}
+
 @media print {
   nav, header.app-header, .no-print {
     display: none !important;

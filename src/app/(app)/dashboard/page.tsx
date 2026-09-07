@@ -12,15 +12,13 @@ import {
   getScenarioFindings,
   getVerifiedCfidOrders,
 } from "@/lib/data";
-import { isDeepAnalyzed } from "@/lib/processingStages";
 import { formatDate } from "@/lib/formatDate";
 import { interimFinalReversals } from "@/lib/precedentShifts";
 
 const STAT_ITEMS = [
-  { label: "Orders indexed (case-library universe)", href: "/case-library" },
-  { label: "Orders deeply analysed", href: "/library" },
+  { label: "Orders", href: "/case-library" },
   { label: "Scenario findings", href: "/law-library" },
-  { label: "Provisions currently indexed", href: "/law-library" },
+  { label: "Provisions", href: "/law-library" },
 ];
 
 // Strict chronology, latest order first — no status priority, no preference
@@ -54,8 +52,7 @@ export default async function DashboardPage() {
       getMatters(),
       getOrderRelationships(),
     ]);
-  const deepAnalyzedOrders = orders.filter((o) => isDeepAnalyzed(o.processingStage));
-  const counts = [orders.length, deepAnalyzedOrders.length, scenarioFindings.length, provisions.length];
+  const counts = [orders.length, scenarioFindings.length, provisions.length];
   const statusCounts = scenarioFindings.reduce<Record<string, number>>((acc, f) => {
     acc[f.findingStatus] = (acc[f.findingStatus] ?? 0) + 1;
     return acc;
@@ -80,10 +77,10 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`${orders.length} orders are currently indexed as the case-library universe, each with a supplied official SEBI source link — this is not a claim that every related order has been found. ${deepAnalyzedOrders.length} of them have actually been opened, read, and deeply analysed into ${scenarioFindings.length} scenario findings with paragraph citations so far — none of that AI-assisted analysis has yet been legally reviewed by a CFID officer, which is a separate, further step. This is a research-assistance tool — it does not make findings of guilt.`}
+        description={`${orders.length} orders, ${scenarioFindings.length} scenario findings and ${provisions.length} provisions are currently indexed, each with a supplied official SEBI/MCA source link. This is a research-assistance tool — it does not make findings of guilt.`}
       />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-4">
         {STAT_ITEMS.map((item, i) => (
           <Link key={item.label} href={item.href}>
             <Card className="h-full transition hover:ring-[var(--color-gold-600)]">
@@ -197,7 +194,7 @@ export default async function DashboardPage() {
               </li>
             ) : (
               <li>
-                <span className="font-medium text-[var(--color-ink-700)]">All indexed orders are deep-analyzed.</span>{" "}
+                <span className="font-medium text-[var(--color-ink-700)]">Every indexed order has been broken down into scenario findings.</span>{" "}
                 <span className="text-[var(--color-ink-700)]">
                   Newly added orders go through the same process — see{" "}
                   <Link href="/awaiting-analysis" className="font-medium text-[var(--color-gold-700)] hover:underline">
