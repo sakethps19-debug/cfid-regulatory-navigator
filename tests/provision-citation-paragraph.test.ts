@@ -1,10 +1,10 @@
-// Guards the "what all provisions violated" prose paragraph requested for
-// the Scenario Analyzer — compact, order-style citations built only by
-// reformatting provisionNumber strings already on file, never by
+// Guards the "provisions that may warrant examination" prose paragraph
+// used by the Scenario Analyzer — compact, order-style citations built only
+// by reformatting provisionNumber strings already on file, never by
 // fabricating structure. Anything without a clean trailing bracket must be
 // left untouched rather than mis-parsed.
 import { describe, expect, it } from "vitest";
-import { buildViolationParagraph, formatProvisionNumbersForParagraph } from "@/lib/provisionCitationParagraph";
+import { buildProvisionCitationSentences, formatProvisionNumbersForParagraph } from "@/lib/provisionCitationParagraph";
 
 describe("formatProvisionNumbersForParagraph", () => {
   it("collapses consecutive lettered sub-clauses sharing the same prefix", () => {
@@ -42,9 +42,9 @@ describe("formatProvisionNumbersForParagraph", () => {
   });
 });
 
-describe("buildViolationParagraph", () => {
+describe("buildProvisionCitationSentences", () => {
   it("groups by instrument and sorts each group ascending before collapsing", () => {
-    const result = buildViolationParagraph([
+    const result = buildProvisionCitationSentences([
       { instrument: "SEBI Act, 1992", provisionNumber: "Section 12A(c)" },
       { instrument: "SEBI Act, 1992", provisionNumber: "Section 12A(a)" },
       { instrument: "LODR Regulations, 2015", provisionNumber: "Regulation 17(8)" },

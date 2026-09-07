@@ -10,6 +10,12 @@ const FORBIDDEN_PHRASES = [
   "will take action",
   "the company is guilty",
   "sebi will take action",
+  "the entity has, prima facie, potentially violated",
+  "the entity has violated",
+  "the entity has contravened",
+  "committed fraud",
+  "is liable",
+  "established a violation",
 ];
 
 function run(freeText: string, actorFilter?: string, scenarioTypeFilter?: string): AnalysisResult {

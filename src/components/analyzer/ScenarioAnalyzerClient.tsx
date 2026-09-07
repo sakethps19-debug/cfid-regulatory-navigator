@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
-import { buildViolationParagraph } from "@/lib/provisionCitationParagraph";
+import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
@@ -201,7 +201,7 @@ function downloadTextFile(filename: string, content: string, mimeType = "text/pl
   URL.revokeObjectURL(url);
 }
 
-function resultToText(result: AnalysisResult): string {
+export function resultToText(result: AnalysisResult): string {
   const lines: string[] = [];
   lines.push("CFID Regulatory Navigator: Scenario Analysis (research assistance only)");
   lines.push(`Generated: ${new Date().toLocaleString()}`);
@@ -230,7 +230,7 @@ function resultToText(result: AnalysisResult): string {
     lines.push("No potentially relevant provisions were identified from the pilot's analysed precedents.");
   }
   if (result.provisionResults.length > 0) {
-    lines.push("Potential regulatory framework(s) implicated (prima facie / potentially relevant only):");
+    lines.push("Potentially relevant regulatory provisions (prima facie factual similarity only):");
     for (const group of groupByFramework(result.provisionResults)) {
       lines.push(`  ${group.label}:`);
       for (const pr of group.items) {
@@ -239,15 +239,15 @@ function resultToText(result: AnalysisResult): string {
     }
     lines.push("");
 
-    const violationParagraph = buildViolationParagraph(
+    const citedProvisionSentences = buildProvisionCitationSentences(
       result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
     );
-    if (violationParagraph.length > 0) {
-      lines.push("Potential regulatory framework(s) violated: summary paragraph (prima facie only, not a finding):");
+    if (citedProvisionSentences.length > 0) {
+      lines.push("Potentially relevant provisions: summary paragraph (not a finding):");
       lines.push(
-        `Based on the facts entered, the entity has, prima facie, potentially violated ${violationParagraph
+        `Based on the facts entered and the factual similarity identified in the precedent library, ${citedProvisionSentences
           .map((v) => `${v.sentence} of the ${v.instrument}`)
-          .join("; ")}.`,
+          .join("; ")} may warrant examination. This does not indicate that the ingredients of any violation have been established.`,
       );
       lines.push("");
     }
@@ -351,7 +351,7 @@ function csvRow(values: string[]): string {
  * before the header row — a CSV is routinely forwarded, pasted into a
  * spreadsheet, or viewed on its own, detached from the page it came from,
  * so it must not read as a bare violation table with no caveat attached. */
-function resultToCsv(result: AnalysisResult): string {
+export function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
   rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
   rows.push(csvRow([`Generated: ${new Date().toLocaleString()}`]));
@@ -732,7 +732,7 @@ export function ScenarioAnalyzerClient() {
 
       {result && (() => {
         const frameworkGroups = groupByFramework(result.provisionResults);
-        const violationParagraph = buildViolationParagraph(
+        const citedProvisionSentences = buildProvisionCitationSentences(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
         // Every finding referenced anywhere in this result, deduplicated —
@@ -822,14 +822,15 @@ export function ScenarioAnalyzerClient() {
             <div className="rounded-sm border border-[var(--color-border)] bg-white">
               <div className="border-b border-[var(--color-border)] bg-[var(--color-navy-950)] px-4 py-2.5 sm:px-6">
                 <p className="text-sm font-semibold text-white">
-                  Potential regulatory framework{frameworkGroups.length === 1 ? "" : "s"} implicated:{" "}
+                  Potentially relevant regulatory provisions:{" "}
                   {result.provisionResults.length} provision{result.provisionResults.length === 1 ? "" : "s"} across{" "}
                   {frameworkGroups.length} instrument{frameworkGroups.length === 1 ? "" : "s"}
                   {" · "}
                   {result.provisionResults.filter((pr) => pr.upheldPrecedents.length > 0).length} with a prior case confirmed in a final order
                 </p>
                 <p className="mt-1 text-xs text-white/70">
-                  Prima facie / potentially relevant only, not a finding that any provision has actually been violated.
+                  Prima facie factual similarity only, not a finding that the entered scenario has violated any
+                  provision or that the ingredients of any violation have been established.
                 </p>
               </div>
               <div className="divide-y divide-[var(--color-border)]">
@@ -862,26 +863,26 @@ export function ScenarioAnalyzerClient() {
             </div>
           )}
 
-          {violationParagraph.length > 0 && (
+          {citedProvisionSentences.length > 0 && (
             <div className="rounded-sm border border-[var(--color-border)] bg-white p-4 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
-                Potential regulatory framework(s) violated: summary paragraph
+                Potentially relevant provisions: summary paragraph
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-900)]">
-                Based on the facts entered, the entity has, prima facie, potentially violated{" "}
-                {violationParagraph.map((v, i) => (
+                Based on the facts entered and the factual similarity identified in the precedent library,{" "}
+                {citedProvisionSentences.map((v, i) => (
                   <span key={v.instrument}>
-                    {i > 0 && (i === violationParagraph.length - 1 ? "; and " : "; ")}
+                    {i > 0 && (i === citedProvisionSentences.length - 1 ? "; and " : "; ")}
                     {v.sentence} of the {v.instrument}
                   </span>
                 ))}
-                .
+                {" "}may warrant examination.
               </p>
               <p className="mt-2 text-xs text-[var(--color-ink-500)]">
-                Phrased the way a CFID order states its provisions-violated summary, built only from the provisions
-                listed above, this is still prima facie similarity only, not a finding that any provision has
-                actually been violated. See the detailed analysis below for each provision&apos;s own supporting and
-                contrary precedents before relying on this summary.
+                This does not indicate that the ingredients of any violation have been established, built only from
+                the provisions listed above, this is prima facie factual similarity only. See the detailed analysis
+                below for each provision&apos;s own supporting and contrary precedents before relying on this
+                summary.
               </p>
             </div>
           )}

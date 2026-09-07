@@ -59,8 +59,12 @@ export function formatProvisionNumbersForParagraph(provisionNumbers: string[]): 
 
 /** Builds one prose sentence per instrument — "Section 12A(a), (b) and (c)
  * of the SEBI Act, 1992" — from a flat list of { instrument, provisionNumber
- * } pairs, sorted ascending within each instrument first. */
-export function buildViolationParagraph(
+ * } pairs, sorted ascending within each instrument first. Pure citation
+ * formatting only: this never asserts that any of the listed provisions
+ * were violated, and callers must not build "the entity has violated X"
+ * language on top of its output — see how ScenarioAnalyzerClient.tsx uses
+ * it for the required qualified framing. */
+export function buildProvisionCitationSentences(
   items: { instrument: string; provisionNumber: string }[],
 ): { instrument: string; sentence: string }[] {
   const byInstrument = new Map<string, string[]>();
