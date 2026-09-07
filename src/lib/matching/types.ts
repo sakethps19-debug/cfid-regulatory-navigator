@@ -65,6 +65,14 @@ export interface PrecedentRef {
    * a plain-language note on why this precedent may be distinguishable on
    * its facts, built from its own qualification text and evidentiary gaps. */
   distinguishingNote?: string;
+  /** Present only on entries in AnalysisResult.globalContraryPrecedents: a
+   * human-readable explanation of the material-relevance test this specific
+   * contrary precedent passed (which factual categories overlap, and the
+   * resulting score) — see requireMaterialContraryRelevance in engine.ts.
+   * Never present for a contrary precedent that failed that test, since
+   * those are excluded from the result entirely rather than shown with a
+   * caveat. */
+  materialRelevanceNote?: string;
 }
 
 export interface ProvisionResult {
@@ -105,6 +113,14 @@ export interface AnalysisResult {
   detectedConceptLabels: string[];
   provisionResults: ProvisionResult[];
   globalContraryPrecedents: PrecedentRef[];
+  /** Set only when the independent contrary-precedent safeguard actually ran
+   * (the scenario contains a broad trigger concept such as preferential
+   * allotment or circular fund movement) but found zero negative findings
+   * that pass the material-relevance test — i.e. globalContraryPrecedents is
+   * empty NOT because the safeguard didn't apply, but because nothing
+   * currently on file is materially comparable. Null whenever the safeguard
+   * either didn't trigger at all or did find results (shown instead). */
+  contraryPrecedentSearchNote: string | null;
   globalMissingFacts: string[];
   applicableGuardrails: GuardrailNote[];
   hasResults: boolean;

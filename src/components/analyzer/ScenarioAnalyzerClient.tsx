@@ -294,11 +294,16 @@ function resultToText(result: AnalysisResult): string {
       for (const m of pr.missingFacts) lines.push(`  - ${m}`);
     }
   }
-  if (result.globalContraryPrecedents.length > 0) {
+  if (result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) {
     lines.push("----------------------------------------");
     lines.push("Additional contrary precedents retrieved for fund-movement / allotment style facts:");
-    for (const c of result.globalContraryPrecedents) {
-      lines.push(`  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+    if (result.contraryPrecedentSearchNote) {
+      lines.push(`  ${result.contraryPrecedentSearchNote}`);
+    } else {
+      for (const c of result.globalContraryPrecedents) {
+        lines.push(`  - [${c.finding.findingStatus}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+        if (c.materialRelevanceNote) lines.push(`      ${c.materialRelevanceNote}`);
+      }
     }
   }
   lines.push("");
@@ -1186,32 +1191,57 @@ export function ScenarioAnalyzerClient() {
             </div>
           ))}
 
-          {result.globalContraryPrecedents.length > 0 && (
+          {(result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) && (
             <article className="rounded-sm bg-[var(--status-red-bg)] p-4  ring-1 border-[var(--status-red-ring)] sm:p-6">
               <h3 className="text-base font-semibold text-[var(--status-red-text)]">
                 Additional contrary precedent(s): fund-movement / allotment facts
               </h3>
               <p className="mt-1 text-sm text-[var(--status-red-text)]">
                 Because the scenario involves preferential allotment, circular funding, alleged front entities, or
-                unexplained fund movements, the following negative precedents are retrieved independently, even where
-                they did not otherwise rank as a top match:
+                unexplained fund movements, this is an independent search for negative precedents materially relevant
+                to those specific facts, even where they did not otherwise rank as a top match. This is a potentially
+                relevant contrary precedent. Its weight depends on whether the factual and evidentiary features are
+                materially comparable.
               </p>
-              <ul className="mt-3 space-y-2">
-                {result.globalContraryPrecedents.map((c) => (
-                  <li key={c.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-red-ring)]">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={c.finding.findingStatus} />
-                      <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
-                    <PublicationWarningNote status={c.finding.publicationStatus} />
-                    {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>}
-                    <div className="mt-1">
-                      <SourceLink href={c.finding.officialSourceUrl} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {result.contraryPrecedentSearchNote ? (
+                <p className="mt-3 rounded-lg bg-white p-3 text-sm font-medium text-[var(--status-red-text)] ring-1 ring-inset ring-[var(--status-red-ring)]">
+                  {result.contraryPrecedentSearchNote}
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {result.globalContraryPrecedents.map((c) => (
+                    <li key={c.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-red-ring)]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge status={c.finding.findingStatus} />
+                        <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
+                      <PublicationWarningNote status={c.finding.publicationStatus} />
+                      {c.materialRelevanceNote && (
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Comparable features
+                        </p>
+                      )}
+                      {c.materialRelevanceNote && <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{c.materialRelevanceNote}</p>}
+                      {c.ingredientsNotEstablished.length > 0 && (
+                        <>
+                          <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                            Potentially distinguishing features
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--status-red-text)]">
+                            Also on record for this precedent, not established by your facts:{" "}
+                            {c.ingredientsNotEstablished.join("; ")}
+                          </p>
+                        </>
+                      )}
+                      {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>}
+                      <div className="mt-1">
+                        <SourceLink href={c.finding.officialSourceUrl} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </article>
           )}
 

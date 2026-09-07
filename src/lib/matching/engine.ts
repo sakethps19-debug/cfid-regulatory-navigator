@@ -73,10 +73,20 @@ function buildDistinguishingNote(finding: ScenarioFinding): string | undefined {
   if (finding.evidentiaryGaps.length > 0) {
     parts.push(`Facts on record that distinguished this matter: ${finding.evidentiaryGaps.join("; ")}.`);
   }
+  let note: string;
   if (parts.length === 0) {
-    return `This precedent (${finding.recordId}) was not confirmed in a final order on its own facts; it should be examined for whether the same distinguishing factors are present before being treated as controlling here.`;
+    note = `This precedent (${finding.recordId}) was not confirmed in a final order on its own facts; it should be examined for whether the same distinguishing factors are present before being treated as controlling here.`;
+  } else {
+    note = `This precedent may be distinguishable on the following grounds: ${parts.join(" ")}`;
   }
-  return `This precedent may be distinguishable on the following grounds: ${parts.join(" ")}`;
+  // Respect source/citation verification status: never silently hide an
+  // unverified contrary precedent, but flag it so the officer knows this
+  // specific record's own data has not yet been independently checked
+  // against the source order.
+  if (!finding.sourceDocumentVerified || !finding.paragraphCitationVerified) {
+    note += ` This precedent's source document and/or paragraph citation has not yet been independently verified.`;
+  }
+  return note;
 }
 
 function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
@@ -272,6 +282,26 @@ function isBroadSecuritiesFraudProvision(provisionId: string): boolean {
   return /^(PFUTP-3|PFUTP-4|SEBI-ACT-12A|SEBI-ACT-11-2-e)/.test(provisionId);
 }
 
+/** Human-readable explanation of why a globally-retrieved contrary
+ * precedent passed the material-relevance test — the categorised overlap
+ * that earned it a place in the result, never a bare score. */
+function buildMaterialRelevanceNote(sf: ScoredFinding): string {
+  const categories: string[] = [];
+  if (sf.matchedByCategory.transactionTypes.length > 0) {
+    categories.push(`transaction type (${sf.matchedByCategory.transactionTypes.join("; ")})`);
+  }
+  if (sf.matchedByCategory.allegedConduct.length > 0) {
+    categories.push(`alleged conduct (${sf.matchedByCategory.allegedConduct.join("; ")})`);
+  }
+  if (sf.matchedByCategory.actorRoles.length > 0) {
+    categories.push(`actor role (${sf.matchedByCategory.actorRoles.join("; ")})`);
+  }
+  if (sf.matchedByCategory.evidenceTypes.length > 0) {
+    categories.push(`evidence type (${sf.matchedByCategory.evidenceTypes.join("; ")})`);
+  }
+  return `Retrieved because the entered facts materially overlap with this precedent on: ${categories.join("; ")}.`;
+}
+
 function buildWhyRelevant(provision: LegalProvision, best: ScoredFinding): string {
   const ingredientText = best.matchedIngredients.length > 0 ? best.matchedIngredients.join("; ") : "the general subject matter";
   let text =
@@ -365,7 +395,13 @@ export function analyzeScenario(
     if (!provision) continue;
 
     const supporting = findings.filter((f) => !NEGATIVE_STATUSES.has(f.finding.findingStatus));
-    const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.finding.findingStatus));
+    // A contrary precedent must carry real material weight, not merely a
+    // weak evidence-type/actor-role overlap (weight 1-2 categories that
+    // recur across many unrelated matters) — require the same substantive
+    // (transaction-type or conduct) overlap that anchors supporting
+    // precedents. See the same requirement applied to the independent
+    // global contrary-precedent search below (isMateriallyRelevantContrary).
+    const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.finding.findingStatus) && f.substantiveCategoriesMatched >= 1);
     if (supporting.length === 0) continue; // provision only has contrary evidence here — not "potentially relevant" on its own
 
     // Prefer the highest-scoring RESOLVED finding (anything other than
@@ -400,22 +436,43 @@ export function analyzeScenario(
 
   // Independently retrieve contrary precedents for fund-movement / allotment
   // style scenarios, per the pilot's explicit safeguard, even if they did
-  // not surface through provision grouping above.
+  // not surface through provision grouping above — but, exactly like every
+  // other precedent this engine surfaces, only when the specific finding
+  // itself carries real material relevance to the entered facts. Detecting
+  // a broad trigger concept (e.g. "preferential allotment") only decides
+  // whether to RUN this independent search at all; it never substitutes for
+  // scoring each individual candidate finding on its own facts. Previously
+  // every published negative finding was added once any trigger fired, with
+  // no relevance check at all (score hardcoded to 0) — a real bug found
+  // during the architecture review, since fixed here.
   const triggersContrary = [...detectedIds].some((id) => CONTRARY_PRECEDENT_TRIGGER_TAGS.has(id));
   const globalContraryPrecedents: PrecedentRef[] = [];
+  let contraryPrecedentSearchNote: string | null = null;
   if (triggersContrary) {
-    for (const f of publishedScenarioFindings.filter((f) => NEGATIVE_STATUSES.has(f.findingStatus))) {
-      const alreadyShown = provisionResults.some((pr) => pr.contraryPrecedents.some((c) => c.finding.recordId === f.recordId));
-      if (!alreadyShown) {
-        globalContraryPrecedents.push({
-          finding: f,
-          score: 0,
-          matchedFactualIngredients: [],
-          matchedByCategory: { transactionTypes: [], actorRoles: [], allegedConduct: [], evidenceTypes: [] },
-          ingredientsNotEstablished: ingredientsNotEstablished(f, []),
-          distinguishingNote: buildDistinguishingNote(f),
-        });
-      }
+    const alreadyShownIds = new Set(provisionResults.flatMap((pr) => pr.contraryPrecedents.map((c) => c.finding.recordId)));
+    const materiallyRelevantContrary = publishedScenarioFindings
+      .filter((f) => NEGATIVE_STATUSES.has(f.findingStatus) && !alreadyShownIds.has(f.recordId))
+      .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter, evidenceFilter))
+      // Same material-relevance bar as every supporting precedent and the
+      // per-provision contrary list above: a genuine transaction-type or
+      // conduct overlap, never merely a shared actor role, evidence type, or
+      // the bare presence of a generic trigger word like "fraud"/"company".
+      .filter((sf) => sf.score >= MIN_FINDING_SCORE && sf.substantiveCategoriesMatched >= 1)
+      .sort((a, b) => b.score - a.score);
+
+    for (const sf of materiallyRelevantContrary) {
+      globalContraryPrecedents.push({
+        finding: sf.finding,
+        score: sf.score,
+        matchedFactualIngredients: sf.matchedIngredients,
+        matchedByCategory: sf.matchedByCategory,
+        ingredientsNotEstablished: ingredientsNotEstablished(sf.finding, sf.matchedIngredients),
+        distinguishingNote: buildDistinguishingNote(sf.finding),
+        materialRelevanceNote: buildMaterialRelevanceNote(sf),
+      });
+    }
+    if (globalContraryPrecedents.length === 0) {
+      contraryPrecedentSearchNote = "No materially comparable contrary precedent was identified in the currently structured corpus.";
     }
   }
 
@@ -471,6 +528,7 @@ export function analyzeScenario(
     detectedConceptLabels: unique(detected.map((c) => c.label)),
     provisionResults,
     globalContraryPrecedents,
+    contraryPrecedentSearchNote,
     globalMissingFacts,
     applicableGuardrails,
     hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
