@@ -7,12 +7,14 @@ import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { LegalReviewBadge } from "@/components/LegalReviewBadge";
+import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengthDisplay";
 import { legalReviewLabel } from "@/lib/publicationLifecycle";
+import { findingMaturityTier } from "@/lib/findingMaturity";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -285,7 +287,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(u.finding.findingStatus)} · ${legalReviewLabel(u.finding.humanLegalReviewCompleted)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(u.finding.findingStatus)} · ${legalReviewLabel(u.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(u.finding)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
         );
       }
     } else {
@@ -294,7 +296,7 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
@@ -304,7 +306,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Contrary precedent(s):");
       for (const c of pr.contraryPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
       }
     }
@@ -320,7 +322,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push(`  ${result.contraryPrecedentSearchNote}`);
     } else {
       for (const c of result.globalContraryPrecedents) {
-        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
         if (c.materialRelevanceNote) lines.push(`      ${c.materialRelevanceNote}`);
       }
     }
@@ -399,6 +401,7 @@ export function resultToCsv(result: AnalysisResult): string {
       "Supporting precedents human-legally-reviewed",
       "Matched factual ingredients",
       "Supporting precedent record IDs",
+      "Supporting precedents record verification maturity (per precedent)",
       "Missing facts / evidence",
     ])
   );
@@ -414,6 +417,7 @@ export function resultToCsv(result: AnalysisResult): string {
         `${reviewedCount} of ${pr.supportingPrecedents.length}`,
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
+        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
         pr.missingFacts.join("; "),
       ])
     );
@@ -1019,6 +1023,7 @@ export function ScenarioAnalyzerClient() {
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={u.finding.findingStatus} />
                             <LegalReviewBadge reviewed={u.finding.humanLegalReviewCompleted} />
+                            <FindingMaturityBadge finding={u.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{u.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{u.finding.scenarioTitle}</p>
@@ -1050,6 +1055,7 @@ export function ScenarioAnalyzerClient() {
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={s.finding.findingStatus} />
                             <LegalReviewBadge reviewed={s.finding.humanLegalReviewCompleted} />
+                            <FindingMaturityBadge finding={s.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{s.finding.scenarioTitle}</p>
@@ -1090,6 +1096,7 @@ export function ScenarioAnalyzerClient() {
                             <div className="flex flex-wrap items-center gap-2">
                               <StatusBadge status={c.finding.findingStatus} />
                               <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
+                              <FindingMaturityBadge finding={c.finding} />
                               <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                             </div>
                             <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
@@ -1278,6 +1285,7 @@ export function ScenarioAnalyzerClient() {
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusBadge status={c.finding.findingStatus} />
                         <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
+                        <FindingMaturityBadge finding={c.finding} />
                         <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                       </div>
                       <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
@@ -1326,6 +1334,8 @@ export function ScenarioAnalyzerClient() {
                   <li key={f.recordId} className="rounded-lg bg-[var(--color-neutral-50)] p-3 border border-[var(--color-border)]">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={f.findingStatus} />
+                      <LegalReviewBadge reviewed={f.humanLegalReviewCompleted} />
+                      <FindingMaturityBadge finding={f} />
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{f.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{f.scenarioTitle}</p>

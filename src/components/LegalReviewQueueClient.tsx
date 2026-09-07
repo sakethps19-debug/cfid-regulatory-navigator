@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { PublicationStatus, ScenarioFinding, ValidationIssue } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LegalReviewBadge } from "@/components/LegalReviewBadge";
+import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
@@ -188,6 +189,7 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
               <span className="text-sm text-[var(--color-ink-700)]">{f.caseName}</span>
               <StatusBadge status={f.findingStatus} />
               <LegalReviewBadge reviewed={f.humanLegalReviewCompleted} />
+              <FindingMaturityBadge finding={f} />
               <span className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
                 {f.publicationStatus}
               </span>
