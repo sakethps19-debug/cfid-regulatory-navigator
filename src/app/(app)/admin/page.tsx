@@ -53,6 +53,13 @@ export default async function AdminDashboardPage() {
         title="Admin Processing Dashboard"
         description="Live counts computed directly from the database on every page load; nothing here is cached or estimated."
       />
+      <p className="mb-6 text-xs text-[var(--color-ink-500)]">
+        This dashboard, the validation-issues list, and the change log below are read-only: nothing on these pages
+        writes to the database. The only browser-side write path in this tool is the &quot;Flag this result&quot;
+        control on the Scenario Analyzer, which records an officer&apos;s note in the validation-issues register;
+        every other correction shown here (conduct tags, transaction types, and similar curated fields) was made
+        directly against the database outside this application and is recorded in the change log purely for record.
+      </p>
 
       <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Corpus</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
