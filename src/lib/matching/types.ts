@@ -69,11 +69,19 @@ export interface PrecedentRef {
   score: number;
   matchedFactualIngredients: string[];
   matchedByCategory: MatchedByCategory;
-  /** This precedent's own fact-element tags that the entered scenario did
-   * NOT establish — i.e. what else this precedent required that the query
-   * doesn't mention. Read as "not (yet) established by your facts", not as
-   * a statement that the entered scenario lacks these elements. */
-  ingredientsNotEstablished: string[];
+  /** MECHANICAL tag subtraction: this precedent's own curated fact-element
+   * TAGS (transaction type / actor role / conduct / evidence — bare
+   * vocabulary labels, e.g. "Related party") that the entered scenario did
+   * NOT establish, i.e. what else this precedent's own record touches on
+   * that the query doesn't mention. Read as "not (yet) established by your
+   * facts", not as a statement that the entered scenario lacks these
+   * elements. Deliberately distinct from, and never a substitute for,
+   * finding.ingredientsNotEstablished — the curated, human-written "legal
+   * ingredients not established" explanation for THIS precedent's own
+   * outcome (scenario_findings.ingredients_not_established), which is a
+   * reasoned legal analysis, not a tag list. See
+   * additionalPrecedentFactsNotMatched in engine.ts. */
+  additionalPrecedentFactsNotMatched: string[];
   /** Present only for contrary (status "Not Confirmed in Final Order"/"Withdrawn") precedents:
    * a plain-language note on why this precedent may be distinguishable on
    * its facts, built from its own qualification text and evidentiary gaps. */

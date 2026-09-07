@@ -306,6 +306,9 @@ export function resultToText(result: AnalysisResult): string {
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
       }
+      for (const item of s.finding.ingredientsNotEstablished) {
+        lines.push(`      Legal ingredient not established (this precedent's own outcome): ${item}`);
+      }
     }
     if (pr.contraryPrecedents.length > 0) {
       lines.push("Contrary precedent(s):");
@@ -313,6 +316,9 @@ export function resultToText(result: AnalysisResult): string {
         lines.push(
           `  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
+        for (const item of c.finding.ingredientsNotEstablished) {
+          lines.push(`      Legal ingredient not established (this precedent's own outcome): ${item}`);
+        }
       }
     }
     if (pr.missingFacts.length > 0) {
@@ -1068,14 +1074,26 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
-                          {s.ingredientsNotEstablished.length > 0 && (
+                          {s.additionalPrecedentFactsNotMatched.length > 0 && (
                             <p
                               className="mt-1 text-xs text-[var(--status-amber-text)]"
-                              title="This does not mean the fact is absent. It means the current scenario does not establish or mention it."
+                              title="This does not mean the fact is absent. It means the current scenario does not establish or mention it. This is a mechanical tag comparison, not a legal analysis."
                             >
-                              Facts not stated in the entered scenario, also required in this precedent:{" "}
-                              {s.ingredientsNotEstablished.join("; ")}
+                              Additional precedent facts not stated in your scenario:{" "}
+                              {s.additionalPrecedentFactsNotMatched.join("; ")}
                             </p>
+                          )}
+                          {s.finding.ingredientsNotEstablished.length > 0 && (
+                            <div className="mt-1" title="Curated legal analysis specific to this precedent's own case, never a statement about the scenario you entered.">
+                              <span className="text-xs font-semibold text-[var(--color-ink-700)]">
+                                Legal ingredients not established (this precedent&apos;s own outcome):
+                              </span>
+                              <ul className="mt-0.5 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
+                                {s.finding.ingredientsNotEstablished.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
                           {s.finding.precedentOutcomeNote && (
                             <p className="mt-1 text-xs italic text-[var(--status-green-text)]">
@@ -1319,19 +1337,31 @@ export function ScenarioAnalyzerClient() {
                         </p>
                       )}
                       {c.materialRelevanceNote && <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{c.materialRelevanceNote}</p>}
-                      {c.ingredientsNotEstablished.length > 0 && (
+                      {c.additionalPrecedentFactsNotMatched.length > 0 && (
                         <>
                           <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
                             Potentially distinguishing features
                           </p>
                           <p
                             className="mt-0.5 text-xs text-[var(--status-red-text)]"
-                            title="This does not mean the fact is absent. It means the current scenario does not establish or mention it."
+                            title="This does not mean the fact is absent. It means the current scenario does not establish or mention it. This is a mechanical tag comparison, not a legal analysis."
                           >
-                            Facts not stated in the entered scenario, also on record for this precedent:{" "}
-                            {c.ingredientsNotEstablished.join("; ")}
+                            Additional precedent facts not stated in your scenario:{" "}
+                            {c.additionalPrecedentFactsNotMatched.join("; ")}
                           </p>
                         </>
+                      )}
+                      {c.finding.ingredientsNotEstablished.length > 0 && (
+                        <div className="mt-1.5" title="Curated legal analysis specific to this precedent's own case, never a statement about the scenario you entered.">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                            Legal ingredients not established (this precedent&apos;s own outcome)
+                          </span>
+                          <ul className="mt-0.5 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
+                            {c.finding.ingredientsNotEstablished.map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                       {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>}
                       <div className="mt-1">

@@ -243,16 +243,16 @@ describe("Safeguard: careful, hedged language only", () => {
   });
 });
 
-describe("Extension: ingredients not established", () => {
+describe("Extension: additional precedent facts not matched (mechanical tag subtraction)", () => {
   it("every precedent ref reports which of its own tags the query did not establish", () => {
     const result = run("Fictitious sales and assets disclosed through financial statements.");
     const allRefs = result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents]);
     expect(allRefs.length).toBeGreaterThan(0);
     for (const ref of allRefs) {
-      expect(Array.isArray(ref.ingredientsNotEstablished)).toBe(true);
+      expect(Array.isArray(ref.additionalPrecedentFactsNotMatched)).toBe(true);
       // No overlap between what matched and what's reported as not established.
       for (const label of ref.matchedFactualIngredients) {
-        expect(ref.ingredientsNotEstablished).not.toContain(label);
+        expect(ref.additionalPrecedentFactsNotMatched).not.toContain(label);
       }
     }
   });

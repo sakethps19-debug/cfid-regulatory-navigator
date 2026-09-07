@@ -12,7 +12,7 @@ import type { PrecedentRef, ProvisionResult } from "@/lib/matching/types";
 function toRef(recordId: string): PrecedentRef {
   const finding = scenarioFindings.find((f) => f.recordId === recordId);
   if (!finding) throw new Error(`fixture missing: ${recordId}`);
-  return { finding, score: 10, matchedFactualIngredients: [], matchedByCategory: { transactionTypes: [], actorRoles: [], allegedConduct: [], evidenceTypes: [] }, ingredientsNotEstablished: [] };
+  return { finding, score: 10, matchedFactualIngredients: [], matchedByCategory: { transactionTypes: [], actorRoles: [], allegedConduct: [], evidenceTypes: [] }, additionalPrecedentFactsNotMatched: [] };
 }
 
 function baseProvisionResult(overrides: Partial<ProvisionResult>): ProvisionResult {

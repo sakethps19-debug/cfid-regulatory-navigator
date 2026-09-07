@@ -196,9 +196,20 @@ export interface ScenarioFinding {
    * evidentiaryGaps or any missing-facts checklist. Null when not
    * applicable/not recorded. */
   precedentOutcomeNote: string | null;
-  // computed at query time: concepts present in this finding's own tags that
-  // did NOT match the query scenario — used to show "ingredients not
-  // established" for a candidate precedent (see the matching engine).
+  // CURATED, not engine-computed: loaded directly from
+  // scenario_findings.ingredients_not_established (see data.ts's
+  // mapFinding). A human-written explanation of which specific legal
+  // ingredients/elements of a charge were considered but found NOT
+  // established for THIS precedent's own outcome — a fact about the cited
+  // precedent's own case, never a claim about the present scenario being
+  // analyzed, and never to be confused with the mechanical tag-subtraction
+  // the matching engine computes at query time (see
+  // PrecedentRef.additionalPrecedentFactsNotMatched in
+  // lib/matching/types.ts, and additionalPrecedentFactsNotMatched in
+  // lib/matching/engine.ts) — that is a bare list of unmatched vocabulary
+  // tags, not a legal analysis. Empty for the majority of findings that
+  // have not yet had this specific curation done; an empty array here is
+  // "not yet curated", never "nothing was found not established".
   ingredientsNotEstablished: string[];
   // Independent review flags. A finding is never described as "verified"
   // merely because it was script-generated — each of these is tracked and

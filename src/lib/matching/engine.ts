@@ -112,9 +112,20 @@ export function buildEffectiveScenarioConcepts(
   return merged;
 }
 
-/** A precedent's own fact-element tags that were NOT part of what matched
- * the query — i.e. what more this precedent required. */
-function ingredientsNotEstablished(finding: ScenarioFinding, matchedIngredients: string[]): string[] {
+/** MECHANICAL tag subtraction only: this precedent's own curated
+ * fact-element TAGS (transaction type / actor role / conduct / evidence)
+ * that were not part of what matched the query — bare vocabulary labels
+ * like "Related party" or "Bank statements", never a legal analysis. This
+ * is deliberately named and typed apart from
+ * ScenarioFinding.ingredientsNotEstablished (PrecedentRef.
+ * additionalPrecedentFactsNotMatched below), which is the genuinely
+ * curated, reasoned "legal ingredients not established" content from
+ * scenario_findings.ingredients_not_established — a human-written
+ * explanation of which specific elements of a charge were considered but
+ * not made out for THAT precedent's own outcome. Conflating the two under
+ * one name or one label risks the mechanical list reading as if it were
+ * that curated legal analysis, which it is not. */
+function additionalPrecedentFactsNotMatched(finding: ScenarioFinding, matchedIngredients: string[]): string[] {
   const matchedSet = new Set(matchedIngredients);
   const allOwnTags = unique([
     ...finding.transactionTypes,
@@ -253,7 +264,7 @@ function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
     score: sf.score,
     matchedFactualIngredients: sf.matchedIngredients,
     matchedByCategory: sf.matchedByCategory,
-    ingredientsNotEstablished: ingredientsNotEstablished(sf.finding, sf.matchedIngredients),
+    additionalPrecedentFactsNotMatched: additionalPrecedentFactsNotMatched(sf.finding, sf.matchedIngredients),
     distinguishingNote: buildDistinguishingNote(sf.finding),
   };
 }
@@ -530,7 +541,7 @@ export function analyzeScenario(
         score: sf.score,
         matchedFactualIngredients: sf.matchedIngredients,
         matchedByCategory: sf.matchedByCategory,
-        ingredientsNotEstablished: ingredientsNotEstablished(sf.finding, sf.matchedIngredients),
+        additionalPrecedentFactsNotMatched: additionalPrecedentFactsNotMatched(sf.finding, sf.matchedIngredients),
         distinguishingNote: buildDistinguishingNote(sf.finding),
         materialRelevanceNote: buildMaterialRelevanceNote(sf),
       });
