@@ -190,6 +190,7 @@ function parseScenarioFindings(
       provisionMappingVerified: true,
       noticeeMappingVerified: true,
       humanLegalReviewCompleted: true,
+      publicationStatus: "Published to search",
     });
   }
   return findings;

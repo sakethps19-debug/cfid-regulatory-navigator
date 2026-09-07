@@ -1,3 +1,4 @@
+import type { ConceptKind } from "@/data/curated/concept-tags";
 import type { FindingStatus, LegalProvision, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import type { WordCorrection } from "./fuzzyMatch";
 
@@ -10,6 +11,30 @@ export interface ScenarioQuery {
    * describes transaction subject matter (e.g. "financial statement
    * disclosure") rather than a violation/scenario category. */
   scenarioTypeFilter?: string | null;
+  /** Optional exact-match boost against a finding's evidenceTypes (the
+   * "Evidence indicator" dropdown in the UI) — lets an officer who already
+   * knows what documentary evidence exists point the matcher at it directly,
+   * rather than relying only on free-text detection. */
+  evidenceFilter?: string | null;
+  /** Descriptive-only fields carried through to the result and any export,
+   * never used in scoring: there is no curated data to reliably match a
+   * conduct period, entity name or amount against, and attempting fuzzy
+   * date/amount matching risked implying a precision this pilot does not
+   * have. Included so an officer's own record of the scenario is complete
+   * without silently discarding what they typed. */
+  conductPeriod?: string | null;
+  entityOrIssuer?: string | null;
+  amountInvolved?: string | null;
+}
+
+/** Which of the four fact-element categories were detected at all in the
+ * entered scenario (by free text or an explicit filter) versus not stated —
+ * surfaced as a plain completeness summary, never as a claim that a
+ * "not stated" category is actually absent from the underlying facts, only
+ * that this scenario, as entered, did not mention it. */
+export interface ScenarioCompleteness {
+  detected: ConceptKind[];
+  notStated: ConceptKind[];
 }
 
 export type ConfidenceLevel = "High" | "Medium" | "Low";
@@ -97,4 +122,7 @@ export interface AnalysisResult {
    * displayed back as the entered scenario. Empty when no correction was
    * needed. */
   semanticAssist: WordCorrection[];
+  /** See ScenarioCompleteness — which fact-element categories this scenario
+   * touched on at all, versus which it did not mention. */
+  completeness: ScenarioCompleteness;
 }

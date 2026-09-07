@@ -12,7 +12,15 @@ import {
 const MAX_SCENARIO_LENGTH = 4000;
 
 export async function POST(request: NextRequest) {
-  let body: { freeText?: unknown; actorFilter?: unknown; scenarioTypeFilter?: unknown };
+  let body: {
+    freeText?: unknown;
+    actorFilter?: unknown;
+    scenarioTypeFilter?: unknown;
+    evidenceFilter?: unknown;
+    conductPeriod?: unknown;
+    entityOrIssuer?: unknown;
+    amountInvolved?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -26,6 +34,14 @@ export async function POST(request: NextRequest) {
   const actorFilter = typeof body.actorFilter === "string" && body.actorFilter ? body.actorFilter : null;
   const scenarioTypeFilter =
     typeof body.scenarioTypeFilter === "string" && body.scenarioTypeFilter ? body.scenarioTypeFilter : null;
+  const evidenceFilter = typeof body.evidenceFilter === "string" && body.evidenceFilter ? body.evidenceFilter : null;
+  const MAX_DESCRIPTIVE_FIELD_LENGTH = 200;
+  const conductPeriod =
+    typeof body.conductPeriod === "string" && body.conductPeriod ? body.conductPeriod.slice(0, MAX_DESCRIPTIVE_FIELD_LENGTH) : null;
+  const entityOrIssuer =
+    typeof body.entityOrIssuer === "string" && body.entityOrIssuer ? body.entityOrIssuer.slice(0, MAX_DESCRIPTIVE_FIELD_LENGTH) : null;
+  const amountInvolved =
+    typeof body.amountInvolved === "string" && body.amountInvolved ? body.amountInvolved.slice(0, MAX_DESCRIPTIVE_FIELD_LENGTH) : null;
 
   // Same typo-correction pre-pass the matching engine applies internally
   // (see lib/matching/fuzzyMatch.ts) is applied here too, so the Postgres
@@ -42,7 +58,7 @@ export async function POST(request: NextRequest) {
     searchScenarioFindingsFullText(correctedText),
   ]);
   const result = analyzeScenario(
-    { freeText, actorFilter, scenarioTypeFilter },
+    { freeText, actorFilter, scenarioTypeFilter, evidenceFilter, conductPeriod, entityOrIssuer, amountInvolved },
     scenarioFindings,
     provisions,
     legalTests,

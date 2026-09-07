@@ -11,9 +11,10 @@ import scenarioFindingsJson from "@/data/generated/scenarioFindings.json";
 import provisionsJson from "@/data/generated/provisions.json";
 import legalTestsJson from "@/data/generated/legalTests.json";
 
-type RawFinding = Omit<ScenarioFinding, "provisionLinks" | "findingStatus"> & {
+type RawFinding = Omit<ScenarioFinding, "provisionLinks" | "findingStatus" | "publicationStatus"> & {
   provisionLinks?: ScenarioFinding["provisionLinks"];
   findingStatus: string;
+  publicationStatus?: ScenarioFinding["publicationStatus"];
 };
 
 // This pilot-era generated JSON predates both per-provision tag attribution
@@ -31,11 +32,16 @@ const LEGACY_STATUS_LABELS: Record<string, ScenarioFinding["findingStatus"]> = {
 // (empty justifyingTags, same as the pre-attribution behavior) from the
 // flat provisionIds list — these fixtures test general matching behavior,
 // not narrow-scope attribution, which has its own dedicated test file.
+// It also predates the publication/quarantine lifecycle (migration
+// 0015_publication_status.sql); every one of these findings is presently
+// live in the database as "Published to search", so that is the default
+// applied here — never a claim that a fresh review set it that way.
 export const scenarioFindings = (scenarioFindingsJson as RawFinding[]).map(
   (f): ScenarioFinding => ({
     ...f,
     findingStatus: LEGACY_STATUS_LABELS[f.findingStatus] ?? (f.findingStatus as ScenarioFinding["findingStatus"]),
     provisionLinks: f.provisionLinks ?? f.provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] })),
+    publicationStatus: f.publicationStatus ?? "Published to search",
   })
 );
 export const provisions = provisionsJson as LegalProvision[];

@@ -14,6 +14,7 @@ import type {
   ProcessingMetrics,
   ProcessingStage,
   ProvisionVersion,
+  PublicationStatus,
   ResidualOrderRow,
   ScenarioFinding,
   ValidationIssue,
@@ -54,6 +55,14 @@ const FINDING_STATUS_LABELS: Record<ScenarioFindingRow["finding_status"], Findin
   withdrawn: "Withdrawn",
   inconclusive: "Inconclusive",
   procedural_observation: "Procedural observation",
+};
+
+const PUBLICATION_STATUS_LABELS: Record<ScenarioFindingRow["publication_status"], PublicationStatus> = {
+  draft: "Draft",
+  quarantined: "Quarantined",
+  published_to_search: "Published to search",
+  published_with_warning: "Published with warning",
+  withdrawn: "Withdrawn",
 };
 
 const VERIFICATION_STATUS_LABELS: Record<LegalProvisionRow["current_text_verification_status"], LegalProvision["currentTextVerificationStatus"]> = {
@@ -119,6 +128,7 @@ function mapFinding(
     provisionMappingVerified: row.provision_mapping_verified,
     noticeeMappingVerified: row.noticee_mapping_verified,
     humanLegalReviewCompleted: row.human_legal_review_completed,
+    publicationStatus: PUBLICATION_STATUS_LABELS[row.publication_status] ?? "Draft",
   };
 }
 

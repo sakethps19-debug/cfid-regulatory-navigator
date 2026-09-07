@@ -51,6 +51,14 @@ const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
 // matter (e.g. "Financial statement disclosure") rather than a violation.
 // Offering those here read as claiming disclosure itself is a violation.
 const SCENARIO_TYPE_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "conduct");
+const EVIDENCE_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "evidence");
+
+const COMPLETENESS_LABELS: Record<string, string> = {
+  transaction: "transaction type",
+  actor: "actor / role",
+  conduct: "alleged conduct",
+  evidence: "evidence indicator",
+};
 
 const EXAMPLE_SCENARIOS = [
   {
@@ -107,6 +115,64 @@ const EXAMPLE_SCENARIOS = [
   },
 ];
 
+const EVIDENCE_LABEL_BY_ID = new Map(EVIDENCE_OPTIONS.map((o) => [o.id, o.label]));
+
+function evidenceLabel(id: string): string {
+  return EVIDENCE_LABEL_BY_ID.get(id) ?? id.replace(/_/g, " ");
+}
+
+interface EvidenceMatrix {
+  records: { recordId: string }[];
+  rows: { evidenceId: string; evidenceLabel: string; presentInYourFacts: boolean; presentByRecordId: Record<string, boolean> }[];
+}
+
+/** Which evidence indicators are recorded against each precedent cited for
+ * this provision, and which of those the entered scenario itself touched
+ * on — built entirely from each precedent's own curated evidenceTypes tags
+ * (never inferred) and the provision result's already-computed
+ * matchedByCategory.evidenceTypes for the "your facts" column. Only shown
+ * when there are at least two cited precedents to compare and at least one
+ * recorded evidence tag between them; a single precedent already has its
+ * evidence indicators listed under "Matched evidence indicators" above, and
+ * a table with nothing to compare would just be noise. */
+function buildEvidenceMatrix(pr: ProvisionResult): EvidenceMatrix | null {
+  const seen = new Map<string, ProvisionResult["upheldPrecedents"][number]>();
+  for (const p of [...pr.upheldPrecedents, ...pr.supportingPrecedents, ...pr.contraryPrecedents]) {
+    if (!seen.has(p.finding.recordId)) seen.set(p.finding.recordId, p);
+  }
+  const records = [...seen.values()];
+  if (records.length < 2) return null;
+  const evidenceIds = [...new Set(records.flatMap((r) => r.finding.evidenceTypes))];
+  if (evidenceIds.length === 0) return null;
+  return {
+    records: records.map((r) => ({ recordId: r.finding.recordId })),
+    rows: evidenceIds.map((id) => {
+      const label = evidenceLabel(id);
+      return {
+        evidenceId: id,
+        evidenceLabel: label,
+        presentInYourFacts: pr.matchedByCategory.evidenceTypes.includes(label),
+        presentByRecordId: Object.fromEntries(records.map((r) => [r.finding.recordId, r.finding.evidenceTypes.includes(id)])),
+      };
+    }),
+  };
+}
+
+/** Caution shown on a precedent card whose finding carries
+ * publicationStatus "Published with warning" — this status is deliberately
+ * still surfaced by the matching engine (see EXCLUDED_PUBLICATION_STATUSES
+ * in engine.ts), so the caution itself is how that warning reaches the
+ * officer, rather than the finding being silently dropped. Renders nothing
+ * for the ordinary "Published to search" status. */
+function PublicationWarningNote({ status }: { status: string }) {
+  if (status !== "Published with warning") return null;
+  return (
+    <p className="mt-1 text-xs font-semibold text-[#7a5310]">
+      Published with warning: this finding has a recorded caution attached, review it directly before relying on it.
+    </p>
+  );
+}
+
 function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -126,6 +192,23 @@ function resultToText(result: AnalysisResult): string {
   lines.push("");
   lines.push("Scenario:");
   lines.push(result.query.freeText);
+  lines.push("");
+  if (result.query.conductPeriod || result.query.entityOrIssuer || result.query.amountInvolved) {
+    lines.push("Scenario details entered (for record only, not matched against the precedent library):");
+    if (result.query.conductPeriod) lines.push(`  Conduct period: ${result.query.conductPeriod}`);
+    if (result.query.entityOrIssuer) lines.push(`  Entity/issuer: ${result.query.entityOrIssuer}`);
+    if (result.query.amountInvolved) lines.push(`  Amount involved: ${result.query.amountInvolved}`);
+    lines.push("");
+  }
+  const completenessLabels: Record<string, string> = {
+    transaction: "transaction type",
+    actor: "actor / role",
+    conduct: "alleged conduct",
+    evidence: "evidence indicator",
+  };
+  lines.push(
+    `Scenario completeness: ${result.completeness.detected.length > 0 ? `touches on ${result.completeness.detected.map((k) => completenessLabels[k]).join(", ")}` : "no recognized category detected"}${result.completeness.notStated.length > 0 ? `; ${result.completeness.notStated.map((k) => completenessLabels[k]).join(", ")} not stated (not established as absent, simply not mentioned)` : ""}.`
+  );
   lines.push("");
   if (!result.hasResults) {
     lines.push("No potentially relevant provisions were identified from the pilot's analysed precedents.");
@@ -279,6 +362,11 @@ export function ScenarioAnalyzerClient() {
   const [freeText, setFreeText] = useState("");
   const [actorFilter, setActorFilter] = useState("");
   const [scenarioTypeFilter, setScenarioTypeFilter] = useState("");
+  const [evidenceFilter, setEvidenceFilter] = useState("");
+  const [conductPeriod, setConductPeriod] = useState("");
+  const [entityOrIssuer, setEntityOrIssuer] = useState("");
+  const [amountInvolved, setAmountInvolved] = useState("");
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -323,7 +411,15 @@ export function ScenarioAnalyzerClient() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ freeText, actorFilter, scenarioTypeFilter }),
+        body: JSON.stringify({
+          freeText,
+          actorFilter,
+          scenarioTypeFilter,
+          evidenceFilter,
+          conductPeriod,
+          entityOrIssuer,
+          amountInvolved,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -343,6 +439,10 @@ export function ScenarioAnalyzerClient() {
     setFreeText("");
     setActorFilter("");
     setScenarioTypeFilter("");
+    setEvidenceFilter("");
+    setConductPeriod("");
+    setEntityOrIssuer("");
+    setAmountInvolved("");
     setResult(null);
     setError(null);
   }
@@ -384,7 +484,7 @@ export function ScenarioAnalyzerClient() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="actorFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Actor / role (optional)
@@ -421,6 +521,85 @@ export function ScenarioAnalyzerClient() {
               ))}
             </select>
           </div>
+          <div>
+            <label htmlFor="evidenceFilter" className="block text-sm font-medium text-[var(--color-ink-700)]">
+              Evidence indicator (optional)
+            </label>
+            <select
+              id="evidenceFilter"
+              value={evidenceFilter}
+              onChange={(e) => setEvidenceFilter(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+            >
+              <option value="">Any</option>
+              {EVIDENCE_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowOptionalFields((v) => !v)}
+            className="text-xs font-medium text-[var(--color-ink-500)] underline decoration-dotted hover:text-[var(--color-ink-700)]"
+          >
+            {showOptionalFields ? "Hide" : "Add"} conduct period / entity / amount (optional, for your own record)
+          </button>
+          {showOptionalFields && (
+            <div className="mt-2 grid gap-4 sm:grid-cols-3">
+              <div>
+                <label htmlFor="conductPeriod" className="block text-sm font-medium text-[var(--color-ink-700)]">
+                  Conduct period
+                </label>
+                <input
+                  id="conductPeriod"
+                  type="text"
+                  value={conductPeriod}
+                  onChange={(e) => setConductPeriod(e.target.value)}
+                  maxLength={200}
+                  placeholder="e.g. FY 2019-20 to FY 2021-22"
+                  className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+                />
+              </div>
+              <div>
+                <label htmlFor="entityOrIssuer" className="block text-sm font-medium text-[var(--color-ink-700)]">
+                  Entity / issuer
+                </label>
+                <input
+                  id="entityOrIssuer"
+                  type="text"
+                  value={entityOrIssuer}
+                  onChange={(e) => setEntityOrIssuer(e.target.value)}
+                  maxLength={200}
+                  placeholder="Name of the listed entity, if known"
+                  className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+                />
+              </div>
+              <div>
+                <label htmlFor="amountInvolved" className="block text-sm font-medium text-[var(--color-ink-700)]">
+                  Amount involved
+                </label>
+                <input
+                  id="amountInvolved"
+                  type="text"
+                  value={amountInvolved}
+                  onChange={(e) => setAmountInvolved(e.target.value)}
+                  maxLength={200}
+                  placeholder="e.g. Rs. 42 crore (approx.)"
+                  className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)] focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
+                />
+              </div>
+              <p className="sm:col-span-3 text-xs text-[var(--color-ink-500)]">
+                These three fields are kept with your scenario in the printed/exported record only. They are not
+                matched against the precedent library, there is no curated data to reliably compare a period, entity
+                name or amount against.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
@@ -514,6 +693,20 @@ export function ScenarioAnalyzerClient() {
             </div>
           )}
 
+          {(result.query.conductPeriod || result.query.entityOrIssuer || result.query.amountInvolved) && (
+            <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
+              <span className="font-semibold">Scenario details entered: </span>
+              {[
+                result.query.conductPeriod && `Conduct period: ${result.query.conductPeriod}`,
+                result.query.entityOrIssuer && `Entity/issuer: ${result.query.entityOrIssuer}`,
+                result.query.amountInvolved && `Amount involved: ${result.query.amountInvolved}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              {" "}(kept for your record only, not matched against the precedent library).
+            </div>
+          )}
+
           {result.detectedConceptLabels.length > 0 && (
             <div className="rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
               <span className="font-semibold">Concepts detected in your scenario: </span>
@@ -523,6 +716,21 @@ export function ScenarioAnalyzerClient() {
               </p>
             </div>
           )}
+
+          <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
+            <span className="font-semibold">Scenario completeness: </span>
+            {result.completeness.detected.length > 0 && (
+              <>your scenario touches on {result.completeness.detected.map((k) => COMPLETENESS_LABELS[k]).join(", ")}</>
+            )}
+            {result.completeness.detected.length > 0 && result.completeness.notStated.length > 0 && "; "}
+            {result.completeness.notStated.length > 0 && (
+              <>{result.completeness.notStated.map((k) => COMPLETENESS_LABELS[k]).join(", ")} not stated</>
+            )}
+            <p className="mt-1 text-[var(--color-ink-500)]">
+              &quot;Not stated&quot; means this category was not mentioned in the facts entered or the filters
+              selected above, it is never read as meaning that category is actually absent.
+            </p>
+          </div>
 
           {!result.hasResults && (
             <div className="rounded-sm bg-white p-6 text-sm text-[var(--color-ink-700)] border border-[var(--color-border)]">
@@ -713,6 +921,7 @@ export function ScenarioAnalyzerClient() {
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{u.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{u.finding.scenarioTitle}</p>
+                          <PublicationWarningNote status={u.finding.publicationStatus} />
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}
                           </p>
@@ -742,6 +951,7 @@ export function ScenarioAnalyzerClient() {
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{s.finding.scenarioTitle}</p>
+                          <PublicationWarningNote status={s.finding.publicationStatus} />
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
@@ -777,6 +987,7 @@ export function ScenarioAnalyzerClient() {
                               <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                             </div>
                             <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
+                            <PublicationWarningNote status={c.finding.publicationStatus} />
                             {c.distinguishingNote && (
                               <p className="mt-1 text-xs font-medium text-[#7a2a1f]">{c.distinguishingNote}</p>
                             )}
@@ -844,12 +1055,68 @@ export function ScenarioAnalyzerClient() {
                           </div>
                         </div>
                       ))}
+                    {(() => {
+                      const matrix = buildEvidenceMatrix(pr);
+                      if (!matrix) return null;
+                      return (
+                        <div>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                            Evidence matrix across cited precedents
+                          </span>
+                          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                            Which evidence indicators are recorded against each precedent below, drawn from this
+                            pilot&apos;s curated tagging of those findings, not from the facts you entered. The
+                            &quot;Your facts&quot; column shows only what your own scenario touched on.
+                          </p>
+                          <div className="mt-1.5 overflow-x-auto">
+                            <table className="min-w-full border-collapse text-xs">
+                              <thead>
+                                <tr>
+                                  <th className="border-b border-[var(--color-border)] px-2 py-1 text-left font-semibold text-[var(--color-ink-700)]">
+                                    Evidence indicator
+                                  </th>
+                                  <th className="border-b border-[var(--color-border)] px-2 py-1 text-left font-semibold text-[var(--color-ink-700)]">
+                                    Your facts
+                                  </th>
+                                  {matrix.records.map((r) => (
+                                    <th
+                                      key={r.recordId}
+                                      className="border-b border-[var(--color-border)] px-2 py-1 text-left font-semibold text-[var(--color-ink-700)]"
+                                    >
+                                      {r.recordId}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {matrix.rows.map((row) => (
+                                  <tr key={row.evidenceId}>
+                                    <td className="border-b border-[var(--color-border)]/60 px-2 py-1 text-[var(--color-ink-700)]">
+                                      {row.evidenceLabel}
+                                    </td>
+                                    <td className="border-b border-[var(--color-border)]/60 px-2 py-1 text-center font-semibold text-[var(--color-gold-700)]">
+                                      {row.presentInYourFacts ? "✓" : ""}
+                                    </td>
+                                    {matrix.records.map((r) => (
+                                      <td key={r.recordId} className="border-b border-[var(--color-border)]/60 px-2 py-1 text-center text-[var(--color-ink-700)]">
+                                        {row.presentByRecordId[r.recordId] ? "✓" : ""}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div>
                       <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Match source</span>
                       <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-[var(--color-ink-700)]">
                         <li>Matched from the entered scenario text against the curated concept vocabulary (never an external search).</li>
                         {actorFilter && <li>The &quot;Actor / role&quot; filter was set and may have added to this result&apos;s score.</li>}
                         {scenarioTypeFilter && <li>The &quot;Scenario type&quot; filter was set and may have added to this result&apos;s score.</li>}
+                        {evidenceFilter && <li>The &quot;Evidence indicator&quot; filter was set and may have added to this result&apos;s score.</li>}
                         {result.semanticAssist.length > 0 && <li>One or more terms in the entered text were spelling-corrected before matching (see &quot;Read as&quot; above).</li>}
                       </ul>
                     </div>
@@ -887,6 +1154,7 @@ export function ScenarioAnalyzerClient() {
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
+                    <PublicationWarningNote status={c.finding.publicationStatus} />
                     {c.distinguishingNote && <p className="mt-1 text-xs font-medium text-[#7a2a1f]">{c.distinguishingNote}</p>}
                     <div className="mt-1">
                       <SourceLink href={c.finding.officialSourceUrl} />
@@ -913,6 +1181,7 @@ export function ScenarioAnalyzerClient() {
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{f.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
+                    <PublicationWarningNote status={f.publicationStatus} />
                     <div className="mt-1">
                       <SourceLink href={f.officialSourceUrl} />
                     </div>

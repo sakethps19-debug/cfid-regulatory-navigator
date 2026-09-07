@@ -38,6 +38,7 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
     provisionMappingVerified: true,
     noticeeMappingVerified: true,
     humanLegalReviewCompleted: true,
+    publicationStatus: "Published to search",
     ...overrides,
   };
 }

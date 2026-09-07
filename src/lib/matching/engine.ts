@@ -1,10 +1,19 @@
 import type { LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
-import { CONTRARY_PRECEDENT_TRIGGER_TAGS } from "@/data/curated/concept-tags";
+import { CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import type { AnalysisResult, ConfidenceLevel, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
+import type { AnalysisResult, ConfidenceLevel, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
+
+// Draft, Quarantined and Withdrawn findings are excluded from the matching
+// engine entirely — not merely down-ranked — per the publication/quarantine
+// lifecycle (scenario_findings.publication_status). "Published with
+// warning" is deliberately still included: the UI must show the warning
+// visibly on that precedent rather than hiding it, since silently excluding
+// it would be no different from quietly disagreeing with an officer's own
+// decision to keep it visible with a caution attached.
+const EXCLUDED_PUBLICATION_STATUSES = new Set(["Draft", "Quarantined", "Withdrawn"]);
 
 const NEGATIVE_STATUSES = new Set(["Not Confirmed in Final Order", "Withdrawn"]);
 const UPHELD_STATUSES = new Set(["Confirmed in Final Order", "Partly Confirmed in Final Order"]);
@@ -102,7 +111,8 @@ function scoreFinding(
   finding: ScenarioFinding,
   detected: DetectedConcept[],
   actorFilter: string | null,
-  scenarioTypeFilter: string | null
+  scenarioTypeFilter: string | null,
+  evidenceFilter: string | null
 ): ScoredFinding {
   const detectedIds = new Set(detected.map((c) => c.id));
   const detectedLabelById = new Map(detected.map((c) => [c.id, c.label]));
@@ -123,6 +133,11 @@ function scoreFinding(
   // frequent source of confusion when this filter used to be labelled
   // "Transaction type" and filtered on that field instead).
   if (scenarioTypeFilter && finding.allegedConduct.includes(scenarioTypeFilter)) score += 3;
+  // Same weight as a matched evidence-type overlap above (weight 1) — an
+  // explicitly selected evidence indicator is exact-match confirmation of
+  // the same kind of fact, not a stronger signal than the equivalent
+  // free-text detection would have been.
+  if (evidenceFilter && finding.evidenceTypes.includes(evidenceFilter)) score += 1;
 
   const isFinal = !!finding.finalParagraphReferences;
   if (isFinal) score *= 1.15;
@@ -274,11 +289,33 @@ export function analyzeScenario(
   const detectedIds = new Set(detected.map((c) => c.id));
   const actorFilter = query.actorFilter || null;
   const scenarioTypeFilter = query.scenarioTypeFilter || null;
+  const evidenceFilter = query.evidenceFilter || null;
 
-  const scored = scenarioFindings
-    .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter))
+  // Publication/quarantine lifecycle: Draft, Quarantined and Withdrawn
+  // findings never reach the matching engine, in either the deterministic
+  // path or the full-text supplemental search below — see
+  // EXCLUDED_PUBLICATION_STATUSES.
+  const publishedScenarioFindings = scenarioFindings.filter((f) => !EXCLUDED_PUBLICATION_STATUSES.has(f.publicationStatus));
+  const publishedFullTextCandidates = fullTextCandidates.filter((f) => !EXCLUDED_PUBLICATION_STATUSES.has(f.publicationStatus));
+
+  const scored = publishedScenarioFindings
+    .map((f) => scoreFinding(f, detected, actorFilter, scenarioTypeFilter, evidenceFilter))
     .filter((s) => s.score >= MIN_FINDING_SCORE)
     .sort((a, b) => b.score - a.score);
+
+  // A category counts as "detected" either from free-text concept detection
+  // or from the officer explicitly selecting the corresponding dropdown —
+  // selecting a filter is itself a stated fact, not merely a search
+  // narrower. Order matches the UI's own category order.
+  const ALL_KINDS: ConceptKind[] = ["transaction", "actor", "conduct", "evidence"];
+  const detectedKindSet = new Set<ConceptKind>(detected.map((c) => c.kind));
+  if (actorFilter) detectedKindSet.add("actor");
+  if (scenarioTypeFilter) detectedKindSet.add("conduct");
+  if (evidenceFilter) detectedKindSet.add("evidence");
+  const completeness: ScenarioCompleteness = {
+    detected: ALL_KINDS.filter((k) => detectedKindSet.has(k)),
+    notStated: ALL_KINDS.filter((k) => !detectedKindSet.has(k)),
+  };
 
   // Group by provision id — a provision is only surfaced if at least one
   // finding that actually matched the scenario's facts is tagged with it.
@@ -346,7 +383,7 @@ export function analyzeScenario(
   const triggersContrary = [...detectedIds].some((id) => CONTRARY_PRECEDENT_TRIGGER_TAGS.has(id));
   const globalContraryPrecedents: PrecedentRef[] = [];
   if (triggersContrary) {
-    for (const f of scenarioFindings.filter((f) => NEGATIVE_STATUSES.has(f.findingStatus))) {
+    for (const f of publishedScenarioFindings.filter((f) => NEGATIVE_STATUSES.has(f.findingStatus))) {
       const alreadyShown = provisionResults.some((pr) => pr.contraryPrecedents.some((c) => c.finding.recordId === f.recordId));
       if (!alreadyShown) {
         globalContraryPrecedents.push({
@@ -405,7 +442,7 @@ export function analyzeScenario(
     ...globalContraryPrecedents.map((p) => p.finding.recordId),
   ]);
   const fullTextSupplementalFindings = hasNonActorConcept
-    ? fullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId))
+    ? publishedFullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId))
     : [];
 
   return {
@@ -418,5 +455,6 @@ export function analyzeScenario(
     hasResults: provisionResults.length > 0 || globalContraryPrecedents.length > 0 || fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,
     semanticAssist: corrections,
+    completeness,
   };
 }

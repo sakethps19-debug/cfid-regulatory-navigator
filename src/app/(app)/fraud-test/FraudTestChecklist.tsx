@@ -66,43 +66,90 @@ const LIMB_2_FACTORS: Factor[] = [
   },
 ];
 
-function FactorList({ factors, checked, onToggle }: { factors: Factor[]; checked: Set<string>; onToggle: (id: string) => void }) {
+// A factor is never simply "checked" or "unchecked" — that binary reads
+// silence as "No", which is exactly the misreading this pilot's own
+// guardrails forbid elsewhere. Five states let an officer distinguish a
+// fact that is genuinely present in the record from one that is merely
+// unclear, or one still awaiting verification or further evidence, rather
+// than collapsing all of those into a single unchecked box.
+type FactorState = "not-stated" | "present" | "unclear" | "requires-verification" | "additional-evidence-required";
+
+const FACTOR_STATE_OPTIONS: { value: FactorState; label: string }[] = [
+  { value: "not-stated", label: "Not stated" },
+  { value: "present", label: "Present" },
+  { value: "unclear", label: "Unclear" },
+  { value: "requires-verification", label: "Requires verification" },
+  { value: "additional-evidence-required", label: "Additional evidence required" },
+];
+
+const FACTOR_STATE_STYLES: Record<FactorState, string> = {
+  "not-stated": "bg-white text-[var(--color-ink-500)] ring-[var(--color-border)]",
+  present: "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
+  unclear: "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
+  "requires-verification": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
+  "additional-evidence-required": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
+};
+
+function FactorList({
+  factors,
+  states,
+  onChange,
+}: {
+  factors: Factor[];
+  states: Map<string, FactorState>;
+  onChange: (id: string, state: FactorState) => void;
+}) {
   return (
     <ul className="mt-3 space-y-2">
-      {factors.map((f) => (
-        <li key={f.id}>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-sm p-1.5 hover:bg-[var(--color-gold-50)]">
-            <input
-              type="checkbox"
-              checked={checked.has(f.id)}
-              onChange={() => onToggle(f.id)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-gold-700)]"
-            />
-            <span className="text-sm text-[var(--color-ink-900)]">
-              {f.label}
-              <span className="ml-1.5 text-xs text-[var(--color-ink-500)]">({f.source})</span>
-            </span>
-          </label>
-        </li>
-      ))}
+      {factors.map((f) => {
+        const state = states.get(f.id) ?? "not-stated";
+        return (
+          <li key={f.id} className="rounded-sm p-1.5">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <span className="text-sm text-[var(--color-ink-900)]">
+                {f.label}
+                <span className="ml-1.5 text-xs text-[var(--color-ink-500)]">({f.source})</span>
+              </span>
+              <select
+                aria-label={`Status for: ${f.label}`}
+                value={state}
+                onChange={(e) => onChange(f.id, e.target.value as FactorState)}
+                className={`shrink-0 rounded-sm px-2 py-1 text-xs font-medium ring-1 ring-inset ${FACTOR_STATE_STYLES[state]}`}
+              >
+                {FACTOR_STATE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
 export function FraudTestChecklist() {
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [states, setStates] = useState<Map<string, FactorState>>(new Map());
 
-  function toggle(id: string) {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  function setFactorState(id: string, state: FactorState) {
+    setStates((prev) => {
+      const next = new Map(prev);
+      if (state === "not-stated") next.delete(id);
+      else next.set(id, state);
       return next;
     });
   }
 
-  const limb1Count = LIMB_1_FACTORS.filter((f) => checked.has(f.id)).length;
-  const limb2Count = LIMB_2_FACTORS.filter((f) => checked.has(f.id)).length;
+  const isPresent = (f: Factor) => states.get(f.id) === "present";
+  const needsAttention = (f: Factor) => {
+    const s = states.get(f.id);
+    return s === "unclear" || s === "requires-verification" || s === "additional-evidence-required";
+  };
+  const limb1Count = LIMB_1_FACTORS.filter(isPresent).length;
+  const limb2Count = LIMB_2_FACTORS.filter(isPresent).length;
+  const attentionCount = [...LIMB_1_FACTORS, ...LIMB_2_FACTORS].filter(needsAttention).length;
 
   const result = useMemo(() => {
     const limb1Satisfied = limb1Count > 0;
@@ -134,6 +181,11 @@ export function FraudTestChecklist() {
     };
   }, [limb1Count, limb2Count]);
 
+  const attentionNote =
+    attentionCount > 0
+      ? `${attentionCount} factor${attentionCount > 1 ? "s are" : " is"} marked Unclear, Requires verification, or Additional evidence required; the read above does not account for those until they are resolved to Present or Not stated.`
+      : null;
+
   const toneClasses = {
     satisfied: "bg-[#e6ede3] text-[#204a2e] ring-[#a9c2a0]",
     borderline: "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
@@ -143,38 +195,40 @@ export function FraudTestChecklist() {
   return (
     <div>
       <p className="text-xs text-[var(--color-ink-500)]">
-        Tick whichever of the facts below are actually present in your scenario. This checklist mirrors the specific
-        factors the Supreme Court and the case law it cites used to decide the two limbs; it does not interpret free
-        text, match against precedent, or call any external service. Nothing is saved.
+        Set the status of each fact below against your scenario. This checklist mirrors the specific factors the
+        Supreme Court and the case law it cites used to decide the two limbs; it does not interpret free text, match
+        against precedent, or call any external service. A factor left as &quot;Not stated&quot; is never read as
+        meaning it is actually absent, only that its status has not been set. Nothing is saved.
       </p>
 
       <div className="mt-4 grid gap-6 md:grid-cols-2">
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (i): Injury from inducement</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">Any one of these, on its own, is sufficient for this limb.</p>
-          <FactorList factors={LIMB_1_FACTORS} checked={checked} onToggle={toggle} />
+          <FactorList factors={LIMB_1_FACTORS} states={states} onChange={setFactorState} />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (ii): Intent from attending circumstances</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
             No single factor is automatically decisive; the court draws an inference from their cumulative effect.
           </p>
-          <FactorList factors={LIMB_2_FACTORS} checked={checked} onToggle={toggle} />
+          <FactorList factors={LIMB_2_FACTORS} states={states} onChange={setFactorState} />
         </div>
       </div>
 
       <div className={`mt-5 rounded-sm p-3 text-sm ring-1 ring-inset ${toneClasses}`}>
         <p className="font-semibold">{result.text}</p>
+        {attentionNote && <p className="mt-1.5 text-xs font-medium opacity-90">{attentionNote}</p>}
         <p className="mt-1.5 text-xs opacity-90">
           This is a prima facie doctrinal read of your own selections only, not a finding, not a match against this
           pilot&apos;s precedents, and not a substitute for a CFID officer&apos;s own legal judgment.
         </p>
       </div>
 
-      {checked.size > 0 && (
+      {states.size > 0 && (
         <button
           type="button"
-          onClick={() => setChecked(new Set())}
+          onClick={() => setStates(new Map())}
           className="mt-3 rounded-sm border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
         >
           Clear selections

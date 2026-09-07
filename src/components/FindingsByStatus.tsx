@@ -50,11 +50,34 @@ export const GROUP_ORDER: FindingStatus[] = [
   "Withdrawn",
 ];
 
+// Shown only for a publicationStatus other than the ordinary "Published to
+// search" — that ordinary case renders nothing here, so this stays quiet
+// for the vast majority of findings and only draws attention to a finding
+// an officer has actually pulled from, or flagged within, the publication
+// lifecycle (draft, quarantined, withdrawn, or published with a caution).
+const PUBLICATION_STATUS_BADGE_STYLES: Record<string, string> = {
+  Draft: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
+  Quarantined: "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
+  "Published with warning": "bg-[#f5ecd9] text-[#7a5310] ring-[#dfc98f]",
+  Withdrawn: "bg-[#f1e3df] text-[#7a2a1f] ring-[#dcaa9a]",
+};
+
+function PublicationStatusBadge({ status }: { status: string }) {
+  const style = PUBLICATION_STATUS_BADGE_STYLES[status];
+  if (!style) return null;
+  return (
+    <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${style}`}>
+      {status}
+    </span>
+  );
+}
+
 function FindingRow({ finding }: { finding: ScenarioFinding }) {
   return (
     <li className="rounded-lg border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={finding.findingStatus} />
+        <PublicationStatusBadge status={finding.publicationStatus} />
         <span className="text-sm font-semibold text-[var(--color-ink-900)]">{finding.recordId}</span>
         <span className="text-sm text-[var(--color-ink-700)]">{finding.caseName}</span>
       </div>

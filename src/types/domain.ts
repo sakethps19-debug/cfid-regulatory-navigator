@@ -24,6 +24,20 @@ export type FindingStatus =
   | "Inconclusive"
   | "Procedural observation";
 
+/** Publication/quarantine lifecycle for a scenario finding, independent of
+ * findingStatus (the underlying allegation's own procedural outcome) and
+ * the verification flags below (whether the finding's data was checked
+ * against the source order). Draft, Quarantined and Withdrawn findings are
+ * excluded from the Scenario Analyzer's matching engine entirely; Published
+ * with warning is included but must carry a visible caution; Published to
+ * search is the ordinary state. See supabase/migrations/0015_publication_status.sql. */
+export type PublicationStatus =
+  | "Draft"
+  | "Quarantined"
+  | "Published to search"
+  | "Published with warning"
+  | "Withdrawn";
+
 export type OrderStage =
   | "Interim order"
   | "Interim order cum show cause notice"
@@ -170,6 +184,7 @@ export interface ScenarioFinding {
   provisionMappingVerified: boolean;
   noticeeMappingVerified: boolean;
   humanLegalReviewCompleted: boolean;
+  publicationStatus: PublicationStatus;
 }
 
 export interface LegalProvision {

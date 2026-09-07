@@ -642,6 +642,7 @@ export type Database = {
           precedent_outcome_note: string | null
           provision_mapping_verified: boolean
           provisions_considered_raw: string | null
+          publication_status: Database["public"]["Enums"]["publication_status_type"]
           qualification: string | null
           record_id: string
           scenario_title: string
@@ -676,6 +677,7 @@ export type Database = {
           precedent_outcome_note?: string | null
           provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
+          publication_status?: Database["public"]["Enums"]["publication_status_type"]
           qualification?: string | null
           record_id: string
           scenario_title: string
@@ -710,6 +712,7 @@ export type Database = {
           precedent_outcome_note?: string | null
           provision_mapping_verified?: boolean
           provisions_considered_raw?: string | null
+          publication_status?: Database["public"]["Enums"]["publication_status_type"]
           qualification?: string | null
           record_id?: string
           scenario_title?: string
@@ -893,6 +896,12 @@ export type Database = {
         | "awaiting_retrieval"
         | "retrieval_attempted"
         | "citations_checked"
+      publication_status_type:
+        | "draft"
+        | "quarantined"
+        | "published_to_search"
+        | "published_with_warning"
+        | "withdrawn"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1076,6 +1085,13 @@ export const Constants = {
         "awaiting_retrieval",
         "retrieval_attempted",
         "citations_checked",
+      ],
+      publication_status_type: [
+        "draft",
+        "quarantined",
+        "published_to_search",
+        "published_with_warning",
+        "withdrawn",
       ],
     },
   },

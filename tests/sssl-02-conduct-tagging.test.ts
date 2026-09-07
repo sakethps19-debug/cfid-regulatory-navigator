@@ -60,6 +60,7 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     provisionMappingVerified: true,
     noticeeMappingVerified: true,
     humanLegalReviewCompleted: false,
+    publicationStatus: "Published to search",
     ...overrides,
   };
 }
