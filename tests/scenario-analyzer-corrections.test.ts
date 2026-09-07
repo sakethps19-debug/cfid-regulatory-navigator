@@ -27,6 +27,8 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 }
 
 function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; provisionIds: string[] }): ScenarioFinding {
+  const provisionLinks =
+    overrides.provisionLinks ?? overrides.provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] as string[] }));
   return {
     caseName: "Synthetic Test Matter",
     orderIds: [],
@@ -34,6 +36,7 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
     scenarioTitle: "Synthetic finding",
     factualPattern: "Synthetic factual pattern for testing.",
     provisionsConsideredRaw: null,
+    provisionLinks,
     noticeeActors: [],
     findingStatus: "Upheld",
     interimParagraphReferences: null,

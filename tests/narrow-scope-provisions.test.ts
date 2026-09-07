@@ -28,6 +28,9 @@ import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
 
 function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
+  const provisionIds = overrides.provisionIds ?? [];
+  const provisionLinks =
+    overrides.provisionLinks ?? provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] as string[] }));
   return {
     recordId: "MOCK-01",
     caseName: "Mock Case Limited",
@@ -36,7 +39,8 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     scenarioTitle: "Mock finding",
     factualPattern: "Mock factual pattern.",
     provisionsConsideredRaw: null,
-    provisionIds: [],
+    provisionIds,
+    provisionLinks,
     noticeeActors: [],
     findingStatus: "Upheld",
     interimParagraphReferences: "Para 1",
@@ -90,10 +94,18 @@ describe("Narrow-scope provisions — Regulation 6 / Compliance Officer bundling
   });
   // Mirrors the real reported case (FCEL-01): one finding genuinely bundles
   // fictitious sales together with an unrelated Compliance Officer vacancy.
+  // The Compliance-Officer link is narrowed via justifyingTags (mirroring
+  // the real finding_provisions.justifying_tags data), the fraud provision
+  // link is left universal (empty justifyingTags), matching how broad
+  // anti-fraud provisions are never narrowed in the real data.
   const multiIssueFinding = makeFinding({
     recordId: "MOCK-MULTI-01",
     allegedConduct: ["fictitious_sales_or_revenue", "compliance_officer_deficiency"],
     provisionIds: [complianceOfficerProvision.id, fraudProvision.id],
+    provisionLinks: [
+      { provisionId: complianceOfficerProvision.id, justifyingTags: ["compliance_officer_deficiency"] },
+      { provisionId: fraudProvision.id, justifyingTags: [] },
+    ],
   });
 
   it("does not surface a Compliance-Officer-only provision for a query that only matched on fictitious sales", () => {

@@ -35,18 +35,21 @@ export type Database = {
         Row: {
           finding_id: string
           id: string
+          justifying_tags: string[]
           provision_id: string
           relationship: string
         }
         Insert: {
           finding_id: string
           id?: string
+          justifying_tags?: string[]
           provision_id: string
           relationship?: string
         }
         Update: {
           finding_id?: string
           id?: string
+          justifying_tags?: string[]
           provision_id?: string
           relationship?: string
         }

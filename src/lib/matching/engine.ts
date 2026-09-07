@@ -1,5 +1,5 @@
 import type { LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
-import { CONTRARY_PRECEDENT_TRIGGER_TAGS, NARROW_SCOPE_PROVISION_TAGS } from "@/data/curated/concept-tags";
+import { CONTRARY_PRECEDENT_TRIGGER_TAGS } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import type { AnalysisResult, ConfidenceLevel, GuardrailNote, PrecedentRef, ProvisionResult, ScenarioQuery } from "./types";
@@ -209,20 +209,21 @@ export function analyzeScenario(
   // Group by provision id — a provision is only surfaced if at least one
   // finding that actually matched the scenario's facts is tagged with it.
   // This prevents suggesting a provision merely because it appeared
-  // somewhere in the same order. A small set of provisions are additionally
-  // gated by NARROW_SCOPE_PROVISION_TAGS: these are provisions whose entire
+  // somewhere in the same order. Each finding-provision link additionally
+  // carries its own justifyingTags (see ScenarioFinding.provisionLinks):
+  // when non-empty, that specific link only applies when the query's
+  // detected concepts intersect it — used for provisions whose entire
   // subject is one narrow procedural/governance topic (e.g. LODR Regulation
   // 6, Compliance Officer appointment) that frequently gets bundled into the
-  // same finding record as an unrelated, more serious allegation. Such a
-  // provision only surfaces when the query itself actually detected the
-  // specific concept it's about — not merely because some other conduct in
-  // the same finding happened to match.
+  // same finding record as an unrelated, more serious allegation. An empty
+  // justifyingTags (the default) means the link is universal, same as
+  // before — most provisions (including all the broad anti-fraud clauses
+  // like PFUTP 3(a)-(d)) are never narrowed.
   const findingsByProvision = new Map<string, ScoredFinding[]>();
   for (const sf of scored) {
-    for (const provisionId of sf.finding.provisionIds) {
-      const requiredTags = NARROW_SCOPE_PROVISION_TAGS[provisionId];
-      if (requiredTags && !requiredTags.some((t) => detectedIds.has(t))) continue;
-      findingsByProvision.set(provisionId, [...(findingsByProvision.get(provisionId) ?? []), sf]);
+    for (const link of sf.finding.provisionLinks) {
+      if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
+      findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), sf]);
     }
   }
 

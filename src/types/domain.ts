@@ -115,7 +115,19 @@ export interface ScenarioFinding {
   scenarioTitle: string;
   factualPattern: string;
   provisionsConsideredRaw: string | null; // original text from workbook
-  provisionIds: string[]; // parsed canonical provision ids, instrument-qualified
+  provisionIds: string[]; // parsed canonical provision ids, instrument-qualified — every provision this finding cites, for display/listing purposes
+  /** Same links as provisionIds, but each carries justifyingTags: the
+   * specific concept-tag ids (see concept-tags.ts) that justify THIS
+   * particular provision for THIS finding. An empty array means the link
+   * is universal — it applies whenever any of the finding's own tags match
+   * a query. A non-empty array narrows it: the matching engine only
+   * surfaces this provision via this finding when the query's detected
+   * concepts intersect justifyingTags. Used at query time instead of
+   * provisionIds so that a multi-issue finding (e.g. one bundling
+   * fictitious sales together with an unrelated Compliance Officer
+   * vacancy) doesn't surface a narrow, topically-specific provision for a
+   * query that only matched on the OTHER, unrelated conduct. */
+  provisionLinks: { provisionId: string; justifyingTags: string[] }[];
   noticeeActors: string[];
   findingStatus: FindingStatus;
   interimParagraphReferences: string | null;

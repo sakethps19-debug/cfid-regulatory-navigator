@@ -84,7 +84,11 @@ function mapOrder(row: OrderRow, noticeesCount: number): Order {
   };
 }
 
-function mapFinding(row: ScenarioFindingRow, provisionIds: string[], orderIds: string[]): ScenarioFinding {
+function mapFinding(
+  row: ScenarioFindingRow,
+  provisionLinks: { provisionId: string; justifyingTags: string[] }[],
+  orderIds: string[]
+): ScenarioFinding {
   return {
     recordId: row.record_id,
     caseName: row.case_name,
@@ -93,7 +97,8 @@ function mapFinding(row: ScenarioFindingRow, provisionIds: string[], orderIds: s
     scenarioTitle: row.scenario_title,
     factualPattern: row.factual_pattern,
     provisionsConsideredRaw: row.provisions_considered_raw,
-    provisionIds,
+    provisionIds: provisionLinks.map((l) => l.provisionId),
+    provisionLinks,
     noticeeActors: row.noticee_actor_names,
     findingStatus: FINDING_STATUS_LABELS[row.finding_status] ?? "Alleged",
     interimParagraphReferences: row.interim_paragraph_references,
@@ -214,23 +219,26 @@ export async function getScenarioFindings(): Promise<ScenarioFinding[]> {
   const supabase = await createClient();
   const [{ data: findingRows, error: findingsError }, { data: linkRows, error: linksError }] = await Promise.all([
     supabase.from("scenario_findings").select("*").order("record_id", { ascending: true }),
-    supabase.from("finding_provisions").select("finding_id, provision_id, legal_provisions(canonical_id)"),
+    supabase
+      .from("finding_provisions")
+      .select("finding_id, provision_id, justifying_tags, legal_provisions(canonical_id)"),
   ]);
   if (findingsError) throw findingsError;
   if (linksError) throw linksError;
 
-  const provisionIdsByFinding = new Map<string, string[]>();
+  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[] }[]>();
   for (const link of linkRows ?? []) {
-    const canonicalId = (link as { legal_provisions: { canonical_id: string } | null }).legal_provisions?.canonical_id;
+    const row = link as { finding_id: string; justifying_tags: string[] | null; legal_provisions: { canonical_id: string } | null };
+    const canonicalId = row.legal_provisions?.canonical_id;
     if (!canonicalId) continue;
-    const list = provisionIdsByFinding.get(link.finding_id) ?? [];
-    list.push(canonicalId);
-    provisionIdsByFinding.set(link.finding_id, list);
+    const list = provisionLinksByFinding.get(row.finding_id) ?? [];
+    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [] });
+    provisionLinksByFinding.set(row.finding_id, list);
   }
 
   return (findingRows ?? []).map((row) => {
     const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
-    return mapFinding(row, provisionIdsByFinding.get(row.id) ?? [], orderIds);
+    return mapFinding(row, provisionLinksByFinding.get(row.id) ?? [], orderIds);
   });
 }
 
@@ -467,23 +475,26 @@ export async function searchScenarioFindingsFullText(query: string): Promise<Sce
       .select("*")
       .textSearch("search_vector", orQuery, { config: "english" })
       .limit(8),
-    supabase.from("finding_provisions").select("finding_id, provision_id, legal_provisions(canonical_id)"),
+    supabase
+      .from("finding_provisions")
+      .select("finding_id, provision_id, justifying_tags, legal_provisions(canonical_id)"),
   ]);
   if (findingsError) throw findingsError;
   if (linksError) throw linksError;
 
-  const provisionIdsByFinding = new Map<string, string[]>();
+  const provisionLinksByFinding = new Map<string, { provisionId: string; justifyingTags: string[] }[]>();
   for (const link of linkRows ?? []) {
-    const canonicalId = (link as { legal_provisions: { canonical_id: string } | null }).legal_provisions?.canonical_id;
+    const row = link as { finding_id: string; justifying_tags: string[] | null; legal_provisions: { canonical_id: string } | null };
+    const canonicalId = row.legal_provisions?.canonical_id;
     if (!canonicalId) continue;
-    const list = provisionIdsByFinding.get(link.finding_id) ?? [];
-    list.push(canonicalId);
-    provisionIdsByFinding.set(link.finding_id, list);
+    const list = provisionLinksByFinding.get(row.finding_id) ?? [];
+    list.push({ provisionId: canonicalId, justifyingTags: row.justifying_tags ?? [] });
+    provisionLinksByFinding.set(row.finding_id, list);
   }
 
   return (findingRows ?? []).map((row) => {
     const orderIds = [row.order_id, row.final_order_id].filter((v): v is string => Boolean(v));
-    return mapFinding(row, provisionIdsByFinding.get(row.id) ?? [], orderIds);
+    return mapFinding(row, provisionLinksByFinding.get(row.id) ?? [], orderIds);
   });
 }
 

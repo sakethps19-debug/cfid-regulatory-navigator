@@ -28,6 +28,9 @@ import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
 
 function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
+  const provisionIds = overrides.provisionIds ?? [];
+  const provisionLinks =
+    overrides.provisionLinks ?? provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] as string[] }));
   return {
     recordId: "SSSL-02",
     caseName: "Seacoast Shipping Services Limited",
@@ -36,7 +39,8 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     scenarioTitle: 'Promoter allotted 1.5 crore free shares against a "business takeover" whose claimed net assets never actually appeared in the company\'s books',
     factualPattern: "Mock factual pattern mirroring the real SSSL-02 finding.",
     provisionsConsideredRaw: null,
-    provisionIds: [],
+    provisionIds,
+    provisionLinks,
     noticeeActors: [],
     findingStatus: "Upheld",
     interimParagraphReferences: "Para 1",

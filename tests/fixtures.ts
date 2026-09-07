@@ -11,6 +11,19 @@ import scenarioFindingsJson from "@/data/generated/scenarioFindings.json";
 import provisionsJson from "@/data/generated/provisions.json";
 import legalTestsJson from "@/data/generated/legalTests.json";
 
-export const scenarioFindings = scenarioFindingsJson as ScenarioFinding[];
+type RawFinding = Omit<ScenarioFinding, "provisionLinks"> & { provisionLinks?: ScenarioFinding["provisionLinks"] };
+
+// This pilot-era generated JSON predates per-provision tag attribution
+// (finding_provisions.justifying_tags — see engine.ts / migration
+// 0010_finding_provisions_justifying_tags.sql). Derive universal links
+// (empty justifyingTags, same as the pre-attribution behavior) from the
+// flat provisionIds list — these fixtures test general matching behavior,
+// not narrow-scope attribution, which has its own dedicated test file.
+export const scenarioFindings = (scenarioFindingsJson as RawFinding[]).map(
+  (f): ScenarioFinding => ({
+    ...f,
+    provisionLinks: f.provisionLinks ?? f.provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] })),
+  })
+);
 export const provisions = provisionsJson as LegalProvision[];
 export const legalTests = legalTestsJson as LegalTest[];

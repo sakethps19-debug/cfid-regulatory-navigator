@@ -161,6 +161,7 @@ function parseScenarioFindings(
       factualPattern: cellText(row[4]) ?? "",
       provisionsConsideredRaw,
       provisionIds: matchedProvisionIds(provisionsConsideredRaw),
+      provisionLinks: matchedProvisionIds(provisionsConsideredRaw).map((provisionId) => ({ provisionId, justifyingTags: [] })),
       noticeeActors: (cellText(row[6]) ?? "").split(";").map((s) => s.trim()).filter(Boolean),
       findingStatus: (statusRaw as FindingStatus) ?? "Alleged",
       interimParagraphReferences: interimRefs,

@@ -9,6 +9,9 @@ import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
 
 function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
+  const provisionIds = overrides.provisionIds ?? [];
+  const provisionLinks =
+    overrides.provisionLinks ?? provisionIds.map((provisionId) => ({ provisionId, justifyingTags: [] as string[] }));
   return {
     recordId: "MOCK-01",
     caseName: "Mock Case Limited",
@@ -17,7 +20,8 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
     scenarioTitle: "Mock finding",
     factualPattern: "Mock factual pattern.",
     provisionsConsideredRaw: null,
-    provisionIds: [],
+    provisionIds,
+    provisionLinks,
     noticeeActors: [],
     findingStatus: "Upheld",
     interimParagraphReferences: "Para 1",
