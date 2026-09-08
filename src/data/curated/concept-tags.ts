@@ -170,7 +170,9 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     // Regulation 30 paired test): material litigation is itself a
     // recurring category of Regulation 30 event-based disclosure, not
     // covered by the more generic synonyms above.
-    synonyms: ["material event", "material information", "material development", "material litigation", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
+    // "material default" added (P0 Question-A polarity connectivity pass):
+    // another recurring Regulation 30 event-disclosure category.
+    synonyms: ["material event", "material information", "material development", "material litigation", "material default", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
   },
   {
     id: "business_segment_disclosure",
@@ -385,7 +387,15 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // investigator, and the CFID stress-test scenario it was written against
   // ("failed to furnish accounting records sought under a SEBI summons") is
   // the latter, not the former.
-  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses"] },
+  // "failed to disclose" and "concealed"/"concealment" added (P0 Question-A
+  // polarity connectivity pass): common natural phrasings of a genuine
+  // non-disclosure allegation this vocabulary previously missed entirely
+  // ("failure to disclose" only covered the noun form; "concealed" was
+  // already used as a NEGATABLE compliance-cue topic word in
+  // factPolarity.ts's own LIST_TOPICS, but was never itself a recognized
+  // ADVERSE synonym here, so a genuine concealment allegation was never
+  // positively detected at all).
+  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
   // "summons were ignored"/"ignored the summons" added (Question-A
   // polarity acceptance pass, investigation paired test): a common way to
   // describe non-response to process distinct from the existing
@@ -405,9 +415,29 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     // "not approved by audit committee" (dropping "the") added
     // (Question-A polarity acceptance pass, RPT paired test): the same
     // approval-lapse fact stated without the definite article.
-    synonyms: ["without prior audit committee approval", "without audit committee approval", "without the required shareholder approval", "without shareholder approval", "no audit committee approval", "no shareholder approval", "not approved by the audit committee", "not approved by audit committee", "not approved by shareholders", "without the required audit committee approval"],
+    synonyms: [
+      "without prior audit committee approval",
+      "without audit committee approval",
+      "without the required shareholder approval",
+      "without shareholder approval",
+      "no audit committee approval",
+      "no shareholder approval",
+      "not approved by the audit committee",
+      "not approved by audit committee",
+      "not approved by shareholders",
+      "without the required audit committee approval",
+      // "not placed before the audit committee" added (P0 Question-A
+      // polarity connectivity pass): a common way to describe the same
+      // approval-lapse fact without using the word "approved" at all.
+      "not placed before the audit committee",
+      "not placed before the board",
+    ],
   },
-  { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised"] },
+  // "transferred to promoter-controlled entities without business purpose"
+  // added (P0 Question-A polarity connectivity pass): a common way bank
+  // records are described as establishing diversion, distinct from a bare
+  // "diverted" allegation and often paired with a promoter's own denial.
+  { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised", "transferred to promoter-controlled entities without business purpose", "without business purpose"] },
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
   // "without paying any/genuine consideration" variants added (P0
@@ -431,7 +461,10 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // ("Compliance Officer position remained vacant beyond permitted
   // period") inserts "remained" between "position" and "vacant", which the
   // prior contiguous "position vacant" synonym did not match.
-  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for"] },
+  // "had no compliance officer" added (P0 Question-A polarity connectivity
+  // pass): a common natural phrasing ("the company had no Compliance
+  // Officer for five months") this vocabulary previously missed.
+  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for", "had no compliance officer", "no compliance officer for"] },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },
   { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
   // Second-order remediation (2026): the single tag "price_manipulation_nexus"

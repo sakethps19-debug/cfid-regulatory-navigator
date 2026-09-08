@@ -3,7 +3,7 @@ import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from 
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import { detectFactPolarity } from "./factPolarity";
+import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
 import { passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
 import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
@@ -340,6 +340,78 @@ function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAd
   return unique(rule.requireAllOfGroups.flat().filter(isAdverseConceptId));
 }
 
+/** The complement of adverseConceptIdsForRule: the TOPIC-kind (non-conduct)
+ * concept ids a gated provision's own retrieval rule requires — the
+ * regulatory-nexus anchor a compliance statement must itself be co-stated
+ * with (same sentence) before it may be treated as connected to THIS
+ * provision. Empty for a rule with no topic group at all (e.g. LODR 4(1)'s
+ * general-principle predicate, gated purely on ANY_SUBSTANTIVE_VIOLATION_
+ * CONDUCT) — the nexus check is skipped rather than forced either way when
+ * there is genuinely no topic anchor to compare against. */
+function topicConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
+  if (!rule) return [];
+  return unique(rule.requireAllOfGroups.flat().filter((id) => !isAdverseConceptId(id)));
+}
+
+/** P0 Question-A polarity CONNECTIVITY fix (see factPolarity.ts's own
+ * header for the defect this replaces): a compliance/negation statement
+ * found anywhere in the entered text may be treated as ruling out an
+ * adverse predicate for a SPECIFIC provision only when it passes every one
+ * of these connectivity tests — reasoning at the level of "this proposition,
+ * connected to this provision's own subject and actor" rather than "this
+ * scenario contains a matching compliant tag somewhere":
+ *
+ * 1. NOT independently detected: if the same concept id was positively
+ *    detected ANYWHERE in the scenario (even disconnected from this
+ *    provision's own gate — e.g. a second, separately-worded transaction),
+ *    a genuine adverse mention exists and this must never read as an
+ *    affirmative contradiction — see the "already detected" exclusion
+ *    below, which is checked before anything else.
+ * 2. SAME REGULATORY NEXUS: the compliance statement's own sentence must
+ *    itself mention a topic-kind concept belonging to this provision's own
+ *    topic requirement (its rule's topic group for a gated provision, or
+ *    the supporting precedent's own transaction types for an ungated one)
+ *    — "RPT fully disclosed" never connects to a Regulation 30 event-
+ *    disclosure predicate, and "Transaction A fully disclosed" never
+ *    connects to a separately-stated "Transaction B concealed" (different
+ *    sentence, no shared topic detection in the compliant sentence itself
+ *    beyond the generic RPT topic every RPT sentence shares — see the
+ *    "already detected" exclusion above, which is what actually keeps
+ *    Transaction A and B apart once the vocabulary recognises Transaction
+ *    B's own adverse fact at all).
+ * 3. SAME ACTOR, where the provision is actor-specific: a compliance
+ *    statement naming a specific (non-company) actor is scoped to that
+ *    actor only, and must not be read as covering a provision whose own
+ *    text runs to a different actor category (provision-actor-
+ *    applicability.ts's own applicableActorTags) — "the Audit Committee
+ *    complied" must never cure a Compliance Officer-specific predicate. A
+ *    compliance statement naming no specific actor (company-wide) is not
+ *    restricted by this test, matching the existing, deliberately
+ *    conservative convention in checkActorApplicability itself (silence
+ *    on actor is never treated as incompatible).
+ */
+function connectedPolarityHits(
+  evidence: PolarityEvidence[],
+  targetConceptIds: string[],
+  provisionTopicIds: string[],
+  relevantActorIds: string[],
+  detectedIds: Set<string>
+): PolarityEvidence[] {
+  return evidence.filter((ev) => {
+    if (!targetConceptIds.includes(ev.conceptId)) return false;
+    if (detectedIds.has(ev.conceptId)) return false;
+    // A rule's own "topic" group can itself be an ACTOR-kind concept (e.g.
+    // Companies Act 139's own predicate runs to the statutory_auditor
+    // ACTOR, not a transaction-kind topic) — the nexus/subject check must
+    // accept either a co-detected transaction-kind OR actor-kind concept
+    // as satisfying it; only the SEPARATE actor-compatibility check below
+    // cares specifically about actor identity.
+    if (provisionTopicIds.length > 0 && ![...ev.nexusTopicIds, ...ev.actorIds].some((id) => provisionTopicIds.includes(id))) return false;
+    if (relevantActorIds.length > 0 && ev.actorIds.length > 0 && !ev.actorIds.some((a) => relevantActorIds.includes(a))) return false;
+    return true;
+  });
+}
+
 export function analyzeScenario(
   query: ScenarioQuery,
   scenarioFindings: ScenarioFinding[],
@@ -385,7 +457,7 @@ export function analyzeScenario(
   // candidate BREACH, a governing-but-compliant provision, or a provision
   // whose adverse predicate is affirmatively contradicted, never to change
   // WHICH provisions match a precedent in the first place.
-  const factPolarity = detectFactPolarity(correctedText);
+  const factPolarity = detectFactPolarity(correctedText, effectiveConcepts);
   // Every "conduct"-kind concept tag in this vocabulary IS, by
   // construction, an adverse/violation-indicating fact (see
   // concept-tags.ts) — "transaction"/"actor"/"evidence"-kind tags are
@@ -454,6 +526,15 @@ export function analyzeScenario(
     sf: ScoredFinding;
     relationship?: string;
     effStatus: FindingStatus;
+    /** This specific finding-provision link's own justifyingTags (see
+     * ScenarioFinding.provisionLinks) — carried through so an UNGATED
+     * provision's own conduct-match computation below can be scoped to
+     * just this link's own declared subject when curated, rather than the
+     * finding's ENTIRE allegedConduct array, which may legitimately span
+     * several DIFFERENT provisions/organs bundled into one finding record
+     * (e.g. one finding covering both an Audit Committee deficiency and an
+     * unrelated Compliance Officer vacancy) — see connectivity note below. */
+    justifyingTags: string[];
   }
   // Actor-applicability is computed ONCE per provision id per query (it
   // depends only on the provision and the entered scenario's actor
@@ -490,7 +571,12 @@ export function analyzeScenario(
         gateBlockedFindingsByProvision.set(link.provisionId, [...(gateBlockedFindingsByProvision.get(link.provisionId) ?? []), sf]);
         continue;
       }
-      const entry: LinkedFinding = { sf, relationship: link.relationship, effStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship) };
+      const entry: LinkedFinding = {
+        sf,
+        relationship: link.relationship,
+        effStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship),
+        justifyingTags: link.justifyingTags,
+      };
       findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), entry]);
     }
   }
@@ -523,9 +609,23 @@ export function analyzeScenario(
     const countPhrase = `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}`;
 
     const adverseIds = adverseConceptIdsForRule(rule, isAdverseConceptId);
-    const contradictedHits = adverseIds.filter((id) => factPolarity.compliantConceptIds.has(id));
+    // A rule with no topic group of its own (a bare single-predicate
+    // provision like Ind AS 1's misstatement requirement) has no ruleTopicIds
+    // to test connectivity against; fall back to the linked precedent's own
+    // transactionTypes as a coarser nexus anchor rather than skipping the
+    // nexus check outright (which would let ANY same-worded compliance
+    // phrase connect unconditionally regardless of subject).
+    const ruleTopicIds = topicConceptIdsForRule(rule, isAdverseConceptId);
+    const provisionTopicIds = ruleTopicIds.length > 0 ? ruleTopicIds : unique(sortedFindings.flatMap((sf) => sf.finding.transactionTypes));
+    const contradictedHits = connectedPolarityHits(
+      factPolarity.evidence,
+      adverseIds,
+      provisionTopicIds,
+      actorRuleForProvision(provisionId)?.applicableActorTags ?? [],
+      detectedIds
+    );
     if (reason === "factual_prerequisite" && contradictedHits.length > 0) {
-      const reasons = [...new Set(contradictedHits.map((id) => factPolarity.rationale.get(id)).filter((r): r is string => !!r))];
+      const reasons = [...new Set(contradictedHits.map((ev) => ev.rationale))];
       contradictedProvisionResults.push({
         provision,
         relatedPrecedents: sortedFindings.slice(0, 3).map((sf) => toPrecedentRef(sf)),
@@ -615,14 +715,48 @@ export function analyzeScenario(
     // consult, so the only available signal is the specific supporting
     // precedent's own matched conduct-tag overlap.
     const rule = retrievalRuleForProvision(provisionId);
+    // P0 connectivity fix: an UNGATED provision has no rule to check the
+    // query's own detectedIds against, so it falls back to the specific
+    // supporting finding's own matched conduct-tag overlap — but ONE
+    // finding record can legitimately be linked to SEVERAL provisions
+    // covering DIFFERENT organs/predicates (e.g. one finding bundling both
+    // an Audit Committee deficiency and an unrelated Compliance Officer
+    // vacancy). f.sf.matchedIdsByCategory.allegedConduct is computed once
+    // per FINDING, not per link, so without this scoping a conduct id
+    // matched for a DIFFERENT provision on the same finding would wrongly
+    // count here too. Deliberately narrow: only excludes a conduct id that
+    // is EXCLUSIVELY claimed by a SIBLING provision link's own
+    // justifyingTags on this same finding (curated evidence that id
+    // belongs to the sibling's own subject, not this one) — a conduct id
+    // no sibling link claims, or that this link claims for itself, is
+    // never excluded. This intentionally does NOT require every relevant
+    // conduct id to be pre-listed in this link's own justifyingTags (that
+    // field's existing, validated role is a topical PARTICIPATION gate —
+    // see line ~547 — not an exhaustive relevance list; a finding with a
+    // single provisionLink, or with no sibling curated to a different
+    // organ, is completely unaffected by this scoping). */
+    const linkScopedAllegedConduct = (f: LinkedFinding, ids: string[]) => {
+      const siblingClaims = new Set(
+        f.sf.finding.provisionLinks.filter((l) => l.provisionId !== provisionId && l.justifyingTags.length > 0).flatMap((l) => l.justifyingTags)
+      );
+      if (siblingClaims.size === 0) return ids;
+      return ids.filter((id) => !siblingClaims.has(id) || f.justifyingTags.includes(id));
+    };
     const conductIdsMatched = rule
       ? adverseConceptIdsForRule(rule, isAdverseConceptId).filter((id) => detectedIds.has(id))
-      : unique(supporting.flatMap((f) => f.sf.matchedIdsByCategory.allegedConduct));
+      : unique(supporting.flatMap((f) => linkScopedAllegedConduct(f, f.sf.matchedIdsByCategory.allegedConduct)));
     if (conductIdsMatched.length === 0) {
       const relevantAdverseIds = rule
         ? adverseConceptIdsForRule(rule, isAdverseConceptId)
-        : unique(supporting.flatMap((f) => f.sf.finding.allegedConduct));
-      const contradictedHits = relevantAdverseIds.filter((id) => factPolarity.compliantConceptIds.has(id));
+        : unique(supporting.flatMap((f) => linkScopedAllegedConduct(f, f.sf.finding.allegedConduct)));
+      const provisionTopicIds = rule ? topicConceptIdsForRule(rule, isAdverseConceptId) : unique(supporting.flatMap((f) => f.sf.finding.transactionTypes));
+      const contradictedHits = connectedPolarityHits(
+        factPolarity.evidence,
+        relevantAdverseIds,
+        provisionTopicIds,
+        actorRuleForProvision(provisionId)?.applicableActorTags ?? [],
+        detectedIds
+      );
       const legalFunction = legalFunctionForProvision(provisionId);
       const countPhrase = `${supporting.length} structured finding${supporting.length > 1 ? "s" : ""} factually overlapping this scenario also cite${supporting.length > 1 ? "" : "s"} ${provision.provisionNumber}`;
       let polarityClass: "governing_no_breach" | "additional_fact_required";
@@ -631,7 +765,7 @@ export function analyzeScenario(
         polarityClass = "governing_no_breach";
         note = `${countPhrase}. This provision governs the subject matter of the entered facts, but has no independent adverse predicate of its own (${rule?.explanation ?? "a definitional, accounting-standard, or SEBI-power provision"}) — it is relevant to the transaction, not itself a candidate contravention.`;
       } else if (contradictedHits.length > 0) {
-        const reasons = [...new Set(contradictedHits.map((id) => factPolarity.rationale.get(id)).filter((r): r is string => !!r))];
+        const reasons = [...new Set(contradictedHits.map((ev) => ev.rationale))];
         polarityClass = "governing_no_breach";
         note = `${countPhrase}, but the entered scenario affirmatively states compliance with the adverse fact this provision's own precedent record turns on. ${reasons.join(" ")} This provision governs the transaction; no apparent breach is shown on the present facts.`;
       } else {

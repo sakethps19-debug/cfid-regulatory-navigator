@@ -25,12 +25,70 @@
 // and every hit carries a `rationale` explaining which phrase/group fired,
 // so the classification is inspectable and testable, never a single
 // opaque signal.
+//
+// P0 CONNECTIVITY FIX: a first version of this module recorded compliance
+// hits into one SCENARIO-WIDE Set<string> — a compliant phrase anywhere in
+// the free text could suppress an adverse candidate anywhere else, with no
+// regard for whether the two statements concerned the same regulatory
+// nexus, the same actor, or the same underlying transaction (e.g. "RPT A
+// was fully disclosed" would wrongly read as ruling out non-disclosure of
+// an unrelated Regulation 30 event, or of a wholly separate RPT B). Fixed
+// by tracking each compliance hit as a PolarityEvidence record carrying
+// its own sentence index, plus the transaction- and actor-kind concepts
+// CO-DETECTED IN THAT SAME SENTENCE — the same "connected" test
+// provision-retrieval-rules.ts already applies between a rule's own topic
+// and adverse groups (see isConnected there), now applied a second time
+// between a compliance statement and the provision it is being asked to
+// suppress. See engine.ts's polarityEvidenceConnects for the consuming
+// side. compliantConceptIds/rationale are kept, DERIVED from evidence, for
+// any caller that only needs the coarse "was this ever stated compliant
+// anywhere" signal (display text, etc.) — every classification decision in
+// engine.ts now goes through the connectivity-aware `evidence` list
+// instead.
 import { normalizeText } from "./normalize";
+import { splitIntoSentences, type DetectedConcept } from "./conceptExtraction";
+
+/** One compliance/negation statement found in the entered scenario text,
+ * with enough provenance to answer: what text triggered it; which
+ * predicate it concerns; which sentence it came from; and which
+ * topic/actor concepts were stated ALONGSIDE it in that same sentence —
+ * the basis engine.ts uses to test connectivity to a specific provision
+ * before letting it suppress or contradict anything. */
+export interface PolarityEvidence {
+  /** The controlled-vocabulary conduct-tag id this evidence concerns. */
+  conceptId: string;
+  /** Always "compliant" today (an affirmative statement, or a negated
+   * list-topic, that the adverse predicate did not occur) — kept as a
+   * literal union rather than a bare boolean so a future explicit-negative/
+   * disputed state can be added without changing every call site. */
+  polarity: "compliant";
+  sentenceIndex: number;
+  matchedText: string;
+  /** Transaction-kind concept ids also detected in this SAME sentence —
+   * the regulatory-nexus anchor (RPT, Regulation 30 event, issue proceeds,
+   * investigation, preferential allotment, etc.). Empty means this
+   * sentence stated no topic of its own the connectivity check can use. */
+  nexusTopicIds: string[];
+  /** Actor-kind concept ids also detected in this SAME sentence — e.g. a
+   * compliance statement scoped to "the company" specifically must not be
+   * read as covering "the promoter" elsewhere in the same scenario. Empty
+   * means no specific actor was named (treated as company-wide/unscoped). */
+  actorIds: string[];
+  rationale: string;
+}
 
 export interface FactPolarityResult {
+  /** Every compliance hit, with full sentence/nexus/actor provenance —
+   * the primary output; engine.ts's connectivity check consumes this. */
+  evidence: PolarityEvidence[];
   /** Existing controlled-vocabulary conduct-tag ids (concept-tags.ts) that
    * the entered scenario affirmatively states did NOT occur / are
-   * satisfied compliantly. */
+   * satisfied compliantly, ANYWHERE in the scenario — a coarse, DERIVED
+   * union of `evidence` with no connectivity applied. Retained only for
+   * callers that need the bare "was this concept id ever stated compliant
+   * anywhere" fact (e.g. display/explanatory text); never use this Set to
+   * decide whether a specific provision may be suppressed or contradicted
+   * — that decision must go through `evidence` and a connectivity check. */
   compliantConceptIds: Set<string>;
   rationale: Map<string, string>;
 }
@@ -71,8 +129,17 @@ const STANDALONE_GROUPS: StandaloneGroup[] = [
   },
   {
     label: "RPT properly accounted for",
+    // P0 connectivity fix: this compliance statement is about the RPT's OWN
+    // accounting treatment, not general financial-statement accuracy — it
+    // must never be read as ruling out financial_statement_misstatement for
+    // an unrelated, topic-less rule (e.g. Ind AS 1's own bare misstatement
+    // predicate, which has no topic group of its own for the connectivity
+    // check in engine.ts to compare against and would otherwise connect
+    // unconditionally). A general "financial statements were accurate"
+    // statement (a genuinely on-topic fact) is already covered by the
+    // separate "results accurate and timely filed" group below.
     phrases: ["properly accounted for", "correctly accounted for", "accounted for under applicable accounting standards"],
-    compliantFor: ["financial_statement_misstatement"],
+    compliantFor: ["related_party_misrepresentation"],
   },
 
   // ----- Material event disclosure (LODR 30) -----
@@ -261,13 +328,6 @@ const LIST_TOPICS: ListTopic[] = [
   { phrase: "concealment", compliantFor: ["non_disclosure_of_information"] },
 ];
 
-function splitSentences(text: string): string[] {
-  return text
-    .split(/[.!?;\n]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 const NEARBY_NEGATION_WORDS = new Set(["not", "never", "no", "without"]);
 const NEARBY_NEGATION_WINDOW = 4;
 
@@ -277,14 +337,36 @@ function hasNearbyPrecedingNegation(sentenceNormalized: string, matchIndex: numb
 }
 
 /** Detects affirmative-compliance statements in the ENTERED scenario text
- * and returns which existing conduct-tag ids they render satisfied/absent.
- * Deterministic phrase/list-cue matching only — no ML. */
-export function detectFactPolarity(freeText: string): FactPolarityResult {
+ * and returns which existing conduct-tag ids they render satisfied/absent,
+ * each carrying its own sentence/nexus/actor provenance (PolarityEvidence)
+ * so a consumer can test CONNECTIVITY before treating it as applicable to
+ * any particular provision — never a scenario-wide bag-of-tags signal.
+ * Deterministic phrase/list-cue matching only — no ML.
+ *
+ * `detected` must be the SAME DetectedConcept[] (from detectConcepts, run
+ * on this same text) the caller is already using elsewhere — this module
+ * reuses its sentence indices exactly (via the same splitIntoSentences) so
+ * "co-detected in this sentence" means the identical thing on both sides. */
+export function detectFactPolarity(freeText: string, detected: DetectedConcept[]): FactPolarityResult {
+  const evidence: PolarityEvidence[] = [];
   const compliantConceptIds = new Set<string>();
   const rationale = new Map<string, string>();
 
-  const record = (ids: string[], reason: string) => {
+  const topicIdsBySentence = new Map<number, string[]>();
+  const actorIdsBySentence = new Map<number, string[]>();
+  for (const c of detected) {
+    const bucket = c.kind === "transaction" ? topicIdsBySentence : c.kind === "actor" ? actorIdsBySentence : null;
+    if (!bucket) continue;
+    for (const idx of c.sentenceIndices) {
+      bucket.set(idx, [...(bucket.get(idx) ?? []), c.id]);
+    }
+  }
+
+  const record = (ids: string[], reason: string, sentenceIndex: number, matchedText: string) => {
+    const nexusTopicIds = topicIdsBySentence.get(sentenceIndex) ?? [];
+    const actorIds = actorIdsBySentence.get(sentenceIndex) ?? [];
     for (const id of ids) {
+      evidence.push({ conceptId: id, polarity: "compliant", sentenceIndex, matchedText, nexusTopicIds, actorIds, rationale: reason });
       if (!compliantConceptIds.has(id)) {
         compliantConceptIds.add(id);
         rationale.set(id, reason);
@@ -292,14 +374,14 @@ export function detectFactPolarity(freeText: string): FactPolarityResult {
     }
   };
 
-  const sentences = splitSentences(freeText).map(normalizeText).filter(Boolean);
-  for (const sentence of sentences) {
+  const sentences = splitIntoSentences(freeText).map(normalizeText).filter(Boolean);
+  sentences.forEach((sentence, sentenceIndex) => {
     for (const group of STANDALONE_GROUPS) {
       for (const phrase of group.phrases) {
         const idx = sentence.indexOf(phrase);
         if (idx === -1) continue;
         if (hasNearbyPrecedingNegation(sentence, idx)) continue;
-        record(group.compliantFor, `Entered scenario states "${group.label}".`);
+        record(group.compliantFor, `Entered scenario states "${group.label}".`, sentenceIndex, phrase);
         break;
       }
     }
@@ -309,14 +391,19 @@ export function detectFactPolarity(freeText: string): FactPolarityResult {
       if (idx === -1) return earliest;
       return earliest === -1 ? idx : Math.min(earliest, idx);
     }, -1);
-    if (cueIndex === -1) continue;
+    if (cueIndex === -1) return;
     for (const topic of LIST_TOPICS) {
       const topicIndex = sentence.indexOf(topic.phrase);
       if (topicIndex !== -1 && topicIndex > cueIndex) {
-        record(topic.compliantFor, `Entered scenario affirmatively negates "${topic.phrase}" ("${sentence.slice(Math.max(0, cueIndex), cueIndex + 50)}...").`);
+        record(
+          topic.compliantFor,
+          `Entered scenario affirmatively negates "${topic.phrase}" ("${sentence.slice(Math.max(0, cueIndex), cueIndex + 50)}...").`,
+          sentenceIndex,
+          topic.phrase
+        );
       }
     }
-  }
+  });
 
-  return { compliantConceptIds, rationale };
+  return { evidence, compliantConceptIds, rationale };
 }
