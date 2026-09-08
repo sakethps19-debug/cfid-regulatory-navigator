@@ -8,6 +8,8 @@ import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
+import { findingMaturityTier } from "@/lib/findingMaturity";
+import { isSearchableFinding } from "@/lib/publicationLifecycle";
 
 export interface QueueRow {
   finding: ScenarioFinding;
@@ -24,6 +26,29 @@ const VERIFICATION_FILTERS: { key: VerificationFilterKey; label: string; test: (
   { key: "provisionUnverified", label: "Provision mapping unverified", test: (f) => !f.provisionMappingVerified },
   { key: "statusUnverified", label: "Finding status unverified", test: (f) => !f.findingStatusVerified },
   { key: "noticeeUnverified", label: "Noticee mapping unverified", test: (f) => !f.noticeeMappingVerified },
+];
+
+// Data-review triage filters, distinct from the per-field verification
+// filters above: these surface a specific shape of curated-data gap an
+// officer or reviewer might want to work through as a batch, rather than
+// a single verification flag. Same toggle mechanism, kept as a separate
+// group since they answer a different question ("what kind of gap is
+// this?" vs "which specific field is unverified?").
+export type DataQualityFilterKey = "publishedPartiallyVerified" | "noProvisions" | "noConductTags";
+
+export const DATA_QUALITY_FILTERS: { key: DataQualityFilterKey; label: string; test: (f: ScenarioFinding) => boolean }[] = [
+  {
+    key: "publishedPartiallyVerified",
+    label: "Published but partially verified",
+    // isSearchableFinding + maturity tier "Partially verified" specifically
+    // (not "Unverified candidate material", which is a searchable finding
+    // with EVERY field unverified — a different, more urgent gap already
+    // reachable by combining the individual verification-field filters
+    // above) — see findingMaturity.ts for the tier definitions.
+    test: (f) => isSearchableFinding(f) && findingMaturityTier(f) === "Partially verified",
+  },
+  { key: "noProvisions", label: "No provisions mapped", test: (f) => f.provisionLinks.length === 0 },
+  { key: "noConductTags", label: "No alleged-conduct tags", test: (f) => f.allegedConduct.length === 0 },
 ];
 
 const VERIFICATION_ROWS: { label: string; test: (f: ScenarioFinding) => boolean }[] = [
@@ -72,6 +97,7 @@ function humanize(id: string): string {
 
 export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
   const [activeVerificationFilters, setActiveVerificationFilters] = useState<Set<VerificationFilterKey>>(new Set());
+  const [activeDataQualityFilters, setActiveDataQualityFilters] = useState<Set<DataQualityFilterKey>>(new Set());
   const [publicationFilter, setPublicationFilter] = useState<"all" | PublicationStatus>("all");
   const [orderFilter, setOrderFilter] = useState<"all" | string>("all");
   const [matterFilter, setMatterFilter] = useState<"all" | string>("all");
@@ -98,10 +124,23 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
     });
   }
 
+  function toggleDataQualityFilter(key: DataQualityFilterKey) {
+    setActiveDataQualityFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   const filtered = useMemo(() => {
     return rows.filter(({ finding, orders, matterName }) => {
       for (const key of activeVerificationFilters) {
         const filterDef = VERIFICATION_FILTERS.find((f) => f.key === key);
+        if (filterDef && !filterDef.test(finding)) return false;
+      }
+      for (const key of activeDataQualityFilters) {
+        const filterDef = DATA_QUALITY_FILTERS.find((f) => f.key === key);
         if (filterDef && !filterDef.test(finding)) return false;
       }
       if (publicationFilter !== "all" && finding.publicationStatus !== publicationFilter) return false;
@@ -109,7 +148,7 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
       if (matterFilter !== "all" && matterName !== matterFilter) return false;
       return true;
     });
-  }, [rows, activeVerificationFilters, publicationFilter, orderFilter, matterFilter]);
+  }, [rows, activeVerificationFilters, activeDataQualityFilters, publicationFilter, orderFilter, matterFilter]);
 
   return (
     <div>
@@ -121,6 +160,22 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
             className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
               activeVerificationFilters.has(key)
                 ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]"
+                : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        {DATA_QUALITY_FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => toggleDataQualityFilter(key)}
+            className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
+              activeDataQualityFilters.has(key)
+                ? "bg-[var(--color-navy-900)] text-white ring-[var(--color-navy-900)]"
                 : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
