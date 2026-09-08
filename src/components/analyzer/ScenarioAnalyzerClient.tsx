@@ -1586,14 +1586,15 @@ export function ScenarioAnalyzerClient() {
               <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">{result.historicalTreatment.matterDedupBasis}</p>
               <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">
                 Matter identity: {result.historicalTreatment.matterIdentityStats.resolvedViaMatterId} case entries resolved via a real matter record,{" "}
-                {result.historicalTreatment.matterIdentityStats.resolvedViaFallback} via the disclosed case-name fallback (data-quality gap, not a legal
-                distinction).
+                {result.historicalTreatment.matterIdentityStats.resolvedViaOrderMetadata} via the linked order&apos;s own curated matter name,{" "}
+                {result.historicalTreatment.matterIdentityStats.resolvedViaCaseName} via the disclosed case-name fallback (the weakest tier — a
+                data-quality gap, not a legal distinction).
               </p>
 
               {(() => {
-                const attributedEntries = result.historicalTreatment.entries.filter((e) => e.attributedFindingsCount > 0);
-                const citedOnlyEntries = result.historicalTreatment.entries.filter((e) => e.attributedFindingsCount === 0 && e.comparableMatterCount > 0);
-                const contextualOnlyEntries = result.historicalTreatment.entries.filter((e) => e.comparableMatterCount === 0 && e.contextuallyRelatedMatterCount > 0);
+                const attributedEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "fact_attributed");
+                const citedOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "comparable_unverified");
+                const contextualOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "contextually_related");
 
                 function renderEntry(e: HistoricalTreatmentProvisionEntry) {
                   const histKey = `hist-${e.provision.id}`;
@@ -1652,6 +1653,11 @@ export function ScenarioAnalyzerClient() {
                                         matter identity: case-name fallback
                                       </span>
                                     )}
+                                    {mo.matterIdBasis === "order_metadata_fallback" && (
+                                      <span className="inline-flex items-center rounded-sm bg-transparent px-2 py-0.5 text-xs text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                                        matter identity: order&apos;s own curated name
+                                      </span>
+                                    )}
                                     {mo.outcome === "mixed_noticee_outcome" ? (
                                       <span className="inline-flex items-center rounded-sm bg-[var(--status-amber-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-amber-text)] ring-1 ring-inset ring-[var(--status-amber-ring)]">
                                         Mixed outcome across noticees
@@ -1660,6 +1666,9 @@ export function ScenarioAnalyzerClient() {
                                       <span className="text-xs text-[var(--color-ink-500)]">{mo.outcome.replace(/^uniformly_/, "").replace(/_/g, " ")}</span>
                                     )}
                                   </div>
+                                  {mo.comparabilityRationale && (
+                                    <p className="mt-1 text-xs text-[var(--color-ink-500)]">{mo.comparabilityRationale}</p>
+                                  )}
                                   <ul className="mt-2 space-y-2">
                                     {mo.cases.map((c) => (
                                       <li key={`${c.recordId}-${c.orderStageClass}`} className="rounded-lg bg-[var(--color-neutral-50)] p-2 ring-1 border-[var(--color-border)]">

@@ -1,5 +1,5 @@
 // Historical treatment across CFID cases (deterministic-engine completion
-// pass; corrected in a follow-up review pass — see the three defects fixed
+// pass; corrected in two follow-up review passes — see the defects fixed
 // below) — Question B of the Scenario Analyzer v1 mandate: "how has CFID
 // historically treated materially similar facts?", architecturally
 // SEPARATE from Question A ("what provisions are potentially relevant to MY
@@ -16,67 +16,73 @@
 // candidate, must read as exactly that — never as evidence the provision
 // "usually applies" to this fact pattern.
 //
-// Three defects an independent review found in the first version of this
-// file, and how this version fixes each:
+// ROUND 1 defects (independent review) and how they were fixed:
 //
-// 1. MATTER IDENTITY. The first version deduplicated matters by bare case
-//    name (scenario_findings.case_name). This corpus already has a real
-//    matter model: orders.matter_id (a curated foreign key — see
-//    data.ts's mapOrder and the P2-18 audit note there) groups an interim
-//    order, its confirmatory order, a later adjudication order, etc. under
-//    one matter. resolveMatterKey below resolves EVERY case entry's
-//    matterKey via that real id, walking the finding's own orderIds (see
-//    ScenarioFinding.orderIds — populated from scenario_findings.order_id/
-//    final_order_id, both real order foreign keys) to the linked Order's
-//    matterId. Only when NO linked order carries a matter_id does this
-//    fall back to a case-name-based key — a disclosed, weaker proxy, never
-//    silently treated as equivalent (see MatterIdentityBasis in types.ts
-//    and matterIdentityStats in the returned result).
+// 1. MATTER IDENTITY. Deduplicated matters by bare case name instead of the
+//    real matter model (orders.matter_id, a curated foreign key). Fixed by
+//    resolveMatterKey below, which walks the finding's own orderIds to the
+//    linked Order's matterId first.
+// 2. HISTORICAL COMPARABILITY. Reused the precision engine's own
+//    MIN_FINDING_SCORE (a single weight-3 tag) as "materially similar" —
+//    too permissive. Fixed with a genuine 4-tier HistoricalComparabilityTier
+//    (see assessComparability) requiring overlap on BOTH substantive
+//    categories for "strongly comparable", plus a per-link justifyingTags
+//    filter mirroring the precision engine's own Question-A gate.
+// 3. NOTICEE-SPECIFIC OUTCOMES. Collapsed multi-noticee outcomes to one
+//    representative disposition via a finality ranking. Fixed by
+//    deriveMatterOutcome, which surfaces an explicit "mixed_noticee_outcome"
+//    state instead.
 //
-// 2. HISTORICAL COMPARABILITY. The first version reused the precision
-//    engine's own MIN_FINDING_SCORE (a single weight-3 transaction or
-//    conduct tag) as "materially similar" for Question B too — too
-//    permissive: a matter whose ONLY overlap with the entered scenario is
-//    one generic tag (e.g. bare "related-party transaction") could dump
-//    every OTHER provision that matter's own finding happened to bundle in
-//    (fraud, diversion, governance...) into the historical view, none of
-//    it actually connected to the entered facts. This version:
-//      (a) computes a genuine 4-tier HistoricalComparabilityTier per
-//          finding (see classifyComparability) — a single substantive
-//          (transaction or conduct) tag match is "moderately_comparable"
-//          at best, never "strongly_comparable" (which requires BOTH);
-//      (b) matters whose only overlap is generic actor/evidence overlap
-//          ("contextually_related") are counted but contribute NO
-//          provision-level case entries at all — a bare shared actor role
-//          is too generic to support attributing any SPECIFIC provision to
-//          the entered facts;
-//      (c) even within a qualifying matter, each PROVISION LINK is
-//          filtered by its own finding_provisions.justifying_tags — the
-//          same per-link curation the precision engine already applies for
-//          Question A (see engine.ts) — so a link whose non-empty
-//          justifyingTags point to a DIFFERENT fact within a bundled,
-//          multi-issue finding is excluded from THIS query's view of that
-//          provision entirely, not silently attributed to an unrelated
-//          entered fact. A link with EMPTY justifyingTags (hundreds of
-//          live links, per the corpus's own known data-quality state) is
-//          still shown — never fabricating certainty either way — but
-//          explicitly marked "unverified" (see attributionStatus and the
-//          attributedFindingsCount/unverifiedFindingsCount split), never
-//          implied to have been "historically invoked for this fact
-//          pattern" the way an attributed link is.
+// ROUND 2 defects (live-database validation) and how THIS version fixes
+// each:
 //
-// 3. NOTICEE-SPECIFIC OUTCOMES. The first version picked ONE
-//    representative disposition per (matter, provision) via a finality
-//    ranking, which could silently read "company confirmed, one director
-//    exonerated" as a single "confirmed" figure. This version groups case
-//    entries into HistoricalTreatmentMatterOutcome per matter, and — where
-//    the case entries for one matter+provision carry DIFFERENT
-//    effectiveStatus values (different noticees, or the same actor's
-//    status genuinely changed between an interim and final disposition) —
-//    reports an explicit "mixed_noticee_outcome" state (see
-//    MatterProvisionOutcomeKind) rather than collapsing to whichever
-//    status ranks highest. dispositionBreakdown.mixedNoticeeOutcome tracks
-//    this separately from every uniform-outcome bucket.
+// 4. MATTER IDENTITY, remaining gap. orders.matter_id was preferred, but
+//    when absent the fallback skipped straight to the FINDING's own
+//    case_name text — even where the linked ORDER already carried its own
+//    curated normalized_matter_name showing two findings with different
+//    case names belong to one investigation (concrete example: ADANI-AC-01
+//    / ADANI-MR-01, whose linked orders both already carry the identical
+//    normalized_matter_name "Investigation into Hindenburg allegations wrt
+//    Rehvar and Milestone in the matter of Adani Group"). resolveMatterKey
+//    now has a genuine three-tier resolution: matter_id, then
+//    order.normalized_matter_name (order-level curated data, never the
+//    finding's own case-name text), then case-name as the true last
+//    resort. Separately, a reviewed, audited migration
+//    (0016_matter_identity_remediation.sql) promoted every then-fallback
+//    finding in the live corpus to a real matter_id by grouping on an EXACT
+//    match of the pre-existing orders.normalized_matter_name field — never
+//    inferred from company-name similarity.
+// 5. HISTORICAL COMPARABILITY, remaining weakness. The 4-tier system was
+//    still purely categorical: a single generic transaction tag (e.g. bare
+//    "related-party transaction") plus a single generic conduct tag (e.g.
+//    bare "non-disclosure") could still reach "strongly comparable" even
+//    though that pairing recurs across legally very different matters. Two
+//    additions, both deterministic and inspectable (see
+//    assessComparability):
+//      (a) SPECIFICITY CAP (hasSpecificity): "strongly comparable" now
+//          additionally requires either multiple matched tags in one
+//          category, or at least one NON-generic tag — a lone generic
+//          transaction+conduct pair caps at "moderately comparable".
+//      (b) CONTRADICTION PENALTY (contradictionSignals.ts): when the
+//          entered scenario affirmatively states a fact incompatible with
+//          a precedent's own critical basis (e.g. "an arm's-length
+//          related-party transaction" rules out a SHAM-transaction
+//          precedent; "no diversion of funds" rules out a diversion
+//          precedent), and that precedent's own record carries the
+//          contradicted tag, its tier is demoted by one full level — this
+//          is a genuinely different signal from mere silence (the scenario
+//          simply not mentioning something), which is never treated as a
+//          contradiction.
+// 6. PRESENTATION NOISE. Even with (5)'s stricter tiering, a provision
+//    could still accumulate dozens of "cited, attribution unverified" case
+//    entries with equal visual weight to a handful of genuinely attributed
+//    ones. Every entry now carries an explicit presentationTier (see
+//    HistoricalPresentationTier in types.ts) — fact_attributed first,
+//    comparable_unverified second and visually secondary,
+//    contextually_related lower-priority, excluded_different normally
+//    hidden and reachable only via excludedForAudit — so an officer's FIRST
+//    screen answers "what was historically invoked for this fact pattern",
+//    not "everything any comparable matter's finding happened to cite".
 //
 // Architecture remains generic across every fact pattern this corpus
 // represents (RPT, fictitious sales, financial misstatement, diversion,
@@ -87,6 +93,7 @@
 // and data layer already use.
 import type { DetectedConcept } from "./conceptExtraction";
 import { scoreFinding, additionalPrecedentFactsNotMatched, effectiveLinkStatus, MIN_FINDING_SCORE, type ScoredFinding } from "./scoring";
+import { detectContradictionSignals, type ContradictionSignal } from "./contradictionSignals";
 import { legalFunctionForProvision } from "@/data/curated/legal-function-classification";
 import type { FindingStatus, LegalProvision, Order, OrderStage, ScenarioFinding } from "@/types/domain";
 import type {
@@ -95,6 +102,7 @@ import type {
   GateBlockedProvisionResult,
   HistoricalComparabilityTier,
   HistoricalOrderStageClass,
+  HistoricalPresentationTier,
   HistoricalTreatmentCaseEntry,
   HistoricalTreatmentDispositionBreakdown,
   HistoricalTreatmentMatterOutcome,
@@ -140,41 +148,106 @@ function classifyOrderStage(finding: ScenarioFinding, orderById: Map<string, Ord
   return "unresolved_or_not_independently_classified";
 }
 
-// ----- Defect #1 fix: matter identity via orders.matter_id -----
+// ----- Defect #1/#4 fix: matter identity, three tiers -----
 
-/** Resolves a finding's matterKey via the REAL matter model where possible.
- * Walks every order linked to the finding (finding.orderIds — populated
- * from scenario_findings.order_id/final_order_id) and uses the first
- * linked order that carries a matter_id. The two key spaces (real
- * matter_id vs. case-name fallback) are disjoint by construction (distinct
- * prefixes) so a fallback key can never collide with, or be mistaken for,
- * a real matter_id key. */
+/** Resolves a finding's matterKey via the strongest available identity, in
+ * order: (1) the REAL matter model, orders.matter_id; (2) the linked
+ * order's OWN curated orders.normalized_matter_name (order-level data,
+ * never the finding's own case_name text); (3) the finding's case_name, the
+ * true last resort. The three key spaces are disjoint by construction
+ * (distinct prefixes) so a weaker-tier key can never collide with, or be
+ * mistaken for, a stronger one. See MatterIdentityBasis in types.ts for the
+ * full rationale of each tier. */
 function resolveMatterKey(finding: ScenarioFinding, orderById: Map<string, Order>): { key: string; basis: MatterIdentityBasis } {
   for (const orderId of finding.orderIds) {
     const order = orderById.get(orderId);
     if (order?.matterId) return { key: `matter:${order.matterId}`, basis: "matter_id" };
   }
+  for (const orderId of finding.orderIds) {
+    const order = orderById.get(orderId);
+    if (order?.normalizedMatterName) return { key: `ordername:${order.normalizedMatterName.trim().toLowerCase()}`, basis: "order_metadata_fallback" };
+  }
   return { key: `casename:${finding.caseName.trim().toLowerCase()}`, basis: "case_name_fallback" };
 }
 
-// ----- Defect #2 fix: genuine historical-comparability tiering -----
+// ----- Defect #2/#5 fix: genuine historical-comparability assessment -----
 
-/** A single substantive (transaction OR conduct) tag match is real
- * overlap and still clears MIN_FINDING_SCORE, but must never alone read as
- * "strongly comparable" — that requires overlap on BOTH substantive
- * categories (the same distinction scoreFinding already tracks via
- * substantiveCategoriesMatched, reused here rather than re-derived).
- * "contextually_related" is overlap confined to actor/evidence-type tags
- * only — generic context (a shared "promoter" actor role, a shared "bank
- * statements" evidence type) that recurs across many unrelated matters and
- * cannot, on its own, support attributing any specific provision to the
- * entered facts (see classifyComparability's caller in
- * buildHistoricalTreatment for how that exclusion is enforced). */
-function classifyComparability(sf: ScoredFinding): HistoricalComparabilityTier {
-  if (sf.score < MIN_FINDING_SCORE) return "weak_excluded";
-  if (sf.substantiveCategoriesMatched >= 2) return "strongly_comparable";
-  if (sf.substantiveCategoriesMatched === 1) return "moderately_comparable";
-  return "contextually_related";
+/** Transaction/conduct tags broad enough, on their own, to recur across
+ * legally very different matters — a bare "related-party transaction" tag
+ * says nothing about whether the RPT was genuine or a sham; a bare
+ * "non-disclosure" tag says nothing about WHAT was not disclosed. A single
+ * tag from this list, paired with a single tag from the other generic list
+ * and nothing else, is real overlap but not meaningful SPECIFICITY — see
+ * hasSpecificity and assessComparability's "strongly comparable" cap. */
+const GENERIC_TRANSACTION_TAGS = new Set(["related_party_transaction"]);
+const GENERIC_CONDUCT_TAGS = new Set(["non_disclosure_of_information", "fund_diversion", "financial_statement_misstatement", "director_governance_failure"]);
+
+/** True when the finding's matched transaction/conduct overlap has
+ * meaningful specificity: either multiple reinforcing tags in one
+ * category, or at least one tag that is NOT on the generic lists above.
+ * Only called when substantiveCategoriesMatched >= 2 (both a transaction
+ * AND a conduct tag matched), so both arrays are non-empty by construction
+ * whenever this actually gates the "strongly comparable" tier. */
+function hasSpecificity(sf: ScoredFinding): boolean {
+  const txIds = sf.matchedIdsByCategory.transactionTypes;
+  const conductIds = sf.matchedIdsByCategory.allegedConduct;
+  if (txIds.length >= 2 || conductIds.length >= 2) return true;
+  const txSpecific = txIds.some((id) => !GENERIC_TRANSACTION_TAGS.has(id));
+  const conductSpecific = conductIds.some((id) => !GENERIC_CONDUCT_TAGS.has(id));
+  return txSpecific || conductSpecific;
+}
+
+function demoteOneTier(tier: HistoricalComparabilityTier): HistoricalComparabilityTier {
+  if (tier === "strongly_comparable") return "moderately_comparable";
+  if (tier === "moderately_comparable") return "contextually_related";
+  return "weak_excluded"; // contextually_related or already weak_excluded
+}
+
+interface ComparabilityAssessment {
+  tier: HistoricalComparabilityTier;
+  rationale: string;
+}
+
+/** The full historical-comparability decision for ONE finding against the
+ * entered scenario — deterministic, and every step recorded in `rationale`
+ * rather than collapsed into a single opaque number:
+ *   1. Base tier from substantive (transaction/conduct) category overlap
+ *      count, exactly as the round-1 fix computed it.
+ *   2. Specificity cap: "strongly comparable" additionally requires
+ *      hasSpecificity (see above) — a lone generic transaction+conduct
+ *      pair caps at "moderately comparable".
+ *   3. Contradiction penalty: if this finding's OWN recorded tags (its
+ *      full transaction/actor/conduct/evidence set, not just what overlaps
+ *      the query) include any concept id the entered scenario
+ *      affirmatively contradicts (see contradictionSignals.ts), the tier
+ *      is demoted by one further full level. */
+function assessComparability(sf: ScoredFinding, contradiction: ContradictionSignal): ComparabilityAssessment {
+  if (sf.score < MIN_FINDING_SCORE) {
+    return { tier: "weak_excluded", rationale: `Base factual-overlap score ${sf.score} is below the minimum comparability bar (${MIN_FINDING_SCORE}).` };
+  }
+
+  let tier: HistoricalComparabilityTier =
+    sf.substantiveCategoriesMatched >= 2 ? "strongly_comparable" : sf.substantiveCategoriesMatched === 1 ? "moderately_comparable" : "contextually_related";
+
+  const parts: string[] = [
+    `Matched ${sf.matchedIdsByCategory.transactionTypes.length} transaction tag(s), ${sf.matchedIdsByCategory.allegedConduct.length} conduct tag(s), ${sf.matchedIdsByCategory.actorRoles.length} actor tag(s), ${sf.matchedIdsByCategory.evidenceTypes.length} evidence tag(s) against the entered scenario.`,
+  ];
+
+  if (tier === "strongly_comparable" && !hasSpecificity(sf)) {
+    tier = "moderately_comparable";
+    parts.push("Capped at moderately comparable: the only overlap is a single generic transaction tag plus a single generic conduct tag, which is not meaningful specificity on its own.");
+  }
+
+  const precedentOwnTagIds = new Set([...sf.finding.transactionTypes, ...sf.finding.actorRoles, ...sf.finding.allegedConduct, ...sf.finding.evidenceTypes]);
+  const contradictedHits = [...contradiction.contradictedConceptIds].filter((id) => precedentOwnTagIds.has(id));
+  if (contradictedHits.length > 0) {
+    const before = tier;
+    tier = demoteOneTier(tier);
+    const reasons = [...new Set(contradictedHits.map((id) => contradiction.rationale.get(id)).filter((r): r is string => !!r))];
+    parts.push(`Demoted from ${before} to ${tier}: this matter's own record includes ${contradictedHits.join(", ")}, which the entered scenario affirmatively rules out. ${reasons.join(" ")}`);
+  }
+
+  return { tier, rationale: parts.join(" ") };
 }
 
 // ----- Defect #3 fix: outcome aggregation without a finality-priority collapse -----
@@ -283,8 +356,19 @@ function tallyOutcome(breakdown: HistoricalTreatmentDispositionBreakdown, outcom
   }
 }
 
+/** Defect #6 fix: the officer-facing presentation hierarchy for one
+ * provision entry, derived purely from its own counts (see
+ * HistoricalPresentationTier in types.ts). */
+function presentationTierFor(attributedFindingsCount: number, comparableMatterCount: number, contextuallyRelatedMatterCount: number): HistoricalPresentationTier {
+  if (attributedFindingsCount > 0) return "fact_attributed";
+  if (comparableMatterCount > 0) return "comparable_unverified";
+  if (contextuallyRelatedMatterCount > 0) return "contextually_related";
+  return "excluded_different";
+}
+
 export function buildHistoricalTreatment(
   effectiveConcepts: DetectedConcept[],
+  scenarioFreeText: string,
   scenarioFindings: ScenarioFinding[],
   provisions: LegalProvision[],
   orders: Order[],
@@ -295,10 +379,11 @@ export function buildHistoricalTreatment(
   const orderById = new Map(orders.map((o) => [o.id, o]));
   const provisionById = new Map(provisions.map((p) => [p.id, p]));
   const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+  const contradiction = detectContradictionSignals(scenarioFreeText);
 
   const scored = scenarioFindings.map((f) => {
     const sf = scoreFinding(f, effectiveConcepts);
-    return { sf, tier: classifyComparability(sf) };
+    return { sf, assessment: assessComparability(sf, contradiction) };
   });
 
   // Overall (whole-query) matter counts, deduplicated by matterKey,
@@ -308,27 +393,41 @@ export function buildHistoricalTreatment(
   // matter can have several scenario_findings rows of differing relevance.
   const TIER_RANK: Record<HistoricalComparabilityTier, number> = { strongly_comparable: 3, moderately_comparable: 2, contextually_related: 1, weak_excluded: 0 };
   const bestTierByMatter = new Map<string, HistoricalComparabilityTier>();
-  const matterIdBasisByMatter = new Map<string, MatterIdentityBasis>();
+  const bestAssessmentByMatter = new Map<string, ComparabilityAssessment>();
+  const matterCaseNameByKey = new Map<string, string>();
   let resolvedViaMatterId = 0;
-  let resolvedViaFallback = 0;
-  const fallbackRecordIds: string[] = [];
-  for (const { sf, tier } of scored) {
+  let resolvedViaOrderMetadata = 0;
+  let resolvedViaCaseName = 0;
+  const caseNameFallbackRecordIds: string[] = [];
+  for (const { sf, assessment } of scored) {
     const { key, basis } = resolveMatterKey(sf.finding, orderById);
-    matterIdBasisByMatter.set(key, basis);
+    if (!matterCaseNameByKey.has(key)) matterCaseNameByKey.set(key, sf.finding.caseName);
     if (basis === "matter_id") resolvedViaMatterId++;
+    else if (basis === "order_metadata_fallback") resolvedViaOrderMetadata++;
     else {
-      resolvedViaFallback++;
-      fallbackRecordIds.push(sf.finding.recordId);
+      resolvedViaCaseName++;
+      caseNameFallbackRecordIds.push(sf.finding.recordId);
     }
     const existing = bestTierByMatter.get(key);
-    if (!existing || TIER_RANK[tier] > TIER_RANK[existing]) bestTierByMatter.set(key, tier);
+    if (!existing || TIER_RANK[assessment.tier] > TIER_RANK[existing]) {
+      bestTierByMatter.set(key, assessment.tier);
+      bestAssessmentByMatter.set(key, assessment);
+    }
   }
   const overallMatterCounts = { stronglyComparable: 0, moderatelyComparable: 0, contextuallyRelated: 0, weakExcluded: 0 };
-  for (const tier of bestTierByMatter.values()) {
+  const excludedForAudit: { matterKey: string; caseName: string; reason: string }[] = [];
+  for (const [matterKey, tier] of bestTierByMatter.entries()) {
     if (tier === "strongly_comparable") overallMatterCounts.stronglyComparable++;
     else if (tier === "moderately_comparable") overallMatterCounts.moderatelyComparable++;
     else if (tier === "contextually_related") overallMatterCounts.contextuallyRelated++;
-    else overallMatterCounts.weakExcluded++;
+    else {
+      overallMatterCounts.weakExcluded++;
+      excludedForAudit.push({
+        matterKey,
+        caseName: matterCaseNameByKey.get(matterKey) ?? "(unknown)",
+        reason: bestAssessmentByMatter.get(matterKey)?.rationale ?? "Below the minimum comparability bar.",
+      });
+    }
   }
 
   // Contextually-related findings never contribute a case entry (see
@@ -338,8 +437,8 @@ export function buildHistoricalTreatment(
   // status, since a contextually-related match carries no substantive
   // fact connection to hang either claim on).
   const contextualMattersByProvision = new Map<string, Set<string>>();
-  for (const { sf, tier } of scored) {
-    if (tier !== "contextually_related") continue;
+  for (const { sf, assessment } of scored) {
+    if (assessment.tier !== "contextually_related") continue;
     const { key: matterKey } = resolveMatterKey(sf.finding, orderById);
     for (const link of sf.finding.provisionLinks) {
       const set = contextualMattersByProvision.get(link.provisionId) ?? new Set<string>();
@@ -356,8 +455,8 @@ export function buildHistoricalTreatment(
   // justifyingTags, exactly mirroring the precision engine's per-link gate
   // in engine.ts (see defect #2(c)).
   const casesByProvision = new Map<string, HistoricalTreatmentCaseEntry[]>();
-  for (const { sf, tier } of scored) {
-    if (tier !== "strongly_comparable" && tier !== "moderately_comparable") continue;
+  for (const { sf, assessment } of scored) {
+    if (assessment.tier !== "strongly_comparable" && assessment.tier !== "moderately_comparable") continue;
     const { key: matterKey, basis: matterIdBasis } = resolveMatterKey(sf.finding, orderById);
     for (const link of sf.finding.provisionLinks) {
       const hasCuratedTags = link.justifyingTags.length > 0;
@@ -425,18 +524,28 @@ export function buildHistoricalTreatment(
       const { outcome, representativeStatus } = deriveMatterOutcome(matterCases);
       tallyOutcome(dispositionBreakdown, outcome, representativeStatus);
       const tier = bestTierByMatter.get(matterKey) ?? "moderately_comparable";
+      const bestAssessment = bestAssessmentByMatter.get(matterKey);
       if (tier === "strongly_comparable") stronglyComparableMatterCount++;
       else moderatelyComparableMatterCount++;
+      // Ranking-only score (never crosses a tier boundary — see
+      // comparabilityScore's own doc comment in types.ts): the highest
+      // scoreFinding score among this matter's own scored findings.
+      const matterScore = Math.max(
+        0,
+        ...scored.filter(({ sf }) => resolveMatterKey(sf.finding, orderById).key === matterKey).map(({ sf }) => sf.score)
+      );
       matterOutcomes.push({
         matterKey,
         matterIdBasis: matterCases[0].matterIdBasis,
         caseName: matterCases[0].caseName,
         comparabilityTier: tier,
+        comparabilityRationale: bestAssessment?.rationale ?? "",
+        comparabilityScore: matterScore,
         outcome,
         cases: matterCases,
       });
     }
-    matterOutcomes.sort((a, b) => b.cases.length - a.cases.length);
+    matterOutcomes.sort((a, b) => TIER_RANK[b.comparabilityTier] - TIER_RANK[a.comparabilityTier] || b.comparabilityScore - a.comparabilityScore || b.cases.length - a.cases.length);
 
     const comparableMatterCount = casesByMatter.size;
     const contextuallyRelatedMatterCount = contextualMattersByProvision.get(provisionId)?.size ?? 0;
@@ -463,6 +572,7 @@ export function buildHistoricalTreatment(
       cases,
       currentCandidateTier: current?.tier ?? "not_currently_a_candidate",
       currentApplicabilityNote,
+      presentationTier: presentationTierFor(attributedFindingsCount, comparableMatterCount, contextuallyRelatedMatterCount),
     });
   }
 
@@ -494,31 +604,29 @@ export function buildHistoricalTreatment(
       cases: [],
       currentCandidateTier: current?.tier ?? "not_currently_a_candidate",
       currentApplicabilityNote: `Cited in ${matterKeys.size} contextually related matter${matterKeys.size === 1 ? "" : "s"} (generic actor/evidence overlap only — no comparable-matter support for this specific provision).${current ? ` ${current.note}` : ""}`,
+      presentationTier: "contextually_related",
     });
   }
 
-  // Attributed provisions sort first: an entry where at least one case is
-  // positively connected to the entered facts via justifyingTags reads as
-  // materially more informative than one where every case is merely
-  // "cited in a comparable matter, not independently attributed" — this is
-  // a display-priority choice only, never a filter (both kinds of entry
-  // remain in the result either way), aimed directly at the "must not
-  // dump unrelated provisions" concern: an officer scanning top-to-bottom
-  // sees the attributed set first, with the cited-only set clearly
-  // separated after it (see the UI, which renders these as two
-  // subsections using this same attributedFindingsCount > 0 boundary).
+  // Attributed provisions sort first, then comparable-unverified, then
+  // contextually-related — the SAME presentationTier boundary the UI
+  // renders as three (four, counting the audit-only excluded view)
+  // separate sections, so an officer scanning top-to-bottom always sees
+  // the strongest section first. Within a tier, sorted by matter counts.
+  const PRESENTATION_RANK: Record<HistoricalPresentationTier, number> = { fact_attributed: 3, comparable_unverified: 2, contextually_related: 1, excluded_different: 0 };
   entries.sort(
     (a, b) =>
-      Number(b.attributedFindingsCount > 0) - Number(a.attributedFindingsCount > 0) ||
+      PRESENTATION_RANK[b.presentationTier] - PRESENTATION_RANK[a.presentationTier] ||
       b.comparableMatterCount - a.comparableMatterCount ||
       b.contextuallyRelatedMatterCount - a.contextuallyRelatedMatterCount
   );
 
   return {
     matterDedupBasis:
-      "Matters are deduplicated by orders.matter_id (a real, curated foreign key threaded via each finding's own orderIds) wherever at least one linked order carries one; only where none does — no order data linked at all, or the linked order(s) predate matter_id curation — does this fall back to a normalized case-name key, a disclosed, weaker proxy that can undercount (two different matters sharing a case-name string merge) but never inflates one matter's own sibling orders into independent precedents the way a case-name-only scheme could. See matterIdentityStats for exactly how many case entries used each basis.",
-    matterIdentityStats: { resolvedViaMatterId, resolvedViaFallback, fallbackRecordIds },
+      "Matters are deduplicated in three tiers, strongest first: (1) orders.matter_id, a real curated foreign key threaded via each finding's own orderIds; (2) where no linked order carries a matter_id, that order's OWN curated normalized_matter_name (never the finding's case-name text); (3) only where neither exists, a normalized case-name key as the true last resort. See matterIdentityStats for exactly how many case entries used each tier.",
+    matterIdentityStats: { resolvedViaMatterId, resolvedViaOrderMetadata, resolvedViaCaseName, caseNameFallbackRecordIds },
     overallMatterCounts,
+    excludedForAudit,
     entries,
   };
 }

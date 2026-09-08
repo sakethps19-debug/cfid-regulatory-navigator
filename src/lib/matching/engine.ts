@@ -682,6 +682,7 @@ export function analyzeScenario(
   // applicability).
   const historicalTreatment = buildHistoricalTreatment(
     effectiveConcepts,
+    correctedText,
     publishedScenarioFindings,
     provisions,
     orders,

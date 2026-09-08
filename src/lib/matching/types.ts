@@ -322,16 +322,30 @@ export const HISTORICAL_ORDER_STAGE_LABELS: Record<HistoricalOrderStageClass, st
 };
 
 /** How a case entry's matterKey was resolved (deterministic-engine
- * historical-treatment correction pass). "matter_id" means the entry was
- * grouped by the canonical orders.matter_id — a real, curated foreign key
- * (see data.ts's mapOrder) — resolved via the finding's own orderIds.
- * "case_name_fallback" means no linked order carried a matter_id, so the
- * entry fell back to a normalized case-name key, a DISCLOSED, weaker
- * proxy: it can undercount (two different matters sharing a case-name
- * string get merged) but never overcounts a single matter's own sibling
- * orders as independent precedents in the way the case-name-only scheme
- * this replaces could when matter_id data existed but went unused. */
-export type MatterIdentityBasis = "matter_id" | "case_name_fallback";
+ * historical-treatment correction pass, round 2 — three tiers, strongest
+ * first):
+ *   - "matter_id": grouped by the canonical orders.matter_id — a real,
+ *     curated foreign key (see data.ts's mapOrder) — resolved via the
+ *     finding's own orderIds. As of the round-2 remediation migration
+ *     (0016_matter_identity_remediation.sql), this covers every finding in
+ *     the live corpus; the two weaker tiers below exist for data added
+ *     later that has not yet been through that curation step.
+ *   - "order_metadata_fallback": no linked order carries a matter_id, but
+ *     at least one linked order carries its own curated
+ *     orders.normalized_matter_name — an ORDER-level field (never the
+ *     finding's own case_name text), used as the grouping key instead.
+ *     This is what fixes the concrete round-2 defect: two findings can
+ *     carry genuinely different case_name strings (e.g. "... Adicorp
+ *     Enterprises)" vs "... Milestone Tradelinks / Rehvar Infrastructure)")
+ *     while their linked orders already agree, in the order's OWN curated
+ *     metadata, that they concern one investigation.
+ *   - "case_name_fallback": the last resort — no linked order at all, or a
+ *     linked order with neither matter_id nor normalized_matter_name. A
+ *     normalized case-name key, the weakest and most easily wrong of the
+ *     three (two different matters sharing a case-name string would
+ *     merge), never silently treated as equivalent to the two tiers
+ *     above. */
+export type MatterIdentityBasis = "matter_id" | "order_metadata_fallback" | "case_name_fallback";
 
 export interface HistoricalTreatmentCaseEntry {
   recordId: string;
@@ -390,6 +404,40 @@ export const HISTORICAL_COMPARABILITY_LABELS: Record<HistoricalComparabilityTier
   weak_excluded: "Weak / excluded",
 };
 
+/** Historical Treatment correction pass, round 2 (defect #3 — "reduce
+ * historical noise without deleting useful awareness"): the officer-facing
+ * presentation hierarchy for ONE provision entry, distinct from (but built
+ * on top of) HistoricalComparabilityTier. A provision entry is placed in
+ * exactly one of these four tiers:
+ *   - "fact_attributed": at least one case has attributionStatus
+ *     "attributed" (its own justifying_tags positively connect it to the
+ *     entered facts) — the strongest section, and the only one an officer
+ *     should treat as answering "what was historically INVOKED for this
+ *     fact pattern".
+ *   - "comparable_unverified": the matter(s) are genuinely
+ *     strongly/moderately comparable, but every case's own
+ *     justifying_tags are empty/unreviewed — cited in a comparable matter,
+ *     factual attribution not yet curated. Secondary/collapsed by default
+ *     in the UI, never mixed into the headline "historically invoked"
+ *     answer.
+ *   - "contextually_related": comparableMatterCount is 0 and
+ *     contextuallyRelatedMatterCount > 0 — generic actor/evidence overlap
+ *     only. Lower-priority research leads, never headline regulatory
+ *     treatment.
+ *   - "excluded_different": the provision cleared no bar at all on the
+ *     current query (weak_excluded tier, or every case a contradiction
+ *     penalty demoted below the comparable bar) — normally never rendered,
+ *     kept only in HistoricalTreatmentResult.excludedForAudit for
+ *     methodology/audit inspection. */
+export type HistoricalPresentationTier = "fact_attributed" | "comparable_unverified" | "contextually_related" | "excluded_different";
+
+export const HISTORICAL_PRESENTATION_TIER_LABELS: Record<HistoricalPresentationTier, string> = {
+  fact_attributed: "Provisions attributed to the matching factual issue",
+  comparable_unverified: "Comparable matters — provision attribution not yet verified",
+  contextually_related: "Contextually related matters (generic overlap only)",
+  excluded_different: "Excluded / materially different (audit view only)",
+};
+
 /** The outcome across every case entry sharing one (matter, provision)
  * pair. "mixed" — never silently collapsed to whichever status wins a
  * finality ranking — means different noticees (or different findings
@@ -426,6 +474,23 @@ export interface HistoricalTreatmentMatterOutcome {
    * one, but this is never used as the dedup key itself. */
   caseName: string;
   comparabilityTier: HistoricalComparabilityTier;
+  /** Plain-language, deterministically-generated explanation of WHY this
+   * matter reached its comparabilityTier — which specific overlapping
+   * transaction/conduct tags counted, whether a specificity cap applied
+   * (a single generic transaction+conduct pair alone cannot reach
+   * "strongly comparable" — see assessComparability in
+   * historicalTreatment.ts), and which contradiction (if any) demoted it.
+   * Never a single opaque confidence number — every tier decision here is
+   * inspectable in this string. */
+  comparabilityRationale: string;
+  /** A comparable-strength score (the same finding-level factual-overlap
+   * score scoreFinding computes), used ONLY to rank matters of equal
+   * comparabilityTier against each other — e.g. within one provision, a
+   * matter matching BOTH diversion and concealed-financial-misstatement
+   * facts ranks ahead of one matching diversion alone. Never crosses tier
+   * boundaries: a lower-tier matter is never ranked above a higher-tier
+   * one regardless of this score. */
+  comparabilityScore: number;
   outcome: MatterProvisionOutcomeKind;
   cases: HistoricalTreatmentCaseEntry[];
 }
@@ -513,6 +578,12 @@ export interface HistoricalTreatmentProvisionEntry {
    * matters. On the present facts, this provision is not presently a
    * candidate: [gate explanation]." */
   currentApplicabilityNote: string;
+  /** See HistoricalPresentationTier — the officer-facing display hierarchy
+   * this entry belongs in. Derived purely from this entry's own counts
+   * (never a separate judgment call), so it is always consistent with
+   * attributedFindingsCount/comparableMatterCount/
+   * contextuallyRelatedMatterCount above. */
+  presentationTier: HistoricalPresentationTier;
 }
 
 export interface HistoricalTreatmentResult {
@@ -520,30 +591,43 @@ export interface HistoricalTreatmentResult {
    * used, so the comparableMatterCount figures are never read as more
    * precise than they are — see historicalTreatment.ts's header comment. */
   matterDedupBasis: string;
-  /** How many CASE ENTRIES (not matters) resolved their matterKey via a
-   * real orders.matter_id vs. the disclosed case-name fallback — see
-   * MatterIdentityBasis. */
+  /** How many CASE ENTRIES (not matters) resolved their matterKey via each
+   * of the three tiers — see MatterIdentityBasis. This is a whole-query
+   * figure (identical regardless of which provision is being viewed),
+   * since it reflects the CORPUS's own matter-identity data quality, not
+   * anything specific to the entered scenario. */
   matterIdentityStats: {
     resolvedViaMatterId: number;
-    resolvedViaFallback: number;
-    /** record_ids of every case entry that used the fallback, for
-     * data-quality follow-up — never silently absorbed into an aggregate
-     * figure alone. */
-    fallbackRecordIds: string[];
+    resolvedViaOrderMetadata: number;
+    resolvedViaCaseName: number;
+    /** record_ids of every case entry that used the WEAKEST (case-name)
+     * tier, for data-quality follow-up — never silently absorbed into an
+     * aggregate figure alone. Does NOT include order-metadata-fallback
+     * record ids, which are a real (if less-curated) order-level signal,
+     * not a bare string guess. */
+    caseNameFallbackRecordIds: string[];
   };
   /** Distinct-matter counts across the WHOLE query (every provision
    * combined, matters deduplicated by matterKey), independent of any
    * single provision's own breakdown above — the figures an officer
    * should read for "how many comparable matters did this scenario as a
    * whole surface". weakExcluded matters cleared no bar at all (below the
-   * base MIN_FINDING_SCORE-style threshold) and contribute nothing
-   * anywhere else in this result. */
+   * base MIN_FINDING_SCORE-style threshold, or were demoted below it by a
+   * contradiction penalty — see assessComparability) and contribute
+   * nothing anywhere else in this result except excludedForAudit below. */
   overallMatterCounts: {
     stronglyComparable: number;
     moderatelyComparable: number;
     contextuallyRelated: number;
     weakExcluded: number;
   };
+  /** Matters that cleared no comparability bar at all on this query
+   * (weak_excluded tier, including any matter a contradiction penalty
+   * demoted all the way down) — normally never rendered as part of the
+   * historical-treatment answer (see HistoricalPresentationTier
+   * "excluded_different"), kept here ONLY for methodology/audit
+   * inspection, e.g. "why isn't matter X showing up here". */
+  excludedForAudit: { matterKey: string; caseName: string; reason: string }[];
   entries: HistoricalTreatmentProvisionEntry[];
 }
 

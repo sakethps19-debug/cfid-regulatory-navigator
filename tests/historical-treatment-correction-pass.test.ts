@@ -157,9 +157,10 @@ describe("Historical Treatment correction pass: matter identity (defect #1)", ()
       { freeText: "A related-party transaction was undisclosed, without the required audit committee approval." },
       [finding], [LODR_23_2], []
     );
-    expect(result.historicalTreatment.matterIdentityStats.resolvedViaFallback).toBe(1);
+    expect(result.historicalTreatment.matterIdentityStats.resolvedViaCaseName).toBe(1);
     expect(result.historicalTreatment.matterIdentityStats.resolvedViaMatterId).toBe(0);
-    expect(result.historicalTreatment.matterIdentityStats.fallbackRecordIds).toContain("NOORDER-01");
+    expect(result.historicalTreatment.matterIdentityStats.resolvedViaOrderMetadata).toBe(0);
+    expect(result.historicalTreatment.matterIdentityStats.caseNameFallbackRecordIds).toContain("NOORDER-01");
     const entry = result.historicalTreatment.entries.find((e) => e.provision.id === "LODR-23-2")!;
     expect(entry.matterOutcomes[0].matterIdBasis).toBe("case_name_fallback");
   });

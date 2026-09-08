@@ -58,6 +58,14 @@ export interface ScoredFinding {
   matchedIngredients: string[];
   matchedIds: string[];
   matchedByCategory: MatchedByCategory;
+  /** Same per-category overlap as matchedByCategory, but the RAW
+   * controlled-vocabulary concept-tag ids (data/curated/concept-tags.ts)
+   * rather than display labels — added for the Historical Treatment
+   * comparability-specificity check (historicalTreatment.ts), which needs
+   * to test individual ids against a small curated "generic tag" list.
+   * Purely additive: every existing consumer of ScoredFinding is
+   * unaffected. */
+  matchedIdsByCategory: MatchedByCategory;
   categoriesMatched: number;
   substantiveCategoriesMatched: number;
 }
@@ -81,11 +89,17 @@ export function scoreFinding(finding: ScenarioFinding, effectiveConcepts: Detect
     allegedConduct: toLabels(conductOverlap),
     evidenceTypes: toLabels(evidenceOverlap),
   };
+  const matchedIdsByCategory: MatchedByCategory = {
+    transactionTypes: transactionOverlap,
+    actorRoles: actorOverlap,
+    allegedConduct: conductOverlap,
+    evidenceTypes: evidenceOverlap,
+  };
 
   const categoriesMatched = [transactionOverlap, actorOverlap, conductOverlap, evidenceOverlap].filter((arr) => arr.length > 0).length;
   const substantiveCategoriesMatched = [transactionOverlap, conductOverlap].filter((arr) => arr.length > 0).length;
 
-  return { finding, score, matchedIngredients, matchedIds, matchedByCategory, categoriesMatched, substantiveCategoriesMatched };
+  return { finding, score, matchedIngredients, matchedIds, matchedByCategory, matchedIdsByCategory, categoriesMatched, substantiveCategoriesMatched };
 }
 
 /** MECHANICAL tag subtraction only — see PrecedentRef.
