@@ -179,13 +179,37 @@ interface Scenario {
 
 const SCENARIOS: Scenario[] = [
   // ===== Group 1-14: actor incompatibility (workstream 2) =====
-  { n: 1, group: "Actor incompatibility", freeText: "There was a CO vacancy for several months. The promoter was separately named in the matter with no stated Compliance Officer role.", mustNot: ["LODR-6-gen"], note: "Compliance Officer-specific provision must not surface against a promoter merely because the promoter is named." },
+  // P0 actor-applicability CONNECTIVITY fix: this scenario's own expectation
+  // was legally wrong and encoded the scenario-wide actor-contamination
+  // defect the fix corrects. The Compliance Officer vacancy is itself a
+  // direct, self-contained Regulation 6 factual predicate stated in its
+  // OWN sentence, naming no actor at all there; the promoter is a
+  // genuinely UNRELATED actor named in a SEPARATE sentence with an express
+  // "no stated Compliance Officer role" disclaimer. An unrelated actor
+  // elsewhere in the scenario must never withhold a provision whose own
+  // connected proposition names no actor (or is a company-level duty) —
+  // see provision-actor-applicability.ts's own applicableActorTags for
+  // LODR-6-gen, which already includes "company" for exactly this reason.
+  { n: 1, group: "Actor incompatibility", freeText: "There was a CO vacancy for several months. The promoter was separately named in the matter with no stated Compliance Officer role.", must: ["LODR-6-gen"], note: "Compliance Officer vacancy is a self-contained, actor-unstated Regulation 6 predicate; an unrelated promoter mention in a separate sentence must not withhold it." },
   { n: 2, group: "Actor incompatibility", freeText: "The Compliance Officer position was vacant for the whole year.", must: ["LODR-6-gen"], note: "The Compliance Officer role itself is stated, so the provision is fully applicable." },
   { n: 3, group: "Actor incompatibility", freeText: "There was a CO vacancy for the whole year with no other actor stated.", must: ["LODR-6-gen"], note: "No actor named at all -> shown as a candidate, actor applicability flagged for verification, never suppressed." },
-  { n: 4, group: "Actor incompatibility", freeText: "A false compliance certification was signed. A non-promoter allottee was separately named in the matter with no stated role in signing any certificate.", mustNot: ["LODR-17-8"], note: "CEO/CFO certification provision must not attach to an unrelated allottee." },
+  // P0 actor-applicability CONNECTIVITY fix: same correction as #1 — the
+  // false-certification predicate names no signer in its own sentence, and
+  // the allottee is an unrelated actor named separately with an express
+  // "no stated role in signing any certificate" disclaimer. The unrelated
+  // allottee must not withhold this candidate; the signer's identity is
+  // genuinely unstated, which the engine now surfaces via an
+  // actor-applicability "requires_verification" note on the candidate
+  // itself, not by hiding the candidate.
+  { n: 4, group: "Actor incompatibility", freeText: "A false compliance certification was signed. A non-promoter allottee was separately named in the matter with no stated role in signing any certificate.", must: ["LODR-17-8"], note: "Certification predicate names no signer in its own sentence; an unrelated allottee mentioned separately must not withhold it — actor applicability requires verification instead." },
   { n: 5, group: "Actor incompatibility", freeText: "The Managing Director signed a false compliance certification for the board.", must: ["LODR-17-8"], note: "Managing Director is one of the two roles Regulation 17(8)'s own text names alongside CFO." },
   { n: 6, group: "Actor incompatibility", freeText: "The CEO signed a false compliance certification despite knowing it was inaccurate.", must: ["LODR-17-8"], note: "CEO is directly compatible." },
-  { n: 7, group: "Actor incompatibility", freeText: "The Audit Committee meetings were not conducted for the year. A non-executive director was separately named in the matter with no stated Audit Committee role.", mustNot: ["LODR-18-3-schedule-II"], note: "Audit Committee-member obligation must not automatically attach to every director." },
+  // P0 actor-applicability CONNECTIVITY fix: same correction as #1/#4 — the
+  // Audit Committee deficiency predicate names no member in its own
+  // sentence, and the non-executive director is an unrelated actor named
+  // separately with an express "no stated Audit Committee role"
+  // disclaimer. The unrelated director must not withhold this candidate.
+  { n: 7, group: "Actor incompatibility", freeText: "The Audit Committee meetings were not conducted for the year. A non-executive director was separately named in the matter with no stated Audit Committee role.", must: ["LODR-18-3-schedule-II"], note: "Audit Committee deficiency predicate names no member in its own sentence; an unrelated non-executive director mentioned separately must not withhold it." },
   { n: 8, group: "Actor incompatibility", freeText: "An Audit Committee member failed to attend meetings that were not conducted for the year.", must: ["LODR-18-3-schedule-II"], note: "Audit Committee member is directly compatible." },
   { n: 9, group: "Actor incompatibility", freeText: "A business relationship with the company's subsidiary raised an independence issue under the auditor eligibility rules. A promoter was separately named in the matter with no stated role in that eligibility question.", mustNot: ["COMPANIES-ACT-141-3-e"], note: "Auditor business-relationship ineligibility ground must not attach to a promoter." },
   { n: 10, group: "Actor incompatibility", freeText: "There was non-compliance with the auditor rotation requirement. The promoter was separately named in the matter with no stated role in the auditor's own tenure.", mustNot: ["COMPANIES-ACT-139"], note: "Auditor rotation is the auditor's own personal eligibility requirement, not a promoter's." },
@@ -359,9 +383,21 @@ describe("Temporal applicability: buildApplicableVersionNote via analyzeScenario
 // ===== Historical treatment: critical invariants (workstream 5) =====
 describe("Historical treatment: critical invariants", () => {
   it("a provision can appear in historical treatment while being absent from current candidates (historical frequency never determines legal applicability)", () => {
-    const result = analyzeScenario({ freeText: "There was a CO vacancy for several months. The promoter was separately named in the matter with no stated Compliance Officer role." }, ALL_FINDINGS, ALL_PROVISIONS, []);
-    expect(result.provisionResults.map((p) => p.provision.id)).not.toContain("LODR-6-gen");
-    const histEntry = result.historicalTreatment.entries.find((e) => e.provision.id === "LODR-6-gen");
+    // Retargeted from the CO-vacancy/promoter scenario (P0 actor-
+    // applicability connectivity fix): that scenario's LODR-6-gen absence
+    // was an artifact of the since-fixed scenario-wide actor-contamination
+    // defect (LODR-6-gen now correctly surfaces there — see scenario #1
+    // above), not a genuine example of "historically treated but not a
+    // current candidate". This scenario is a clean substitute: LODR-48 has
+    // real historical precedent via F_FINRESULTS (a Confirmed-in-Final-
+    // Order finding), has no actor-applicability rule at all (so it is
+    // untouched by that fix either way), and is genuinely absent from
+    // current candidates for a purely factual reason — the entered text
+    // states full compliance, not the misstatement fact Regulation 48's
+    // own gate requires.
+    const result = analyzeScenario({ freeText: "Financial results were fully compliant, prepared and submitted on time with no misstatement of any kind." }, ALL_FINDINGS, ALL_PROVISIONS, []);
+    expect(result.provisionResults.map((p) => p.provision.id)).not.toContain("LODR-48");
+    const histEntry = result.historicalTreatment.entries.find((e) => e.provision.id === "LODR-48");
     expect(histEntry).toBeDefined();
     expect(histEntry!.currentCandidateTier).toBe("requires_additional_fact");
     expect(histEntry!.currentApplicabilityNote).toMatch(/NOT currently a candidate/);

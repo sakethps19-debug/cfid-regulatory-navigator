@@ -299,10 +299,38 @@ function buildWhyRelevant(provision: LegalProvision, best: ScoredFinding): strin
  * promoter is named elsewhere in the matter). A provision with no rule is
  * "not_actor_specific" — completely unaffected, identical to before this
  * pass. */
-function checkActorApplicability(provisionId: string, effectiveConcepts: DetectedConcept[]): ActorApplicability {
+function checkActorApplicability(
+  provisionId: string,
+  effectiveConcepts: DetectedConcept[],
+  anchorIds: string[]
+): ActorApplicability {
   const rule = actorRuleForProvision(provisionId);
   if (!rule) return { status: "not_actor_specific", note: null };
-  const statedActorConcepts = effectiveConcepts.filter((c) => c.kind === "actor");
+  // P0 actor-applicability CONNECTIVITY fix: an actor named elsewhere in the
+  // scenario, in a sentence unconnected to THIS provision's own adverse
+  // proposition, must never by itself make the provision read as
+  // actor-incompatible (false withholding) or actor-compatible (false
+  // compatibility) — the actor-level analogue of the polarity-connectivity
+  // fix (see connectedPolarityHits above). Only actor concepts stated in a
+  // sentence that also carries this provision's own anchor concept (its
+  // rule's own topic/adverse ids, or — for an ungated provision — the
+  // union of allegedConduct ids actually linked to it in this scenario's
+  // structured findings, sibling-scoped — see ungatedAnchorIdsByProvision
+  // below) count as "the actor" for this provision's adverse proposition.
+  // When no anchor concept was detected in any sentence at all, there is no
+  // nexus information to scope by, so this falls back to the whole
+  // scenario's actor concepts — the same behavior as before this fix, and
+  // the same conservative "requires_verification" outcome as the
+  // no-actor-anywhere case just below.
+  const connectedSentences = new Set<number>();
+  for (const c of effectiveConcepts) {
+    if (anchorIds.includes(c.id)) {
+      for (const i of c.sentenceIndices) connectedSentences.add(i);
+    }
+  }
+  const allActorConcepts = effectiveConcepts.filter((c) => c.kind === "actor");
+  const statedActorConcepts =
+    connectedSentences.size === 0 ? allActorConcepts : allActorConcepts.filter((c) => c.sentenceIndices.some((i) => connectedSentences.has(i)));
   if (statedActorConcepts.length === 0) {
     return {
       status: "requires_verification",
@@ -541,10 +569,47 @@ export function analyzeScenario(
   // concepts, never on which specific historical link is being checked),
   // so it is cached here rather than recomputed per link.
   const actorApplicabilityCache = new Map<string, ActorApplicability>();
+  // P0 actor-applicability connectivity fix: per-provision anchor ids for
+  // the actor-nexus check above — for a GATED provision, its own rule's
+  // topic+adverse ids (fixed, provision-only, safe to cache once per
+  // provisionId); for an UNGATED provision, there is no rule to consult, so
+  // this aggregates the allegedConduct of every structured finding actually
+  // linked to that provision anywhere in this scenario's scored findings —
+  // still provision-only (not per-individual-link), so the once-per-
+  // provisionId cache below remains correct. Sibling-claims-only scoped
+  // (see siblingScopedConduct) so a finding bundling several organs into
+  // one record (e.g. Audit Committee + Compliance Officer) never bleeds
+  // the OTHER organ's own conduct ids into this provision's anchor set —
+  // deliberately conduct-only, not transactionTypes, for the same reason:
+  // justifyingTags (the only scoping signal curated data provides) is only
+  // ever populated with conduct-kind ids, so a topic-kind transactionType
+  // has no way to be attributed to one organ over another on a bundled
+  // finding and is excluded from the anchor rather than risk silently
+  // bleeding it in unscoped.
+  function siblingScopedConduct(finding: ScenarioFinding, forProvisionId: string): string[] {
+    const siblingClaims = new Set(
+      finding.provisionLinks.filter((l) => l.provisionId !== forProvisionId && l.justifyingTags.length > 0).flatMap((l) => l.justifyingTags)
+    );
+    if (siblingClaims.size === 0) return finding.allegedConduct;
+    const ownTags = finding.provisionLinks.find((l) => l.provisionId === forProvisionId)?.justifyingTags ?? [];
+    return finding.allegedConduct.filter((id) => !siblingClaims.has(id) || ownTags.includes(id));
+  }
+  const ungatedAnchorIdsByProvision = new Map<string, Set<string>>();
+  for (const sf of scored) {
+    for (const link of sf.finding.provisionLinks) {
+      const set = ungatedAnchorIdsByProvision.get(link.provisionId) ?? new Set<string>();
+      for (const c of siblingScopedConduct(sf.finding, link.provisionId)) set.add(c);
+      ungatedAnchorIdsByProvision.set(link.provisionId, set);
+    }
+  }
   function getActorApplicability(provisionId: string): ActorApplicability {
     let cached = actorApplicabilityCache.get(provisionId);
     if (!cached) {
-      cached = checkActorApplicability(provisionId, effectiveConcepts);
+      const rule = retrievalRuleForProvision(provisionId);
+      const anchorIds = rule
+        ? unique([...topicConceptIdsForRule(rule, isAdverseConceptId), ...adverseConceptIdsForRule(rule, isAdverseConceptId)])
+        : [...(ungatedAnchorIdsByProvision.get(provisionId) ?? new Set<string>())];
+      cached = checkActorApplicability(provisionId, effectiveConcepts, anchorIds);
       actorApplicabilityCache.set(provisionId, cached);
     }
     return cached;
