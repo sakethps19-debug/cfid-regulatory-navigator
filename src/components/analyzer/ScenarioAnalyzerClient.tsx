@@ -357,12 +357,26 @@ export function resultToText(result: AnalysisResult): string {
       }
     }
   }
+  if (result.fullTextSupplementalFindings.length > 0) {
+    lines.push("----------------------------------------");
+    lines.push(
+      "Also worth reviewing (full-text match only, not a deterministic tag-based match, not scored or ordered by relevance):"
+    );
+    for (const f of result.fullTextSupplementalFindings) {
+      lines.push(
+        `  - [${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.recordId} · ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"}) · ${f.officialSourceUrl}`
+      );
+    }
+  }
   lines.push("");
   const allReferencedFindings = [...new Map(
     [
-      ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
-      ...result.globalContraryPrecedents,
-    ].map((p) => [p.finding.recordId, p.finding])
+      ...[
+        ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
+        ...result.globalContraryPrecedents,
+      ].map((p) => p.finding),
+      ...result.fullTextSupplementalFindings,
+    ].map((f) => [f.recordId, f])
   ).values()];
   const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
   lines.push(
@@ -435,8 +449,8 @@ export function resultToCsv(result: AnalysisResult): string {
       "Supporting precedents record verification maturity (per precedent)",
       "Supporting precedents support category (per precedent)",
       "Missing facts / evidence (per cited precedent, never a universal requirement)",
-      "Contrary-only note (only set for 'Warranting caution' rows)",
-      "Contrary precedent record IDs (only set for 'Warranting caution' rows)",
+      "Row note (set for 'Warranting caution' and 'Full-text match only' rows)",
+      "Row record IDs (set for 'Warranting caution' and 'Full-text match only' rows)",
     ])
   );
   for (const pr of sorted) {
@@ -477,6 +491,26 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         cp.note,
         cp.contraryPrecedents.map((c) => c.finding.recordId).join("; "),
+      ])
+    );
+  }
+  for (const f of result.fullTextSupplementalFindings) {
+    rows.push(
+      csvRow([
+        "Full-text match only (not a deterministic tag-based match, not scored or ranked)",
+        "",
+        "",
+        "",
+        "",
+        "0",
+        "0 of 0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        `[${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"})`,
+        f.recordId,
       ])
     );
   }
@@ -1500,14 +1534,26 @@ export function ScenarioAnalyzerClient() {
               </p>
               <ul className="mt-3 space-y-2">
                 {result.fullTextSupplementalFindings.map((f) => (
-                  <li key={f.recordId} className="rounded-lg bg-[var(--color-neutral-50)] p-3 border border-[var(--color-border)]">
+                  <li
+                    key={f.recordId}
+                    className="rounded-lg bg-[var(--color-neutral-50)] p-3 ring-1 ring-dashed border-transparent border-[var(--color-border)]"
+                  >
                     <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className="inline-flex items-center rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)] ring-1 ring-inset border-[var(--color-border)]"
+                        title="Not a deterministic tag-based match: this record surfaced only via a Postgres full-text search on the words of your scenario, unscored and unranked."
+                      >
+                        Full-text match only
+                      </span>
                       <StatusBadge status={f.findingStatus} />
                       <LegalReviewBadge reviewed={f.humanLegalReviewCompleted} />
                       <FindingMaturityBadge finding={f} />
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{f.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
+                    <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                      {f.finalParagraphReferences ?? f.interimParagraphReferences ?? "No paragraph reference on file"}
+                    </p>
                     <PublicationWarningNote status={f.publicationStatus} />
                     <div className="mt-1">
                       <SourceLink href={f.officialSourceUrl} />

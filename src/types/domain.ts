@@ -129,10 +129,13 @@ export interface Order {
  * list. */
 export interface StructuredFindingCoverageGap {
   order: Order;
-  /** Whether ANY OTHER order sharing this order's caseName already
-   * contributes a structured finding. false means the entire matter is
-   * currently unrepresented, not merely this specific order within an
-   * already-covered one — the highest-priority case. */
+  /** Whether ANY OTHER order sharing this order's matterId (never
+   * caseName — see the P2-18 audit note on getStructuredFindingCoverageGaps
+   * in data.ts) already contributes a structured finding. false means the
+   * entire matter is currently unrepresented, not merely this specific
+   * order within an already-covered one — the highest-priority case. An
+   * order with no matterId at all is never assumed covered by another
+   * order. */
   caseHasOtherStructuredFindings: boolean;
   /** 1 = matter entirely uncovered; 2 = a confirmatory/revocation order
    * whose own (potentially superseding) outcome is not yet reflected even
@@ -286,6 +289,14 @@ export interface LegalTest {
 
 export interface DirectionOutcome {
   id: string;
+  /** The specific order this direction/outcome was recorded against —
+   * the verified identifier a caller should filter/join on. Nullable in
+   * the schema (though every row on file currently has one); caseName
+   * below is display-only. Two different orders (even in two entirely
+   * different matters, per the P2-18 audit) can share an identical
+   * caseName string, so it must never be used to decide which
+   * directions belong to which order or matter. */
+  orderId: string | null;
   caseName: string;
   stage: string;
   directionOrOutcome: string;

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
-import { directionsForCase, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
+import { directionsForOrderIds, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
 import { formatDate } from "@/lib/formatDate";
 
@@ -12,15 +12,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [allFindings, allDirections, relationships, allOrders] = await Promise.all([
+  const [allFindings, relationships, allOrders] = await Promise.all([
     getScenarioFindings(),
-    directionsForCase(order.caseName),
     orderRelationshipsForOrder(order.id),
     getOrders(),
   ]);
   const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
-  const directions = allDirections.filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
   const siblingOrders = siblingOrdersInMatter(order, allOrders, relationships);
+  // Directions/outcomes for this order's own matter, scoped by verified
+  // order_relationships siblings — never by caseName (see the P2-18 audit
+  // note on directionsForOrderIds in data.ts).
+  const allDirections = await directionsForOrderIds([order.id, ...siblingOrders.map((s) => s.order.id)]);
+  const directions = allDirections.filter((d) => d.stage.toLowerCase() === (order.orderStage.startsWith("Final") ? "final" : "interim"));
 
   return (
     <div>

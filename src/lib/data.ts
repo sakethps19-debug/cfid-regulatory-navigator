@@ -147,6 +147,7 @@ function mapLegalTest(row: LegalTestRow): LegalTest {
 function mapDirection(row: OrderDirectionRow): DirectionOutcome {
   return {
     id: row.id,
+    orderId: row.order_id,
     caseName: row.case_name,
     stage: row.stage,
     directionOrOutcome: row.direction_or_outcome,
@@ -319,9 +320,19 @@ export async function getDirections(): Promise<DirectionOutcome[]> {
   return (data ?? []).map(mapDirection);
 }
 
-export async function directionsForCase(caseName: string): Promise<DirectionOutcome[]> {
+/** Directions/outcomes recorded against a specific set of orders — filtered
+ * by order_id (a verified foreign key), never by caseName. See the P2-18
+ * audit: "Brightcom Group Ltd." and "Eros International Media Limited"
+ * each have orders spanning two genuinely different matterIds under an
+ * identical case_name, so a caseName-string filter here would have pulled
+ * in another matter's directions entirely. Callers pass every order id
+ * whose directions they want (typically the current order plus its
+ * verified siblings in the same matter via order_relationships), never a
+ * display name. */
+export async function directionsForOrderIds(orderIds: string[]): Promise<DirectionOutcome[]> {
+  if (orderIds.length === 0) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase.from("order_directions").select("*").eq("case_name", caseName);
+  const { data, error } = await supabase.from("order_directions").select("*").in("order_id", orderIds);
   if (error) throw error;
   return (data ?? []).map(mapDirection);
 }
@@ -791,9 +802,9 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
  * contribute anything an officer can retrieve".
  *
  * Priority is genuinely reasoned, not an arbitrary/default ordering:
- *   1. The entire matter (by caseName) is unrepresented — no other order
- *      for this case contributes a finding either. Highest priority: an
- *      officer researching this company gets nothing at all right now.
+ *   1. The entire matter is unrepresented — no other order in the same
+ *      matter contributes a finding either. Highest priority: an officer
+ *      researching this matter gets nothing at all right now.
  *   2. A confirmatory/revocation order for an otherwise-covered matter —
  *      this specific order may finalize or supersede an outcome the app
  *      currently only reflects via an earlier order, a real correctness
@@ -802,7 +813,21 @@ export async function getProcessingMetrics(): Promise<ProcessingMetrics> {
  *   3. Any other order within an already-covered matter — lowest
  *      priority, since the matter itself is already represented.
  * Within a tier, most recently dated order first (more likely to be
- * queried against current facts). */
+ * queried against current facts).
+ *
+ * "Same matter" is decided by matterId (order_relationships-verified),
+ * NEVER by caseName string equality — a live audit (P2-18) found this
+ * matters concretely: "Brightcom Group Ltd." and "Eros International
+ * Media Limited" each carry an identical case_name across orders that
+ * belong to two genuinely DIFFERENT matterIds. An earlier version of this
+ * function grouped by caseName and, as a result, wrongly classified the
+ * uncovered Eros order (matterId 4266c004-...) as merely "an order within
+ * an already-covered matter" (Tier 3) because a same-named but unrelated
+ * Eros order (matterId 1f463dd4-...) happened to have findings — when it
+ * should have been Tier 1 (its own matter is entirely uncovered). An order
+ * with no matterId at all is never assumed covered by any other order,
+ * same-named or not; it is only counted covered if it has a finding of
+ * its own. */
 export async function getStructuredFindingCoverageGaps(): Promise<StructuredFindingCoverageGap[]> {
   const supabase = await createClient();
   const [allOrders, { data: orderRefRows, error }] = await Promise.all([
@@ -814,12 +839,14 @@ export async function getStructuredFindingCoverageGaps(): Promise<StructuredFind
   const coveredOrderIds = new Set(
     (orderRefRows ?? []).flatMap((r) => [r.order_id, r.final_order_id].filter((v): v is string => Boolean(v)))
   );
-  const coveredCaseNames = new Set(allOrders.filter((o) => coveredOrderIds.has(o.id)).map((o) => o.caseName));
+  const coveredMatterIds = new Set(
+    allOrders.filter((o) => coveredOrderIds.has(o.id) && o.matterId).map((o) => o.matterId as string)
+  );
 
   return allOrders
     .filter((o) => !coveredOrderIds.has(o.id))
     .map((order): StructuredFindingCoverageGap => {
-      const caseHasOtherStructuredFindings = coveredCaseNames.has(order.caseName);
+      const caseHasOtherStructuredFindings = order.matterId !== null && coveredMatterIds.has(order.matterId);
       if (!caseHasOtherStructuredFindings) {
         return {
           order,

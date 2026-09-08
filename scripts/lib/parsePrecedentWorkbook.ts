@@ -249,6 +249,11 @@ function parseDirections(workbook: ReturnType<typeof readWorkbook>, warnings: st
       if (!isUrl(url)) warnings.push(`Directions row ${i + 1}: missing/invalid official URL`);
       return {
         id: `DIR-${i + 1}`,
+        // Not resolved at parse time — build-import-sql.ts independently
+        // matches each direction to its real order UUID (by caseName +
+        // stage against precedent.orders) when generating the INSERT, so
+        // this parse-stage value is never actually relied on.
+        orderId: null,
         caseName: cellText(row[0]) ?? "",
         stage: cellText(row[1]) ?? "",
         directionOrOutcome: cellText(row[2]) ?? "",
