@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
-import type { AnalysisResult, ProvisionResult } from "@/lib/matching/types";
+import type { AnalysisResult, HistoricalTreatmentProvisionEntry, ProvisionResult } from "@/lib/matching/types";
 import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
@@ -1570,15 +1570,32 @@ export function ScenarioAnalyzerClient() {
                 Historical treatment across CFID cases
               </h3>
               <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-                A separate question from the results above: how has CFID historically treated materially similar
-                facts, across every provision a comparable finding has cited — including provisions that are NOT
-                currently a candidate on the facts entered. Historical frequency here never determines whether a
-                provision applies to your facts; that determination is made only by the results above and the
-                &quot;on the present facts&quot; note on each row below.
+                A separate question from the results above: how has CFID historically treated comparable facts.
+                Historical frequency here never determines whether a provision applies to your facts; that
+                determination is made only by the results above and the &quot;on the present facts&quot; note on
+                each row below. A provision being <strong>cited</strong> somewhere in a comparable matter is not the
+                same claim as a provision being <strong>attributed</strong> to the specific fact that makes this
+                matter comparable — the two sections below are kept visually separate for exactly that reason.
+              </p>
+              <p className="mt-2 text-xs text-[var(--color-ink-700)]">
+                Comparable matters this scenario surfaced: {result.historicalTreatment.overallMatterCounts.stronglyComparable} strongly comparable,{" "}
+                {result.historicalTreatment.overallMatterCounts.moderatelyComparable} moderately comparable,{" "}
+                {result.historicalTreatment.overallMatterCounts.contextuallyRelated} contextually related (generic overlap only, no provisions attributed),{" "}
+                {result.historicalTreatment.overallMatterCounts.weakExcluded} excluded as too weak to surface at all.
               </p>
               <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">{result.historicalTreatment.matterDedupBasis}</p>
-              <ul className="mt-3 space-y-2">
-                {result.historicalTreatment.entries.map((e) => {
+              <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">
+                Matter identity: {result.historicalTreatment.matterIdentityStats.resolvedViaMatterId} case entries resolved via a real matter record,{" "}
+                {result.historicalTreatment.matterIdentityStats.resolvedViaFallback} via the disclosed case-name fallback (data-quality gap, not a legal
+                distinction).
+              </p>
+
+              {(() => {
+                const attributedEntries = result.historicalTreatment.entries.filter((e) => e.attributedFindingsCount > 0);
+                const citedOnlyEntries = result.historicalTreatment.entries.filter((e) => e.attributedFindingsCount === 0 && e.comparableMatterCount > 0);
+                const contextualOnlyEntries = result.historicalTreatment.entries.filter((e) => e.comparableMatterCount === 0 && e.contextuallyRelatedMatterCount > 0);
+
+                function renderEntry(e: HistoricalTreatmentProvisionEntry) {
                   const histKey = `hist-${e.provision.id}`;
                   const histExpanded = expanded.has(histKey);
                   return (
@@ -1589,10 +1606,15 @@ export function ScenarioAnalyzerClient() {
                             {e.provision.instrument} · {e.provision.provisionNumber}
                           </p>
                           <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">
-                            Considered in {e.comparableMatterCount} comparable matter{e.comparableMatterCount === 1 ? "" : "s"}
-                            {" "}(interim/PNF: {e.dispositionBreakdown.alleged + e.dispositionBreakdown.primaFacie + e.dispositionBreakdown.confirmedAtInterim},
-                            finally confirmed: {e.dispositionBreakdown.confirmedFinal + e.dispositionBreakdown.partlyUpheld},
-                            not upheld: {e.dispositionBreakdown.notUpheld})
+                            {e.comparableMatterCount > 0
+                              ? `${e.comparableMatterCount} comparable matter${e.comparableMatterCount === 1 ? "" : "s"} (${e.stronglyComparableMatterCount} strongly, ${e.moderatelyComparableMatterCount} moderately comparable)`
+                              : "No strongly/moderately comparable matter"}
+                            {e.contextuallyRelatedMatterCount > 0 && ` · ${e.contextuallyRelatedMatterCount} contextually related`}
+                            {" · "}
+                            {e.attributedFindingsCount > 0
+                              ? `${e.attributedFindingsCount} attributed to the matching fact`
+                              : "factual attribution not yet verified for any case"}
+                            {e.unverifiedFindingsCount > 0 && `, ${e.unverifiedFindingsCount} cited but unattributed`}
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -1607,48 +1629,116 @@ export function ScenarioAnalyzerClient() {
                         </div>
                       </div>
                       <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{e.currentApplicabilityNote}</p>
-                      <button
-                        type="button"
-                        onClick={() => toggleExpanded(histKey)}
-                        className="mt-2 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
-                      >
-                        {histExpanded ? "Hide" : "Show"} the {e.cases.length} comparable case{e.cases.length === 1 ? "" : "s"}
-                      </button>
-                      {histExpanded && (
-                        <ul className="mt-2 space-y-2">
-                          {e.cases.map((c) => (
-                            <li key={`${c.recordId}-${c.orderStageClass}`} className="rounded-lg bg-white p-2.5 ring-1 border-[var(--color-border)]">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <StatusBadge status={c.effectiveStatus} />
-                                <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.recordId}</span>
-                                <span className="text-xs text-[var(--color-ink-500)]">{c.caseName}</span>
-                              </div>
-                              <p className="mt-1 text-xs text-[var(--color-ink-700)]">
-                                Order stage: {c.orderStageClass.replace(/_/g, " ")}
-                                {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
-                              </p>
-                              {c.factualSimilarities.length > 0 && (
-                                <p className="mt-1 text-xs text-[var(--color-ink-700)]">
-                                  Factual similarities: {c.factualSimilarities.join("; ")}
-                                </p>
-                              )}
-                              {c.factualDifferences.length > 0 && (
-                                <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">
-                                  This precedent&apos;s own additional facts (not shared with your scenario): {c.factualDifferences.join("; ")}
-                                </p>
-                              )}
-                              {c.paragraphReference && <p className="mt-1 text-xs text-[var(--color-ink-500)]">{c.paragraphReference}</p>}
-                              <div className="mt-1">
-                                <SourceLink href={c.officialSourceUrl} />
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                      {e.matterOutcomes.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(histKey)}
+                            className="mt-2 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                          >
+                            {histExpanded ? "Hide" : "Show"} the {e.matterOutcomes.length} comparable matter{e.matterOutcomes.length === 1 ? "" : "s"}
+                          </button>
+                          {histExpanded && (
+                            <ul className="mt-2 space-y-2">
+                              {e.matterOutcomes.map((mo) => (
+                                <li key={mo.matterKey} className="rounded-lg bg-white p-2.5 ring-1 border-[var(--color-border)]">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-sm bg-[var(--color-neutral-50)] px-2 py-0.5 text-xs text-[var(--color-ink-700)] ring-1 ring-inset ring-[var(--color-border)]">
+                                      {mo.comparabilityTier === "strongly_comparable" ? "Strongly comparable" : "Moderately comparable"}
+                                    </span>
+                                    <span className="text-sm font-medium text-[var(--color-ink-900)]">{mo.caseName}</span>
+                                    {mo.matterIdBasis === "case_name_fallback" && (
+                                      <span className="inline-flex items-center rounded-sm bg-[var(--status-amber-bg)] px-2 py-0.5 text-xs text-[var(--status-amber-text)] ring-1 ring-inset ring-[var(--status-amber-ring)]">
+                                        matter identity: case-name fallback
+                                      </span>
+                                    )}
+                                    {mo.outcome === "mixed_noticee_outcome" ? (
+                                      <span className="inline-flex items-center rounded-sm bg-[var(--status-amber-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-amber-text)] ring-1 ring-inset ring-[var(--status-amber-ring)]">
+                                        Mixed outcome across noticees
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-[var(--color-ink-500)]">{mo.outcome.replace(/^uniformly_/, "").replace(/_/g, " ")}</span>
+                                    )}
+                                  </div>
+                                  <ul className="mt-2 space-y-2">
+                                    {mo.cases.map((c) => (
+                                      <li key={`${c.recordId}-${c.orderStageClass}`} className="rounded-lg bg-[var(--color-neutral-50)] p-2 ring-1 border-[var(--color-border)]">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <StatusBadge status={c.effectiveStatus} />
+                                          <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.recordId}</span>
+                                          <span
+                                            className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs ring-1 ring-inset ${
+                                              c.attributionStatus === "attributed"
+                                                ? "bg-[var(--color-navy-900)] text-white ring-[var(--color-navy-900)]"
+                                                : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
+                                            }`}
+                                          >
+                                            {c.attributionStatus === "attributed" ? "Attributed to matching fact" : "Cited — attribution not yet verified"}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-[var(--color-ink-700)]">
+                                          Order stage: {c.orderStageClass.replace(/_/g, " ")}
+                                          {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
+                                        </p>
+                                        {c.factualSimilarities.length > 0 && (
+                                          <p className="mt-1 text-xs text-[var(--color-ink-700)]">Factual similarities: {c.factualSimilarities.join("; ")}</p>
+                                        )}
+                                        {c.factualDifferences.length > 0 && (
+                                          <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">
+                                            This precedent&apos;s own additional facts (not shared with your scenario): {c.factualDifferences.join("; ")}
+                                          </p>
+                                        )}
+                                        {c.paragraphReference && <p className="mt-1 text-xs text-[var(--color-ink-500)]">{c.paragraphReference}</p>}
+                                        <div className="mt-1">
+                                          <SourceLink href={c.officialSourceUrl} />
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
                       )}
                     </li>
                   );
-                })}
-              </ul>
+                }
+
+                return (
+                  <>
+                    {attributedEntries.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Provisions attributed to the matching factual issue
+                        </h4>
+                        <ul className="mt-2 space-y-2">{attributedEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                    {citedOnlyEntries.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Provisions cited in comparable matters — factual attribution not yet verified
+                        </h4>
+                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                          These provisions were cited somewhere in a matter this scenario is comparable to, but the specific link&apos;s own
+                          curation does not yet confirm it concerns the SAME fact that makes the matter comparable — never read as &quot;historically
+                          invoked for this fact pattern&quot;.
+                        </p>
+                        <ul className="mt-2 space-y-2">{citedOnlyEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                    {contextualOnlyEntries.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Cited only in contextually related matters (generic overlap only)
+                        </h4>
+                        <ul className="mt-2 space-y-2">{contextualOnlyEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </article>
           )}
 

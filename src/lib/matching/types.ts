@@ -321,13 +321,28 @@ export const HISTORICAL_ORDER_STAGE_LABELS: Record<HistoricalOrderStageClass, st
   unresolved_or_not_independently_classified: "Stage not independently determined from source order metadata",
 };
 
+/** How a case entry's matterKey was resolved (deterministic-engine
+ * historical-treatment correction pass). "matter_id" means the entry was
+ * grouped by the canonical orders.matter_id — a real, curated foreign key
+ * (see data.ts's mapOrder) — resolved via the finding's own orderIds.
+ * "case_name_fallback" means no linked order carried a matter_id, so the
+ * entry fell back to a normalized case-name key, a DISCLOSED, weaker
+ * proxy: it can undercount (two different matters sharing a case-name
+ * string get merged) but never overcounts a single matter's own sibling
+ * orders as independent precedents in the way the case-name-only scheme
+ * this replaces could when matter_id data existed but went unused. */
+export type MatterIdentityBasis = "matter_id" | "case_name_fallback";
+
 export interface HistoricalTreatmentCaseEntry {
   recordId: string;
   caseName: string;
-  /** The matter-level dedup key this case entry was grouped under — see
-   * buildHistoricalTreatment's header comment for the disclosed
-   * caseName-based methodology and its limitations. */
+  /** The matter-level dedup key this case entry was grouped under — a
+   * matter_id-based key when resolvable, a case-name-based fallback key
+   * otherwise (see matterIdBasis). The two key spaces are disjoint by
+   * construction (differently prefixed) so a fallback key can never
+   * collide with a real matter_id key. */
   matterKey: string;
+  matterIdBasis: MatterIdentityBasis;
   findingStatus: FindingStatus;
   /** This specific provision-finding link's effective status (honors
    * finding_provisions.relationship — see effectiveLinkStatus in
@@ -343,8 +358,76 @@ export interface HistoricalTreatmentCaseEntry {
    * scenario — same MECHANICAL subtraction as
    * PrecedentRef.additionalPrecedentFactsNotMatched, not a legal analysis. */
   factualDifferences: string[];
+  /** Whether THIS SPECIFIC provision link's own finding_provisions.
+   * justifying_tags positively connects it to the entered scenario's
+   * detected concepts ("attributed"), or whether that curation is empty/
+   * unreviewed so no such connection can be claimed ("unverified") — see
+   * historicalTreatment.ts's header comment. A link whose justifying_tags
+   * ARE populated but do NOT overlap the entered scenario is excluded
+   * from this provision's case list entirely (positive curated evidence
+   * that this specific link concerns a different fact within the same
+   * finding), so every case entry that does appear is one of these two
+   * states, never a claim that goes beyond what the underlying data
+   * supports. */
+  attributionStatus: "attributed" | "unverified";
   paragraphReference: string | null;
   officialSourceUrl: string;
+}
+
+/** Historical comparability of ONE finding (and, aggregated, one matter) to
+ * the entered scenario — a DIFFERENT, stricter question than the precision
+ * engine's MIN_FINDING_SCORE bar. A single generic tag match (e.g. only the
+ * "related-party transaction" transaction tag, nothing else) is real
+ * factual overlap and still clears the base bar, but must never by itself
+ * read as "strongly comparable" — see buildHistoricalComparability in
+ * historicalTreatment.ts. */
+export type HistoricalComparabilityTier = "strongly_comparable" | "moderately_comparable" | "contextually_related" | "weak_excluded";
+
+export const HISTORICAL_COMPARABILITY_LABELS: Record<HistoricalComparabilityTier, string> = {
+  strongly_comparable: "Strongly comparable",
+  moderately_comparable: "Moderately comparable",
+  contextually_related: "Contextually related",
+  weak_excluded: "Weak / excluded",
+};
+
+/** The outcome across every case entry sharing one (matter, provision)
+ * pair. "mixed" — never silently collapsed to whichever status wins a
+ * finality ranking — means different noticees (or different findings
+ * within the same matter) carried genuinely different dispositions for
+ * THIS provision, and the officer must be shown that split, not one
+ * representative figure. */
+export type MatterProvisionOutcomeKind =
+  | "uniformly_confirmed_final"
+  | "uniformly_partly_upheld"
+  | "uniformly_not_upheld"
+  | "uniformly_confirmed_interim"
+  | "uniformly_alleged_or_unresolved"
+  | "uniformly_withdrawn"
+  | "mixed_noticee_outcome";
+
+export const MATTER_PROVISION_OUTCOME_LABELS: Record<MatterProvisionOutcomeKind, string> = {
+  uniformly_confirmed_final: "Uniformly confirmed in final order",
+  uniformly_partly_upheld: "Uniformly partly confirmed in final order",
+  uniformly_not_upheld: "Uniformly not confirmed in final order",
+  uniformly_confirmed_interim: "Uniformly confirmed at interim (no final disposition yet)",
+  uniformly_alleged_or_unresolved: "Uniformly alleged / unresolved (no merits determination)",
+  uniformly_withdrawn: "Uniformly withdrawn",
+  mixed_noticee_outcome: "Mixed outcome across noticees/findings — see individual cases",
+};
+
+/** One matter's own case entries for one provision, grouped so a mixed
+ * outcome across noticees is an explicit, first-class state rather than
+ * being collapsed by a finality-priority pick. */
+export interface HistoricalTreatmentMatterOutcome {
+  matterKey: string;
+  matterIdBasis: MatterIdentityBasis;
+  /** Representative case name for display — the first case entry's own
+   * caseName; different sibling orders of the same matter should share
+   * one, but this is never used as the dedup key itself. */
+  caseName: string;
+  comparabilityTier: HistoricalComparabilityTier;
+  outcome: MatterProvisionOutcomeKind;
+  cases: HistoricalTreatmentCaseEntry[];
 }
 
 export interface HistoricalTreatmentDispositionBreakdown {
@@ -357,21 +440,65 @@ export interface HistoricalTreatmentDispositionBreakdown {
   withdrawn: number;
   inconclusive: number;
   proceduralObservation: number;
+  /** Count of (matter, provision) groups whose outcome is
+   * "mixed_noticee_outcome" — see MatterProvisionOutcomeKind. Every other
+   * field above counts only UNIFORM groups; a mixed group is tallied here
+   * and nowhere else, so the bare-status counts can never silently absorb
+   * a split outcome under whichever status happened to rank highest. */
+  mixedNoticeeOutcome: number;
 }
 
 export interface HistoricalTreatmentProvisionEntry {
   provision: LegalProvision;
   legalFunction: LegalFunctionCategory;
-  /** Distinct matters (see matterKey) citing this provision on materially
-   * similar facts — the count an officer should read as "N comparable
-   * matters", never totalFindingsCount below, which can overstate the
-   * same matter's multiple order stages as independent precedents. */
+  /** Distinct matters, at strongly_comparable or moderately_comparable
+   * tier only, whose case entries contributed to this provision — the
+   * count an officer should read as "N comparable matters". Matters at
+   * contextually_related tier are tracked separately
+   * (contextuallyRelatedMatterCount) and never contribute provision
+   * entries at all — see historicalTreatment.ts's header comment for why
+   * a merely generic (actor/evidence-only) overlap cannot support
+   * attributing a specific provision to the entered facts. Never
+   * totalFindingsCount below, which can overstate the same matter's
+   * multiple order stages/noticees as independent precedents. */
   comparableMatterCount: number;
-  /** Raw finding-row count, kept for transparency only — always
-   * >= comparableMatterCount, and never the number displayed as the
-   * headline "N comparable matters" figure. */
+  /** Of comparableMatterCount, how many were strongly vs. moderately
+   * comparable — never merged into one figure, since the two tiers rest
+   * on materially different strength of overlap (see
+   * HistoricalComparabilityTier). */
+  stronglyComparableMatterCount: number;
+  moderatelyComparableMatterCount: number;
+  /** Matters whose ONLY overlap with the entered scenario was generic
+   * (actor and/or evidence-type overlap, no transaction or conduct
+   * match) — reported for awareness, but these matters never contribute
+   * any case entry to this provision: a bare shared actor role (e.g.
+   * "promoter") or evidence type is too generic to support attributing
+   * this SPECIFIC provision to the entered facts, even though the matter
+   * as a whole may still be worth an officer's attention. */
+  contextuallyRelatedMatterCount: number;
+  /** Raw finding-row count contributing case entries, kept for
+   * transparency only — always >= comparableMatterCount, and never the
+   * number displayed as the headline "N comparable matters" figure. */
   totalFindingsCount: number;
+  /** Of totalFindingsCount, how many carry a case-level
+   * attributionStatus of "attributed" (this specific provision link's own
+   * justifyingTags positively connect it to the matching facts) vs.
+   * "unverified" (empty/unreviewed justifyingTags — cited in the matter,
+   * but this specific link's own factual basis has not been
+   * independently confirmed). Never conflated: "this provision was cited
+   * somewhere in a historically comparable matter" is not the same claim
+   * as "this provision was historically invoked for the matching fact". */
+  attributedFindingsCount: number;
+  unverifiedFindingsCount: number;
   dispositionBreakdown: HistoricalTreatmentDispositionBreakdown;
+  /** Case entries grouped by matter, each carrying its own explicit
+   * uniform/mixed outcome — the structural fix for noticee-specific
+   * outcomes being silently collapsed by a finality-priority pick. */
+  matterOutcomes: HistoricalTreatmentMatterOutcome[];
+  /** Flat, ungrouped case list — every case entry across every
+   * contributing matter, kept for simple iteration/export; matterOutcomes
+   * above is the structurally correct view for anything that needs to
+   * reason about outcomes per matter. */
   cases: HistoricalTreatmentCaseEntry[];
   /** Cross-reference into the CURRENT precision-engine result for this same
    * provision on the SAME entered scenario — "not_currently_a_candidate"
@@ -389,10 +516,34 @@ export interface HistoricalTreatmentProvisionEntry {
 }
 
 export interface HistoricalTreatmentResult {
-  /** Discloses the matter-level dedup methodology actually used, so the
-   * comparableMatterCount figures are never read as more precise than they
-   * are — see buildHistoricalTreatment's header comment. */
+  /** Discloses the matter-identity and similarity methodology actually
+   * used, so the comparableMatterCount figures are never read as more
+   * precise than they are — see historicalTreatment.ts's header comment. */
   matterDedupBasis: string;
+  /** How many CASE ENTRIES (not matters) resolved their matterKey via a
+   * real orders.matter_id vs. the disclosed case-name fallback — see
+   * MatterIdentityBasis. */
+  matterIdentityStats: {
+    resolvedViaMatterId: number;
+    resolvedViaFallback: number;
+    /** record_ids of every case entry that used the fallback, for
+     * data-quality follow-up — never silently absorbed into an aggregate
+     * figure alone. */
+    fallbackRecordIds: string[];
+  };
+  /** Distinct-matter counts across the WHOLE query (every provision
+   * combined, matters deduplicated by matterKey), independent of any
+   * single provision's own breakdown above — the figures an officer
+   * should read for "how many comparable matters did this scenario as a
+   * whole surface". weakExcluded matters cleared no bar at all (below the
+   * base MIN_FINDING_SCORE-style threshold) and contribute nothing
+   * anywhere else in this result. */
+  overallMatterCounts: {
+    stronglyComparable: number;
+    moderatelyComparable: number;
+    contextuallyRelated: number;
+    weakExcluded: number;
+  };
   entries: HistoricalTreatmentProvisionEntry[];
 }
 
