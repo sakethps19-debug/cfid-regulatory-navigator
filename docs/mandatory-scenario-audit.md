@@ -307,3 +307,33 @@ the cited test file, not a description of intended behavior.
 13 of 13 scenarios pass. Three carry an explicit, disclosed limitation in the
 curated pilot-fixture data or the top-3 tie-break behaviour rather than a
 silent gap; none was concealed or forced to pass by weakening a test.
+
+## Addendum (P1-14/15): provision-level must-appear/must-not-appear, and adversarial negatives
+
+Every "Mandatory scenario N" test above (and in the two test files it cites)
+asserts only that the expected PRECEDENT record id is retrieved - none
+asserted which PROVISIONS must, or must not, appear. `tests/golden-scenario-
+provisions.test.ts` closes that gap for scenarios 1, 6 and 7, reasoning from
+each record's own curated provisionIds and allegedConduct (not from running
+the engine and recording whatever came out) about which provisions
+legitimately belong.
+
+Building the must-not-appear assertion for scenario 6 surfaced a real
+lesson, documented in that file: an initial assertion ("Audit Committee
+lapse must never surface the Compliance-Officer-specific provision") failed,
+and investigating why - rather than weakening the assertion to pass - found
+a genuinely different curated record, SSSL-22, whose own factual pattern
+("Compliance Officers failed to ensure Audit Committee compliance") and
+allegedConduct legitimately span BOTH topics. The failure was the test's own
+incomplete premise, not an engine defect; the assertion was corrected to
+match the corpus's real, reasoned shape rather than forced green.
+
+The same file adds two adversarial/negative tests: a "ruled-out diversion"
+scenario (fund routing explicitly investigated and found NOT to be
+diversion) must not match any precedent via the fund_diversion conduct tag,
+and a "disclosed, reviewed related-party transaction" scenario must not have
+Non-disclosure of information or Related-party misrepresentation appear in
+matched conduct. The vendor/counterparty-is-not-a-related-party and
+generic-director-role adversarial cases the audit prompt also named are
+covered in `tests/false-positive-vocabulary.test.ts` (P1-10/11), not
+duplicated here.
