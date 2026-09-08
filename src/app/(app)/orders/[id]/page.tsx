@@ -6,6 +6,7 @@ import { FindingsByStatus } from "@/components/FindingsByStatus";
 import { directionsForOrderIds, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
 import { formatDate } from "@/lib/formatDate";
+import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -97,6 +98,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">CFID verification</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{cfidVerificationDisplayText(order.cfidVerificationBasis)}</dd>
+          </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Order number</dt>
             <dd className="mt-1 font-mono text-sm text-[var(--color-ink-700)]">{order.orderNumber}</dd>

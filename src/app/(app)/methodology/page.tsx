@@ -242,7 +242,7 @@ export default function MethodologyPage() {
             clause number.
           </li>
           <li>Observations in interim orders are always treated as prima facie findings only.</li>
-          <li>Where a final order exists, it is displayed prominently and controls over an inconsistent interim finding.</li>
+          <li>Where a final order exists, it is displayed prominently and takes precedence over an inconsistent interim finding.</li>
           <li>
             Circular movement of funds is treated as an indicator, not a complete conclusion. The engine always
             surfaces the guardrail checklist: commercial purpose, accounting treatment, bank-flow evidence, timing,
