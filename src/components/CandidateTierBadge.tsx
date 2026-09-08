@@ -11,6 +11,7 @@ const TIER_LABELS: Record<CandidateTier, string> = {
   related_ancillary: "Related / ancillary",
   requires_additional_fact: "Requires additional fact",
   historical_precedent_only: "Historical precedent only",
+  governing_relevant: "Governing — no apparent breach",
 };
 
 const TIER_STYLES: Record<CandidateTier, string> = {
@@ -18,6 +19,7 @@ const TIER_STYLES: Record<CandidateTier, string> = {
   related_ancillary: "bg-transparent text-[var(--color-ink-700)] ring-[var(--color-border)]",
   requires_additional_fact: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
   historical_precedent_only: "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]",
+  governing_relevant: "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]",
 };
 
 export function CandidateTierBadge({ tier }: { tier: CandidateTier }) {

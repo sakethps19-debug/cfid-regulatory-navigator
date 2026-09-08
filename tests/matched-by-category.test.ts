@@ -101,15 +101,26 @@ describe("matchedByCategory", () => {
       allegedConduct: ["fund_diversion"],
       evidenceTypes: ["bank_statements_flow"],
     });
+    // Question-A polarity correction pass: a provision now requires at
+    // least one ADVERSE (conduct-kind) concept tag to be positively matched
+    // to remain a provisionResults candidate at all (see
+    // deriveCandidateTier's own header comment in engine.ts) — a
+    // topic-only match (transaction/actor alone, as this test originally
+    // used) is correctly reclassified to governingProvisionResults, which
+    // does not carry matchedByCategory. The entered text below states the
+    // diversion fact too, so allegedConduct genuinely matches and this
+    // provision remains a candidate; evidenceTypes stays deliberately
+    // unmentioned, preserving this test's own purpose (an unmatched
+    // category is left empty, never spuriously populated).
     const result = analyzeScenario(
-      { freeText: "A preferential allotment was made to the promoter." },
+      { freeText: "A preferential allotment was made to the promoter. Company funds were diverted." },
       [noMatchFinding],
       [provision],
       []
     );
     const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-CAT");
     expect(pr).toBeDefined();
-    expect(pr!.matchedByCategory.allegedConduct).toEqual([]);
+    expect(pr!.matchedByCategory.allegedConduct.length).toBeGreaterThan(0);
     expect(pr!.matchedByCategory.evidenceTypes).toEqual([]);
   });
 });

@@ -28,6 +28,14 @@ function allRecordIds(result: AnalysisResult): string[] {
     ids.push(...pr.supportingPrecedents.map((p) => p.finding.recordId));
     ids.push(...pr.contraryPrecedents.map((p) => p.finding.recordId));
   }
+  // Question-A polarity correction pass: a precedent whose own provision now
+  // reads as governing/no-apparent-breach (or contradicted) rather than a
+  // candidate breach is still a precedent the engine surfaced for this
+  // scenario — these helper functions predate the polarity split and check
+  // "was this record retrieved at all", not the finer candidate-tier
+  // question, so both new arrays are included here too.
+  for (const gp of result.governingProvisionResults) ids.push(...gp.relatedPrecedents.map((p) => p.finding.recordId));
+  for (const cp of result.contradictedProvisionResults) ids.push(...cp.relatedPrecedents.map((p) => p.finding.recordId));
   ids.push(...result.globalContraryPrecedents.map((p) => p.finding.recordId));
   return ids;
 }

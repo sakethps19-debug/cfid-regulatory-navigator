@@ -3,7 +3,8 @@ import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from 
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import { passesRetrievalGate, retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
+import { detectFactPolarity } from "./factPolarity";
+import { passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
 import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
 import { buildHistoricalTreatment } from "./historicalTreatment";
@@ -13,6 +14,7 @@ import type {
   ConfidenceLevel,
   ContraryOnlyProvisionResult,
   GateBlockedProvisionResult,
+  GoverningProvisionResult,
   GuardrailNote,
   MatchedByCategory,
   PrecedentRef,
@@ -326,6 +328,18 @@ function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForPr
   return isPrimaryCapable(legalFunction) ? "primary_candidate" : "related_ancillary";
 }
 
+/** Question-A polarity correction pass: the ADVERSE (conduct-kind) concept
+ * ids a gated provision's own retrieval rule requires, if any. A rule
+ * whose groups are entirely topic-kind (transaction/actor/evidence) — a
+ * bare definition/threshold (e.g. LODR 23(1)'s materiality proviso) or a
+ * SEBI power/remedial provision (e.g. Section 11(2)(i)/(ia)) — has no
+ * adverse predicate of its own at all, and returns an empty array; such a
+ * provision can never be a "candidate breach", only "governing". */
+function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
+  if (!rule) return [];
+  return unique(rule.requireAllOfGroups.flat().filter(isAdverseConceptId));
+}
+
 export function analyzeScenario(
   query: ScenarioQuery,
   scenarioFindings: ScenarioFinding[],
@@ -363,6 +377,24 @@ export function analyzeScenario(
   // in scoring.
   const effectiveConcepts = buildEffectiveScenarioConcepts(detected, actorSignal, scenarioTypeSignal, evidenceSignal);
   const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+
+  // Question-A polarity correction pass: which existing conduct-tag ids the
+  // ENTERED scenario affirmatively states did NOT occur (compliance), as
+  // opposed to merely not mentioning them (silence) — see factPolarity.ts.
+  // Used below to decide whether a topically-matching provision reads as a
+  // candidate BREACH, a governing-but-compliant provision, or a provision
+  // whose adverse predicate is affirmatively contradicted, never to change
+  // WHICH provisions match a precedent in the first place.
+  const factPolarity = detectFactPolarity(correctedText);
+  // Every "conduct"-kind concept tag in this vocabulary IS, by
+  // construction, an adverse/violation-indicating fact (see
+  // concept-tags.ts) — "transaction"/"actor"/"evidence"-kind tags are
+  // neutral occurrence facts (WHAT happened, WHO was involved, WHAT
+  // evidence exists), never themselves a breach. This is the single,
+  // general (not per-provision-hand-curated) signal the candidate-breach
+  // vs governing-relevant classification below is built on.
+  const conceptKindById = new Map(CONCEPT_TAGS.map((t) => [t.id, t.kind]));
+  const isAdverseConceptId = (id: string) => conceptKindById.get(id) === "conduct";
 
   // Publication/quarantine lifecycle: Draft, Quarantined and Withdrawn
   // findings never reach the matching engine, in either the deterministic
@@ -471,6 +503,16 @@ export function analyzeScenario(
   // candidate. Same never-silently-drop principle already applied to
   // contrary-only provisions (see contraryOnlyProvisionResults below).
   const gateBlockedProvisionResults: GateBlockedProvisionResult[] = [];
+  // Question-A polarity correction pass (item 7 — "unknown vs compliant"):
+  // a provision blocked purely on its FACTUAL prerequisite (never actor
+  // incompatibility, which is a different question entirely) is split
+  // further here. If the entered scenario affirmatively CONTRADICTS the
+  // specific adverse concept(s) this provision's own rule requires, that
+  // is a materially different, stronger signal than genuine silence — see
+  // contradictedProvisionResults, kept structurally separate so "breach
+  // status unknown" is never conflated with "breach status affirmatively
+  // ruled out".
+  const contradictedProvisionResults: GoverningProvisionResult[] = [];
   for (const [provisionId, findings] of gateBlockedFindingsByProvision.entries()) {
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
@@ -479,6 +521,22 @@ export function analyzeScenario(
     const actorApplicability = getActorApplicability(provisionId);
     const sortedFindings = [...findings].sort(compareByFactualScoreThenFinality);
     const countPhrase = `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}`;
+
+    const adverseIds = adverseConceptIdsForRule(rule, isAdverseConceptId);
+    const contradictedHits = adverseIds.filter((id) => factPolarity.compliantConceptIds.has(id));
+    if (reason === "factual_prerequisite" && contradictedHits.length > 0) {
+      const reasons = [...new Set(contradictedHits.map((id) => factPolarity.rationale.get(id)).filter((r): r is string => !!r))];
+      contradictedProvisionResults.push({
+        provision,
+        relatedPrecedents: sortedFindings.slice(0, 3).map((sf) => toPrecedentRef(sf)),
+        polarityClass: "not_triggered_contradicted",
+        note: `${countPhrase}, but the entered scenario affirmatively rules out the specific adverse fact this provision's own text requires: ${rule?.explanation ?? ""} ${reasons.join(" ")} This provision is not triggered on the present facts.`,
+        legalFunction: legalFunctionForProvision(provisionId),
+        candidateTier: "governing_relevant",
+      });
+      continue;
+    }
+
     let note: string;
     if (reason === "factual_prerequisite") {
       note = `${countPhrase}, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
@@ -500,9 +558,11 @@ export function analyzeScenario(
   gateBlockedProvisionResults.sort((a, b) =>
     compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0])
   );
+  contradictedProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   const provisionResults: ProvisionResult[] = [];
   const contraryOnlyProvisionResults: ContraryOnlyProvisionResult[] = [];
+  const governingProvisionResults: GoverningProvisionResult[] = [];
   for (const [provisionId, findings] of findingsByProvision.entries()) {
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
@@ -533,6 +593,59 @@ export function analyzeScenario(
           candidateTier: "historical_precedent_only",
         });
       }
+      continue;
+    }
+
+    // Question-A polarity correction pass: "topic present" alone is NOT
+    // sufficient regulatory relevance — a provision belongs in
+    // provisionResults ("candidate breach") only if at least one ADVERSE
+    // (conduct-kind) concept tag was positively matched. For a GATED
+    // provision, passesRetrievalGate has ALREADY confirmed the entered
+    // scenario's own effectiveConcepts satisfy every one of the rule's
+    // groups (connected, where required) — so whether the ADVERSE group
+    // specifically was satisfied is checked against the QUERY's own
+    // detectedIds directly, exactly what the gate itself validated, not
+    // against any one precedent's own tag overlap (a precedent's curated
+    // allegedConduct list frequently doesn't happen to repeat the exact
+    // adverse tag the CURRENT query's own facts satisfied the gate with —
+    // that would wrongly demote a genuine gate-satisfied breach). A rule
+    // whose groups are entirely topic-kind (a bare definition or SEBI
+    // power) has no adverse ids at all, so this is always empty for those,
+    // exactly as intended. For an UNGATED provision there is no rule to
+    // consult, so the only available signal is the specific supporting
+    // precedent's own matched conduct-tag overlap.
+    const rule = retrievalRuleForProvision(provisionId);
+    const conductIdsMatched = rule
+      ? adverseConceptIdsForRule(rule, isAdverseConceptId).filter((id) => detectedIds.has(id))
+      : unique(supporting.flatMap((f) => f.sf.matchedIdsByCategory.allegedConduct));
+    if (conductIdsMatched.length === 0) {
+      const relevantAdverseIds = rule
+        ? adverseConceptIdsForRule(rule, isAdverseConceptId)
+        : unique(supporting.flatMap((f) => f.sf.finding.allegedConduct));
+      const contradictedHits = relevantAdverseIds.filter((id) => factPolarity.compliantConceptIds.has(id));
+      const legalFunction = legalFunctionForProvision(provisionId);
+      const countPhrase = `${supporting.length} structured finding${supporting.length > 1 ? "s" : ""} factually overlapping this scenario also cite${supporting.length > 1 ? "" : "s"} ${provision.provisionNumber}`;
+      let polarityClass: "governing_no_breach" | "additional_fact_required";
+      let note: string;
+      if (relevantAdverseIds.length === 0) {
+        polarityClass = "governing_no_breach";
+        note = `${countPhrase}. This provision governs the subject matter of the entered facts, but has no independent adverse predicate of its own (${rule?.explanation ?? "a definitional, accounting-standard, or SEBI-power provision"}) — it is relevant to the transaction, not itself a candidate contravention.`;
+      } else if (contradictedHits.length > 0) {
+        const reasons = [...new Set(contradictedHits.map((id) => factPolarity.rationale.get(id)).filter((r): r is string => !!r))];
+        polarityClass = "governing_no_breach";
+        note = `${countPhrase}, but the entered scenario affirmatively states compliance with the adverse fact this provision's own precedent record turns on. ${reasons.join(" ")} This provision governs the transaction; no apparent breach is shown on the present facts.`;
+      } else {
+        polarityClass = "additional_fact_required";
+        note = `${countPhrase}, but whether the specific adverse fact this provision's own precedent record turns on is present here is not stated either way. This provision governs the transaction; additional facts are required before it reads as a candidate breach.`;
+      }
+      governingProvisionResults.push({
+        provision,
+        relatedPrecedents: supporting.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+        polarityClass,
+        note,
+        legalFunction,
+        candidateTier: "governing_relevant",
+      });
       continue;
     }
 
@@ -583,6 +696,7 @@ export function analyzeScenario(
   contraryOnlyProvisionResults.sort((a, b) =>
     compareByFactualScoreThenFinality(a.contraryPrecedents[0], b.contraryPrecedents[0])
   );
+  governingProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   // Independently retrieve contrary precedents for fund-movement / allotment
   // style scenarios, per the pilot's explicit safeguard, even if they did
@@ -697,6 +811,8 @@ export function analyzeScenario(
     provisionResults,
     contraryOnlyProvisionResults,
     gateBlockedProvisionResults,
+    governingProvisionResults,
+    contradictedProvisionResults,
     globalContraryPrecedents,
     contraryPrecedentSearchNote,
     applicableGuardrails,
@@ -704,6 +820,8 @@ export function analyzeScenario(
       provisionResults.length > 0 ||
       contraryOnlyProvisionResults.length > 0 ||
       gateBlockedProvisionResults.length > 0 ||
+      governingProvisionResults.length > 0 ||
+      contradictedProvisionResults.length > 0 ||
       globalContraryPrecedents.length > 0 ||
       fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,

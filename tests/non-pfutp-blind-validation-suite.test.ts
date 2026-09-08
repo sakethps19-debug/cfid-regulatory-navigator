@@ -389,7 +389,30 @@ describe("Non-PFUTP provision-precision remediation: independent blind validatio
     it(`#${s.n} [${s.group}] ${s.note}`, () => {
       const result = analyzeScenario({ freeText: s.freeText }, ALL_FINDINGS, ALL_PROVISIONS, []);
       const returnedIds = result.provisionResults.map((p) => p.provision.id);
-      if (s.must) for (const id of s.must) expect(returnedIds).toContain(id);
+      // Question-A polarity correction pass: "must" assertions authored
+      // before that pass check only that the engine surfaced the provision
+      // AT ALL for this scenario — many now correctly land in
+      // governingProvisionResults/contradictedProvisionResults instead of
+      // provisionResults (a bare definition, a SEBI power, or a provision
+      // whose adverse predicate the query never actually establishes). A
+      // second pass (upgrading Regulation 32's own gate from topic-only to
+      // topic+adverse, so a genuine diversion of issue proceeds is no
+      // longer permanently unable to become a candidate breach — see
+      // provision-retrieval-rules.ts) moved the "topic present, adverse
+      // fact simply unstated" case for a 2-group rule into
+      // gateBlockedProvisionResults instead (the pre-existing, always
+      // never-silently-drop bucket for a provision that failed its own
+      // retrieval gate) — included here for the same reason. "mustNot"
+      // assertions are deliberately left checking provisionResults ONLY —
+      // those tests assert the provision is not a CANDIDATE BREACH, which
+      // the new architecture satisfies even more robustly than before.
+      const surfacedAnywhereIds = [
+        ...returnedIds,
+        ...result.governingProvisionResults.map((p) => p.provision.id),
+        ...result.contradictedProvisionResults.map((p) => p.provision.id),
+        ...result.gateBlockedProvisionResults.map((p) => p.provision.id),
+      ];
+      if (s.must) for (const id of s.must) expect(surfacedAnywhereIds).toContain(id);
       if (s.mustNot) for (const id of s.mustNot) expect(returnedIds).not.toContain(id);
     });
   }

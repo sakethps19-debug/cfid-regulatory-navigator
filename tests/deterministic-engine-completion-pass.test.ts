@@ -270,7 +270,20 @@ describe("Deterministic Scenario Analyzer completion pass: independent test suit
     it(`#${s.n} [${s.group}] ${s.note}`, () => {
       const result = analyzeScenario({ freeText: s.freeText }, ALL_FINDINGS, ALL_PROVISIONS, []);
       const returnedIds = result.provisionResults.map((p) => p.provision.id);
-      if (s.must) for (const id of s.must) expect(returnedIds).toContain(id);
+      // Question-A polarity correction pass: see the equivalent comment in
+      // non-pfutp-blind-validation-suite.test.ts — several "must" entries
+      // here (bare definitions, topic-only-gated provisions) now correctly
+      // land in governingProvisionResults/contradictedProvisionResults
+      // instead of provisionResults, an even stronger form of the
+      // "not a primary candidate on its own" outcome these tests already
+      // asserted. "mustNot" stays scoped to provisionResults (candidate
+      // breach) only.
+      const surfacedAnywhereIds = [
+        ...returnedIds,
+        ...result.governingProvisionResults.map((p) => p.provision.id),
+        ...result.contradictedProvisionResults.map((p) => p.provision.id),
+      ];
+      if (s.must) for (const id of s.must) expect(surfacedAnywhereIds).toContain(id);
       if (s.mustNot) for (const id of s.mustNot) expect(returnedIds).not.toContain(id);
     });
   }
@@ -294,12 +307,22 @@ describe("Temporal applicability: buildApplicableVersionNote via analyzeScenario
   });
 
   it("with a single officially-verified version, states the applicable version but discloses that pre-effective-date conduct is unverified", () => {
+    // Retargeted from LODR-23-1 to LODR-23-2 (Question-A polarity
+    // correction pass): LODR-23-1 is a bare materiality-threshold
+    // definition with no adverse predicate of its own (its retrieval rule
+    // is a single topic-only group), so it now correctly reclassifies to
+    // governingProvisionResults — which carries no applicableVersionNote/
+    // provisionVersions fields, since those exist only on genuine candidate
+    // breaches. LODR-23-2 is cited by the same finding and its own gate
+    // (RPT fact + approval-lapse conduct) is satisfied by this exact
+    // scenario text, so it exercises the identical temporal-versioning
+    // mechanism this test targets while remaining a real candidate.
     const verified: ProvisionVersion[] = [
-      { id: "v3", provisionId: "LODR-23-1", versionLabel: "Current text", effectiveFrom: "2022-04-01", effectiveTo: null, exactText: "text", sourceUrl: "https://www.sebi.gov.in/example", status: "officially_verified" },
+      { id: "v3", provisionId: "LODR-23-2", versionLabel: "Current text", effectiveFrom: "2022-04-01", effectiveTo: null, exactText: "text", sourceUrl: "https://www.sebi.gov.in/example", status: "officially_verified" },
     ];
-    const map = new Map<string, ProvisionVersion[]>([["LODR-23-1", verified]]);
+    const map = new Map<string, ProvisionVersion[]>([["LODR-23-2", verified]]);
     const result = analyzeScenario({ freeText: "A related-party transaction occurred with the counterparty, without the required audit committee approval." }, ALL_FINDINGS, ALL_PROVISIONS, [], map);
-    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-23-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-23-2");
     expect(pr).toBeDefined();
     expect(pr!.applicableVersionNote).toMatch(/officially verified/);
     expect(pr!.applicableVersionNote).toMatch(/only version of this provision currently catalogued/);

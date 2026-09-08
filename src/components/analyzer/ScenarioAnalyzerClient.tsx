@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
-import type { AnalysisResult, HistoricalTreatmentProvisionEntry, ProvisionResult } from "@/lib/matching/types";
+import { QUESTION_A_POLARITY_LABELS, type AnalysisResult, type HistoricalTreatmentProvisionEntry, type ProvisionResult } from "@/lib/matching/types";
 import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
@@ -363,6 +363,16 @@ export function resultToText(result: AnalysisResult): string {
       }
     }
   }
+  if (result.governingProvisionResults.length > 0 || result.contradictedProvisionResults.length > 0) {
+    lines.push("----------------------------------------");
+    lines.push("Provisions governing the transaction — no apparent breach on stated facts:");
+    for (const gp of result.governingProvisionResults) {
+      lines.push(`  [${QUESTION_A_POLARITY_LABELS[gp.polarityClass]}] ${gp.provision.instrument} · ${gp.provision.provisionNumber}: ${gp.note}`);
+    }
+    for (const cp of result.contradictedProvisionResults) {
+      lines.push(`  [${QUESTION_A_POLARITY_LABELS[cp.polarityClass]}] ${cp.provision.instrument} · ${cp.provision.provisionNumber}: ${cp.note}`);
+    }
+  }
   if (result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) {
     lines.push("----------------------------------------");
     lines.push("Additional contrary precedents retrieved for fund-movement / allotment style facts:");
@@ -529,6 +539,26 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         gb.note,
         gb.relatedFactualPrecedents.map((rp) => rp.finding.recordId).join("; "),
+      ])
+    );
+  }
+  for (const gp of [...result.governingProvisionResults, ...result.contradictedProvisionResults]) {
+    rows.push(
+      csvRow([
+        `Governing - ${QUESTION_A_POLARITY_LABELS[gp.polarityClass]}`,
+        gp.provision.instrument,
+        gp.provision.provisionNumber,
+        gp.provision.subject ?? "",
+        "",
+        "0",
+        "0 of 0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        gp.note,
+        gp.relatedPrecedents.map((rp) => rp.finding.recordId).join("; "),
       ])
     );
   }
@@ -1561,6 +1591,77 @@ export function ScenarioAnalyzerClient() {
                   </li>
                 ))}
               </ul>
+            </article>
+          )}
+
+          {(result.governingProvisionResults.length > 0 || result.contradictedProvisionResults.length > 0) && (
+            <article className="rounded-sm bg-white p-4 ring-1 border-[var(--color-border)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
+                Provisions governing the transaction — no apparent breach on stated facts
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+                These provisions apply to the subject matter of the entered facts (e.g. an RPT, an investigation, a
+                statutory audit), but the facts as entered do not indicate a breach — either because the entered
+                scenario affirmatively states compliance, the provision is a bare definition or SEBI power with no
+                adverse predicate of its own, or the specific adverse fact is simply not stated either way. A new
+                officer should never read this section as &quot;there may be a violation&quot; — it means only that
+                the provision governs the transaction.
+              </p>
+              {result.governingProvisionResults.length > 0 && (
+                <ul className="mt-3 space-y-3">
+                  {result.governingProvisionResults.map((gp) => (
+                    <li key={gp.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--color-border)]">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                          {gp.provision.instrument} · {gp.provision.provisionNumber}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center rounded-sm bg-transparent px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                            {QUESTION_A_POLARITY_LABELS[gp.polarityClass]}
+                          </span>
+                          <LegalFunctionTag legalFunction={gp.legalFunction} />
+                        </div>
+                      </div>
+                      <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gp.provision.subject}</p>
+                      <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{gp.note}</p>
+                      <ul className="mt-2 space-y-2">
+                        {gp.relatedPrecedents.map((rp) => (
+                          <li key={rp.finding.recordId} className="rounded-lg bg-[var(--color-neutral-50)] p-2.5 ring-1 border-[var(--color-border)]">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <StatusBadge status={rp.finding.findingStatus} />
+                              <span className="text-sm font-medium text-[var(--color-ink-900)]">{rp.finding.recordId}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--color-ink-700)]">{rp.finding.scenarioTitle}</p>
+                            <div className="mt-1">
+                              <SourceLink href={rp.finding.officialSourceUrl} />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {result.contradictedProvisionResults.length > 0 && (
+                <>
+                  <h4 className="mt-4 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                    Not triggered — contradicted by stated facts
+                  </h4>
+                  <ul className="mt-2 space-y-3">
+                    {result.contradictedProvisionResults.map((cp) => (
+                      <li key={cp.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--color-border)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                            {cp.provision.instrument} · {cp.provision.provisionNumber}
+                          </p>
+                          <LegalFunctionTag legalFunction={cp.legalFunction} />
+                        </div>
+                        <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{cp.note}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </article>
           )}
 

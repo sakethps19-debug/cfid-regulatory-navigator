@@ -24,8 +24,51 @@ import type { WordCorrection } from "./fuzzyMatch";
  *     provision on these facts is contrary (not confirmed/withdrawn) — see
  *     ContraryOnlyProvisionResult — or (in the historical-treatment view
  *     only) the provision was considered in comparable CFID matters but is
- *     not a current-scenario candidate at all. */
-export type CandidateTier = "primary_candidate" | "related_ancillary" | "requires_additional_fact" | "historical_precedent_only";
+ *     not a current-scenario candidate at all.
+ *   - "governing_relevant" (Question-A polarity correction pass): the
+ *     provision's own subject matter/topic IS present in the entered
+ *     facts (a factually-overlapping precedent cites it, and — for gated
+ *     provisions — the retrieval-topic is satisfied), but NO adverse
+ *     conduct-tag was positively matched between the entered facts and
+ *     that topic — either because the entered facts affirmatively state
+ *     compliance, because the provision is purely definitional/a bare
+ *     SEBI power with no adverse predicate of its own, or because the
+ *     breach fact is simply unstated. See GoverningProvisionResult and
+ *     QuestionAPolarityClass for the finer governing/additional-fact/
+ *     contradicted distinction this tier's own entries carry. NEVER
+ *     presented as, and structurally distinct from, "this provision may
+ *     have been contravened" — a new officer must never confuse "this
+ *     provision governs the transaction" with "there may be a violation
+ *     of this provision". */
+export type CandidateTier = "primary_candidate" | "related_ancillary" | "requires_additional_fact" | "historical_precedent_only" | "governing_relevant";
+
+/** Question-A polarity correction pass: the fine-grained reason a
+ * provision landed in GoverningProvisionResult rather than
+ * ProvisionResult, distinct from mere prose — an officer-facing consumer
+ * (or a test) can branch on this directly.
+ *   - "governing_no_breach": the entered facts affirmatively state
+ *     COMPLIANCE with this provision's own adverse predicate (e.g. "duly
+ *     approved by the Audit Committee" for LODR 23), or the provision has
+ *     no adverse predicate of its own at all (a bare definition/threshold,
+ *     or a SEBI power/remedial provision) — either way, the provision
+ *     governs the subject matter but shows no apparent breach.
+ *   - "additional_fact_required": the provision's own topic is present,
+ *     and its adverse predicate is genuinely UNKNOWN — neither stated as
+ *     a breach nor affirmatively stated as compliant. Silence is never
+ *     converted into either a breach or a compliance finding.
+ *   - "not_triggered_contradicted": the entered scenario affirmatively
+ *     negates the SAME adverse fact this provision's own precedent record
+ *     independently carries, even though the provision's own gate/topic
+ *     match did not itself require that fact (e.g. PFUTP on a scenario
+ *     that names no securities dealing at all, but explicitly rules out
+ *     "securities trading, price manipulation... "). */
+export type QuestionAPolarityClass = "governing_no_breach" | "additional_fact_required" | "not_triggered_contradicted";
+
+export const QUESTION_A_POLARITY_LABELS: Record<QuestionAPolarityClass, string> = {
+  governing_no_breach: "Governing / relevant — no apparent breach on stated facts",
+  additional_fact_required: "Additional fact required — breach status unknown",
+  not_triggered_contradicted: "Not triggered — contradicted by stated facts",
+};
 
 /** Result of checking a provision's own actor-applicability rule (see
  * data/curated/provision-actor-applicability.ts) against the entered
@@ -269,6 +312,39 @@ export interface GateBlockedProvisionResult {
    * understand the FACTS may otherwise be sufficient, just not against the
    * actor named. */
   blockReason: "factual_prerequisite" | "actor_incompatibility" | "both";
+}
+
+/** Question-A polarity correction pass: a provision whose SUBJECT MATTER
+ * governs the entered facts, but which shows NO apparent breach on those
+ * facts — structurally distinct from ProvisionResult ("candidate breach")
+ * and from GateBlockedProvisionResult ("additional fact required only",
+ * now reserved for genuinely UNKNOWN breach status — see
+ * QuestionAPolarityClass). Populated in two ways:
+ *   1. A provision that would otherwise have landed in provisionResults
+ *      (a factually-overlapping precedent cites it, any gate passed) but
+ *      where NO adverse conduct-tag was positively matched between the
+ *      entered facts and that precedent — only topic/actor/evidence
+ *      overlap. polarityClass is "governing_no_breach" (compliance
+ *      affirmatively stated, or the provision has no adverse predicate of
+ *      its own — a bare definition or SEBI power) or
+ *      "additional_fact_required" (breach status genuinely unstated).
+ *   2. A provision that would otherwise have landed in
+ *      gateBlockedProvisionResults, but where the entered scenario
+ *      affirmatively CONTRADICTS the specific adverse fact this
+ *      provision's own retrieval gate requires. polarityClass is always
+ *      "not_triggered_contradicted" here.
+ * Never merged into provisionResults, and never silently dropped — an
+ * officer must be able to see, structurally (not merely from prose), that
+ * this provision governs the transaction WITHOUT being told there may be a
+ * violation of it. */
+export interface GoverningProvisionResult {
+  provision: LegalProvision;
+  relatedPrecedents: PrecedentRef[];
+  polarityClass: QuestionAPolarityClass;
+  note: string;
+  legalFunction: LegalFunctionCategory;
+  /** Always "governing_relevant". */
+  candidateTier: CandidateTier;
 }
 
 export interface GuardrailNote {
@@ -647,6 +723,27 @@ export interface AnalysisResult {
    * securities dealing/deceptive-conduct fact). Never merged into
    * provisionResults. */
   gateBlockedProvisionResults: GateBlockedProvisionResult[];
+  /** Question-A polarity correction pass: provisions whose subject matter
+   * governs the entered facts but show no apparent breach — either because
+   * compliance is affirmatively stated, the provision has no adverse
+   * predicate of its own (a bare definition or SEBI power), or the breach
+   * fact is genuinely unstated. See GoverningProvisionResult and
+   * QuestionAPolarityClass. Never merged into provisionResults — the
+   * "candidate breach" list requires a positively-matched adverse
+   * conduct-tag; this is the structurally separate "topically relevant,
+   * no apparent breach" list. */
+  governingProvisionResults: GoverningProvisionResult[];
+  /** Question-A polarity correction pass: provisions that would otherwise
+   * have landed in gateBlockedProvisionResults ("additional fact
+   * required"), but where the entered scenario affirmatively CONTRADICTS
+   * the specific adverse fact this provision's own retrieval gate
+   * requires (polarityClass is always "not_triggered_contradicted") —
+   * kept structurally separate from gateBlockedProvisionResults so
+   * "breach status unknown" (silence) is never conflated with "breach
+   * status affirmatively ruled out" (contradiction). See item 7 of the
+   * Question-A polarity correction pass: silence must never be converted
+   * into compliance, and compliance must never be read as mere silence. */
+  contradictedProvisionResults: GoverningProvisionResult[];
   globalContraryPrecedents: PrecedentRef[];
   /** Set only when the independent contrary-precedent safeguard actually ran
    * (the scenario contains a broad trigger concept such as preferential

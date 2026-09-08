@@ -208,6 +208,17 @@ const FINANCIAL_RESULTS_CHANNEL = ["financial_statement_disclosure", "standalone
  * 11(2)/11C power needs to be a candidate at all. */
 const INVESTIGATION_CONTEXT = ["investigation_process"];
 
+/** Question-A polarity acceptance pass: LODR-32's own subject
+ * (issue-proceeds monitoring/disclosure) is a genuine substantive
+ * obligation, not a bare definition or SEBI power — unlike LODR-23-1 or
+ * the SEBI Section 11(2) power family, it needs its own adverse predicate,
+ * not merely the rights_issue topic, or it would always read as
+ * "governing, no breach" even on a scenario stating issue proceeds were
+ * diverted. Reuses the same fund-misuse vocabulary factPolarity.ts already
+ * treats as the compliant-negation family for "issue proceeds used
+ * exactly for the stated objects". */
+const ISSUE_PROCEEDS_MISUSE = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account", "financial_statement_misstatement"];
+
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "PFUTP-3-a",
@@ -470,9 +481,9 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   // ----- LODR Regulation 32 (issue-proceeds monitoring) -----
   {
     provisionId: "LODR-32",
-    requireAllOfGroups: [["rights_issue"]],
+    requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
     explanation:
-      "[Disclosure/governance obligation] Regulation 32/32(7A) requires monitoring and disclosure of issue-proceeds utilisation. Requires an issue-proceeds-specific fact (IPO/rights-issue/preferential-issue proceeds); ordinary bank-loan diversion unconnected to a securities issue does not satisfy it.",
+      "[Disclosure/governance obligation] Regulation 32/32(7A) requires monitoring and disclosure of issue-proceeds utilisation. Requires an issue-proceeds-specific fact (IPO/rights-issue/preferential-issue proceeds) connected to a stated diversion or misstatement fact; ordinary bank-loan diversion unconnected to a securities issue, and a bare, compliant mention of issue proceeds with no stated misuse, do not satisfy it.",
   },
 
   // ----- LODR Regulation 4 (general principles) -----
