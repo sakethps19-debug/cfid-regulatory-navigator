@@ -3,6 +3,7 @@ import { analyzeScenario } from "@/lib/matching/engine";
 import { applySemanticAssist } from "@/lib/matching/fuzzyMatch";
 import {
   getLegalTests,
+  getOrders,
   getProvisionVersionsByProvisionId,
   getProvisions,
   getScenarioFindings,
@@ -50,12 +51,13 @@ export async function POST(request: NextRequest) {
   // supplemental search just because the raw query doesn't match anything.
   const { correctedText } = applySemanticAssist(freeText);
 
-  const [scenarioFindings, provisions, legalTests, provisionVersionsByProvisionId, fullTextCandidates] = await Promise.all([
+  const [scenarioFindings, provisions, legalTests, provisionVersionsByProvisionId, fullTextCandidates, orders] = await Promise.all([
     getScenarioFindings(),
     getProvisions(),
     getLegalTests(),
     getProvisionVersionsByProvisionId(),
     searchScenarioFindingsFullText(correctedText),
+    getOrders(),
   ]);
   const result = analyzeScenario(
     { freeText, actorSignal, scenarioTypeSignal, evidenceSignal, conductPeriod, entityOrIssuer, amountInvolved },
@@ -63,7 +65,8 @@ export async function POST(request: NextRequest) {
     provisions,
     legalTests,
     provisionVersionsByProvisionId,
-    fullTextCandidates
+    fullTextCandidates,
+    orders
   );
   return NextResponse.json(result);
 }

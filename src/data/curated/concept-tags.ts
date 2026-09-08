@@ -168,6 +168,36 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     label: "Business segment disclosure",
     synonyms: ["business segment", "reportable segment", "segment disclosure", "nature of business disclosure"],
   },
+  // Added for the deterministic-engine completion pass (Companies Act
+  // Section 180(1)(a) / LODR Regulation 37A): both provisions require an
+  // actual disposal/transfer of an undertaking or substantial investment
+  // fact, not merely that a subsidiary or related party is mentioned. No
+  // existing tag captured this specific transaction.
+  {
+    id: "asset_or_undertaking_disposal",
+    kind: "transaction",
+    label: "Disposal/transfer of undertaking or substantial investment",
+    synonyms: [
+      "sale of undertaking",
+      "transfer of undertaking",
+      "disposal of undertaking",
+      "disposed of its investments",
+      "disposed of the investments",
+      "transferred its investments",
+      "transfer of investments",
+      "realigned and reorganized its investments",
+      "realigned and reorganised its investments",
+      "reorganization of investments",
+      "reorganisation of investments",
+      "disposal of the whole undertaking",
+      "disposal of substantially the whole undertaking",
+      "disposed of the whole undertaking",
+      "disposed of substantially the whole undertaking",
+      "gift of investments",
+      "transferred by way of gift",
+      "transfer by way of gift",
+    ],
+  },
   {
     id: "corporate_announcement",
     kind: "transaction",
@@ -275,6 +305,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "cfo", kind: "actor", label: "Chief Financial Officer", synonyms: ["cfo", "chief financial officer"] },
   { id: "ceo", kind: "actor", label: "Chief Executive Officer", synonyms: ["ceo", "chief executive officer"] },
   { id: "statutory_auditor", kind: "actor", label: "Statutory auditor", synonyms: ["statutory auditor", "incumbent auditor", "audit firm", "signing partner", "auditors resigned"] },
+  // Added for the deterministic-engine completion pass (actor-applicability
+  // layer + Companies Act Section 136 subsidiary-disclosure gating): a
+  // subsidiary/controlled entity is a distinct actor from the listed
+  // company itself and from an ordinary related party (a subsidiary is
+  // controlled, not merely connected).
+  { id: "subsidiary", kind: "actor", label: "Subsidiary / controlled entity", synonyms: ["subsidiary", "wholly-owned subsidiary", "step-down subsidiary", "controlled entity", "subsidiary company"] },
+  // Catch-all for a Key Managerial Personnel/officer role this corpus's
+  // vocabulary does not otherwise name specifically (e.g. a Company
+  // Secretary acting outside their Compliance Officer capacity, a Chief
+  // Risk Officer) — used only so a stated-but-unclassified officer role
+  // is not silently treated as no actor being named at all.
+  { id: "kmp_other_officer", kind: "actor", label: "Key Managerial Personnel / other officer", synonyms: ["key managerial personnel", "kmp", "chief risk officer", "vice president finance", "whole-time key managerial personnel"] },
 
   // ----- Evidence types -----
   { id: "bank_statements_flow", kind: "evidence", label: "Bank statements / fund-flow trail", synonyms: ["bank statement", "bank statements", "fund flow", "money trail", "bank trail", "fund-flow evidence"] },
@@ -391,6 +433,32 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     synonyms: ["induced investors to trade", "induced to trade", "inducing trades", "investors induced to trade"],
   },
   { id: "aiding_abetting", kind: "conduct", label: "Aiding and abetting", synonyms: ["aided and abetted", "aiding and abetting", "assisted in the scheme", "facilitated the fraud"] },
+  // Added for the deterministic-engine completion pass (Companies Act
+  // Section 139/141(3)(d)/(e) auditor rotation and eligibility gating). The
+  // sparse (1-link) corpus for these three provisions does not support
+  // separately tagging a rotation lapse (Section 139) from the personal
+  // ineligibility grounds in Section 141(3)(d)/(e) (holding securities /
+  // a business relationship) — a genuine, disclosed limitation, not an
+  // invented distinction; see provision-retrieval-rules.ts.
+  {
+    id: "auditor_tenure_or_independence_issue",
+    kind: "conduct",
+    label: "Auditor rotation/tenure or independence issue",
+    synonyms: [
+      "auditor rotation",
+      "non-compliance with the auditor rotation",
+      "did not rotate the auditor",
+      "beyond the permitted tenure",
+      "cooling-off period",
+      "continued as auditor beyond",
+      "auditor rotation requirement",
+      "held securities in the company",
+      "business relationship with the company",
+      "auditor independence",
+      "auditor ineligible",
+      "ineligible to act as auditor",
+    ],
+  },
 ];
 
 export const CONTRARY_PRECEDENT_TRIGGER_TAGS = new Set([

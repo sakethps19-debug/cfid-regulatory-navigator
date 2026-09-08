@@ -6,6 +6,7 @@ import type { AnalysisResult, ProvisionResult } from "@/lib/matching/types";
 import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
+import { CandidateTierBadge, LegalFunctionTag } from "@/components/CandidateTierBadge";
 import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
@@ -1062,11 +1063,18 @@ export function ScenarioAnalyzerClient() {
                       {pr.provision.instrument} · {pr.provision.provisionNumber}
                     </h3>
                     <p className="text-sm text-[var(--color-ink-700)]">{pr.provision.subject}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <CandidateTierBadge tier={pr.candidateTier} />
+                      <LegalFunctionTag legalFunction={pr.legalFunction} />
+                    </div>
                   </div>
                   <ConfidenceBadge level={pr.confidence} />
                 </div>
 
                 <p className="mt-3 text-sm text-[var(--color-ink-700)]">{pr.whyRelevant}</p>
+                {pr.actorApplicability.status === "requires_verification" && pr.actorApplicability.note && (
+                  <p className="mt-2 text-xs italic text-[var(--status-amber-text)]">{pr.actorApplicability.note}</p>
+                )}
                 <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">{pr.applicableVersionNote}</p>
 
                 <div className="mt-2">
@@ -1516,11 +1524,22 @@ export function ScenarioAnalyzerClient() {
               <ul className="mt-3 space-y-3">
                 {result.gateBlockedProvisionResults.map((gb) => (
                   <li key={gb.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-neutral-ring)]">
-                    <p className="text-sm font-medium text-[var(--color-ink-900)]">
-                      {gb.provision.instrument} · {gb.provision.provisionNumber}
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                        {gb.provision.instrument} · {gb.provision.provisionNumber}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <CandidateTierBadge tier={gb.candidateTier} />
+                        <LegalFunctionTag legalFunction={gb.legalFunction} />
+                      </div>
+                    </div>
                     <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gb.provision.subject}</p>
-                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">Retrieval prerequisite: {gb.gateExplanation}</p>
+                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">
+                      {gb.blockReason === "actor_incompatibility" ? "Actor applicability: " : "Retrieval prerequisite: "}
+                      {gb.blockReason === "factual_prerequisite" && gb.gateExplanation}
+                      {gb.blockReason === "actor_incompatibility" && "the actor(s) named do not match who this provision's own text applies to"}
+                      {gb.blockReason === "both" && "neither the required facts nor a compatible actor are stated"}
+                    </p>
                     <p className="mt-1 text-xs text-[var(--color-ink-700)]">{gb.note}</p>
                     <ul className="mt-2 space-y-2">
                       {gb.relatedFactualPrecedents.map((rp) => (
@@ -1541,6 +1560,94 @@ export function ScenarioAnalyzerClient() {
                     </ul>
                   </li>
                 ))}
+              </ul>
+            </article>
+          )}
+
+          {result.historicalTreatment.entries.length > 0 && (
+            <article className="rounded-sm bg-white p-4 ring-1 border-[var(--color-border)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
+                Historical treatment across CFID cases
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+                A separate question from the results above: how has CFID historically treated materially similar
+                facts, across every provision a comparable finding has cited — including provisions that are NOT
+                currently a candidate on the facts entered. Historical frequency here never determines whether a
+                provision applies to your facts; that determination is made only by the results above and the
+                &quot;on the present facts&quot; note on each row below.
+              </p>
+              <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">{result.historicalTreatment.matterDedupBasis}</p>
+              <ul className="mt-3 space-y-2">
+                {result.historicalTreatment.entries.map((e) => {
+                  const histKey = `hist-${e.provision.id}`;
+                  const histExpanded = expanded.has(histKey);
+                  return (
+                    <li key={e.provision.id} className="rounded-lg bg-[var(--color-neutral-50)] p-3 ring-1 border-[var(--color-border)]">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                            {e.provision.instrument} · {e.provision.provisionNumber}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">
+                            Considered in {e.comparableMatterCount} comparable matter{e.comparableMatterCount === 1 ? "" : "s"}
+                            {" "}(interim/PNF: {e.dispositionBreakdown.alleged + e.dispositionBreakdown.primaFacie + e.dispositionBreakdown.confirmedAtInterim},
+                            finally confirmed: {e.dispositionBreakdown.confirmedFinal + e.dispositionBreakdown.partlyUpheld},
+                            not upheld: {e.dispositionBreakdown.notUpheld})
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {e.currentCandidateTier === "not_currently_a_candidate" ? (
+                            <span className="inline-flex items-center rounded-sm bg-transparent px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                              Not currently a candidate
+                            </span>
+                          ) : (
+                            <CandidateTierBadge tier={e.currentCandidateTier} />
+                          )}
+                          <LegalFunctionTag legalFunction={e.legalFunction} />
+                        </div>
+                      </div>
+                      <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{e.currentApplicabilityNote}</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(histKey)}
+                        className="mt-2 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                      >
+                        {histExpanded ? "Hide" : "Show"} the {e.cases.length} comparable case{e.cases.length === 1 ? "" : "s"}
+                      </button>
+                      {histExpanded && (
+                        <ul className="mt-2 space-y-2">
+                          {e.cases.map((c) => (
+                            <li key={`${c.recordId}-${c.orderStageClass}`} className="rounded-lg bg-white p-2.5 ring-1 border-[var(--color-border)]">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <StatusBadge status={c.effectiveStatus} />
+                                <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.recordId}</span>
+                                <span className="text-xs text-[var(--color-ink-500)]">{c.caseName}</span>
+                              </div>
+                              <p className="mt-1 text-xs text-[var(--color-ink-700)]">
+                                Order stage: {c.orderStageClass.replace(/_/g, " ")}
+                                {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
+                              </p>
+                              {c.factualSimilarities.length > 0 && (
+                                <p className="mt-1 text-xs text-[var(--color-ink-700)]">
+                                  Factual similarities: {c.factualSimilarities.join("; ")}
+                                </p>
+                              )}
+                              {c.factualDifferences.length > 0 && (
+                                <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">
+                                  This precedent&apos;s own additional facts (not shared with your scenario): {c.factualDifferences.join("; ")}
+                                </p>
+                              )}
+                              {c.paragraphReference && <p className="mt-1 text-xs text-[var(--color-ink-500)]">{c.paragraphReference}</p>}
+                              <div className="mt-1">
+                                <SourceLink href={c.officialSourceUrl} />
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </article>
           )}

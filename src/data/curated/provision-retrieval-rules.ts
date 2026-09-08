@@ -694,6 +694,72 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     explanation:
       "[Accounting/reporting requirement] Ind AS 115 (Revenue from Contracts with Customers) requires a revenue-recognition-specific fact; a fictitious ASSET fact does not, by itself, satisfy it merely because the same historical matter also had fictitious sales.",
   },
+
+  // ----- Companies Act, 2013 -----
+  // Deterministic-engine completion pass: the prior non-PFUTP remediation
+  // pass deliberately left every Companies Act provision ungated because
+  // the live corpus is sparse (8 links total across 7 provisions, all
+  // empty-tagged, 1-2 links each). Sparse precedent data is not, on its
+  // own, a reason to leave a provision universally retrievable — each rule
+  // below is built from the actual live finding(s) that cite it (see
+  // scripts/tmp-companies-act-review.ts), never inferred from case title
+  // alone, and disclosed where the corpus cannot support a finer-grained
+  // predicate than a conservative one.
+  {
+    provisionId: "COMPANIES-ACT-136",
+    requireAllOfGroups: [["consolidated_financials"], ["non_disclosure_of_information"]],
+    explanation:
+      "[Disclosure obligation] Section 136(1) requires a company to circulate/make available its financial statements to members, INCLUDING subsidiary financial statements. This is a Companies Act circulation-to-members obligation, distinct from a SEBI/LODR exchange-facing disclosure violation (contrast Regulation 46(2)(s), the LODR website-publication counterpart, gated the same way). Requires a subsidiary/consolidation-specific fact connected to a stated non-disclosure fact; a company committing an unrelated violation elsewhere does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-139",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Governance/procedural obligation] Section 139 read with Rule 6(3) of the Companies (Audit and Auditors) Rules, 2014 requires rotation of the statutory auditor/audit firm within prescribed tenure limits. Requires a statutory-auditor actor fact connected to a stated tenure/rotation-specific fact; this corpus's vocabulary does not separately distinguish a rotation lapse from the personal ineligibility grounds in Section 141(3)(d)/(e) below — a genuine, disclosed limitation given the sparse (1-link) corpus for this provision, not an invented finer distinction.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-141-3-d",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Substantive prohibition] Section 141(3)(d) disqualifies a person from acting as auditor while holding a security of, or interest in, the company (or a related company) beyond a prescribed value, including through a partner. Requires a statutory-auditor actor fact connected to a stated independence/ineligibility fact; management's own conduct, without a stated fact about the AUDITOR's personal position, does not satisfy it. Same disclosed vocabulary limitation as Section 139 above.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-141-3-e",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Substantive prohibition] Section 141(3)(e) disqualifies a person from acting as auditor where they (or their relative/partner) have a prescribed business relationship with the company or its holding/subsidiary/associate company. Requires a statutory-auditor actor fact connected to a stated independence/ineligibility fact. Same disclosed vocabulary limitation as Section 139 above.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-180-1-a",
+    requireAllOfGroups: [["asset_or_undertaking_disposal"]],
+    explanation:
+      "[Governance/procedural obligation] Section 180(1)(a) requires board authorisation by special resolution before selling, leasing or otherwise disposing of the whole, or substantially the whole, of an undertaking above the prescribed net-worth threshold. Requires only an asset/undertaking-disposal fact — like LODR Regulation 23(1)'s RPT-materiality proviso, this provision's own subject is itself a materiality/procedural threshold, not a bare topic mention; both live findings citing this provision (HEXA-01, NALWA-01) concern exactly this fact pattern (a subsidiary's investments transferred/reorganised to promoter-group entities), and both were NOT upheld on the merits — whether a given disposal actually crossed the statutory threshold or lacked the required resolution is a further question the entered facts should separately address.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-24",
+    requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
+    explanation:
+      "[SEBI power/remedial provision] Section 24 gives SEBI powers concurrent with the Central Government under Chapter III/IV of the Companies Act (including Section 67) in respect of listed companies' securities issue/transfer matters. In this corpus it is invoked exclusively alongside Section 67(2) (financial assistance for purchase of a company's own shares — see BGL-PREF-01), so it is gated on the same minimum facts: a preferential-allotment fact connected to a stated non-payment/sham-consideration fact. This is a jurisdictional/enabling provision, not itself a substantive prohibition on the company's own conduct, and must never be presented as an independent violation distinct from the underlying Section 67(2)/ICDR breach it lets SEBI act on.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-67-2",
+    requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
+    explanation:
+      "[Substantive prohibition] Section 67(2) prohibits a public company from giving financial assistance (directly or indirectly, by loan, guarantee, security or otherwise) for the purchase of, or subscription to, its own shares or its holding company's shares. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration/loan-financed-allotment fact; the bare fact that a preferential allotment occurred does not, by itself, establish that the company financed it. This is a company-law obligation distinct from — though it may accompany — a SEBI regulatory (ICDR/PFUTP) violation on the same facts; the two must not be presented as if SEBI's order necessarily adjudicated the Companies Act offence itself unless the source order actually did so.",
+  },
+
+  // ----- LODR Regulation 37A -----
+  // Deliberately left ungated by the prior pass (a low-volume, 1-2-link
+  // provision); now gated on the same asset/undertaking-disposal fact
+  // Companies Act Section 180(1)(a) requires, since it is the SAME
+  // fact pattern (an interested public shareholder voting on an
+  // undertaking-disposal resolution) viewed from the LODR side.
+  {
+    provisionId: "LODR-37A",
+    requireAllOfGroups: [["asset_or_undertaking_disposal"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 37A prohibits a public shareholder who is directly or indirectly a party to a sale/lease/disposal of the whole or substantially the whole undertaking from voting on the resolution approving it. Requires an asset/undertaking-disposal fact — the same materiality/procedural-threshold predicate Companies Act Section 180(1)(a) requires (see above); whether the specific voting shareholder was actually interested is a further question the entered facts should separately address.",
+  },
 ];
 
 const RULES_BY_PROVISION_ID = new Map(PROVISION_RETRIEVAL_RULES.map((r) => [r.provisionId, r]));
