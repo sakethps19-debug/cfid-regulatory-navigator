@@ -462,6 +462,11 @@ export interface HistoricalTreatmentCaseEntry {
   attributionStatus: "attributed" | "unverified";
   paragraphReference: string | null;
   officialSourceUrl: string;
+  /** Which Order record(s) this finding draws on — see
+   * ScenarioFinding.orderIds — so the UI can link this historical case
+   * entry to its own Order Detail page(s), not only the external official
+   * source. */
+  orderIds: string[];
 }
 
 /** Historical comparability of ONE finding (and, aggregated, one matter) to

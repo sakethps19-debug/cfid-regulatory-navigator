@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
 import {
   HISTORICAL_ORDER_STAGE_LABELS,
@@ -219,6 +220,23 @@ function PublicationWarningNote({ status }: { status: string }) {
     <p className="mt-1 text-xs font-semibold text-[var(--status-amber-text)]">
       Published with warning: this finding has a recorded caution attached, review it directly before relying on it.
     </p>
+  );
+}
+
+/** Cross-tool navigation: links from a cited precedent/finding to the
+ * Order Detail page(s) it draws on (a finding can span an interim and a
+ * final order — orderIds carries both). Renders nothing for a finding with
+ * no linked order on file, rather than a dead link. */
+function OrderLinks({ orderIds }: { orderIds: string[] }) {
+  if (orderIds.length === 0) return null;
+  return (
+    <>
+      {orderIds.map((orderId) => (
+        <Link key={orderId} href={`/orders/${orderId}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
+          View order detail →
+        </Link>
+      ))}
+    </>
   );
 }
 
@@ -1290,13 +1308,21 @@ export function ScenarioAnalyzerClient() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
-                      {pr.provision.instrument} · {pr.provision.provisionNumber}
+                      <Link href={`/provisions/${pr.provision.id}`} className="hover:underline">
+                        {pr.provision.instrument} · {pr.provision.provisionNumber}
+                      </Link>
                     </h3>
                     <p className="text-sm text-[var(--color-ink-700)]">{pr.provision.subject}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <CandidateTierBadge tier={pr.candidateTier} />
                       <LegalFunctionTag legalFunction={pr.legalFunction} />
                     </div>
+                    <Link
+                      href={`/provisions/${pr.provision.id}`}
+                      className="mt-1 inline-block text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                    >
+                      View provision detail →
+                    </Link>
                   </div>
                   <ConfidenceBadge level={pr.confidence} />
                 </div>
@@ -1398,8 +1424,9 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}
                           </p>
-                          <div className="mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
                             <SourceLink href={u.finding.officialSourceUrl} />
+                            <OrderLinks orderIds={u.finding.orderIds} />
                           </div>
                         </li>
                       ))}
@@ -1464,8 +1491,9 @@ export function ScenarioAnalyzerClient() {
                               Outcome in the cited precedent: {s.finding.precedentOutcomeNote}
                             </p>
                           )}
-                          <div className="mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
                             <SourceLink href={s.finding.officialSourceUrl} />
+                            <OrderLinks orderIds={s.finding.orderIds} />
                           </div>
                         </li>
                       ))}
@@ -1499,8 +1527,9 @@ export function ScenarioAnalyzerClient() {
                             <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                               {c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}
                             </p>
-                            <div className="mt-1">
+                            <div className="mt-1 flex flex-wrap items-center gap-3">
                               <SourceLink href={c.finding.officialSourceUrl} />
+                              <OrderLinks orderIds={c.finding.orderIds} />
                             </div>
                           </li>
                         ))}
@@ -1905,7 +1934,9 @@ export function ScenarioAnalyzerClient() {
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-medium text-[var(--color-ink-900)]">
-                            {e.provision.instrument} · {e.provision.provisionNumber}
+                            <Link href={`/provisions/${e.provision.id}`} className="hover:underline">
+                              {e.provision.instrument} · {e.provision.provisionNumber}
+                            </Link>
                           </p>
                           <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">
                             {e.comparableMatterCount > 0
@@ -1999,8 +2030,9 @@ export function ScenarioAnalyzerClient() {
                                           </p>
                                         )}
                                         {c.paragraphReference && <p className="mt-1 text-xs text-[var(--color-ink-500)]">{c.paragraphReference}</p>}
-                                        <div className="mt-1">
+                                        <div className="mt-1 flex flex-wrap items-center gap-3">
                                           <SourceLink href={c.officialSourceUrl} />
+                                          <OrderLinks orderIds={c.orderIds} />
                                         </div>
                                       </li>
                                     ))}

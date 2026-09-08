@@ -475,6 +475,7 @@ export function buildHistoricalTreatment(
         attributionStatus: hasCuratedTags ? "attributed" : "unverified",
         paragraphReference: sf.finding.finalParagraphReferences ?? sf.finding.interimParagraphReferences,
         officialSourceUrl: sf.finding.officialSourceUrl,
+        orderIds: sf.finding.orderIds,
       };
       casesByProvision.set(link.provisionId, [...(casesByProvision.get(link.provisionId) ?? []), entry]);
     }
