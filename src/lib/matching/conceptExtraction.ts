@@ -92,6 +92,70 @@ function hasPrecedingNegation(sentenceNormalized: string, matchIndex: number): b
   return NEGATION_PHRASE_CUES.some((p) => phraseWindowText.includes(p));
 }
 
+// P0 provision-precision remediation (100-scenario stress test): CFID
+// scenario text routinely disclaims a whole LIST of things at once ("there
+// is no allegation of diversion, fictitious accounting, price manipulation,
+// securities trading, false announcement or other fraudulent
+// securities-market conduct"). hasPrecedingNegation's short word/phrase
+// window above only ever reaches the single item immediately following a
+// negation cue - the third, fourth or fifth item in such a list sits far
+// outside that window and would wrongly read as a positive, unnegated
+// allegation. These two additional checks are purely ADDITIVE (new cue
+// phrases/shapes not previously recognized as negation at all), so they
+// only ever catch a negation that was previously missed - they cannot
+// suppress a match that a prior test already relied on being detected.
+
+/** Cue phrases that specifically introduce an enumerated, negated list
+ * spanning the REST of the sentence, not just the next word or two. Once
+ * one of these appears, every match later in the same sentence is treated
+ * as negated. */
+const NEGATION_LIST_CUES = [
+  "no allegation of",
+  "no allegations of",
+  "there is no allegation of",
+  "without any allegation of",
+  "no suggestion of",
+  "no indication of",
+  "no facts have yet been provided about",
+  "no facts have been provided about",
+  "no additional facts are stated about",
+];
+
+function hasListNegationInEffect(sentenceNormalized: string, matchIndex: number): boolean {
+  return NEGATION_LIST_CUES.some((cue) => {
+    const cueIndex = sentenceNormalized.indexOf(cue);
+    return cueIndex !== -1 && cueIndex < matchIndex;
+  });
+}
+
+/** Handles the mirror-image sentence shape: the negation cue comes FIRST
+ * ("No A, B, C or D is alleged.") and the closing verb comes LAST, after
+ * the whole enumerated list. When a sentence both starts with a bare
+ * negation word and ends with one of these closing phrases, every match
+ * anywhere in that sentence is treated as negated, not just the first item.
+ */
+const SENTENCE_NEGATION_LEADING_WORDS = new Set(["no", "none", "nil", "without"]);
+const SENTENCE_NEGATION_TRAILING_PHRASES = [
+  "is alleged",
+  "are alleged",
+  "was alleged",
+  "were alleged",
+  "is stated",
+  "are stated",
+  "is present",
+  "are present",
+  "is involved",
+  "are involved",
+  "is suggested",
+  "are suggested",
+];
+
+function isWholeSentenceNegated(sentenceNormalized: string): boolean {
+  const firstWord = sentenceNormalized.split(" ")[0];
+  if (!SENTENCE_NEGATION_LEADING_WORDS.has(firstWord)) return false;
+  return SENTENCE_NEGATION_TRAILING_PHRASES.some((p) => sentenceNormalized.endsWith(p));
+}
+
 /** Splits on sentence-ending punctuation so a negation earlier in one
  * sentence can never suppress a genuine, separately-stated match in the
  * next ("There was no diversion of funds. Related party transactions were
@@ -128,7 +192,11 @@ export function detectConcepts(freeText: string): DetectedConcept[] {
     for (const syn of tag.normalizedSynonyms) {
       const matchedNonNegated = sentences.some((sentence) => {
         const idx = sentence.indexOf(syn);
-        return idx !== -1 && !hasPrecedingNegation(sentence, idx);
+        if (idx === -1) return false;
+        if (isWholeSentenceNegated(sentence)) return false;
+        if (hasPrecedingNegation(sentence, idx)) return false;
+        if (hasListNegationInEffect(sentence, idx)) return false;
+        return true;
       });
       if (matchedNonNegated) matchedPhrases.push(syn);
     }

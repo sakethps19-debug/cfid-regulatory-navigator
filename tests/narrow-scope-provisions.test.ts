@@ -19,10 +19,22 @@
 // certification) and analyzeScenario only surfaces one of these provisions
 // when the query itself actually detected that specific concept — never
 // merely because some other, unrelated conduct bundled into the same
-// finding happened to match. Broad anti-fraud provisions (PFUTP 3(a)-(d),
-// SEBI Act 12A, etc.) are deliberately NOT in this list and must keep
-// surfacing for fictitious-sales-style queries, since they are genuinely
-// applicable to that conduct.
+// finding happened to match.
+//
+// UPDATED by the P0 provision-precision remediation pass: this file
+// originally also asserted that broad anti-fraud provisions (PFUTP
+// 3(a)-(d), SEBI Act 12A) must "keep surfacing for fictitious-sales-style
+// queries... since they are genuinely applicable to that conduct". A
+// 100-scenario CFID-officer stress test confirmed that assumption is
+// exactly wrong: PFUTP 3(a), on its own text, requires buying, selling or
+// dealing in securities in a fraudulent manner — bare "fictitious sales"
+// states fraudulent accounting, not a securities dealing/issue fact. The
+// provision-level retrieval gate (src/data/curated/
+// provision-retrieval-rules.ts) now requires that nexus independently of
+// the narrow-scope mechanism this file otherwise tests, and correctly
+// blocks PFUTP-3-a for the bare fictitious-sales query below. The premise
+// was wrong, not the code, so the assertion is corrected here rather than
+// kept to force a false "must surface" result.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -119,9 +131,25 @@ describe("Narrow-scope provisions — Regulation 6 / Compliance Officer bundling
     expect(result.provisionResults.some((p) => p.provision.id === complianceOfficerProvision.id)).toBe(false);
   });
 
-  it("still surfaces the genuinely applicable fraud provision for the same query", () => {
+  it("does NOT surface PFUTP-3-a for bare fictitious sales — the query states no securities dealing/issue fact PFUTP-3-a requires", () => {
     const result = analyzeScenario(
       { freeText: "The company recorded fictitious sales for several years." },
+      [multiIssueFinding],
+      [complianceOfficerProvision, fraudProvision],
+      []
+    );
+    expect(result.provisionResults.some((p) => p.provision.id === fraudProvision.id)).toBe(false);
+    // Not silently dropped either: the provision-level gate surfaces it as
+    // a "related factual precedent" instead, distinct from a candidate.
+    expect(result.gateBlockedProvisionResults.some((g) => g.provision.id === fraudProvision.id)).toBe(true);
+  });
+
+  it("DOES surface PFUTP-3-a once the same query also states a securities dealing/issue fact", () => {
+    const result = analyzeScenario(
+      {
+        freeText:
+          "The company recorded fictitious sales for several years, structured through a preferential allotment of shares to promoter entities with no genuine consideration received.",
+      },
       [multiIssueFinding],
       [complianceOfficerProvision, fraudProvision],
       []

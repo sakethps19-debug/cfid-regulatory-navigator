@@ -36,7 +36,16 @@ describe("Factual overlap score is never adjusted for procedural stage", () => {
   it("an interim-only finding and a final-order finding with identical detected-concept overlap score identically", () => {
     const freeText = "Fictitious sales and assets disclosed through financial statements.";
     const result = analyzeScenario({ freeText }, scenarioFindings, provisions, legalTests);
-    const pr = result.provisionResults.find((p) => p.provision.id === "SEBI-ACT-12A");
+    // Retargeted from SEBI-ACT-12A to LODR-33 (P0 provision-precision
+    // remediation): this bare query states no securities dealing/issue
+    // fact, so SEBI-ACT-12A is now correctly gate-blocked (see
+    // provision-retrieval-rules.ts) and no longer appears in
+    // provisionResults at all - testing score parity on a blocked
+    // provision would prove nothing. LODR-33 is ungated (not part of the
+    // broad-securities-fraud family this pass targets) and both REL-04 and
+    // SSSL-01 cite it in the same fixture data, so it exercises the exact
+    // same finality-must-not-affect-score guarantee this test exists for.
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-33");
     expect(pr).toBeDefined();
     // REL-04 (Prima facie, interim) and SSSL-01 (Confirmed in Final Order)
     // both cite this provision with the same allegedConduct overlap

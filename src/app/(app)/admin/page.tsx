@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { getDataChangeLog, getProcessingMetrics, getStructuredFindingCoverageGaps, getValidationIssues } from "@/lib/data";
+import { getDataChangeLog, getProcessingMetrics, getScenarioFindings, getStructuredFindingCoverageGaps, getValidationIssues } from "@/lib/data";
+import { getBroadFraudProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
 
 const COVERAGE_GAP_TIER_LABELS: Record<1 | 2 | 3, string> = {
   1: "Tier 1: matter entirely uncovered",
@@ -10,13 +11,15 @@ const COVERAGE_GAP_TIER_LABELS: Record<1 | 2 | 3, string> = {
 };
 
 export default async function AdminDashboardPage() {
-  const [metrics, issues, changeLog, coverageGaps] = await Promise.all([
+  const [metrics, issues, changeLog, coverageGaps, scenarioFindings] = await Promise.all([
     getProcessingMetrics(),
     getValidationIssues(),
     getDataChangeLog(),
     getStructuredFindingCoverageGaps(),
+    getScenarioFindings(),
   ]);
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
+  const provisionLinkAuditQueue = getBroadFraudProvisionLinkAuditQueue(scenarioFindings);
 
   // Grouped under Corpus / Processing / Review, per the same distinction
   // the rest of the app draws between "how much is indexed", "where each
@@ -132,6 +135,26 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      <Card className="mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">PFUTP / SEBI Act 12A link legal-review queue</h3>
+            <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {provisionLinkAuditQueue.length} findings link to at least one PFUTP/SEBI Act 12A provision with an
+              empty justifying-tags value (currently treated as universal). The Scenario Analyzer&apos;s
+              provision-level retrieval gate (P0 provision-precision remediation) is a global, query-time backstop;
+              it is not a certification that any individual link below is correctly attributed. Read-only.
+            </p>
+          </div>
+          <Link
+            href="/admin/provision-link-audit"
+            className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
+          >
+            Open link audit queue →
+          </Link>
+        </div>
+      </Card>
 
       <h2 className="mt-8 mb-3 text-base font-semibold text-[var(--color-ink-900)]">Processing</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

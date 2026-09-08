@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import { legalTests, provisions, scenarioFindings } from "./fixtures";
-import { extendedScenarioFindings } from "./fixtures-extended";
+import { auditorNegligenceFinding, extendedScenarioFindings } from "./fixtures-extended";
 import type { AnalysisResult } from "@/lib/matching/types";
 
 function run(findings: typeof scenarioFindings, freeText: string): AnalysisResult {
@@ -88,12 +88,34 @@ describe("Mandatory scenario 12: auditor negligence", () => {
   });
 
   it("does not overstate the auditor's liability beyond the curated finding status", () => {
+    // Isolated to [auditorNegligenceFinding] alone, not the full
+    // extendedScenarioFindings corpus (P0 provision-precision remediation):
+    // gateBlockedProvisionResults.relatedFactualPrecedents is capped at the
+    // top 3 highest-scoring findings for that provision, same as
+    // provisionResults/contraryOnlyProvisionResults elsewhere - against the
+    // full corpus, SSSL-01/REL-02/REL-12 (which also cite SEBI-ACT-12A and
+    // score higher on this query) fill that cap before ARL-AUD-01 does.
+    // What this test actually needs to guard - that ARL-AUD-01's own status
+    // is preserved, un-upgraded - does not depend on it competing against
+    // the rest of the corpus, so isolating it removes that incidental
+    // dependency entirely.
     const result = run(
-      extendedScenarioFindings,
+      [auditorNegligenceFinding],
       "The statutory auditor certified the company's financial statements for several years despite inflated sales and profits from circular transactions with connected entities that were never detected."
     );
-    const arlRef = result.provisionResults
-      .flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents])
+    // Retargeted from provisionResults to gateBlockedProvisionResults (P0
+    // provision-precision remediation): ARL-AUD-01's only link is to
+    // SEBI-ACT-12A, and this query states no securities dealing/issue fact
+    // (only accounting misstatement and internal circular transactions) -
+    // fitting, since the real order's own finding is that the PFUTP/12A
+    // fraud connection against the auditor specifically was NOT sustained
+    // for want of evidence of connivance. SEBI-ACT-12A is now correctly
+    // gate-blocked for this query rather than shown in provisionResults;
+    // the related factual precedent is still surfaced (see
+    // AnalysisResult.gateBlockedProvisionResults), and its true, un-upgraded
+    // status is what this test actually needs to guard.
+    const arlRef = result.gateBlockedProvisionResults
+      .flatMap((gb) => gb.relatedFactualPrecedents)
       .find((p) => p.finding.recordId === "ARL-AUD-01");
     expect(arlRef).toBeDefined();
     // The curated finding status is "Not Confirmed in Final Order" (the

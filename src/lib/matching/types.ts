@@ -156,6 +156,27 @@ export interface ContraryOnlyProvisionResult {
   note: string;
 }
 
+/** A provision that WOULD otherwise have surfaced (a factually-overlapping
+ * finding cites it, and any per-link justifyingTags gate passed) but was
+ * blocked by the provision-level retrieval gate (see
+ * data/curated/provision-retrieval-rules.ts): the provision's own text
+ * requires a specific minimum nexus (e.g. PFUTP requires a securities
+ * dealing/issue fact and a deceptive/fraudulent-conduct fact) that the
+ * entered scenario does not state. Never merged into provisionResults
+ * ("potentially relevant") or silently dropped — an officer should still
+ * know that a factually similar historical matter also involved this
+ * provision, just not that the provision itself is a candidate on the
+ * present facts. See P0 provision-precision remediation. */
+export interface GateBlockedProvisionResult {
+  provision: LegalProvision;
+  relatedFactualPrecedents: PrecedentRef[];
+  /** The retrieval rule's own plain-language statement of the minimum
+   * facts required — never a legal-ingredients test, only a retrieval
+   * prerequisite. */
+  gateExplanation: string;
+  note: string;
+}
+
 export interface GuardrailNote {
   id: string;
   provisionOrIssue: string;
@@ -174,6 +195,12 @@ export interface AnalysisResult {
    * relevant, with supporting precedent"; this is a distinct "warranting
    * caution" signal. */
   contraryOnlyProvisionResults: ContraryOnlyProvisionResult[];
+  /** See GateBlockedProvisionResult — provisions a factually-overlapping
+   * finding cites but whose own minimum-nexus retrieval prerequisite the
+   * entered scenario does not satisfy (e.g. PFUTP/SEBI Act 12A without a
+   * securities dealing/deceptive-conduct fact). Never merged into
+   * provisionResults. */
+  gateBlockedProvisionResults: GateBlockedProvisionResult[];
   globalContraryPrecedents: PrecedentRef[];
   /** Set only when the independent contrary-precedent safeguard actually ran
    * (the scenario contains a broad trigger concept such as preferential

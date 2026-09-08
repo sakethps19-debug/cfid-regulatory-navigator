@@ -3,7 +3,8 @@ import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from 
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import type { AnalysisResult, ConfidenceLevel, ContraryOnlyProvisionResult, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
+import { passesRetrievalGate, retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
+import type { AnalysisResult, ConfidenceLevel, ContraryOnlyProvisionResult, GateBlockedProvisionResult, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
 import { formatDate } from "@/lib/formatDate";
 import { EXCLUDED_PUBLICATION_STATUSES } from "@/lib/publicationLifecycle";
 
@@ -484,13 +485,56 @@ export function analyzeScenario(
   // justifyingTags (the default) means the link is universal, same as
   // before — most provisions (including all the broad anti-fraud clauses
   // like PFUTP 3(a)-(d)) are never narrowed.
+  // Provision-level retrieval gate (P0 provision-precision remediation): a
+  // SECOND, independent check applied on top of the per-link justifyingTags
+  // check above, never a replacement for it. justifyingTags is per-LINK
+  // curated data (currently empty, i.e. "universal", for every one of the
+  // 498 live PFUTP/SEBI-Act-12A finding-provision links — see
+  // provision-retrieval-rules.ts); the gate below is per-PROVISION curated
+  // legal reasoning about the minimum facts a provision's own text
+  // requires, and applies regardless of what any individual link's
+  // justifyingTags says. A provision with no rule (the large majority —
+  // LODR, Ind AS, investigation/governance provisions, etc.) is completely
+  // unaffected: gatedOut is always false for it, and behavior is identical
+  // to before this pass.
   const findingsByProvision = new Map<string, ScoredFinding[]>();
+  const gateBlockedFindingsByProvision = new Map<string, ScoredFinding[]>();
   for (const sf of scored) {
     for (const link of sf.finding.provisionLinks) {
       if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
+      const rule = retrievalRuleForProvision(link.provisionId);
+      if (rule && !passesRetrievalGate(rule, detectedIds)) {
+        gateBlockedFindingsByProvision.set(link.provisionId, [...(gateBlockedFindingsByProvision.get(link.provisionId) ?? []), sf]);
+        continue;
+      }
       findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), sf]);
     }
   }
+
+  // Provisions blocked by the gate above are never silently dropped: a
+  // factually similar historical matter that also happened to involve (say)
+  // a PFUTP finding is still information worth an officer knowing about —
+  // just not as a "this provision may apply" candidate, since the present
+  // scenario does not state the specific nexus PFUTP requires. Same
+  // never-silently-drop principle already applied to contrary-only
+  // provisions (see contraryOnlyProvisionResults below).
+  const gateBlockedProvisionResults: GateBlockedProvisionResult[] = [];
+  for (const [provisionId, findings] of gateBlockedFindingsByProvision.entries()) {
+    const provision = provisions.find((p) => p.id === provisionId);
+    if (!provision) continue;
+    const rule = retrievalRuleForProvision(provisionId);
+    if (!rule) continue;
+    const sortedFindings = [...findings].sort(compareByFactualScoreThenFinality);
+    gateBlockedProvisionResults.push({
+      provision,
+      relatedFactualPrecedents: sortedFindings.slice(0, 3).map(toPrecedentRef),
+      gateExplanation: rule.explanation,
+      note: `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}, but the facts entered do not include what this provision's own text requires: ${rule.explanation} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`,
+    });
+  }
+  gateBlockedProvisionResults.sort((a, b) =>
+    compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0])
+  );
 
   const provisionResults: ProvisionResult[] = [];
   const contraryOnlyProvisionResults: ContraryOnlyProvisionResult[] = [];
@@ -658,12 +702,14 @@ export function analyzeScenario(
     detectedConceptLabels: unique(detected.map((c) => c.label)),
     provisionResults,
     contraryOnlyProvisionResults,
+    gateBlockedProvisionResults,
     globalContraryPrecedents,
     contraryPrecedentSearchNote,
     applicableGuardrails,
     hasResults:
       provisionResults.length > 0 ||
       contraryOnlyProvisionResults.length > 0 ||
+      gateBlockedProvisionResults.length > 0 ||
       globalContraryPrecedents.length > 0 ||
       fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,

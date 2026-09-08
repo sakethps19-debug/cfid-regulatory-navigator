@@ -345,6 +345,18 @@ export function resultToText(result: AnalysisResult): string {
       }
     }
   }
+  if (result.gateBlockedProvisionResults.length > 0) {
+    lines.push("----------------------------------------");
+    lines.push("Provisions NOT shown as potentially relevant (retrieval prerequisite not met on the facts entered):");
+    for (const gb of result.gateBlockedProvisionResults) {
+      lines.push(`  ${gb.provision.instrument} · ${gb.provision.provisionNumber}: ${gb.note}`);
+      for (const rp of gb.relatedFactualPrecedents) {
+        lines.push(
+          `    - Related CFID factual precedent: [${findingStatusLabel(rp.finding.findingStatus)} · ${legalReviewLabel(rp.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(rp.finding)}] ${rp.finding.recordId} · ${rp.finding.scenarioTitle} · ${rp.finding.officialSourceUrl}`
+        );
+      }
+    }
+  }
   if (result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) {
     lines.push("----------------------------------------");
     lines.push("Additional contrary precedents retrieved for fund-movement / allotment style facts:");
@@ -449,8 +461,8 @@ export function resultToCsv(result: AnalysisResult): string {
       "Supporting precedents record verification maturity (per precedent)",
       "Supporting precedents support category (per precedent)",
       "Missing facts / evidence (per cited precedent, never a universal requirement)",
-      "Row note (set for 'Warranting caution' and 'Full-text match only' rows)",
-      "Row record IDs (set for 'Warranting caution' and 'Full-text match only' rows)",
+      "Row note (set for 'Warranting caution', 'Not shown - prerequisite not met' and 'Full-text match only' rows)",
+      "Row record IDs (set for 'Warranting caution', 'Not shown - prerequisite not met' and 'Full-text match only' rows)",
     ])
   );
   for (const pr of sorted) {
@@ -491,6 +503,26 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         cp.note,
         cp.contraryPrecedents.map((c) => c.finding.recordId).join("; "),
+      ])
+    );
+  }
+  for (const gb of result.gateBlockedProvisionResults) {
+    rows.push(
+      csvRow([
+        "Not shown - prerequisite not met",
+        gb.provision.instrument,
+        gb.provision.provisionNumber,
+        gb.provision.subject ?? "",
+        "",
+        "0",
+        "0 of 0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        gb.note,
+        gb.relatedFactualPrecedents.map((rp) => rp.finding.recordId).join("; "),
       ])
     );
   }
@@ -1443,6 +1475,51 @@ export function ScenarioAnalyzerClient() {
                           )}
                           <div className="mt-1">
                             <SourceLink href={c.finding.officialSourceUrl} />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )}
+
+          {result.gateBlockedProvisionResults.length > 0 && (
+            <article className="rounded-sm bg-[var(--status-neutral-bg)] p-4 ring-1 border-[var(--status-neutral-ring)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--status-neutral-text)]">
+                Provisions not shown as potentially relevant: retrieval prerequisite not met
+              </h3>
+              <p className="mt-1 text-sm text-[var(--status-neutral-text)]">
+                A factually similar structured finding also cites each provision below, but that provision&apos;s own
+                text requires specific facts (e.g. a securities dealing/issue nexus and a deceptive or fraudulent
+                conduct nexus, for PFUTP / SEBI Act Section 12A) that the scenario as entered does not state. These
+                are deliberately excluded from the &quot;Potentially relevant regulatory provisions&quot; above rather
+                than listed as candidates, since the minimum facts they require have not been entered. The related
+                factual precedent(s) are shown for context only, not as support for this specific provision.
+              </p>
+              <ul className="mt-3 space-y-3">
+                {result.gateBlockedProvisionResults.map((gb) => (
+                  <li key={gb.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-neutral-ring)]">
+                    <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                      {gb.provision.instrument} · {gb.provision.provisionNumber}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gb.provision.subject}</p>
+                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">Retrieval prerequisite: {gb.gateExplanation}</p>
+                    <p className="mt-1 text-xs text-[var(--color-ink-700)]">{gb.note}</p>
+                    <ul className="mt-2 space-y-2">
+                      {gb.relatedFactualPrecedents.map((rp) => (
+                        <li key={rp.finding.recordId} className="rounded-lg bg-[var(--status-neutral-bg)]/60 p-2.5 ring-1 border-[var(--status-neutral-ring)]">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Related CFID factual precedent</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <StatusBadge status={rp.finding.findingStatus} />
+                            <LegalReviewBadge reviewed={rp.finding.humanLegalReviewCompleted} />
+                            <FindingMaturityBadge finding={rp.finding} />
+                            <span className="text-sm font-medium text-[var(--color-ink-900)]">{rp.finding.recordId}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-[var(--color-ink-700)]">{rp.finding.scenarioTitle}</p>
+                          <div className="mt-1">
+                            <SourceLink href={rp.finding.officialSourceUrl} />
                           </div>
                         </li>
                       ))}

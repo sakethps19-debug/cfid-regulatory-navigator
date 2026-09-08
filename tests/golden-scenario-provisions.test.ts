@@ -36,9 +36,44 @@ describe("Golden scenario 1 (fictitious sales/assets): provision-level must-appe
   );
   const ids = provisionIds(result);
 
-  it("MUST RETURN the broad securities-fraud provisions genuinely carried by SSSL-01/REL-04", () => {
-    expect(ids).toContain("SEBI-ACT-12A");
-    expect(ids).toContain("PFUTP-4-1");
+  // Superseded by the P0 provision-precision remediation pass. This
+  // assertion originally read SSSL-01/REL-04's own curated tags
+  // (allegedConduct includes price_manipulation_nexus alongside the
+  // fictitious-sales tags - both records genuinely combined fictitious
+  // accounting with market-manipulation conduct in their source orders) as
+  // sufficient, by itself, to justify surfacing PFUTP-4-1/SEBI-ACT-12A for
+  // ANY query matching those findings on ANY tag. That is exactly the
+  // "provision leakage from matched findings" defect the stress-test audit
+  // confirmed live (all 498 PFUTP/SEBI-Act-12A finding_provisions links have
+  // empty justifying_tags, so this was not a fixture-only issue): a query
+  // stating ONLY "fictitious sales and assets" - with no securities
+  // dealing/issue fact and no separate deceptive-conduct fact beyond the
+  // fictitious accounting itself - does not state what PFUTP-4-1/Section 12A
+  // require on their own text (a securities dealing/issue nexus). The
+  // provision-level retrieval gate (src/data/curated/
+  // provision-retrieval-rules.ts) now blocks both correctly for this bare
+  // query; the test premise was wrong, not the code, so the assertion is
+  // corrected rather than kept to force a false "must appear" - the same
+  // discipline documented for the SSSL-22 investigation in
+  // docs/mandatory-scenario-audit.md.
+  it("MUST NOT RETURN PFUTP-4-1/SEBI Act 12A merely from fictitious sales - the query states no securities dealing/issue fact", () => {
+    expect(ids).not.toContain("PFUTP-4-1");
+    expect(ids).not.toContain("SEBI-ACT-12A");
+  });
+
+  it("DOES surface PFUTP-4-1/SEBI Act 12A once the same scenario also states a securities-dealing/price-manipulation fact", () => {
+    const withNexus = analyzeScenario(
+      {
+        freeText:
+          "Fictitious sales and assets disclosed through financial statements, with synchronized trading among connected accounts creating an artificial price rise.",
+      },
+      scenarioFindings,
+      provisions,
+      legalTests
+    );
+    const nexusIds = provisionIds(withNexus);
+    expect(nexusIds).toContain("PFUTP-4-1");
+    expect(nexusIds).toContain("SEBI-ACT-12A");
   });
 
   it("MUST NOT RETURN the Compliance-Officer-vacancy-specific provision (SSSL-11's own topic, unrelated to fictitious sales)", () => {
