@@ -326,7 +326,42 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "vacant for"] },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },
   { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
-  { id: "price_manipulation_nexus", kind: "conduct", label: "Nexus with price/market manipulation", synonyms: ["price manipulation", "market manipulation", "distorted price discovery", "induced investors to trade", "false appearance of financial health", "synchronized trading", "synchronised trading", "matched trades", "wash trades", "wash trading", "no genuine change in ownership", "no real change in ownership", "no real change in beneficial ownership", "connected trading accounts", "artificial price rise", "artificially propped up the price"] },
+  // Second-order remediation (2026): the single tag "price_manipulation_nexus"
+  // previously bundled several legally distinct predicates - a false
+  // APPEARANCE of trading (wash/synchronized trades), a genuine ownership
+  // question (no real beneficial-ownership change), an actual PRICE effect,
+  // and investor INDUCEMENT to trade - under one signal, which the
+  // provision-retrieval gate then used to unlock PFUTP 4(2)(a), (b) and (e)
+  // together even though each clause's own text requires a different one of
+  // these facts. "false appearance of financial health" (a prior synonym)
+  // is dropped outright: it is not a trading fact at all, and collided with
+  // financial_statement_misstatement/fictitious_sales_or_revenue's own
+  // territory, not this family's. Split into four independently-detectable
+  // tags, each tracking one statutory predicate:
+  {
+    id: "false_appearance_of_trading",
+    kind: "conduct",
+    label: "False or misleading appearance of trading",
+    synonyms: ["synchronized trading", "synchronised trading", "matched trades", "wash trades", "wash trading", "connected trading accounts", "false appearance of trading", "misleading appearance of trading", "reversal trades"],
+  },
+  {
+    id: "non_genuine_dealing_or_ownership",
+    kind: "conduct",
+    label: "No genuine change in beneficial ownership",
+    synonyms: ["no genuine change in ownership", "no real change in ownership", "no real change in beneficial ownership", "no genuine change in beneficial ownership", "no intended change in beneficial ownership"],
+  },
+  {
+    id: "actual_price_manipulation",
+    kind: "conduct",
+    label: "Actual price manipulation",
+    synonyms: ["price manipulation", "market manipulation", "distorted price discovery", "artificial price rise", "artificially propped up the price", "artificially maintained the price", "manipulation of the security price", "artificial price"],
+  },
+  {
+    id: "investor_inducement_to_trade",
+    kind: "conduct",
+    label: "Investor inducement to trade",
+    synonyms: ["induced investors to trade", "induced to trade", "inducing trades", "investors induced to trade"],
+  },
   { id: "aiding_abetting", kind: "conduct", label: "Aiding and abetting", synonyms: ["aided and abetted", "aiding and abetting", "assisted in the scheme", "facilitated the fraud"] },
 ];
 

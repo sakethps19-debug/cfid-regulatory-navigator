@@ -66,6 +66,22 @@ export interface MatchedByCategory {
 
 export interface PrecedentRef {
   finding: ScenarioFinding;
+  /** The procedural/merits status to treat THIS SPECIFIC provision-finding
+   * link as carrying, for support/contrary classification and display.
+   * Defaults to finding.findingStatus, but is downgraded when the specific
+   * link's own finding_provisions.relationship curation ("alleged"/
+   * "not_upheld") shows that THIS provision's own disposition within a
+   * multi-provision finding differs from the finding's overall status — e.g.
+   * a finding "Partly Confirmed in Final Order" overall because its LODR
+   * provision was confirmed, while its PFUTP link is separately recorded as
+   * "alleged" (cited/considered, not the basis of the disposition) or
+   * "not_upheld" (this specific charge was NOT established). Never invert
+   * the other direction: a link with no curated relationship, or with
+   * relationship "upheld", uses finding.findingStatus unchanged. See P0
+   * provision-precision remediation v2, section 11 (supporting precedent
+   * must mean supporting for THIS provision, not merely part of a bundled
+   * finding where some other allegation was upheld). */
+  effectiveStatus: FindingStatus;
   score: number;
   matchedFactualIngredients: string[];
   matchedByCategory: MatchedByCategory;

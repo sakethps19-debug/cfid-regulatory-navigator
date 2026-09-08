@@ -6,6 +6,21 @@ export interface DetectedConcept {
   kind: ConceptKind;
   label: string;
   matchedPhrases: string[];
+  /** Every sentence index (0-based, within the scenario's own free text)
+   * where this concept was detected without negation. Second-order
+   * provision-precision remediation: used by the provision-level retrieval
+   * gate to test whether two facts were stated as CONNECTED (the same
+   * sentence) rather than merely both present somewhere in a long scenario
+   * - see requireConnectedGroups in provision-retrieval-rules.ts. Two
+   * unrelated facts anywhere in a scenario satisfying two independent
+   * requirements is exactly the "bag of tags" reasoning that requirement
+   * exists to prevent. A dropdown-signal-derived concept (see
+   * buildEffectiveScenarioConcepts in engine.ts) carries no sentence of its
+   * own and is represented with an empty array; the gate treats those as
+   * compatible with any sentence, since selecting a dropdown is a
+   * deliberate, explicit officer assertion about the scenario as a whole,
+   * not free text whose proximity to another fact is otherwise unknown. */
+  sentenceIndices: number[];
 }
 
 /** A curated synonym written in one grammatical number ("fictitious sales")
@@ -188,20 +203,21 @@ export function detectConcepts(freeText: string): DetectedConcept[] {
 
   const results: DetectedConcept[] = [];
   for (const tag of NORMALIZED_TAGS) {
-    const matchedPhrases: string[] = [];
+    const matchedPhrases = new Set<string>();
+    const sentenceIndices = new Set<number>();
     for (const syn of tag.normalizedSynonyms) {
-      const matchedNonNegated = sentences.some((sentence) => {
+      sentences.forEach((sentence, sentenceIndex) => {
         const idx = sentence.indexOf(syn);
-        if (idx === -1) return false;
-        if (isWholeSentenceNegated(sentence)) return false;
-        if (hasPrecedingNegation(sentence, idx)) return false;
-        if (hasListNegationInEffect(sentence, idx)) return false;
-        return true;
+        if (idx === -1) return;
+        if (isWholeSentenceNegated(sentence)) return;
+        if (hasPrecedingNegation(sentence, idx)) return;
+        if (hasListNegationInEffect(sentence, idx)) return;
+        matchedPhrases.add(syn);
+        sentenceIndices.add(sentenceIndex);
       });
-      if (matchedNonNegated) matchedPhrases.push(syn);
     }
-    if (matchedPhrases.length > 0) {
-      results.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases });
+    if (matchedPhrases.size > 0) {
+      results.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases: [...matchedPhrases], sentenceIndices: [...sentenceIndices] });
     }
   }
   return results;

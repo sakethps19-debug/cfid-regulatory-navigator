@@ -23,7 +23,13 @@ export const GUARDRAIL_TRIGGERS: Record<string, string[]> = {
   fund_diversion: ["Circular fund-flow allegation", "Ultimate benefit / sale proceeds"],
   fund_transfer_personal_account: ["Circular fund-flow allegation", "Ultimate benefit / sale proceeds"],
   fund_transfer_promoter_entity: ["Circular fund-flow allegation", "Third-party examination"],
-  price_manipulation_nexus: ["PFUTP 4(2)(e): market nexus", "PFUTP 2(1)(c): fraud (inducement/intent test)"],
+  // price_manipulation_nexus split into four distinct tags (second-order
+  // remediation, 2026) — each carries the guardrail(s) relevant to its own
+  // predicate, not a blanket copy of the old single entry.
+  false_appearance_of_trading: ["PFUTP 4(2)(e): market nexus"],
+  non_genuine_dealing_or_ownership: ["PFUTP 4(2)(e): market nexus"],
+  actual_price_manipulation: ["PFUTP 4(2)(e): market nexus", "PFUTP 2(1)(c): fraud (inducement/intent test)"],
+  investor_inducement_to_trade: ["PFUTP 2(1)(c): fraud (inducement/intent test)"],
   fictitious_sales_or_revenue: ["Financial misstatement evidence", "PFUTP 2(1)(c): fraud (inducement/intent test)"],
   fictitious_or_nongenuine_assets: ["Financial misstatement evidence", "PFUTP 2(1)(c): fraud (inducement/intent test)"],
   financial_statement_misstatement: ["Financial misstatement evidence", "PFUTP 2(1)(c): fraud (inducement/intent test)"],

@@ -9,6 +9,16 @@
 // records the evidentiary gaps already described in the workbook's
 // "Legal Tests" sheet and qualification notes. Tags are curation, not
 // new facts.
+//
+// price_manipulation_nexus (second-order remediation, 2026) was split into
+// four narrower tags (see concept-tags.ts). REL-02/REL-04/REL-12/SSSL-01
+// below were re-mapped to actual_price_manipulation as the closest
+// successor - a lower-confidence default than the individually-reasoned
+// live-corpus re-tagging this same pass applied (see
+// docs/provision-gating-remediation-v2.md), since this pilot-workbook
+// overlay carries no per-record factual narrative here to reason a more
+// specific predicate from; these four records were already used throughout
+// the test suite as generically "market-manipulation-nexus" precedents.
 
 export interface ScenarioTagOverlay {
   recordId: string;
@@ -45,7 +55,7 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     transactionTypes: ["consolidated_financials", "financial_statement_disclosure"],
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements", "consolidation_workpapers", "gst_tax_records", "bank_statements_flow"],
-    allegedConduct: ["financial_statement_misstatement", "fictitious_sales_or_assets", "price_manipulation_nexus"],
+    allegedConduct: ["financial_statement_misstatement", "fictitious_sales_or_assets", "actual_price_manipulation"],
     evidentiaryGaps: [
       "Subsidiary-level books and consolidation support for the revenue figures",
       "Independent verification of customer-wise sales",
@@ -68,7 +78,7 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     transactionTypes: ["derivative_transaction", "fund_transfer_personal_account", "standalone_financials"],
     actorRoles: ["company", "promoter"],
     evidenceTypes: ["bank_statements_flow", "audited_financial_statements"],
-    allegedConduct: ["fictitious_sales_or_assets", "financial_statement_misstatement", "price_manipulation_nexus"],
+    allegedConduct: ["fictitious_sales_or_assets", "financial_statement_misstatement", "actual_price_manipulation"],
     evidentiaryGaps: [
       "Broker/exchange records for the promoter's personal derivative account",
       "Reconciliation showing how the personal trades entered the company's books",
@@ -159,7 +169,7 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     transactionTypes: ["financial_statement_disclosure"],
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements"],
-    allegedConduct: ["price_manipulation_nexus", "financial_statement_misstatement"],
+    allegedConduct: ["actual_price_manipulation", "financial_statement_misstatement"],
     evidentiaryGaps: [
       "Evidence connecting the disclosures to actual trading or price impact",
       "Completion of the forensic audit",
@@ -170,7 +180,7 @@ export const SCENARIO_TAG_OVERLAY: ScenarioTagOverlay[] = [
     transactionTypes: ["financial_statement_disclosure", "standalone_financials"],
     actorRoles: ["company"],
     evidenceTypes: ["audited_financial_statements", "forensic_audit_report", "bank_statements_flow"],
-    allegedConduct: ["fictitious_sales_or_assets", "financial_statement_misstatement", "price_manipulation_nexus"],
+    allegedConduct: ["fictitious_sales_or_assets", "financial_statement_misstatement", "actual_price_manipulation"],
     evidentiaryGaps: [],
     precedentOutcomeNote: RESOLVED_NOTE,
   },

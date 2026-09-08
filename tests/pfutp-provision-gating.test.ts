@@ -63,7 +63,10 @@ function makeFinding(provisionId: string): ScenarioFinding {
       "fictitious_or_nongenuine_assets",
       "financial_statement_misstatement",
       "false_business_or_corporate_announcement",
-      "price_manipulation_nexus",
+      "false_appearance_of_trading",
+      "non_genuine_dealing_or_ownership",
+      "actual_price_manipulation",
+      "investor_inducement_to_trade",
       "non_disclosure_of_information",
     ],
     evidentiaryGaps: [],
@@ -190,7 +193,7 @@ const CASES: ClauseCase[] = [
     provisionId: "PFUTP-4-2-e",
     provisionNumber: "Regulation 4(2)(e)",
     subject: "Act or omission amounting to manipulation of the security's price.",
-    positiveText: "No genuine change in beneficial ownership occurred despite repeated trades among connected accounts that induced investors to trade.",
+    positiveText: "An act or omission resulted in manipulation of the security price through repeated trades among connected accounts.",
     nearMissTexts: [
       "The company diverted funds to a promoter-controlled entity. No trading or price-related facts are alleged.",
     ],
@@ -261,7 +264,7 @@ const CASES: ClauseCase[] = [
     provisionNumber: "Section 12A(c)",
     subject: "Act, practice or course of business operating as a fraud or deceit, in connection with the issue of or dealing in listed securities.",
     positiveText:
-      "In connection with a preferential allotment, the company's financial statements misstated the accounts to create a false appearance of financial health for allottees.",
+      "In connection with a preferential allotment, the company's financial statements contained a misstatement to create a false picture for allottees.",
     nearMissTexts: [
       "The company made a preferential allotment supported by audited, accurate financial statements. No misstatement is alleged.",
       "The company's financial statements contained a misstatement. No securities issue or dealing is alleged in this scenario.",

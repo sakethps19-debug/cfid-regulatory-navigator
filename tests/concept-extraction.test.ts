@@ -57,11 +57,16 @@ describe("detectConcepts — officer-phrasing spot checks", () => {
     expect(detected.map((d) => d.id)).toContain("fictitious_sales_or_revenue");
   });
 
-  it("detects price manipulation from a plain-English synchronized-trading description", () => {
+  it("detects false-appearance-of-trading from a plain-English synchronized-trading description", () => {
+    // price_manipulation_nexus was split (second-order remediation, 2026)
+    // into false_appearance_of_trading / non_genuine_dealing_or_ownership /
+    // actual_price_manipulation / investor_inducement_to_trade - this text
+    // describes connected accounts trading among themselves, matching the
+    // first of those specifically, not a bare re-run of the old single tag.
     const text =
       "A small group of connected trading accounts kept buying and selling the same stock back and forth among themselves right before a big price jump, with no real change in who actually owned the shares.";
     const detected = detectConcepts(text);
-    expect(detected.map((d) => d.id)).toContain("price_manipulation_nexus");
+    expect(detected.map((d) => d.id)).toContain("false_appearance_of_trading");
   });
 
   it("detects IPO proceeds diversion described as a 'public issue', not a 'rights issue'", () => {

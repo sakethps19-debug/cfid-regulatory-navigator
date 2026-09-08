@@ -79,6 +79,29 @@ export function supportCategory(status: FindingStatus): SupportCategory {
   return "Interim / prima facie";
 }
 
+/** Resolves the status a specific finding-provision LINK should be treated
+ * as carrying, honoring the per-link finding_provisions.relationship
+ * curation over the finding's own overall findingStatus where the two
+ * diverge. A multi-provision finding is routinely "partly confirmed"
+ * overall because one of its several cited provisions was confirmed, while
+ * a DIFFERENT provision on the same finding (e.g. a PFUTP/fraud charge
+ * bundled alongside a confirmed LODR disclosure lapse) was only alleged, or
+ * was itself expressly not established — a bundled disposition, not a
+ * finding on THIS provision. Concretely: a link recorded "not_upheld"
+ * downgrades to "Not Confirmed in Final Order" for this provision
+ * regardless of the finding's overall status (this specific charge was
+ * decided negatively); a link recorded "alleged" downgrades to "Alleged"
+ * (cited/considered only, no merits determination on THIS provision); a
+ * link recorded "upheld", or with no relationship curated at all, uses the
+ * finding's own findingStatus unchanged — this is a downgrade-only
+ * mechanism, never an upgrade past what the finding's own overall status
+ * already reflects. See P0 provision-precision remediation v2, section 11. */
+export function effectiveLinkStatus(findingStatus: FindingStatus, relationship: string | undefined): FindingStatus {
+  if (relationship === "not_upheld") return "Not Confirmed in Final Order";
+  if (relationship === "alleged") return "Alleged";
+  return findingStatus;
+}
+
 /** Orders two scored findings for DISPLAY PURPOSES ONLY (which precedent
  * appears first, which three make the top-3-per-provision cut) — never for
  * anything officer-facing. Sorts by factual-overlap score first; a
@@ -135,7 +158,7 @@ export function buildEffectiveScenarioConcepts(
     if (!signalId || seenIds.has(signalId)) continue;
     const tag = CONCEPT_TAGS.find((t) => t.id === signalId);
     if (!tag) continue;
-    merged.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases: [] });
+    merged.push({ id: tag.id, kind: tag.kind, label: tag.label, matchedPhrases: [], sentenceIndices: [] });
     seenIds.add(tag.id);
   }
   return merged;
@@ -195,7 +218,17 @@ function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
   const verified = versions.filter((v) => v.status === "officially_verified" && v.effectiveFrom);
   if (verified.length > 0) {
     const v = verified[verified.length - 1];
-    return `Applicable version: ${v.versionLabel} (effective ${formatDate(v.effectiveFrom)}${v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : " onward"}), officially verified.`;
+    const base = `Applicable version: ${v.versionLabel} (effective ${formatDate(v.effectiveFrom)}${v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : " onward"}), officially verified.`;
+    // Second-order remediation: a SINGLE catalogued version with no
+    // verified (or even order-cited) predecessor is a genuine gap, not
+    // evidence the wording has always read this way. Most orders in this
+    // corpus concern conduct that may predate this version's effective
+    // date; silently presenting only the current text risks applying a
+    // post-amendment reading to pre-amendment conduct without saying so.
+    if (versions.length === 1) {
+      return `${base} This is the only version of this provision currently catalogued; if the conduct being examined predates ${formatDate(v.effectiveFrom)}, the wording in force at that time has not been independently verified and should not be assumed identical.`;
+    }
+    return base;
   }
   const orderCited = versions.find((v) => v.status === "order_cited_text_only" && v.exactText);
   if (orderCited) {
@@ -287,9 +320,10 @@ function scoreFinding(finding: ScenarioFinding, effectiveConcepts: DetectedConce
   return { finding, score, matchedIngredients, matchedIds, matchedByCategory, categoriesMatched, substantiveCategoriesMatched };
 }
 
-function toPrecedentRef(sf: ScoredFinding): PrecedentRef {
+function toPrecedentRef(sf: ScoredFinding, linkRelationship?: string): PrecedentRef {
   return {
     finding: sf.finding,
+    effectiveStatus: effectiveLinkStatus(sf.finding.findingStatus, linkRelationship),
     score: sf.score,
     matchedFactualIngredients: sf.matchedIngredients,
     matchedByCategory: sf.matchedByCategory,
@@ -324,16 +358,16 @@ function mergeMatchedByCategory(refs: { matchedByCategory: MatchedByCategory }[]
  * collapsing everything into one number. (This function previously also
  * used isFinalOrderFinding to unlock the High tier and UNRESOLVED_STATUSES
  * to force a hard cap at Low — both removed for exactly this reason.) */
-function deriveConfidence(best: ScoredFinding, supportCount: number): { level: ConfidenceLevel; reasons: string[] } {
+function deriveConfidence(best: ScoredFinding, supportCount: number, effectiveStatus: FindingStatus = best.finding.findingStatus): { level: ConfidenceLevel; reasons: string[] } {
   const reasons: string[] = [];
   reasons.push(`${best.categoriesMatched} independent factual categories (transaction type, actor role, conduct, evidence) overlap with the facts stated.`);
   if (supportCount > 1) reasons.push(`${supportCount} scenario findings support this provision.`);
   reasons.push(
     `This reflects factual overlap only; it says nothing about this precedent's own procedural stage or historical disposition, shown separately above and never used to compute this figure.`
   );
-  if (UNRESOLVED_STATUSES.has(best.finding.findingStatus)) {
+  if (UNRESOLVED_STATUSES.has(effectiveStatus)) {
     reasons.push(
-      `Separately: the strongest matching precedent carries the status "${best.finding.findingStatus}", no determination has been reached on the merits either way. That is a fact about the precedent's own disposition, not about how closely its facts resemble the entered scenario, so it does not change the factual-overlap figure above, but it should weigh heavily in how much this precedent is relied on.`
+      `Separately: the strongest matching precedent carries the status "${effectiveStatus}"${effectiveStatus !== best.finding.findingStatus ? ` for this specific provision (its overall finding status is "${best.finding.findingStatus}")` : ""}, no determination has been reached on the merits either way. That is a fact about the precedent's own disposition, not about how closely its facts resemble the entered scenario, so it does not change the factual-overlap figure above, but it should weigh heavily in how much this precedent is relied on.`
     );
   }
 
@@ -497,17 +531,28 @@ export function analyzeScenario(
   // LODR, Ind AS, investigation/governance provisions, etc.) is completely
   // unaffected: gatedOut is always false for it, and behavior is identical
   // to before this pass.
-  const findingsByProvision = new Map<string, ScoredFinding[]>();
+  // Each entry pairs the scored finding with the specific link's own
+  // finding_provisions.relationship (see effectiveLinkStatus above) and the
+  // resulting effective status for THIS provision — a multi-provision
+  // finding can carry a different disposition per linked provision than its
+  // own overall findingStatus.
+  interface LinkedFinding {
+    sf: ScoredFinding;
+    relationship?: string;
+    effStatus: FindingStatus;
+  }
+  const findingsByProvision = new Map<string, LinkedFinding[]>();
   const gateBlockedFindingsByProvision = new Map<string, ScoredFinding[]>();
   for (const sf of scored) {
     for (const link of sf.finding.provisionLinks) {
       if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
       const rule = retrievalRuleForProvision(link.provisionId);
-      if (rule && !passesRetrievalGate(rule, detectedIds)) {
+      if (rule && !passesRetrievalGate(rule, effectiveConcepts)) {
         gateBlockedFindingsByProvision.set(link.provisionId, [...(gateBlockedFindingsByProvision.get(link.provisionId) ?? []), sf]);
         continue;
       }
-      findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), sf]);
+      const entry: LinkedFinding = { sf, relationship: link.relationship, effStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship) };
+      findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), entry]);
     }
   }
 
@@ -527,7 +572,7 @@ export function analyzeScenario(
     const sortedFindings = [...findings].sort(compareByFactualScoreThenFinality);
     gateBlockedProvisionResults.push({
       provision,
-      relatedFactualPrecedents: sortedFindings.slice(0, 3).map(toPrecedentRef),
+      relatedFactualPrecedents: sortedFindings.slice(0, 3).map((sf) => toPrecedentRef(sf)),
       gateExplanation: rule.explanation,
       note: `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}, but the facts entered do not include what this provision's own text requires: ${rule.explanation} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`,
     });
@@ -542,14 +587,17 @@ export function analyzeScenario(
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
 
-    const supporting = findings.filter((f) => !NEGATIVE_STATUSES.has(f.finding.findingStatus));
+    const supporting = findings.filter((f) => !NEGATIVE_STATUSES.has(f.effStatus));
     // A contrary precedent must carry real material weight, not merely a
     // weak evidence-type/actor-role overlap (weight 1-2 categories that
     // recur across many unrelated matters) — require the same substantive
     // (transaction-type or conduct) overlap that anchors supporting
     // precedents. See the same requirement applied to the independent
     // global contrary-precedent search below (isMateriallyRelevantContrary).
-    const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.finding.findingStatus) && f.substantiveCategoriesMatched >= 1);
+    // A link recorded "not_upheld" for THIS provision specifically (even on
+    // a finding whose overall findingStatus is positive elsewhere) also
+    // counts as contrary here via effStatus — see effectiveLinkStatus.
+    const contrary = findings.filter((f) => NEGATIVE_STATUSES.has(f.effStatus) && f.sf.substantiveCategoriesMatched >= 1);
     if (supporting.length === 0) {
       // This provision matched ONLY contrary findings for this scenario —
       // never silently dropped: a provision considered and NOT confirmed
@@ -559,7 +607,7 @@ export function analyzeScenario(
       if (contrary.length > 0) {
         contraryOnlyProvisionResults.push({
           provision,
-          contraryPrecedents: contrary.slice(0, 3).map(toPrecedentRef),
+          contraryPrecedents: contrary.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
           note: `No supporting precedent for this provision was identified in the currently structured corpus for this scenario. ${contrary.length} materially comparable precedent${contrary.length > 1 ? "s were" : " was"} found where this provision was considered and NOT confirmed on similar facts, so this provision may warrant caution rather than reliance, and the underlying order(s) should be examined for whether the same distinguishing factors are present here.`,
         });
       }
@@ -572,20 +620,20 @@ export function analyzeScenario(
     // higher-scoring but merely-alleged one for the same provision. Only
     // fall back to the raw top-scoring finding when every supporting finding
     // is unresolved, in which case deriveConfidence caps confidence at Low.
-    const best = supporting.find((s) => !UNRESOLVED_STATUSES.has(s.finding.findingStatus)) ?? supporting[0];
-    const { level, reasons } = deriveConfidence(best, supporting.length);
+    const best = supporting.find((s) => !UNRESOLVED_STATUSES.has(s.effStatus)) ?? supporting[0];
+    const { level, reasons } = deriveConfidence(best.sf, supporting.length, best.effStatus);
     const provisionVersions = provisionVersionsByProvisionId.get(provisionId) ?? [];
-    const upheld = findings.filter((f) => UPHELD_STATUSES.has(f.finding.findingStatus));
+    const upheld = findings.filter((f) => UPHELD_STATUSES.has(f.effStatus));
 
     provisionResults.push({
       provision,
-      whyRelevant: buildWhyRelevant(provision, best),
-      matchedFactualIngredients: unique(supporting.flatMap((s) => s.matchedIngredients)),
-      matchedByCategory: mergeMatchedByCategory(supporting),
-      supportingPrecedents: supporting.slice(0, 3).map(toPrecedentRef),
-      contraryPrecedents: contrary.slice(0, 3).map(toPrecedentRef),
-      upheldPrecedents: upheld.slice(0, 5).map(toPrecedentRef),
-      statusesSeen: unique(findings.map((f) => f.finding.findingStatus)),
+      whyRelevant: buildWhyRelevant(provision, best.sf),
+      matchedFactualIngredients: unique(supporting.flatMap((s) => s.sf.matchedIngredients)),
+      matchedByCategory: mergeMatchedByCategory(supporting.map((s) => s.sf)),
+      supportingPrecedents: supporting.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+      contraryPrecedents: contrary.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+      upheldPrecedents: upheld.slice(0, 5).map((f) => toPrecedentRef(f.sf, f.relationship)),
+      statusesSeen: unique(findings.map((f) => f.effStatus)),
       confidence: level,
       confidenceReasons: reasons,
       // Kept per-precedent (see MissingFactsForPrecedent) rather than
@@ -595,9 +643,9 @@ export function analyzeScenario(
       // as if it were a universal requirement of the provision itself.
       missingFacts: supporting
         .map((s) => ({
-          recordId: s.finding.recordId,
-          scenarioTitle: s.finding.scenarioTitle,
-          gaps: unique(s.finding.evidentiaryGaps.filter(isGenuineEvidentiaryGap)),
+          recordId: s.sf.finding.recordId,
+          scenarioTitle: s.sf.finding.scenarioTitle,
+          gaps: unique(s.sf.finding.evidentiaryGaps.filter(isGenuineEvidentiaryGap)),
         }))
         .filter((m) => m.gaps.length > 0),
       provisionVersions,
@@ -639,6 +687,7 @@ export function analyzeScenario(
     for (const sf of materiallyRelevantContrary) {
       globalContraryPrecedents.push({
         finding: sf.finding,
+        effectiveStatus: sf.finding.findingStatus,
         score: sf.score,
         matchedFactualIngredients: sf.matchedIngredients,
         matchedByCategory: sf.matchedByCategory,
@@ -657,7 +706,7 @@ export function analyzeScenario(
     for (const title of GUARDRAIL_TRIGGERS[id] ?? []) guardrailTitles.add(title);
   }
   const hasInterimOnly = provisionResults.some((pr) =>
-    pr.supportingPrecedents.some((s) => !isFinalOrderFinding(s.finding.findingStatus))
+    pr.supportingPrecedents.some((s) => !isFinalOrderFinding(s.effectiveStatus))
   );
   if (hasInterimOnly) guardrailTitles.add(ALWAYS_ON_INTERIM_GUARDRAIL);
 

@@ -96,7 +96,7 @@
     "allegedConduct": [
       "financial_statement_misstatement",
       "fictitious_sales_or_assets",
-      "price_manipulation_nexus"
+      "actual_price_manipulation"
     ],
     "evidentiaryGaps": [
       "Subsidiary-level books and consolidation support for the revenue figures",
@@ -206,7 +206,7 @@
     "allegedConduct": [
       "fictitious_sales_or_assets",
       "financial_statement_misstatement",
-      "price_manipulation_nexus"
+      "actual_price_manipulation"
     ],
     "evidentiaryGaps": [
       "Broker/exchange records for the promoter's personal derivative account",
@@ -668,7 +668,7 @@
       "audited_financial_statements"
     ],
     "allegedConduct": [
-      "price_manipulation_nexus",
+      "actual_price_manipulation",
       "financial_statement_misstatement"
     ],
     "evidentiaryGaps": [
@@ -733,7 +733,7 @@
     "allegedConduct": [
       "fictitious_sales_or_assets",
       "financial_statement_misstatement",
-      "price_manipulation_nexus"
+      "actual_price_manipulation"
     ],
     "evidentiaryGaps": [],
     "precedentOutcomeNote": "None outstanding — this allegation was resolved in the final order.",

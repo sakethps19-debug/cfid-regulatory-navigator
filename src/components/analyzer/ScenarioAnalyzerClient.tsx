@@ -302,8 +302,13 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.finding.findingStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.effectiveStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
+      if (s.effectiveStatus !== s.finding.findingStatus) {
+        lines.push(
+          `      Note: this provision's own disposition within the cited finding is recorded as "${findingStatusLabel(s.effectiveStatus)}", distinct from the finding's overall status shown above.`
+        );
+      }
       if (s.finding.precedentOutcomeNote) {
         lines.push(`      Outcome in the cited precedent: ${s.finding.precedentOutcomeNote}`);
       }
@@ -479,7 +484,7 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
         pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
-        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${supportCategory(s.finding.findingStatus)}`).join("; "),
+        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${supportCategory(s.effectiveStatus)}`).join("; "),
         pr.missingFacts.map((group) => `${group.recordId}: ${group.gaps.join(" / ")}`).join("; "),
         "",
         "",
@@ -1177,19 +1182,24 @@ export function ScenarioAnalyzerClient() {
                       {pr.supportingPrecedents.map((s) => (
                         <li key={s.finding.recordId} className="rounded-lg bg-[var(--status-green-bg)]/60 p-3 ring-1 border-[var(--status-green-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
-                            <StatusBadge status={s.finding.findingStatus} />
+                            <StatusBadge status={s.effectiveStatus} />
                             <LegalReviewBadge reviewed={s.finding.humanLegalReviewCompleted} />
                             <FindingMaturityBadge finding={s.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
                           </div>
                           <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-[var(--status-green-text)]">
-                            {supportCategory(s.finding.findingStatus)}
+                            {supportCategory(s.effectiveStatus)}
                           </p>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{s.finding.scenarioTitle}</p>
                           <PublicationWarningNote status={s.finding.publicationStatus} />
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}
                           </p>
+                          {s.effectiveStatus !== s.finding.findingStatus && (
+                            <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                              This provision&apos;s own disposition within the cited finding differs from the finding&apos;s overall status ({findingStatusLabel(s.finding.findingStatus)}).
+                            </p>
+                          )}
                           {s.additionalPrecedentFactsNotMatched.length > 0 && (
                             <p
                               className="mt-1 text-xs text-[var(--status-amber-text)]"
@@ -1233,13 +1243,18 @@ export function ScenarioAnalyzerClient() {
                         {pr.contraryPrecedents.map((c) => (
                           <li key={c.finding.recordId} className="rounded-lg bg-[var(--status-red-bg)]/60 p-3 ring-1 border-[var(--status-red-ring)]">
                             <div className="flex flex-wrap items-center gap-2">
-                              <StatusBadge status={c.finding.findingStatus} />
+                              <StatusBadge status={c.effectiveStatus} />
                               <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
                               <FindingMaturityBadge finding={c.finding} />
                               <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                             </div>
                             <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
                             <PublicationWarningNote status={c.finding.publicationStatus} />
+                            {c.effectiveStatus !== c.finding.findingStatus && (
+                              <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                                This provision&apos;s own disposition within the cited finding differs from the finding&apos;s overall status ({findingStatusLabel(c.finding.findingStatus)}).
+                              </p>
+                            )}
                             {c.distinguishingNote && (
                               <p className="mt-1 text-xs font-medium text-[var(--status-red-text)]">{c.distinguishingNote}</p>
                             )}

@@ -112,7 +112,7 @@ const F2_DIVERSION = makeFinding({
 const F3_FICTITIOUS = makeFinding({
   recordId: "STRESS-FICT-01",
   transactionTypes: ["financial_statement_disclosure", "annual_report_disclosure", "revenue_recognition"],
-  allegedConduct: ["fictitious_sales_or_revenue", "fictitious_or_nongenuine_assets", "financial_statement_misstatement", "price_manipulation_nexus", "false_business_or_corporate_announcement"],
+  allegedConduct: ["fictitious_sales_or_revenue", "fictitious_or_nongenuine_assets", "financial_statement_misstatement", "false_appearance_of_trading", "actual_price_manipulation", "false_business_or_corporate_announcement"],
   provisionLinks: [link(LODR_33.id), link(PFUTP_3_A.id), link(SEBI_12A_A.id), link(PFUTP_4_2_F.id)],
 });
 const F4_ACCOUNTING_ERROR = makeFinding({
@@ -129,7 +129,7 @@ const F5_NONCOOP = makeFinding({
 });
 const F6_MANIPULATION = makeFinding({
   recordId: "STRESS-MANIP-01",
-  allegedConduct: ["price_manipulation_nexus", "false_business_or_corporate_announcement"],
+  allegedConduct: ["false_appearance_of_trading", "non_genuine_dealing_or_ownership", "actual_price_manipulation", "investor_inducement_to_trade", "false_business_or_corporate_announcement"],
   provisionLinks: [link(PFUTP_4_2_A.id), link(PFUTP_4_2_E.id), link(PFUTP_3_A.id), link(SEBI_12A_A.id)],
 });
 const F7_ALLOTMENT = makeFinding({

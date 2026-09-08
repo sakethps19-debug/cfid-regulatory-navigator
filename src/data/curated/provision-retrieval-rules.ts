@@ -1,48 +1,46 @@
-// P0 provision-precision remediation (100-scenario CFID-officer stress test).
+// P0 provision-precision remediation (first pass: 100-scenario stress test;
+// second pass: independent post-remediation review, 120-scenario blind
+// suite — see docs/provision-gating-remediation-v2.md for the full
+// clause-by-clause matrix and reasoning behind every group below).
 //
-// CONFIRMED ROOT CAUSE: every one of the 498 finding_provisions rows linking
-// a scenario finding to a PFUTP or SEBI Act 12A provision has an EMPTY
-// justifying_tags array (re-queried live: 100% of 11+41+46+46+50+2+1+1+23+
-// 42+34+36+51+57+57 = 498 links across PFUTP-3-a/b/c/d, PFUTP-4-1,
-// PFUTP-4-2-a/b/c/e/f/k/r and SEBI-ACT-12A-a/b/c). engine.ts treats an empty
-// justifyingTags array as "this link is universal" (see the doc comment on
-// ScenarioFinding.provisionLinks) — a deliberate design for provisions that
-// genuinely are broad and apply across many fact patterns. PFUTP and SEBI
-// Act 12A are NOT such provisions: they require a specific securities
-// dealing/issue nexus and a specific deceptive/fraudulent-device nexus, not
-// merely "this finding also happens to involve some other kind of corporate
-// wrongdoing". Because a single historical finding record routinely bundles
-// several distinct allegations (e.g. an undisclosed RPT together with a
-// separate fictitious-sales scheme, or a fund diversion together with a
-// separately-alleged PFUTP violation), the current engine lets ANY scenario
-// that matches that finding on ANY of its bundled tags pull in the FULL
-// provision bundle, including PFUTP and SEBI Act 12A clauses that had
-// nothing to do with what the present scenario actually describes.
+// FIRST-PASS ROOT CAUSE: every one of the 498 finding_provisions rows
+// linking a scenario finding to a PFUTP or SEBI Act 12A provision has an
+// EMPTY justifying_tags array, so engine.ts's per-link gate treated every
+// one as universal. Fixed by an independent, provision-level gate applied
+// in addition to (never instead of) the per-link justifyingTags check.
 //
-// Retroactively curating a specific justifyingTags value for all 498
-// individual links against each finding's own source order is real,
-// necessary follow-up legal-review work (tracked separately — see
-// docs/provision-gating-remediation.md, "Follow-up: per-link justifying-tags
-// backfill") but is not, by itself, a sufficient or timely fix: it would
-// leave the application returning legally indefensible PFUTP/SEBI Act 12A
-// candidates for every scenario until each of those 498 rows is individually
-// reviewed against its source order. This file adds an independent,
-// PROVISION-LEVEL gate that applies in addition to (never instead of) the
-// existing per-link justifyingTags check, so that a provision known to
-// require a specific nexus can never be returned for a scenario that does
-// not state facts satisfying that nexus — regardless of what any individual
-// finding-provision link's justifyingTags currently says. See
-// applyProvisionRetrievalGate in engine.ts for where this is enforced.
+// SECOND-PASS DEFECT (this file): the first-pass gate itself still relied
+// on ONE coarse tag, price_manipulation_nexus, to satisfy multiple
+// textually distinct PFUTP 4(2) clauses, and on plain "requireAllOfGroups"
+// bag-of-tags matching that let two UNRELATED facts anywhere in a long
+// scenario each satisfy one independent group without ever being stated as
+// connected to each other (e.g. "an undisclosed RPT" + a wholly separate
+// "the share price genuinely rose on unrelated news" would previously have
+// satisfied both a dealing-nexus group and a fraud-conduct group). Two
+// structural fixes:
+//
+// 1. price_manipulation_nexus split into four narrower conduct tags (see
+//    concept-tags.ts): false_appearance_of_trading, non_genuine_dealing_or_
+//    ownership, actual_price_manipulation, investor_inducement_to_trade —
+//    each tracking one statutory predicate, not a blend.
+// 2. passesRetrievalGate now requires, for any rule with 2+ groups, that at
+//    least one matching concept from each group be CONNECTED — the same
+//    sentence in the entered free text, or a dropdown signal (a deliberate,
+//    explicit officer assertion about the scenario as a whole) — not
+//    merely present somewhere in the scenario. See DetectedConcept.
+//    sentenceIndices (conceptExtraction.ts) for how that is tracked.
+
+import type { DetectedConcept } from "@/lib/matching/conceptExtraction";
 
 /** At least one concept-tag id from EACH inner group must be present among
- * the query's effective concepts (see buildEffectiveScenarioConcepts) for
- * the gate to pass. A single-group rule is a plain "require any of these";
- * two or more groups is a plain "require one from each" (i.e. requireAll
- * composed of requireAny groups) — collapsed into one field rather than
- * three separately-named ones (requireAny/requireAll/excludeIf) because
- * every rule actually needed here is expressible as this one shape, and a
- * generic boolean rule language would be more machinery than the fact
- * pattern warrants. */
+ * the query's effective concepts (see buildEffectiveScenarioConcepts), AND
+ * — for a rule with 2+ groups — at least one such match per group must be
+ * CONNECTED (same sentence, or a dropdown signal) to a match in every other
+ * group. A single-group rule is a plain "require any of these"; it needs no
+ * connectivity check since there is nothing to connect. Collapsed into one
+ * field rather than three separately-named ones (requireAny/requireAll/
+ * excludeIf) because every rule actually needed here is expressible as this
+ * one shape. */
 export interface ProvisionRetrievalRule {
   provisionId: string;
   requireAllOfGroups: string[][];
@@ -57,45 +55,55 @@ export interface ProvisionRetrievalRule {
 // ----- Reusable concept-tag groups -----
 //
 // Composed entirely from the existing curated CONCEPT_TAGS vocabulary
-// (src/data/curated/concept-tags.ts) — no new tag ids are introduced here.
-// Each group name below corresponds to one of the "nexus" categories the
-// audit prompt asked to be distinguished.
+// (src/data/curated/concept-tags.ts) — no new tag ids are introduced here
+// beyond the price_manipulation_nexus split already made in that file.
 
-/** A genuine securities issue, allotment or trading/dealing fact — the
- * provision families gated here are, on their own text, expressly limited
- * to conduct "in connection with the issue, purchase or sale of securities"
- * (PFUTP 3(b)/(c)/(d), SEBI Act 12A) or to dealing in securities as such
- * (PFUTP 3(a), 4(1)). An ordinary corporate transaction (an RPT, a vendor
- * purchase, an internal fund transfer) is not itself a securities dealing. */
-const SECURITIES_ISSUE_OR_DEALING_NEXUS = [
+/** Evidence a securities TRANSACTION of some kind actually occurred —
+ * either an issue/allotment event, or actual trading/dealing conduct
+ * (which necessarily implies dealing occurred). An ordinary corporate
+ * transaction (an RPT, a vendor purchase, an internal fund transfer) is
+ * not itself a securities dealing, and is deliberately excluded. */
+const SECURITIES_DEALING_OR_ISSUE_NEXUS = [
   "preferential_allotment",
   "rights_issue",
   "sham_preferential_allotment",
   "unsupported_share_allotment_consideration",
-  "price_manipulation_nexus", // trading in securities is inherent to this tag
+  "false_appearance_of_trading",
+  "actual_price_manipulation",
+  "non_genuine_dealing_or_ownership",
 ];
 
-/** Conduct that is itself deceptive or fraudulent in character, as opposed
- * to a bare procedural, governance or accounting-classification lapse. RPT
- * non-disclosure and Audit Committee/Compliance Officer deficiencies are
- * deliberately NOT included here: those are governance/disclosure lapses,
- * not fraud on their own facts, and are gated by their own home
- * instrument's provisions (LODR etc.), never by PFUTP/SEBI Act 12A. */
-const DECEPTIVE_OR_FRAUDULENT_CONDUCT = [
+/** False, fictitious or misrepresented CONTENT — what was said or recorded,
+ * as opposed to a trading act. Never includes a trading-conduct tag: a
+ * synchronized-trading fact is not itself "information", and conflating
+ * the two here would silently let trading conduct satisfy the "false
+ * information" predicate 4(2)(f)/(k)/(r) each specifically require. */
+const FALSE_INFORMATION_CONTENT = [
   "fictitious_sales_or_revenue",
   "fictitious_or_nongenuine_assets",
   "financial_statement_misstatement",
   "false_business_or_corporate_announcement",
+  "related_party_misrepresentation",
   "sham_preferential_allotment",
   "unsupported_share_allotment_consideration",
-  "price_manipulation_nexus",
-  "related_party_misrepresentation",
 ];
 
-/** The channel through which information reaches investors/the market —
- * required, together with DECEPTIVE_OR_FRAUDULENT_CONDUCT, for the PFUTP
- * 4(2) clauses concerned specifically with publishing/disseminating false
- * information (as opposed to the trading-conduct clauses). */
+/** Any of the three trading/price-conduct predicates — used where a clause
+ * needs "some dealing/trading act occurred", without requiring the MORE
+ * specific one of the three that 4(2)(a)/(b)/(e) each individually gate on
+ * below. */
+const TRADING_CONDUCT_ANY = ["false_appearance_of_trading", "actual_price_manipulation", "non_genuine_dealing_or_ownership"];
+
+/** Fraudulent or deceptive conduct in the broadest sense the general
+ * anti-fraud clauses (PFUTP 3(a)-(d)/4(1), SEBI Act 12A(a)-(c)) require:
+ * either false/fictitious content, or trading conduct that is itself the
+ * deceptive act (wash trading, price manipulation). Governance/disclosure
+ * lapses (RPT non-disclosure, Audit Committee/Compliance Officer
+ * deficiencies) are deliberately excluded — those are gated by their own
+ * home instrument's provisions, never by PFUTP/SEBI Act 12A. */
+const FRAUDULENT_OR_DECEPTIVE_CONDUCT = [...FALSE_INFORMATION_CONTENT, ...TRADING_CONDUCT_ANY];
+
+/** The channel through which information reaches investors/the market. */
 const INVESTOR_COMMUNICATION_CHANNEL = [
   "financial_statement_disclosure",
   "consolidated_financials",
@@ -105,136 +113,118 @@ const INVESTOR_COMMUNICATION_CHANNEL = [
   "business_segment_disclosure",
 ];
 
-/** Actual trading/price conduct — synchronized/wash trades, artificial
- * price movement, no genuine change in beneficial ownership, inducement to
- * trade. The only curated tag presently capturing this nexus; PFUTP
- * 4(2)(a)/(b)/(e) are each, on their own text, specifically about trading
- * or price conduct rather than general fraud, so all three share this one
- * gate. See docs/provision-gating-remediation.md for the known limitation
- * that this collapses three textually-distinct sub-clauses onto one signal
- * pending richer curated vocabulary. */
-const TRADING_OR_PRICE_CONDUCT = ["price_manipulation_nexus"];
-
-const DEALING_CONNECTED_FALSE_INFORMATION = [
-  "false_business_or_corporate_announcement",
-  "fictitious_sales_or_revenue",
-  "financial_statement_misstatement",
-];
-
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "PFUTP-3-a",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 3(a) prohibits buying, selling or otherwise dealing in securities in a fraudulent manner. It requires both a securities issue/allotment/dealing fact and a fraudulent or deceptive act connected to that dealing.",
+      "Regulation 3(a) prohibits buying, selling or otherwise dealing in securities in a fraudulent manner. It requires a securities transaction (an issue/allotment, or actual trading conduct) connected to a fraudulent or deceptive act.",
   },
   {
     provisionId: "PFUTP-3-b",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 3(b) requires a manipulative or deceptive device or contrivance used in connection with the issue, purchase or sale of a listed or to-be-listed security. It requires both a securities issue/dealing fact and a deceptive-device fact.",
+      "Regulation 3(b) requires a manipulative or deceptive device or contrivance used in connection with the issue, purchase or sale of a listed or to-be-listed security. It requires a securities transaction connected to a deceptive-device fact.",
   },
   {
     provisionId: "PFUTP-3-c",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 3(c) requires a device, scheme or artifice to defraud in connection with dealing in or the issue of listed (or to-be-listed) securities. It requires both a securities issue/dealing fact and a fraudulent-scheme fact.",
+      "Regulation 3(c) requires a device, scheme or artifice to defraud in connection with dealing in or the issue of listed (or to-be-listed) securities. It requires a securities transaction connected to a fraudulent-scheme fact.",
   },
   {
     provisionId: "PFUTP-3-d",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 3(d) requires an act, practice or course of business operating as a fraud or deceit on any person, in connection with dealing in or the issue of listed (or to-be-listed) securities. It requires both a securities issue/dealing fact and a fraud/deceit fact.",
+      "Regulation 3(d) requires an act, practice or course of business operating as a fraud or deceit on any person, in connection with dealing in or the issue of listed (or to-be-listed) securities. It requires a securities transaction connected to a fraud/deceit fact.",
   },
   {
     provisionId: "PFUTP-4-1",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. Same minimum facts: a securities issue/dealing fact and a fraudulent or deceptive conduct fact.",
+      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. Same minimum facts: a securities transaction connected to fraudulent or deceptive conduct.",
   },
   {
     provisionId: "PFUTP-4-2-a",
-    requireAllOfGroups: [TRADING_OR_PRICE_CONDUCT],
+    requireAllOfGroups: [["false_appearance_of_trading"]],
     explanation:
-      "Regulation 4(2)(a) is specifically about knowingly creating a false or misleading appearance of trading. It requires an actual trading/price-manipulation fact: fictitious accounting or an undisclosed transaction, without more, does not satisfy it.",
+      "Regulation 4(2)(a) is specifically about knowingly creating a false or misleading appearance of trading (e.g. synchronized or wash trades). It requires that specific fact, not artificial price or ownership facts alone, and not fictitious accounting or an undisclosed transaction without more.",
   },
   {
     provisionId: "PFUTP-4-2-b",
-    requireAllOfGroups: [TRADING_OR_PRICE_CONDUCT],
+    requireAllOfGroups: [TRADING_CONDUCT_ANY],
     explanation:
-      "Regulation 4(2)(b) is specifically about dealing in securities involving an artificial price. It requires an actual trading/price-manipulation fact.",
+      "Regulation 4(2)(b) is dealing in securities involving an artificial price. It requires an actual trading/dealing act connected to an artificial-price, false-appearance-of-trading, or non-genuine-ownership fact.",
   },
   {
     provisionId: "PFUTP-4-2-c",
-    requireAllOfGroups: [TRADING_OR_PRICE_CONDUCT, DEALING_CONNECTED_FALSE_INFORMATION],
+    requireAllOfGroups: [TRADING_CONDUCT_ANY, FALSE_INFORMATION_CONTENT],
     explanation:
-      "Regulation 4(2)(c) requires a person dealing in securities who circulates or disseminates rumours or information not based on fact. It requires both a trading fact and a false-information fact.",
+      "Regulation 4(2)(c) requires a person dealing in securities who circulates or disseminates rumours or information not based on fact. It requires a trading/dealing act connected to a false-information fact.",
   },
   {
     provisionId: "PFUTP-4-2-e",
-    requireAllOfGroups: [TRADING_OR_PRICE_CONDUCT],
+    requireAllOfGroups: [["actual_price_manipulation"]],
     explanation:
-      "Regulation 4(2)(e) is an act or omission amounting to manipulation of the security's price. It requires an actual trading/price-manipulation fact.",
+      "Regulation 4(2)(e) is an act or omission amounting to manipulation of the security's price. It requires that specific fact, an actual or alleged price effect, not merely a trading pattern or ownership fact without a stated price consequence.",
   },
   {
     provisionId: "PFUTP-4-2-f",
-    requireAllOfGroups: [DECEPTIVE_OR_FRAUDULENT_CONDUCT, INVESTOR_COMMUNICATION_CHANNEL],
+    requireAllOfGroups: [FALSE_INFORMATION_CONTENT, INVESTOR_COMMUNICATION_CHANNEL],
     explanation:
-      "Regulation 4(2)(f) is publishing or reporting untrue securities-related information. It requires both a fraudulent/false-accounting fact and a fact showing that information reached investors/the market through a specific communication channel (financial statements, annual report, corporate announcement, etc.).",
+      "Regulation 4(2)(f) is publishing or reporting untrue securities-related information. It requires false/fictitious content connected to a fact showing it reached investors/the market through a specific communication channel (financial statements, annual report, corporate announcement, etc.); an internal misstatement never published or reported does not, by itself, satisfy it.",
   },
   {
     provisionId: "PFUTP-4-2-k",
-    requireAllOfGroups: [DECEPTIVE_OR_FRAUDULENT_CONDUCT, INVESTOR_COMMUNICATION_CHANNEL],
+    // Broader second group than 4(2)(f): the statutory text is
+    // "disseminating false/misleading information LIKELY TO INFLUENCE
+    // INVESTORS" - an explicit inducement/influence qualifier 4(2)(f)'s
+    // bare "publishing/reporting" wording lacks - so either a communication
+    // channel OR an explicit inducement fact satisfies this clause's own
+    // independent predicate, not a mechanical copy of 4(2)(f)'s gate.
+    requireAllOfGroups: [FALSE_INFORMATION_CONTENT, [...INVESTOR_COMMUNICATION_CHANNEL, "investor_inducement_to_trade"]],
     explanation:
-      "Regulation 4(2)(k) is disseminating false or misleading information likely to influence investors. It requires both a false-information fact and a fact showing an investor-facing communication channel.",
+      "Regulation 4(2)(k) is disseminating false or misleading information likely to influence investors, an explicit investor-influence qualifier 4(2)(f) lacks. It requires false/fictitious content connected to either a communication channel or an explicit investor-inducement fact.",
   },
   {
     provisionId: "PFUTP-4-2-r",
-    // Deliberately DEALING_CONNECTED_FALSE_INFORMATION, not the broader
-    // DECEPTIVE_OR_FRAUDULENT_CONDUCT (which includes price_manipulation_nexus
-    // itself) - 4(2)(r) requires false INFORMATION distinct from the trading
-    // conduct it induces, not trading manipulation alone counted twice.
-    requireAllOfGroups: [DEALING_CONNECTED_FALSE_INFORMATION, TRADING_OR_PRICE_CONDUCT],
+    requireAllOfGroups: [FALSE_INFORMATION_CONTENT, ["investor_inducement_to_trade"]],
     explanation:
-      "Regulation 4(2)(r) is knowingly planting false or misleading information that induces trades. It requires both a false-information fact and a trading-inducement fact.",
+      "Regulation 4(2)(r) is knowingly planting false or misleading information that induces trades. It requires false/fictitious content connected to an explicit trading-inducement fact; trading manipulation conduct alone, without a stated false-information fact distinct from that conduct, does not satisfy it.",
   },
   {
     provisionId: "SEBI-ACT-12A-a",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
       "Section 12A(a) mirrors PFUTP Regulation 3(b): a manipulative or deceptive device used in connection with the issue, purchase or sale of securities. Same minimum facts.",
   },
   {
     provisionId: "SEBI-ACT-12A-b",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
       "Section 12A(b) mirrors PFUTP Regulation 3(c): a device, scheme or artifice to defraud in connection with the issue of, or dealing in, securities. Same minimum facts.",
   },
   {
     provisionId: "SEBI-ACT-12A-c",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
       "Section 12A(c) mirrors PFUTP Regulation 3(d): an act, practice or course of business operating as fraud or deceit, in connection with the issue of or dealing in securities. Same minimum facts.",
   },
   // Defense in depth for two pre-split, legacy bundled ids that no longer
   // exist in the live database (confirmed live: legal_provisions only has
   // the split PFUTP-3-a/b/c/d and SEBI-ACT-12A-a/b/c rows) but still appear
-  // in the pilot-era generated fixture JSON (src/data/generated/
-  // scenarioFindings.json, predating the provision-split work) that
-  // tests/fixtures.ts loads. Gated identically to their split counterparts
-  // so this remediation is not silently bypassed for any test, or any
-  // future data path, still using the old bundled id.
+  // in the pilot-era generated fixture JSON that tests/fixtures.ts loads.
   {
     provisionId: "SEBI-ACT-12A",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Section 12A prohibits manipulative/deceptive devices and fraudulent schemes in connection with the issue of or dealing in securities. Requires both a securities issue/dealing fact and a deceptive or fraudulent conduct fact.",
+      "Section 12A prohibits manipulative/deceptive devices and fraudulent schemes in connection with the issue of or dealing in securities. Requires a securities transaction connected to fraudulent or deceptive conduct.",
   },
   {
     provisionId: "PFUTP-3-a-d",
-    requireAllOfGroups: [SECURITIES_ISSUE_OR_DEALING_NEXUS, DECEPTIVE_OR_FRAUDULENT_CONDUCT],
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 3 (clauses (a)-(d)) prohibits fraudulent or deceptive conduct in connection with dealing in or the issue of securities. Requires both a securities issue/dealing fact and a deceptive or fraudulent conduct fact.",
+      "Regulation 3 (clauses (a)-(d)) prohibits fraudulent or deceptive conduct in connection with dealing in or the issue of securities. Requires a securities transaction connected to fraudulent or deceptive conduct.",
   },
 ];
 
@@ -244,11 +234,37 @@ export function retrievalRuleForProvision(provisionId: string): ProvisionRetriev
   return RULES_BY_PROVISION_ID.get(provisionId);
 }
 
-/** True if the query's effective concept ids satisfy every group of the
- * given rule (at least one id per group). No rule for this provision =
- * ungated (existing behavior preserved for every provision outside the
- * broad-securities-fraud family this pass targets). */
-export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, detectedIds: Set<string>): boolean {
+/** Two concepts are "connected" for gate purposes if they share a sentence
+ * in the entered free text, or if either came from a dropdown signal
+ * (sentenceIndices: [] — a deliberate, explicit officer assertion about the
+ * scenario as a whole, not free text whose proximity to another fact is
+ * otherwise unknown). See DetectedConcept.sentenceIndices. */
+function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
+  if (a.sentenceIndices.length === 0 || b.sentenceIndices.length === 0) return true;
+  return a.sentenceIndices.some((i) => b.sentenceIndices.includes(i));
+}
+
+/** True if the query's effective concepts satisfy every group of the given
+ * rule (at least one matching concept per group) AND, for a rule with 2+
+ * groups, at least one matching pair (one concept per group) is connected
+ * (see isConnected) — never merely both present anywhere in the scenario.
+ * A rule with only one group needs no connectivity check. No rule for this
+ * provision = ungated (existing behavior preserved for every provision
+ * outside the broad-securities-fraud family this pass targets). */
+export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): boolean {
   if (!rule) return true;
-  return rule.requireAllOfGroups.every((group) => group.some((id) => detectedIds.has(id)));
+  const matchesByGroup = rule.requireAllOfGroups.map((group) => effectiveConcepts.filter((c) => group.includes(c.id)));
+  if (matchesByGroup.some((matches) => matches.length === 0)) return false;
+  if (matchesByGroup.length < 2) return true;
+  // Current rules never exceed two groups; connectivity is checked pairwise
+  // across every group boundary (0-1, 1-2, ...) so this generalizes safely
+  // if a future rule adds a third group, without needing every pair across
+  // the whole rule to be mutually connected.
+  for (let i = 0; i < matchesByGroup.length - 1; i++) {
+    const left = matchesByGroup[i];
+    const right = matchesByGroup[i + 1];
+    const connected = left.some((a) => right.some((b) => isConnected(a, b)));
+    if (!connected) return false;
+  }
+  return true;
 }

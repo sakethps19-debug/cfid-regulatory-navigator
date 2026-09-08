@@ -12,11 +12,15 @@
 //   fictitious_sales_or_assets + circular_fund_movement; corrected to
 //   price_manipulation_nexus + false_business_or_corporate_announcement
 //   (mirroring the near-identical DAIL-01 fact pattern already tagged that
-//   way in the corpus).
+//   way in the corpus). Second-order remediation (2026) further split
+//   price_manipulation_nexus into false_appearance_of_trading +
+//   actual_price_manipulation for LSIL-01 specifically, matching its
+//   synchronized-trading conduct AND its cited PFUTP 4(2)(a)/(b)/(e).
 // - ROHL-01 (upheld): a pure consolidation-classification dispute (associate
 //   vs. subsidiary) -- no allegation any sale or asset was fabricated. Was
 //   tagged fictitious_sales_or_assets; corrected to just
-//   financial_statement_misstatement + price_manipulation_nexus.
+//   financial_statement_misstatement + price_manipulation_nexus (later
+//   actual_price_manipulation, per the same second-order split).
 // - FRL-01 (partly_upheld): the order's own text says "core fraud and
 //   diversion charges not established" -- only LODR disclosure lapses were
 //   confirmed. Was tagged fund_diversion; corrected to
@@ -117,7 +121,7 @@ describe("Corpus conduct-tag audit corrections", () => {
     const lsil01 = makeFinding({
       recordId: "LSIL-01",
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["price_manipulation_nexus", "false_business_or_corporate_announcement"],
+      allegedConduct: ["false_appearance_of_trading", "actual_price_manipulation", "false_business_or_corporate_announcement"],
       provisionIds: [fraudProvision.id],
     });
     const result = analyzeScenario({ freeText: "The company recorded fictitious sales." }, [lsil01], [fraudProvision], []);
@@ -130,7 +134,7 @@ describe("Corpus conduct-tag audit corrections", () => {
     const lsil01 = makeFinding({
       recordId: "LSIL-01",
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["price_manipulation_nexus", "false_business_or_corporate_announcement"],
+      allegedConduct: ["false_appearance_of_trading", "actual_price_manipulation", "false_business_or_corporate_announcement"],
       provisionIds: [fraudProvision.id],
     });
     const result = analyzeScenario(
