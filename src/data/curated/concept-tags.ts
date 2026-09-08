@@ -19,7 +19,12 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "financial_statement_disclosure",
     kind: "transaction",
     label: "Financial statement disclosure",
-    synonyms: ["financial statement", "financial statements", "disclosure of financials", "published financials", "annual accounts"],
+    // "financial results" added (non-PFUTP provision-precision remediation
+    // pass): LODR Regulation 33's own statutory subject is "financial
+    // results" -- the term this tag's synonyms omitted entirely, silently
+    // under-detecting the channel fact Regulation 33/48's own retrieval
+    // gate requires (provision-retrieval-rules.ts).
+    synonyms: ["financial statement", "financial statements", "disclosure of financials", "published financials", "annual accounts", "financial results", "quarterly results", "annual results"],
   },
   {
     id: "consolidated_financials",
@@ -145,6 +150,17 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     kind: "transaction",
     label: "Annual report disclosure",
     synonyms: ["annual report", "director's report", "directors report", "statement on impact of audit qualifications", "audit qualification disclosure"],
+  },
+  // Added for the non-PFUTP provision-precision remediation pass: LODR
+  // Regulation 30 requires an actual material-event/information-disclosure
+  // fact, not merely that wrongdoing occurred elsewhere in the scenario
+  // (see provision-retrieval-rules.ts). No existing tag captured this
+  // specific channel/subject-matter fact.
+  {
+    id: "material_event_disclosure",
+    kind: "transaction",
+    label: "Material event / price-sensitive information disclosure",
+    synonyms: ["material event", "material information", "material development", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
   },
   {
     id: "business_segment_disclosure",
@@ -310,6 +326,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses"] },
   { id: "non_cooperation_with_investigation", kind: "conduct", label: "Non-cooperation with investigation", synonyms: ["non-cooperation", "did not cooperate", "failed to produce records", "failed to furnish", "failed to furnish records", "failed to furnish documents", "failed to furnish accounting records", "did not furnish", "did not respond to summons", "denied access", "withheld", "refused to share", "refused to hand over"] },
   { id: "related_party_misrepresentation", kind: "conduct", label: "Related-party misrepresentation", synonyms: ["misrepresented related party", "false rpt disclosure", "rpt not genuine"] },
+  // Added for the non-PFUTP provision-precision remediation pass: LODR
+  // Regulation 23(2)/23(4) each require a stated APPROVAL failure (Audit
+  // Committee, or shareholder), distinct from a bare non-disclosure fact —
+  // an RPT that was fully disclosed but never put to the required approval
+  // step is a real, common fact pattern the existing non_disclosure_of_
+  // information tag does not capture (see provision-retrieval-rules.ts).
+  {
+    id: "rpt_approval_lapse",
+    kind: "conduct",
+    label: "Related-party transaction approval lapse",
+    synonyms: ["without prior audit committee approval", "without audit committee approval", "without the required shareholder approval", "without shareholder approval", "no audit committee approval", "no shareholder approval", "not approved by the audit committee", "not approved by shareholders", "without the required audit committee approval"],
+  },
   { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised"] },
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
