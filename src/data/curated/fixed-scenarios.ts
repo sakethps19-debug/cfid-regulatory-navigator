@@ -39,13 +39,19 @@
 // order) — see the finalReport's "legal mapping uncertainty" section for
 // the specific caveats.
 //
-// Two sub-clauses proposed during scoping do not exist as their own row in
-// the live provisions corpus and have been omitted rather than invented:
-// LODR Regulation 18(2) (only 18(1)(d) and 18(3)-with-Schedule-II exist as
-// separate rows) and LODR Regulation 6(1A) (only 6(1), 6(2)(a) and 6(2)(c)
-// exist as separate rows; 6(1A)'s subject matter — filling a Compliance
-// Officer vacancy within the prescribed period — is not currently indexed
-// as its own citable provision).
+// LODR Regulation 18(2) and Regulation 6(1A) were initially omitted from
+// this file because no legal_provisions row existed for either, even
+// though the Seacoast final order's Table 52 (row 10: "Failure to convene
+// the AC meetings"; row 11: "Failure to fill the vacancy of compliance
+// officer in due time...") expressly relies on both and upholds both
+// findings. A missing corpus row is a data-completeness defect, not a
+// reason to drop a legally applicable provision from this taxonomy —
+// migration 0017_lodr_18_2_and_6_1a_provisions.sql adds both as canonical
+// legal_provisions rows (verified directly against SEBI's official
+// consolidated LODR Regulations text; see that migration's comments for
+// the exact source and for why Regulation 18(2) is modelled as a single
+// id whose subject documents its internal (a)/(b)/(c) structure rather
+// than as a separate "18(2)(a)" id), so both now resolve normally here.
 
 export interface FixedScenario {
   /** Stable slug id, used in the UI and in tests. Never reused/repurposed. */
@@ -161,15 +167,15 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     id: "audit-committee-governance-irregularities",
     name: "Audit Committee / Corporate Governance Irregularities",
     explanation:
-      "Improper constitution of the Audit Committee; failure to convene Audit Committee meetings; the Audit Committee failing to discharge its responsibilities; directors or independent directors failing their governance duties; a failure of Board/Audit-Committee oversight; signing or certifying compliance despite known material deficiencies; or other material Board/Audit-Committee governance failures. The exact provision engaged depends on the specific governance failure at issue — not every provision listed here applies to every governance lapse.",
-    provisionIds: ["LODR-16-1-b", "LODR-17-8", "LODR-18-1-d", "LODR-18-3-schedule-II", "LODR-4-2-f"],
+      "Improper constitution of the Audit Committee; failure to convene Audit Committee meetings; the Audit Committee failing to discharge its responsibilities; directors or independent directors failing their governance duties; a failure of Board/Audit-Committee oversight; signing or certifying compliance despite known material deficiencies; or other material Board/Audit-Committee governance failures. The exact provision engaged depends on the specific governance failure at issue — not every provision listed here applies to every governance lapse. A bare Audit Committee meeting-frequency lapse is a governance/procedural matter, not automatically a PFUTP fraud finding, even where PFUTP provisions also appeared in a particular order's broader factual matrix.",
+    provisionIds: ["LODR-16-1-b", "LODR-17-8", "LODR-18-1-d", "LODR-18-2", "LODR-18-3-schedule-II", "LODR-4-2-f"],
   },
   {
     id: "compliance-officer-irregularities",
     name: "Compliance Officer Irregularities",
     explanation:
       "Failure to appoint a Compliance Officer; failure to fill a Compliance Officer vacancy within the prescribed period; appointment of an ineligible or non-compliant person as Compliance Officer; the Compliance Officer failing prescribed responsibilities; or failure to ensure regulatory conformity. The exact provision text/version depends on when the conduct occurred — an earlier version of the LODR Regulations may govern conduct predating a later amendment.",
-    provisionIds: ["LODR-6-1", "LODR-6-2-a", "LODR-6-2-c"],
+    provisionIds: ["LODR-6-1", "LODR-6-1A", "LODR-6-2-a", "LODR-6-2-c"],
   },
   {
     id: "fraudulent-manipulative-conduct-broad",

@@ -61,11 +61,13 @@ const TEST_PROVISIONS: LegalProvision[] = [
   provision("LODR-16-1-b", "LODR Regulations, 2015", "Regulation 16(1)(b)", "Definition of independent director."),
   provision("LODR-17-8", "LODR Regulations, 2015", "Regulation 17(8)", "CEO/CFO compliance certification."),
   provision("LODR-18-1-d", "LODR Regulations, 2015", "Regulation 18(1)(d)", "Audit Committee chairperson to be an independent director."),
+  provision("LODR-18-2", "LODR Regulations, 2015", "Regulation 18(2)", "Audit Committee meeting-conduct requirements, including (a) meeting at least four times a year with no more than 120 days between meetings."),
   provision("LODR-18-3-schedule-II", "LODR Regulations, 2015", "Regulation 18(3) read with Part C of Schedule II", "Role and responsibilities of the Audit Committee."),
   provision("LODR-4-2-f", "LODR Regulations, 2015", "Regulation 4(2)(f)", "Responsibilities of the board of directors as part of disclosure/governance principles."),
   provision("LODR-23-2", "LODR Regulations, 2015", "Regulation 23(2)", "Prior Audit Committee approval of related party transactions."),
   provision("LODR-SCHEDULE-V-A-1", "LODR Regulations, 2015", "Schedule V, Part A, Clause 1", "Disclosure of related-party transactions in the annual report."),
   provision("LODR-6-1", "LODR Regulations, 2015", "Regulation 6(1)", "Compliance Officer to be whole-time KMP."),
+  provision("LODR-6-1A", "LODR Regulations, 2015", "Regulation 6(1A)", "Any vacancy in the office of the Compliance Officer shall be filled at the earliest, not later than three months from the date of the vacancy."),
   provision("LODR-6-2-a", "LODR Regulations, 2015", "Regulation 6(2)(a)", "Compliance Officer duty (a)."),
   provision("LODR-6-2-c", "LODR Regulations, 2015", "Regulation 6(2)(c)", "Compliance Officer duty (c)."),
   provision("IND-AS-24", "Indian Accounting Standards", "Ind AS 24", "Related Party Disclosures."),
@@ -224,6 +226,61 @@ describe("Fixed Scenario Analysis — negative controls", () => {
     for (const s of FIXED_SCENARIOS) {
       expect(s.explanation.toLowerCase()).not.toContain("violations committed");
       expect(s.explanation.toLowerCase()).not.toContain("provisions violated");
+    }
+  });
+});
+
+describe("Fixed Scenario Analysis — corpus-completeness correction (post-ae8e33c review)", () => {
+  it("Compliance Officer Irregularities includes Regulation 6(1A) (vacancy not filled within prescribed period)", () => {
+    const co = scenarioById("compliance-officer-irregularities");
+    expect(co.provisionIds).toContain("LODR-6-1A");
+    const resolved = resolveFixedScenario(co, TEST_PROVISIONS);
+    const allIds = resolved.provisionGroups.flatMap((g) => g.items.map((p) => p.id));
+    expect(allIds).toContain("LODR-6-1A");
+    expect(resolved.unresolvedProvisionIds).not.toContain("LODR-6-1A");
+  });
+
+  it("Audit Committee / Corporate Governance Irregularities includes the correctly modelled Regulation 18(2) requirement", () => {
+    const ac = scenarioById("audit-committee-governance-irregularities");
+    expect(ac.provisionIds).toContain("LODR-18-2");
+    const resolved = resolveFixedScenario(ac, TEST_PROVISIONS);
+    const item = resolved.provisionGroups.flatMap((g) => g.items).find((p) => p.id === "LODR-18-2");
+    expect(item).toBeDefined();
+    expect(item!.provisionNumber).toBe("Regulation 18(2)");
+    // A basic AC-meeting lapse must not silently pull in PFUTP fraud provisions for this scenario.
+    expect(ac.provisionIds.some((id) => id.startsWith("PFUTP-"))).toBe(false);
+  });
+
+  it("6(1A) and 18(2) are both live-corpus-shaped resolvable and correctly classified (not excluded categories)", () => {
+    for (const id of ["LODR-6-1A", "LODR-18-2"]) {
+      expect(TEST_PROVISIONS.some((p) => p.id === id)).toBe(true);
+      expect(EXCLUDED_LEGAL_FUNCTIONS).not.toContain(legalFunctionForProvision(id));
+    }
+  });
+
+  it("missing database coverage cannot silently drop a curated provision without a visible signal", () => {
+    // Simulate the exact defect this correction fixes: a curated id the
+    // scenario legally requires, but that is absent from the resolved
+    // corpus fixture. resolveFixedScenario must record it in
+    // unresolvedProvisionIds rather than just omitting it with no trace —
+    // FixedScenarioAnalyzer.tsx renders a visible warning whenever this is
+    // non-empty (asserted structurally below via source inspection, since
+    // this is a plain data-layer test with no DOM renderer available).
+    const incompleteFixture = TEST_PROVISIONS.filter((p) => p.id !== "LODR-6-1A");
+    const resolved = resolveFixedScenario(scenarioById("compliance-officer-irregularities"), incompleteFixture);
+    expect(resolved.unresolvedProvisionIds).toContain("LODR-6-1A");
+    const visibleIds = resolved.provisionGroups.flatMap((g) => g.items.map((p) => p.id));
+    expect(visibleIds).not.toContain("LODR-6-1A");
+
+    const componentSource = fs.readFileSync(path.join(process.cwd(), "src/components/analyzer/FixedScenarioAnalyzer.tsx"), "utf8");
+    expect(componentSource).toMatch(/unresolvedProvisionIds/);
+    expect(componentSource).toMatch(/not currently on file/i);
+  });
+
+  it("every provisionId across all eight fixed scenarios resolves to an actual canonical legal-provision record (production-shaped fixture)", () => {
+    const resolved = resolveAllFixedScenarios(TEST_PROVISIONS);
+    for (const r of resolved) {
+      expect(r.unresolvedProvisionIds).toEqual([]);
     }
   });
 });

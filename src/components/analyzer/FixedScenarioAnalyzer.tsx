@@ -75,6 +75,14 @@ function FixedScenarioResult({ scenario }: { scenario: ResolvedFixedScenario }) 
         <p className="text-sm text-[var(--color-ink-700)]">{scenario.explanation}</p>
       </div>
 
+      {scenario.unresolvedProvisionIds.length > 0 && (
+        <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          This scenario&apos;s curated mapping references {scenario.unresolvedProvisionIds.length} provision
+          {scenario.unresolvedProvisionIds.length === 1 ? "" : "s"} not currently on file in the corpus ({scenario.unresolvedProvisionIds.join(", ")}
+          ) — the list below is incomplete pending a corpus update, not a statement that fewer provisions apply.
+        </div>
+      )}
+
       <div className="mt-4 flex flex-col gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">Potentially relevant regulatory provisions</span>
         {scenario.provisionGroups.length === 0 ? (
