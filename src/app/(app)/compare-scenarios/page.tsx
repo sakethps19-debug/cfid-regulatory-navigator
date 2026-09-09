@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { CompareScenariosLandingClient } from "@/components/CompareScenariosLandingClient";
+import { CorpusReviewStatusBanner } from "@/components/CorpusReviewStatusBanner";
 import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 import { getMatters, getOrders, getScenarioFindings } from "@/lib/data";
 import { buildScenarioComparison, summarizeScenarioComparison } from "@/lib/scenarioComparison";
@@ -21,6 +22,7 @@ export default async function CompareScenariosLandingPage() {
         title="Compare Scenarios"
         description="How has the same broad legal/factual issue been treated across different matters and orders? Select a scenario to compare its captured historical treatment — this is not a cross-order chronology within one matter (see Case Journey for that) and not a legal-rule inference engine."
       />
+      <CorpusReviewStatusBanner findings={findings} />
       <CompareScenariosLandingClient scenarios={scenarios} />
     </div>
   );
