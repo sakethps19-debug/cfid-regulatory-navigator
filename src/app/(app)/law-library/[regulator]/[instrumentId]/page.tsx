@@ -37,7 +37,7 @@ export default async function LawLibraryInstrumentPage({
           ) : undefined
         }
       />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {instrumentProvisions.map((p) => (
           <Card key={p.id} className="flex flex-col">
             <div className="flex items-start justify-between gap-2">

@@ -93,7 +93,10 @@ export function NavBar() {
 
   return (
     <header className="app-header sticky top-0 z-40 border-b border-[var(--color-gold-600)]/40 bg-[var(--color-navy-950)]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      {/* Same tiered width as the app-shell <main> in (app)/layout.tsx — kept
+          in sync so the header never reads narrower or wider than the
+          content below it. */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 xl:max-w-[85rem] 2xl:max-w-[100rem] 3xl:max-w-[130rem]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Emblem />
           <span className="font-serif text-base font-semibold leading-tight text-white">

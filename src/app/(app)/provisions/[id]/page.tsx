@@ -103,7 +103,11 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                   </span>
                 </div>
                 {v.exactText ? (
-                  <blockquote className="whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">
+                  // Prose measure: the workspace around this card may be wide
+                  // on a large display, but the regulation text itself must
+                  // stay at a readable line length rather than stretching
+                  // edge-to-edge.
+                  <blockquote className="max-w-prose whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">
                     {v.exactText}
                   </blockquote>
                 ) : (
@@ -123,7 +127,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
       </Card>
 
       <Card className="mb-6">
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">How this provision has been treated</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.treatmentInPilotOrders}</dd>

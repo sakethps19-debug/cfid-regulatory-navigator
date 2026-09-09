@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Custom breakpoint for large meeting-room/4K-class displays (~2000px+),
+   between Tailwind's stock 2xl (1536px, a normal 1920px desktop already
+   satisfies) and true large-format monitors. Used only by the app-shell
+   width tiers below (layout.tsx's <main> and NavBar's header, kept in
+   lockstep) so a 2560px+ display gets materially more workspace than a
+   1920px desktop, rather than the two being treated identically. */
+@theme {
+  --breakpoint-3xl: 125rem;
+}
+
 /* Formal-register palette: warm parchment ground, deep navy chrome, a
    muted seal-gold accent in place of a generic bright blue, and desaturated
    (not pastel) semantic status colors — deliberately closer to an official

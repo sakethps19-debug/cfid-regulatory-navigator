@@ -32,7 +32,7 @@ export default async function LawLibraryRegulatorPage({ params }: { params: Prom
         title={REGULATOR_LABELS[regulator]}
         description="Instruments under this regulator with at least one provision actually cited or applied in an order analysed for this pilot."
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {instrumentsForRegulator.map((instrument) => (
           <Link key={instrument.id} href={`/law-library/${regulator}/${instrument.id}`}>
             <Card className="h-full transition hover:ring-1 hover:ring-[var(--color-gold-600)]">

@@ -28,7 +28,7 @@ export function FixedScenarioAnalyzer({ provisions, onSwitchToFreeForm }: { prov
           Select the broad CFID investigation theme closest to what you are looking into. Each theme shows an expert-curated set of potentially
           relevant regulatory provisions to examine — a research shortcut, not a finding that a violation occurred and not a search of past cases.
         </p>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {scenarios.map((s) => (
             <button
               key={s.id}
@@ -72,7 +72,7 @@ function FixedScenarioResult({ scenario }: { scenario: ResolvedFixedScenario }) 
 
       <div className="mt-4 flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">What this covers</span>
-        <p className="text-sm text-[var(--color-ink-700)]">{scenario.explanation}</p>
+        <p className="max-w-prose text-sm text-[var(--color-ink-700)]">{scenario.explanation}</p>
       </div>
 
       {scenario.unresolvedProvisionIds.length > 0 && (
@@ -88,7 +88,7 @@ function FixedScenarioResult({ scenario }: { scenario: ResolvedFixedScenario }) 
         {scenario.provisionGroups.length === 0 ? (
           <p className="text-sm italic text-[var(--color-ink-300)]">No provisions on file for this scenario.</p>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {scenario.provisionGroups.map((group) => (
               <div key={group.instrument}>
                 <div className="text-sm font-semibold text-[var(--color-ink-900)]">{group.instrument}</div>

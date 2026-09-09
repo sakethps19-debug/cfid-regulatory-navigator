@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         description="A research-assistance tool for CFID investigation and adjudication support — it identifies potentially relevant provisions and historical treatment from the facts you enter; it does not determine whether a violation occurred. Do not enter confidential, unpublished, or market-sensitive investigation information into this pilot environment."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {PRIMARY_TASKS.map((task, i) => (
           <Link key={task.href} href={task.href}>
             <Card

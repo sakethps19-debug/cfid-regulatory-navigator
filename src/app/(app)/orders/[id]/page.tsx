@@ -92,7 +92,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {siblingOrders.length > 0 && (
         <Card className="mb-6">
           <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Other orders in the same matter</h2>
-          <p className="mb-4 text-left text-sm text-[var(--color-ink-700)]">
+          <p className="mb-4 max-w-prose text-left text-sm text-[var(--color-ink-700)]">
             One matter/investigation can span several individual orders (interim, confirmatory, final, adjudication,
             or otherwise). Each stays independently visible with its own order type; a later order is never treated
             as silently overwriting an earlier one.
@@ -131,7 +131,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       )}
 
       <Card className="mb-6">
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">CFID authority</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{cfidVerificationDisplayText(order.cfidVerificationBasis)}</dd>
@@ -179,14 +179,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               )}
             </dd>
           </div>
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-3">
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Scope note</dt>
-            <dd className="mt-1 text-left text-sm text-[var(--color-ink-700)]">{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
+            {/* Prose measure: metadata fields above may spread across the
+                wide workspace, but a scope-note paragraph must not stretch
+                into an unreadable full-width line on a large display. */}
+            <dd className="mt-1 max-w-prose text-left text-sm text-[var(--color-ink-700)]">{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
           </div>
           {issuesExamined.length > 0 && (
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-3">
               <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Issues examined</dt>
-              <dd className="mt-1 text-left text-sm text-[var(--color-ink-700)]">{issuesExamined.join("; ")}</dd>
+              <dd className="mt-1 max-w-prose text-left text-sm text-[var(--color-ink-700)]">{issuesExamined.join("; ")}</dd>
             </div>
           )}
         </dl>
@@ -232,7 +235,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <ul className="space-y-2">
             {directions.map((d) => (
               <li key={d.id} className="rounded-lg border border-[var(--color-border)] p-3 text-sm">
-                <p className="text-left text-[var(--color-ink-900)]">{d.directionOrOutcome}</p>
+                <p className="max-w-prose text-left text-[var(--color-ink-900)]">{d.directionOrOutcome}</p>
                 <p className="mt-1 text-xs text-[var(--color-ink-500)]">{d.paragraphReference}</p>
               </li>
             ))}
