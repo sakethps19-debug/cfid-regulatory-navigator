@@ -95,12 +95,21 @@ function humanize(id: string): string {
   return id.replace(/_/g, " ");
 }
 
+// A full finding card (verification record, paragraph references, evidence
+// indicators, linked validation issues, etc.) is dense -- rendering all ~95
+// at once produced an unusably long page (the "74,000 pixel report" this
+// pagination was added to fix). 10 per page keeps a page scannable while
+// still reachable in full via Next/Previous, never truncating a finding's
+// own content once it is shown.
+const PAGE_SIZE = 10;
+
 export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
   const [activeVerificationFilters, setActiveVerificationFilters] = useState<Set<VerificationFilterKey>>(new Set());
   const [activeDataQualityFilters, setActiveDataQualityFilters] = useState<Set<DataQualityFilterKey>>(new Set());
   const [publicationFilter, setPublicationFilter] = useState<"all" | PublicationStatus>("all");
   const [orderFilter, setOrderFilter] = useState<"all" | string>("all");
   const [matterFilter, setMatterFilter] = useState<"all" | string>("all");
+  const [page, setPage] = useState(1);
 
   const orderOptions = useMemo(
     () => [...new Set(rows.flatMap((r) => r.orders.map((o) => o.caseName)))].sort(),
@@ -122,6 +131,7 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
       else next.add(key);
       return next;
     });
+    setPage(1);
   }
 
   function toggleDataQualityFilter(key: DataQualityFilterKey) {
@@ -131,6 +141,7 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
       else next.add(key);
       return next;
     });
+    setPage(1);
   }
 
   const filtered = useMemo(() => {
@@ -149,6 +160,10 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
       return true;
     });
   }, [rows, activeVerificationFilters, activeDataQualityFilters, publicationFilter, orderFilter, matterFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
   return (
     <div>
@@ -189,7 +204,10 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
           Publication status
           <select
             value={publicationFilter}
-            onChange={(e) => setPublicationFilter(e.target.value as typeof publicationFilter)}
+            onChange={(e) => {
+              setPublicationFilter(e.target.value as typeof publicationFilter);
+              setPage(1);
+            }}
             className="ml-2 rounded-md border border-[var(--color-border)] px-2 py-1 text-sm text-[var(--color-ink-900)]"
           >
             <option value="all">All</option>
@@ -204,7 +222,10 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
           Order
           <select
             value={orderFilter}
-            onChange={(e) => setOrderFilter(e.target.value)}
+            onChange={(e) => {
+              setOrderFilter(e.target.value);
+              setPage(1);
+            }}
             className="ml-2 rounded-md border border-[var(--color-border)] px-2 py-1 text-sm text-[var(--color-ink-900)]"
           >
             <option value="all">All</option>
@@ -219,7 +240,10 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
           Matter
           <select
             value={matterFilter}
-            onChange={(e) => setMatterFilter(e.target.value)}
+            onChange={(e) => {
+              setMatterFilter(e.target.value);
+              setPage(1);
+            }}
             className="ml-2 rounded-md border border-[var(--color-border)] px-2 py-1 text-sm text-[var(--color-ink-900)]"
           >
             <option value="all">All</option>
@@ -233,11 +257,19 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
       </div>
 
       <p className="mt-3 text-xs text-[var(--color-ink-500)]">
-        {filtered.length} of {rows.length} scenario findings shown.
+        {filtered.length} of {rows.length} scenario findings match this filter
+        {filtered.length > 0 && (
+          <>
+            {" "}
+            — showing {(clampedPage - 1) * PAGE_SIZE + 1}–{Math.min(clampedPage * PAGE_SIZE, filtered.length)} (page{" "}
+            {clampedPage} of {totalPages})
+          </>
+        )}
+        .
       </p>
 
       <div className="mt-3 space-y-3">
-        {filtered.map(({ finding: f, orders, matterName, linkedValidationIssues }) => (
+        {pageRows.map(({ finding: f, orders, matterName, linkedValidationIssues }) => (
           <div key={f.recordId} className="rounded-sm bg-white p-4 border border-[var(--color-border)]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-sm font-semibold text-[var(--color-ink-900)]">{f.recordId}</span>
@@ -393,6 +425,30 @@ export function LegalReviewQueueClient({ rows }: { rows: QueueRow[] }) {
           </p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={clampedPage === 1}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ← Previous
+          </button>
+          <span className="text-xs text-[var(--color-ink-500)]">
+            Page {clampedPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={clampedPage === totalPages}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

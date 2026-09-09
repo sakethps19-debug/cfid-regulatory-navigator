@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { CaseLibraryClient } from "@/components/CaseLibraryClient";
+import { CorpusReviewStatusBanner } from "@/components/CorpusReviewStatusBanner";
 import { getOrders, getProvisions, getScenarioFindings } from "@/lib/data";
 import { sortOrdersNewestFirst } from "@/lib/sortOrdersNewestFirst";
 
@@ -33,6 +34,7 @@ export default async function CaseLibraryPage() {
         title="Case Library"
         description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). Newest order first. A case whose findings have been turned into structured research data links through to full findings, provisions considered, and related orders in the same matter.'}
       />
+      <CorpusReviewStatusBanner findings={findings} provisions={provisions} />
       <CaseLibraryClient orders={ordersWithProvisionSearchText} />
     </div>
   );
