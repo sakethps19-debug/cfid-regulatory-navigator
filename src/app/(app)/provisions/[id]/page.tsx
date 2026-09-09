@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { FindingsByStatus, GROUP_INFO, GROUP_ORDER } from "@/components/FindingsByStatus";
-import { findingsForProvision, getProvisionById, getProvisionVersions, getProvisions } from "@/lib/data";
+import { GROUP_INFO, GROUP_ORDER } from "@/components/FindingsByStatus";
+import { ProvisionOrderList } from "@/components/ProvisionOrderList";
+import { findingsForProvision, getOrders, getProvisionById, getProvisionVersions, getProvisions } from "@/lib/data";
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority } from "@/lib/regulators";
 import { formatDate } from "@/lib/formatDate";
+import { broadScenariosForProvision } from "@/lib/broadScenarioMatch";
 
 const RELATION_TEXT: Record<string, string> = {
   similarly_numbered_different_instrument: "distinct similarly-numbered provision in a different instrument",
@@ -20,25 +22,36 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
   const provision = await getProvisionById(id);
   if (!provision) notFound();
 
-  const [findings, allProvisions, versions] = await Promise.all([
+  const [findings, allProvisions, versions, orders] = await Promise.all([
     findingsForProvision(provision.id),
     getProvisions(),
     getProvisionVersions(provision.id),
+    getOrders(),
   ]);
   const similar = findSimilarlyNumberedProvisions(provision, allProvisions).sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber),
   );
   const regulatorSlug = provision.issuingAuthority ? regulatorSlugForAuthority(provision.issuingAuthority) : null;
+  const ordersById = new Map(orders.map((o) => [o.id, o]));
 
-  // How THIS provision specifically related to each finding that cites it -
-  // "upheld"/"not_upheld" means this provision was the basis of the
-  // finding's outcome, "alleged" (or unset, for findings not yet carrying
-  // this data) means it was cited/considered without being that basis.
-  const relationshipByFindingRecordId = new Map<string, string | undefined>(
-    findings.map((f) => [f.recordId, f.provisionLinks.find((l) => l.provisionId === provision.id)?.relationship]),
-  );
-  const appliedCount = [...relationshipByFindingRecordId.values()].filter((r) => r === "upheld" || r === "not_upheld").length;
-  const citedOnlyCount = findings.length - appliedCount;
+  // In what broad CFID fact patterns has this provision actually been
+  // invoked, across every finding that cites it — a small, descriptive
+  // summary (Part 6/7), not the prescriptive "what should an officer
+  // examine for this scenario" question Fixed Scenario Analysis answers.
+  // Never implies the provision automatically applies whenever that
+  // scenario recurs; see broadScenarioMatch.ts.
+  const broadScenarios = broadScenariosForProvision(findings);
+
+  // Most recent first, by the latest date among each finding's own linked
+  // orders — same chronology convention as Home's Recent Orders.
+  const findingsByRecency = [...findings].sort((a, b) => {
+    const latest = (f: typeof a) =>
+      f.orderIds
+        .map((id) => ordersById.get(id)?.orderDate)
+        .filter((d): d is string => !!d)
+        .reduce((x, y) => (x > y ? x : y), "");
+    return latest(b).localeCompare(latest(a));
+  });
 
   return (
     <div>
@@ -98,24 +111,11 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                     Not yet transcribed from the official source into this tool.
                   </p>
                 )}
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <span
-                    className={`text-[11px] font-semibold uppercase tracking-wide ${
-                      v.status === "officially_verified"
-                        ? "text-[var(--status-green-text)]"
-                        : v.status === "order_cited_text_only"
-                          ? "text-[var(--status-blue-text)]"
-                          : "text-[var(--color-gold-700)]"
-                    }`}
-                  >
-                    {v.status === "officially_verified"
-                      ? "✓ Verified against official source"
-                      : v.status === "order_cited_text_only"
-                        ? "As reproduced verbatim in a CFID order, not independently checked against the official source"
-                        : "⚠ Requires verification"}
-                  </span>
-                  {v.sourceUrl && <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>}
-                </div>
+                {v.sourceUrl && (
+                  <div className="mt-2">
+                    <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -133,10 +133,6 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.ordersConsidered.join(", ") || "-"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Current-text verification status</dt>
-            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.currentTextVerificationStatus}</dd>
-          </div>
-          <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Law-library note</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.lawLibraryNote}</dd>
           </div>
@@ -144,10 +140,6 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         {provision.officialSource && (
           <div className="mt-4">
             <SourceLink href={provision.officialSource}>Official statutory source</SourceLink>
-            <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-              A link being on file is not by itself proof that the stored text above has been checked against it,
-              see &quot;Current-text verification status&quot; above for whether that check has actually happened.
-            </p>
           </div>
         )}
         {similar.length > 0 && (
@@ -191,22 +183,30 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
             );
           })}
         </div>
-        {(appliedCount > 0 || citedOnlyCount > 0) && (
-          <p className="mt-3 text-xs text-[var(--color-ink-500)]">
-            Of these, this specific provision is recorded as the basis of the finding&apos;s own disposition in{" "}
-            {appliedCount} finding{appliedCount === 1 ? "" : "s"}; in {citedOnlyCount} other{citedOnlyCount === 1 ? "" : "s"}{" "}
-            it is recorded as cited or considered alongside other provisions without itself being that basis. This is
-            a curated data-entry classification, not an independent legal verification of which provision an order
-            actually turned on, see each finding&apos;s human-legal-review status below, and it never means a final
-            order specifically, a finding recorded this way can be at any procedural stage, shown separately on each
-            finding.
-          </p>
-        )}
       </Card>
 
+      {broadScenarios.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Broad CFID scenarios</h2>
+          <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+            This provision has been invoked in orders involving these broad CFID fact patterns. Descriptive only —
+            historical frequency is not legal applicability; this never means the provision automatically applies
+            whenever one of these scenarios recurs.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {broadScenarios.map((s) => (
+              <li key={s.id} className="rounded-sm bg-[var(--color-neutral-100)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-700)]" title={s.explanation}>
+                {s.name}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Card>
-        <h2 className="mb-4 text-base font-semibold text-[var(--color-ink-900)]">Scenario findings under this provision</h2>
-        <FindingsByStatus findings={findings} provisionRelationship={(f) => relationshipByFindingRecordId.get(f.recordId)} />
+        <h2 className="mb-4 text-base font-semibold text-[var(--color-ink-900)]">Orders citing this provision</h2>
+        <p className="mb-4 text-sm text-[var(--color-ink-700)]">Orders that expressly cite this exact provision, most recent first.</p>
+        <ProvisionOrderList findings={findingsByRecency} ordersById={ordersById} />
       </Card>
     </div>
   );

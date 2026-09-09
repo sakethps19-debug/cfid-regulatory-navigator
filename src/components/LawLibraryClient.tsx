@@ -7,12 +7,8 @@ import { Card } from "@/components/Card";
 import { sortByProvisionNumber } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority, type RegulatorSlug } from "@/lib/regulators";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
-
-const VERIFICATION_STATUS_SHORT_LABELS: Record<LegalProvision["currentTextVerificationStatus"], string> = {
-  "Requires verification": "Unverified",
-  "Order-cited text only": "Order-cited",
-  "Officially verified": "Verified",
-};
+import { matchScenariosForQuery } from "@/lib/broadScenarioMatch";
+import { resolveFixedScenario } from "@/lib/fixedScenarioResolver";
 
 const STATUS_ORDER: FindingStatus[] = [
   "Alleged",
@@ -25,52 +21,6 @@ const STATUS_ORDER: FindingStatus[] = [
   "Inconclusive",
   "Procedural observation",
 ];
-
-function humanizeTag(id: string): string {
-  return id.replace(/_/g, " ");
-}
-
-export interface VerificationSummary {
-  verifiedCount: number;
-  total: number;
-  /** Sorted, deduplicated names of every instrument with at least one
-   * officially-verified provision — empty when none exist. */
-  instrumentNames: string[];
-}
-
-/** How narrow the officially-verified base of the Law Library actually is,
- * live-computed from the current provisions list (never hardcoded) — see
- * the P1-12/13 overclaim-prevention audit. Exported as a standalone
- * function, not inlined in the component, so it can be unit-tested
- * directly (this repo has no component-render test harness). */
-export function computeVerificationSummary(provisions: LegalProvision[]): VerificationSummary {
-  const verified = provisions.filter((p) => p.currentTextVerificationStatus === "Officially verified");
-  const instrumentNames = [...new Set(verified.map((p) => p.instrument))].sort();
-  return { verifiedCount: verified.length, total: provisions.length, instrumentNames };
-}
-
-/** Every word a finding might reasonably be found by, beyond the provision's
- * own fields — so a free-text search for e.g. "related party transactions"
- * or "diversion of issue proceeds" surfaces the right provisions even when
- * those exact words never appear in the provision's own subject line. This
- * is what makes searching work identically for every provision rather than
- * needing a hand-built page per topic. */
-function findingSearchText(f: ScenarioFinding): string {
-  return [
-    f.caseName,
-    f.category,
-    f.scenarioTitle,
-    f.factualPattern,
-    f.findingStatus,
-    ...f.transactionTypes.map(humanizeTag),
-    ...f.actorRoles.map(humanizeTag),
-    ...f.allegedConduct.map(humanizeTag),
-    ...f.evidenceTypes.map(humanizeTag),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
 
 export function LawLibraryClient({
   instruments,
@@ -123,24 +73,6 @@ export function LawLibraryClient({
     return map;
   }, [instruments, provisionCountByInstrument]);
 
-  // Live-computed, never hardcoded: how narrow the officially-verified base
-  // actually is, and which instruments it is (and is not) concentrated in —
-  // surfaced directly rather than requiring an officer to notice it by
-  // counting per-provision badges themselves. See the P1-12/13
-  // overclaim-prevention audit.
-  const verificationSummary = useMemo(() => computeVerificationSummary(provisions), [provisions]);
-
-  const verifiedCountByRegulator = useMemo(() => {
-    const map = new Map<RegulatorSlug, number>();
-    for (const p of provisions) {
-      if (p.currentTextVerificationStatus !== "Officially verified") continue;
-      const slug = regulatorSlugByInstrumentName.get(p.instrument);
-      if (!slug) continue;
-      map.set(slug, (map.get(slug) ?? 0) + 1);
-    }
-    return map;
-  }, [provisions, regulatorSlugByInstrumentName]);
-
   // The most-cited provisions per regulator — a preview shown directly on
   // the landing/browse cards below, rather than leaving each card as just a
   // title and one stat line with the rest of its space empty.
@@ -162,6 +94,26 @@ export function LawLibraryClient({
 
   const isFiltering = query.trim().length > 0 || statusFilter !== "all";
 
+  // Fact/concept matching: a precision-first replacement for the previous
+  // free-text search over every finding's flattened case name/evidence/
+  // actor text (which is exactly what let e.g. Ind AS 7 or Companies Act
+  // 180 surface for an RPT query, via an incidental evidence/category tag
+  // on an unrelated finding). A query now matches a broad CFID scenario
+  // only through the same deterministic concept-tag detection Analyze
+  // uses, and only returns that scenario's own precision-vetted,
+  // official-source-verified provisions (see fixedScenarioResolver.ts) —
+  // never a raw substring hit against a finding's free text.
+  const matchedScenarios = useMemo(() => matchScenariosForQuery(query), [query]);
+  const scenarioMatchedProvisionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const scenario of matchedScenarios) {
+      for (const group of resolveFixedScenario(scenario, provisions).provisionGroups) {
+        for (const p of group.items) ids.add(p.id);
+      }
+    }
+    return ids;
+  }, [matchedScenarios, provisions]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return provisions.filter((p) => {
@@ -170,9 +122,9 @@ export function LawLibraryClient({
       if (!q) return true;
       const provisionText = [p.instrument, p.provisionNumber, p.subject, p.lawLibraryNote].filter(Boolean).join(" ").toLowerCase();
       if (provisionText.includes(q)) return true;
-      return ownFindings.some((f) => findingSearchText(f).includes(q));
+      return scenarioMatchedProvisionIds.has(p.id);
     });
-  }, [provisions, findingsByProvision, query, statusFilter]);
+  }, [provisions, findingsByProvision, query, statusFilter, scenarioMatchedProvisionIds]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, LegalProvision[]>();
@@ -185,11 +137,23 @@ export function LawLibraryClient({
     <div>
       <input
         type="search"
-        placeholder='Search by provision, instrument, or facts, e.g. "related party transactions", "diversion of issue proceeds", "Audit Committee composition"…'
+        placeholder='Search by provision, instrument, or a recognised CFID fact pattern, e.g. "related party transactions", "diversion of funds", "Audit Committee composition"…'
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="block w-full max-w-2xl rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
       />
+      {matchedScenarios.length > 0 && (
+        <p className="mt-2 text-xs text-[var(--color-ink-500)]">
+          Matched to the recognised CFID scenario{matchedScenarios.length === 1 ? "" : "s"}:{" "}
+          {matchedScenarios.map((s, i) => (
+            <span key={s.id}>
+              {i > 0 && "; "}
+              <span className="font-medium text-[var(--color-ink-700)]">{s.name}</span>
+            </span>
+          ))}
+          . Results below are that scenario&apos;s curated provisions, not every provision that mentions this topic anywhere.
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button
@@ -213,18 +177,6 @@ export function LawLibraryClient({
         ))}
       </div>
 
-      <div className="mt-4 rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
-        <span className="font-semibold">{verificationSummary.verifiedCount} of {verificationSummary.total}</span> provisions across
-        this Law Library are officially verified against their official SEBI/MCA source
-        {verificationSummary.instrumentNames.length === 1 && <>, currently entirely within {verificationSummary.instrumentNames[0]}</>}
-        {verificationSummary.instrumentNames.length > 1 && (
-          <>, currently concentrated in {verificationSummary.instrumentNames.join("; ")} only</>
-        )}
-        {verificationSummary.instrumentNames.length === 0 && <>; none are yet officially verified in any instrument</>}
-        . The rest are order-cited text only or require verification, marked per provision below; verification work
-        is ongoing and not evenly spread across instruments.
-      </div>
-
       {isFiltering ? (
         <div className="mt-6 space-y-8">
           {[...grouped.entries()].map(([instrument, items]) => {
@@ -244,12 +196,7 @@ export function LawLibraryClient({
                     return (
                       <li key={p.id}>
                         <Link href={`/provisions/${p.id}`} className="block px-4 py-3 hover:bg-[var(--color-gold-50)]">
-                          <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <div className="font-medium text-[var(--color-ink-900)]">{p.provisionNumber}</div>
-                            <span className="text-xs text-[var(--color-ink-500)]">
-                              {VERIFICATION_STATUS_SHORT_LABELS[p.currentTextVerificationStatus]}
-                            </span>
-                          </div>
+                          <div className="font-medium text-[var(--color-ink-900)]">{p.provisionNumber}</div>
                           <div className="text-sm text-[var(--color-ink-700)]">{p.subject}</div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             {[...counts.entries()].map(([status, n]) => (
@@ -286,9 +233,6 @@ export function LawLibraryClient({
                   <p className="mt-2 text-sm text-[var(--color-ink-700)]">
                     {stats.instrumentCount} instrument{stats.instrumentCount === 1 ? "" : "s"} · {stats.provisionCount}{" "}
                     provision{stats.provisionCount === 1 ? "" : "s"} cited
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">
-                    {verifiedCountByRegulator.get(slug) ?? 0} of {stats.provisionCount} officially verified
                   </p>
                   {topProvisions.length > 0 && (
                     <div className="mt-3 space-y-1.5 border-t border-[var(--color-border)] pt-3">

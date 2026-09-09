@@ -153,7 +153,7 @@ describe("Fixed Scenario Analysis — mandatory exclusion of enforcement/directi
   });
 
   it("the resolver itself defensively drops an excluded provision even if a scenario mistakenly cited it", () => {
-    const tainted = { id: "test-tainted", name: "Test", explanation: "Test", provisionIds: ["PFUTP-3-a", "SEBI-ACT-27", "SEBI-ACT-15HA"] };
+    const tainted = { id: "test-tainted", name: "Test", explanation: "Test", provisionIds: ["PFUTP-3-a", "SEBI-ACT-27", "SEBI-ACT-15HA"], keyConceptIds: [] };
     const resolved = resolveFixedScenario(tainted, TEST_PROVISIONS);
     const allIds = resolved.provisionGroups.flatMap((g) => g.items.map((p) => p.id));
     expect(allIds).toContain("PFUTP-3-a");

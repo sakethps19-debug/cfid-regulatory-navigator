@@ -66,6 +66,25 @@ export interface FixedScenario {
    * instrument, see resolveFixedScenario) — order here just mirrors the
    * source verification work. */
   provisionIds: string[];
+  /** A small, hand-curated set of concept-tags.ts ids (CONCEPT_TAGS,
+   * "transaction" or "conduct" kind only — deliberately never "evidence" or
+   * "actor" kind, since an evidence/actor tag being incidentally present on
+   * an otherwise-unrelated finding is exactly the mechanism that produced
+   * the officer-reported Law Library false positives, e.g. Ind AS 7
+   * surfacing for a "related party transactions" search purely because an
+   * unrelated finding's EVIDENCE list happened to include a related-party
+   * register) that most specifically identify this broad scenario. Used by
+   * src/lib/broadScenarioMatch.ts to power (a) Law Library's fact/concept
+   * search precisely, by matching a query's own detected concepts against
+   * this list rather than a free-text bag-of-words, and (b) a provision's
+   * "broad CFID scenarios" summary on its Law Library page, by matching a
+   * scenario_finding's own structured transactionTypes/allegedConduct tags
+   * (never its case name, evidence list or actor roles) against this same
+   * list — one shared mechanism for both, per the two-way Analyze/Law
+   * scenario-taxonomy relationship. Deliberately small (2-3 ids) and never
+   * populated for scenario 8 (the intentionally broad catch-all) so that
+   * scenario never dominates a concept match merely by being broad. */
+  keyConceptIds: string[];
 }
 
 export const FIXED_SCENARIOS: FixedScenario[] = [
@@ -98,6 +117,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
       "LODR-33-1-c",
       "LODR-48",
     ],
+    keyConceptIds: ["financial_statement_misstatement", "fictitious_sales_or_revenue", "fictitious_or_nongenuine_assets"],
   },
   {
     id: "diversion-siphoning-misutilisation",
@@ -117,6 +137,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
       "PFUTP-4-2-k",
       "PFUTP-4-2-r",
     ],
+    keyConceptIds: ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account"],
   },
   {
     id: "fraudulent-fictitious-allotment",
@@ -148,6 +169,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
       "LODR-33-1-c",
       "LODR-48",
     ],
+    keyConceptIds: ["sham_preferential_allotment", "unsupported_share_allotment_consideration"],
   },
   {
     id: "related-party-transaction-irregularities",
@@ -155,6 +177,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "Non-disclosure of related party transactions; incorrect or misleading RPT disclosures; non-disclosure of outstanding related-party balances; transactions with promoter or promoter-controlled entities; company funds routed through related parties; failure to place RPTs before the Audit Committee; or failure to obtain required prior approval. Kept conceptually separate from fund diversion: the same underlying facts may involve both, but selecting this scenario does not automatically generate PFUTP findings merely because a related party is involved.",
     provisionIds: ["IND-AS-24", "LODR-23-2", "LODR-34-3", "LODR-SCHEDULE-V-A-1", "LODR-4-1-a", "LODR-4-1-b", "LODR-4-2-e-i", "LODR-48"],
+    keyConceptIds: ["related_party_transaction", "related_party_misrepresentation", "rpt_approval_lapse"],
   },
   {
     id: "false-misleading-incomplete-disclosures",
@@ -162,6 +185,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "False or misleading stock-exchange disclosures; incomplete Annual Reports; a misleading description of business operations; incorrect disclosures regarding investments; misleading disclosures regarding audit qualifications; concealment or omission of material information; or other materially false or incomplete corporate disclosures. Not every delayed or incomplete disclosure is fraud — applicability remains fact-dependent.",
     provisionIds: ["PFUTP-4-2-f", "PFUTP-4-2-k", "PFUTP-4-2-r", "LODR-4-1-c", "LODR-33-3-d", "LODR-34-2-a"],
+    keyConceptIds: ["non_disclosure_of_information", "false_business_or_corporate_announcement"],
   },
   {
     id: "audit-committee-governance-irregularities",
@@ -169,6 +193,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "Improper constitution of the Audit Committee; failure to convene Audit Committee meetings; the Audit Committee failing to discharge its responsibilities; directors or independent directors failing their governance duties; a failure of Board/Audit-Committee oversight; signing or certifying compliance despite known material deficiencies; or other material Board/Audit-Committee governance failures. The exact provision engaged depends on the specific governance failure at issue — not every provision listed here applies to every governance lapse. A bare Audit Committee meeting-frequency lapse is a governance/procedural matter, not automatically a PFUTP fraud finding, even where PFUTP provisions also appeared in a particular order's broader factual matrix.",
     provisionIds: ["LODR-16-1-b", "LODR-17-8", "LODR-18-1-d", "LODR-18-2", "LODR-18-3-schedule-II", "LODR-4-2-f"],
+    keyConceptIds: ["audit_committee_deficiency", "director_governance_failure"],
   },
   {
     id: "compliance-officer-irregularities",
@@ -176,6 +201,7 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "Failure to appoint a Compliance Officer; failure to fill a Compliance Officer vacancy within the prescribed period; appointment of an ineligible or non-compliant person as Compliance Officer; the Compliance Officer failing prescribed responsibilities; or failure to ensure regulatory conformity. The exact provision text/version depends on when the conduct occurred — an earlier version of the LODR Regulations may govern conduct predating a later amendment.",
     provisionIds: ["LODR-6-1", "LODR-6-1A", "LODR-6-2-a", "LODR-6-2-c"],
+    keyConceptIds: ["compliance_officer_deficiency", "false_compliance_certification"],
   },
   {
     id: "fraudulent-manipulative-conduct-broad",
@@ -183,5 +209,10 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "A broader fraud or manipulation category for use when the officer is examining a fraudulent or manipulative scheme rather than a pure accounting, governance or disclosure lapse: a device, scheme or artifice to defraud; conduct creating a false or misleading appearance; manipulation affecting securities or investor decision-making; deceptive conduct connected with dealing in securities; or investor inducement based on materially false information. This scenario intentionally lists only the core prohibition clauses — not every clause of Regulation 4(2) of the PFUTP Regulations is treated as universally applicable; which of those more specific clauses apply depends on the particular facts of the scheme under investigation.",
     provisionIds: ["SEBI-ACT-12A-a", "SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-a", "PFUTP-3-b", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-1"],
+    // Deliberately no keyConceptIds: this is the intentionally broad
+    // catch-all scenario, and giving it a concept match would let it
+    // dominate every fraud-adjacent Law Library search rather than the
+    // more specific scenario that actually fits the query.
+    keyConceptIds: [],
   },
 ];

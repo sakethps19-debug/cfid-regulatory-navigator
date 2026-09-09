@@ -16,8 +16,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { CandidateTierBadge, LegalFunctionTag } from "@/components/CandidateTierBadge";
 import { LEGAL_FUNCTION_LABELS } from "@/data/curated/legal-function-classification";
-import { LegalReviewBadge } from "@/components/LegalReviewBadge";
-import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
 import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
@@ -1519,8 +1517,6 @@ export function ScenarioAnalyzerClient() {
                         <li key={u.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-green-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={u.finding.findingStatus} />
-                            <LegalReviewBadge reviewed={u.finding.humanLegalReviewCompleted} />
-                            <FindingMaturityBadge finding={u.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{u.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{u.finding.scenarioTitle}</p>
@@ -1552,8 +1548,6 @@ export function ScenarioAnalyzerClient() {
                         <li key={s.finding.recordId} className="rounded-lg bg-[var(--status-green-bg)]/60 p-3 ring-1 border-[var(--status-green-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={s.effectiveStatus} />
-                            <LegalReviewBadge reviewed={s.finding.humanLegalReviewCompleted} />
-                            <FindingMaturityBadge finding={s.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{s.finding.recordId}</span>
                           </div>
                           <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-[var(--status-green-text)]">
@@ -1614,8 +1608,6 @@ export function ScenarioAnalyzerClient() {
                           <li key={c.finding.recordId} className="rounded-lg bg-[var(--status-red-bg)]/60 p-3 ring-1 border-[var(--status-red-ring)]">
                             <div className="flex flex-wrap items-center gap-2">
                               <StatusBadge status={c.effectiveStatus} />
-                              <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
-                              <FindingMaturityBadge finding={c.finding} />
                               <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                             </div>
                             <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
@@ -1833,8 +1825,6 @@ export function ScenarioAnalyzerClient() {
                         <li key={c.finding.recordId} className="rounded-lg bg-[var(--status-amber-bg)]/60 p-2.5 ring-1 border-[var(--status-amber-ring)]">
                           <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge status={c.finding.findingStatus} />
-                            <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
-                            <FindingMaturityBadge finding={c.finding} />
                             <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                           </div>
                           <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
@@ -2279,8 +2269,6 @@ export function ScenarioAnalyzerClient() {
                     <li key={c.finding.recordId} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-red-ring)]">
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusBadge status={c.finding.findingStatus} />
-                        <LegalReviewBadge reviewed={c.finding.humanLegalReviewCompleted} />
-                        <FindingMaturityBadge finding={c.finding} />
                         <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.finding.recordId}</span>
                       </div>
                       <p className="mt-1 text-sm text-[var(--color-ink-700)]">{c.finding.scenarioTitle}</p>
@@ -2350,8 +2338,6 @@ export function ScenarioAnalyzerClient() {
                         Full-text match only
                       </span>
                       <StatusBadge status={f.findingStatus} />
-                      <LegalReviewBadge reviewed={f.humanLegalReviewCompleted} />
-                      <FindingMaturityBadge finding={f} />
                       <span className="text-sm font-medium text-[var(--color-ink-900)]">{f.recordId}</span>
                     </div>
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">{f.scenarioTitle}</p>

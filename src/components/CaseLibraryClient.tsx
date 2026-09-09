@@ -6,6 +6,7 @@ import type { Order, OrderStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
 import { formatDate } from "@/lib/formatDate";
 import { isDeepAnalyzed } from "@/lib/processingStages";
+import { stripPipelineLanguage } from "@/lib/orderGist";
 
 // Demo-polish sprint: this page previously filtered/labelled every order by
 // its internal PIPELINE processing stage (indexed / downloaded / citations
@@ -90,7 +91,6 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Date</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Research status</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Link</th>
             </tr>
           </thead>
@@ -108,7 +108,7 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
                       o.caseName
                     )}
                     {deepAnalyzed && o.scopeNote && (
-                      <p className="mt-0.5 max-w-md text-xs font-normal text-[var(--color-ink-500)]">{o.scopeNote}</p>
+                      <p className="mt-0.5 max-w-md text-xs font-normal text-[var(--color-ink-500)]">{stripPipelineLanguage(o.scopeNote)}</p>
                     )}
                   </td>
                   <td className="px-3 py-2 align-top">
@@ -118,17 +118,6 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
                     <div className="mt-1 font-mono text-xs text-[var(--color-ink-700)]">{o.orderNumber ?? "-"}</div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top text-[var(--color-ink-700)]">{formatDate(o.orderDate) || "-"}</td>
-                  <td className="whitespace-nowrap px-3 py-2 align-top">
-                    <span
-                      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
-                        deepAnalyzed
-                          ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]"
-                          : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
-                      }`}
-                    >
-                      {deepAnalyzed ? "Detailed research available" : "Not yet available for detailed research"}
-                    </span>
-                  </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
                     <SourceLink href={o.officialUrl} />
                   </td>
@@ -164,17 +153,8 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
                     <span>{formatDate(o.orderDate) || "-"}</span>
                   </div>
                 </div>
-                <span
-                  className={`inline-flex shrink-0 items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
-                    deepAnalyzed
-                      ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]"
-                      : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
-                  }`}
-                >
-                  {deepAnalyzed ? "Research available" : "Not yet available"}
-                </span>
               </div>
-              {deepAnalyzed && o.scopeNote && <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{o.scopeNote}</p>}
+              {deepAnalyzed && o.scopeNote && <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{stripPipelineLanguage(o.scopeNote)}</p>}
               <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--color-ink-700)]">
                 <span>{o.orderNumber ?? "-"}</span>
               </div>

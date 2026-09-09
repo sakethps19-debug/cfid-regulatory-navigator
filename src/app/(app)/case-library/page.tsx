@@ -24,7 +24,7 @@ export default async function CaseLibraryPage() {
     <div>
       <PageHeader
         title="Case Library"
-        description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). A case whose findings have been turned into structured research data (see its Research status) links through to full findings, provisions considered, and related orders in the same matter.'}
+        description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). A case whose findings have been turned into structured research data links through to full findings, provisions considered, and related orders in the same matter.'}
       />
       <CaseLibraryClient orders={ordersWithProvisionSearchText} />
     </div>

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { StatusBadge } from "@/components/StatusBadge";
-import type { Order, ScenarioFinding } from "@/types/domain";
+import { OrderStageBadge } from "@/components/OrderStageBadge";
+import type { ScenarioFinding } from "@/types/domain";
 import { getOrders, getScenarioFindings } from "@/lib/data";
 import { formatDate } from "@/lib/formatDate";
+import { orderGist } from "@/lib/orderGist";
+import { pickRecentOrders } from "@/lib/pickRecentOrders";
 
 // Officer Research Home (application-wide demo-readiness sprint): this page
 // used to be a corpus-statistics dashboard (orders indexed, findings
@@ -14,11 +16,16 @@ import { formatDate } from "@/lib/formatDate";
 // what to DO here. All of that now lives exclusively on the Admin
 // Dashboard (/admin) for an authorized administrator. This page is
 // reconceived as a task-first research home: what an officer can do, not
-// how big the underlying corpus is. The one thing kept from the old page —
-// the "recent findings" list — is genuine research content (what was
-// recently found, at what disposition stage), not a corpus-health metric,
-// so it stays; the strict-chronology sort and its own explanatory copy are
-// unchanged from before.
+// how big the underlying corpus is.
+//
+// The "recent" list is genuine research content (what was recently
+// indexed, at what procedural stage) and stays, but as a Recent Orders
+// feed rather than one card per scenario finding — an order is this
+// screen's unit of presentation. A single order that produced several
+// scenario findings (e.g. Seacoast's 5) must appear once, not once per
+// finding; the underlying findings remain fully broken out on the order's
+// own detail page and throughout Analyze/Case Library/Admin, which is
+// where that granularity belongs.
 interface PrimaryTask {
   title: string;
   description: string;
@@ -53,27 +60,15 @@ const PRIMARY_TASKS: PrimaryTask[] = [
   },
 ];
 
-// Strict chronology, latest order first — no status priority, no preference
-// for final over interim, no other selection logic. A finding's date is the
-// latest orderDate among the orders it draws on; findings with no dated
-// order (orderDate not yet captured) are excluded since they can't be placed
-// in the sequence.
-function pickRecent(findings: ScenarioFinding[], orders: Order[]): { finding: ScenarioFinding; latestDate: string }[] {
-  const orderDateById = new Map(orders.map((o) => [o.id, o.orderDate]));
-  return findings
-    .map((f) => {
-      const dates = f.orderIds.map((id) => orderDateById.get(id)).filter((d): d is string => !!d);
-      const latestDate = dates.length > 0 ? dates.reduce((a, b) => (a > b ? a : b)) : null;
-      return { finding: f, latestDate };
-    })
-    .filter((x): x is { finding: ScenarioFinding; latestDate: string } => x.latestDate !== null)
-    .sort((a, b) => b.latestDate.localeCompare(a.latestDate))
-    .slice(0, 5);
-}
-
 export default async function DashboardPage() {
   const [orders, scenarioFindings] = await Promise.all([getOrders(), getScenarioFindings()]);
-  const recent = pickRecent(scenarioFindings, orders);
+  const recentOrders = pickRecentOrders(orders);
+  const findingsByOrder = new Map<string, ScenarioFinding[]>();
+  for (const f of scenarioFindings) {
+    for (const orderId of f.orderIds) {
+      findingsByOrder.set(orderId, [...(findingsByOrder.get(orderId) ?? []), f]);
+    }
+  }
 
   return (
     <div>
@@ -98,23 +93,26 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {recent.length > 0 && (
+      {recentOrders.length > 0 && (
         <Card className="mt-8">
-          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Recent findings</h2>
-          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            The most recently dated findings across indexed orders, latest first, strict chronology only.
-          </p>
+          <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Recent orders</h2>
+          <p className="mt-1 text-xs text-[var(--color-ink-500)]">The most recently dated indexed orders, latest first, strict chronology only.</p>
           <ul className="mt-3 space-y-2">
-            {recent.map(({ finding: f, latestDate }) => (
-              <li key={f.recordId} className="rounded-lg border border-[var(--color-border)] p-2.5 text-sm">
+            {recentOrders.map((o) => (
+              <li key={o.id} className="rounded-lg border border-[var(--color-border)] p-2.5 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status={f.findingStatus} />
-                  <span className="font-medium text-[var(--color-ink-900)]">{f.caseName}</span>
-                  <span className="text-xs text-[var(--color-ink-500)]">{formatDate(latestDate)}</span>
+                  <OrderStageBadge orderStage={o.orderStage} />
+                  <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-ink-900)] hover:underline">
+                    {o.caseName}
+                  </Link>
+                  <span className="text-xs text-[var(--color-ink-500)]">{formatDate(o.orderDate)}</span>
                 </div>
-                <p className="mt-1 text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
+                {(() => {
+                  const gist = orderGist(o, findingsByOrder.get(o.id) ?? []);
+                  return gist && <p className="mt-1 text-[var(--color-ink-700)]">{gist}</p>;
+                })()}
                 <div className="mt-1">
-                  <SourceLink href={f.officialSourceUrl} />
+                  <SourceLink href={o.officialUrl} />
                 </div>
               </li>
             ))}

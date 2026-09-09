@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SourceLink } from "@/components/Card";
-import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 
 // A Record keyed by every FindingStatus, not a plain array of hand-picked
@@ -55,28 +54,6 @@ export const GROUP_ORDER: FindingStatus[] = [
   "Withdrawn",
 ];
 
-// Shown only for a publicationStatus other than the ordinary "Published to
-// search" — that ordinary case renders nothing here, so this stays quiet
-// for the vast majority of findings and only draws attention to a finding
-// an officer has actually pulled from, or flagged within, the publication
-// lifecycle (draft, quarantined, withdrawn, or published with a caution).
-const PUBLICATION_STATUS_BADGE_STYLES: Record<string, string> = {
-  Draft: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
-  Quarantined: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
-  "Published with warning": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
-  Withdrawn: "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
-};
-
-function PublicationStatusBadge({ status }: { status: string }) {
-  const style = PUBLICATION_STATUS_BADGE_STYLES[status];
-  if (!style) return null;
-  return (
-    <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${style}`}>
-      {status}
-    </span>
-  );
-}
-
 // Labels for finding_provisions.relationship, when a caller (e.g. a
 // provision detail page) supplies a per-finding relationship via
 // provisionRelationship. "alleged" means the provision was cited/considered
@@ -117,8 +94,6 @@ function FindingRow({
     <li className="rounded-lg border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge status={finding.findingStatus} />
-        <PublicationStatusBadge status={finding.publicationStatus} />
-        <LegalReviewBadge reviewed={finding.humanLegalReviewCompleted} />
         <span className="text-sm font-semibold text-[var(--color-ink-900)]">{finding.recordId}</span>
         <span className="text-sm text-[var(--color-ink-700)]">{finding.caseName}</span>
         {relationshipLabel && (

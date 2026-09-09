@@ -7,6 +7,7 @@ import { directionsForOrderIds, getOrderById, getOrders, getProvisions, getScena
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
 import { formatDate } from "@/lib/formatDate";
 import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
+import { orderGist } from "@/lib/orderGist";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -85,7 +86,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     <p className="mt-1 text-sm text-[var(--color-ink-700)]">
                       {sibling.orderStage} · {sibling.orderDate ? formatDate(sibling.orderDate) : "Date not yet confirmed"}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--color-ink-500)]">{sibling.proceduralStatus}</p>
                   </div>
                   <span className="whitespace-nowrap rounded-sm bg-[var(--color-gold-50)] px-2 py-1 text-xs font-medium text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
                     {relationshipLabel}
@@ -124,12 +124,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Procedural status</dt>
-            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{order.proceduralStatus}</dd>
-          </div>
-          <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Scope note</dt>
-            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{order.scopeNote}</dd>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{orderGist(order, findings)}</dd>
           </div>
           {issuesExamined.length > 0 && (
             <div className="sm:col-span-2">
