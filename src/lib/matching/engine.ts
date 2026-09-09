@@ -363,9 +363,13 @@ function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForPr
  * SEBI power/remedial provision (e.g. Section 11(2)(i)/(ia)) — has no
  * adverse predicate of its own at all, and returns an empty array; such a
  * provision can never be a "candidate breach", only "governing". */
+function allRouteGroups(rule: ProvisionRetrievalRule): string[][] {
+  return [...rule.requireAllOfGroups, ...(rule.alternateRoutes ?? []).flatMap((r) => r.requireAllOfGroups)];
+}
+
 function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
   if (!rule) return [];
-  return unique(rule.requireAllOfGroups.flat().filter(isAdverseConceptId));
+  return unique(allRouteGroups(rule).flat().filter(isAdverseConceptId));
 }
 
 /** The complement of adverseConceptIdsForRule: the TOPIC-kind (non-conduct)
@@ -378,7 +382,7 @@ function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAd
  * there is genuinely no topic anchor to compare against. */
 function topicConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
   if (!rule) return [];
-  return unique(rule.requireAllOfGroups.flat().filter((id) => !isAdverseConceptId(id)));
+  return unique(allRouteGroups(rule).flat().filter((id) => !isAdverseConceptId(id)));
 }
 
 /** P0 Question-A polarity CONNECTIVITY fix (see factPolarity.ts's own

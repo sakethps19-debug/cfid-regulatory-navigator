@@ -30,7 +30,7 @@ function makeFinding(
     transactionTypes: [],
     actorRoles: [],
     evidenceTypes: [],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: [],
     precedentOutcomeNote: null,
     ingredientsNotEstablished: [],
@@ -70,7 +70,7 @@ describe("publication_status exclusion", () => {
         publicationStatus: status,
       });
       const result = analyzeScenario(
-        { freeText: "Company funds were diverted." },
+        { freeText: "There was a false certification." },
         [finding],
         [provision],
         []
@@ -87,7 +87,7 @@ describe("publication_status exclusion", () => {
       publicationStatus: "Published with warning",
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [finding],
       [provision],
       []
@@ -105,7 +105,7 @@ describe("publication_status exclusion", () => {
       publicationStatus: "Quarantined",
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted through unusual channels." },
+      { freeText: "There was a false certification through unusual channels." },
       [],
       [provision],
       [],

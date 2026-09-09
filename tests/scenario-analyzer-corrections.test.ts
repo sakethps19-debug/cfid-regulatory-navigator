@@ -6,10 +6,14 @@
 // fact about that specific precedent. Fixtures are entirely synthetic
 // (not modelled on any real order) to prove the separation is structural,
 // not a special case for one precedent. The conduct tag used
-// (fund_diversion) is drawn from the real curated vocabulary rather than
-// an arbitrary made-up id, since scenarioTypeSignal is now resolved
-// against that same vocabulary (see buildEffectiveScenarioConcepts in
-// engine.ts) and a fabricated id would simply be ignored.
+// (false_compliance_certification) is drawn from the real curated
+// vocabulary rather than an arbitrary made-up id, since scenarioTypeSignal
+// is now resolved against that same vocabulary (see
+// buildEffectiveScenarioConcepts in engine.ts) and a fabricated id would
+// simply be ignored. (Not fund_diversion, which is now subjectAgnostic —
+// see ConceptTag.subjectAgnostic — and requires a connected topic before it
+// can promote an ungated provision; these synthetic findings deliberately
+// carry no transactionTypes at all.)
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -71,7 +75,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const genuineGapFinding = makeFinding({
     recordId: "SYN-GAP",
     provisionIds: ["TEST-PROV-1"],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: ["Genuine outstanding evidence: independent verification of the transaction."],
     precedentOutcomeNote: null,
   });
@@ -79,14 +83,14 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   const resolvedFinding = makeFinding({
     recordId: "SYN-RESOLVED",
     provisionIds: ["TEST-PROV-1"],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: [],
     precedentOutcomeNote: RESOLVED_TEXT,
   });
 
   function run(findings: ScenarioFinding[]) {
     return analyzeScenario(
-      { freeText: "irrelevant free text", scenarioTypeSignal: "fund_diversion" },
+      { freeText: "irrelevant free text", scenarioTypeSignal: "false_compliance_certification" },
       findings,
       [provision],
       []

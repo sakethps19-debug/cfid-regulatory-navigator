@@ -89,7 +89,50 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "related_party_transaction",
     kind: "transaction",
     label: "Related-party transaction",
-    synonyms: ["related party transaction", "related-party transaction", "rpt", "transactions with related party", "connected party transaction", "related entities", "related parties", "connected entities"],
+    // P0 diversion/PFUTP-4(1) fix: "connected entities" / "related entities"
+    // removed — both are genuinely ambiguous (they describe entities
+    // somehow connected to the company or a promoter, e.g. a fund-diversion
+    // or circular-financing recipient, not necessarily a Reg 2(1)(zb)/Ind
+    // AS 24 related party at all) and this corpus's own regression suites
+    // (hundred-scenario-stress-suite.test.ts #14/#18/#53/#68,
+    // blind-validation-suite-v2.test.ts #26/#47/#75) already deliberately
+    // use exactly this phrasing for PURE fund-diversion/wash-trading
+    // scenarios that must NOT read as an RPT. Retaining them here was
+    // separately confirmed (live-corpus trace, Diversion Benchmark A) to
+    // wrongly connect an unrelated diversion narrative to RPT-specific
+    // disclosure provisions (Reg 31/Reg 27(2)(a)) via the subject-agnostic
+    // topic-overlap check in engine.ts — see ConceptTag.subjectAgnostic.
+    synonyms: ["related party transaction", "related-party transaction", "rpt", "transactions with related party", "connected party transaction", "related parties"],
+  },
+  {
+    // P0 diversion/PFUTP-4(1) Explanation route: the PFUTP Regulations,
+    // 2003 Explanation to Regulation 4(1) (as substituted w.e.f. 1 July
+    // 2024, and in materially the same terms before that) deems diversion,
+    // misutilisation or siphoning off of assets/earnings of "a company
+    // whose securities are listed" to always have been a manipulative,
+    // fraudulent or unfair trade practice under sub-regulation (1) — a
+    // distinct, self-standing basis from Reg 4(1)'s general securities-
+    // dealing prohibition, and one this corpus's vocabulary had no way to
+    // detect at all (a private/unlisted company's fund diversion does not
+    // attract this deeming clause). See provision-retrieval-rules.ts's
+    // PFUTP-4-1 alternate route.
+    id: "listed_company",
+    kind: "transaction",
+    label: "Listed company",
+    synonyms: [
+      "listed company",
+      "listed entity",
+      "listed public company",
+      "publicly listed company",
+      "company whose securities are listed",
+      "whose securities are listed",
+      "company is listed",
+      "shares are listed",
+      "securities are listed",
+      "listed on the stock exchange",
+      "listed on a recognised stock exchange",
+      "listed on the exchange",
+    ],
   },
   {
     id: "preferential_allotment",
@@ -379,7 +422,7 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "deposition_testimony", kind: "evidence", label: "Deposition / recorded testimony", synonyms: ["deposition", "testimony", "recorded statement", "statement on oath", "examination on oath", "admitted in deposition", "under oath"] },
 
   // ----- Alleged conduct -----
-  { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
+  { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", subjectAgnostic: true, synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
   // Split from a single "fictitious_sales_or_assets" tag after a user
   // correctly pointed out that SSSL-02 (a sham preferential allotment
   // backed by a fictitious receivable, no revenue transaction at all) was
@@ -466,9 +509,44 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // added (P0 Question-A polarity connectivity pass): a common way bank
   // records are described as establishing diversion, distinct from a bare
   // "diverted" allegation and often paired with a promoter's own denial.
-  { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised", "transferred to promoter-controlled entities without business purpose", "without business purpose"] },
-  { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
-  { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
+  {
+    id: "fund_diversion",
+    kind: "conduct",
+    label: "Diversion of funds",
+    subjectAgnostic: true,
+    // P0 diversion/PFUTP-4(1) fix: added generic phrasings of the same
+    // "diverted, not used for the stated purpose" fact pattern (SEBI orders
+    // routinely phrase this as funds moving to promoter-connected entities
+    // "not used for the stated [business] purpose/objects") — the entered
+    // Diversion Benchmark A text ("transferred substantial funds to
+    // entities controlled by its promoter. The funds were not used for the
+    // stated business purpose...") was not previously recognised at all.
+    synonyms: [
+      "diversion of funds",
+      "diverted funds",
+      "misutilisation of funds",
+      "misuse of proceeds",
+      "siphoning",
+      "fund diversion",
+      "diverted the proceeds",
+      "siphoned off",
+      "diverted",
+      "misappropriated",
+      "misutilised",
+      "transferred to promoter-controlled entities without business purpose",
+      "without business purpose",
+      "entities controlled by its promoter",
+      "entities controlled by the promoter",
+      "entities controlled by its promoters",
+      "not used for the stated business purpose",
+      "not used for the stated purpose",
+      "not utilised for the stated purpose",
+      "not utilized for the stated purpose",
+      "no genuine business purpose",
+    ],
+  },
+  { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
+  { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", subjectAgnostic: true, synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
   // "without paying any/genuine consideration" variants added (P0
   // provision-precision remediation, 2026): natural officer phrasing for
   // the same no-genuine-consideration fact the existing "shares without
@@ -495,7 +573,7 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // Officer for five months") this vocabulary previously missed.
   { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for", "had no compliance officer", "no compliance officer for"] },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },
-  { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
+  { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", subjectAgnostic: true, synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
   // Second-order remediation (2026): the single tag "price_manipulation_nexus"
   // previously bundled several legally distinct predicates - a false
   // APPEARANCE of trading (wash/synchronized trades), a genuine ownership

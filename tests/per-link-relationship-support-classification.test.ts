@@ -145,11 +145,11 @@ describe("Per-link finding_provisions.relationship overrides the finding's overa
     const finding = makeFinding({
       recordId: "MOCK-02",
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       provisionIds: [provision.id],
       provisionLinks: [{ provisionId: provision.id, justifyingTags: [] }],
     });
-    const result = analyzeScenario({ freeText: "Company funds were diverted to a promoter-controlled entity." }, [finding], [provision], []);
+    const result = analyzeScenario({ freeText: "There was a false certification by a promoter-controlled entity." }, [finding], [provision], []);
     const pr = result.provisionResults.find((p) => p.provision.id === provision.id);
     const ref = pr?.supportingPrecedents.find((s) => s.finding.recordId === "MOCK-02");
     expect(ref?.effectiveStatus).toBe("Confirmed in Final Order");

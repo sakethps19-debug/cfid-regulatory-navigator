@@ -31,7 +31,7 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
     transactionTypes: [],
     actorRoles: [],
     evidenceTypes: [],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: [],
     precedentOutcomeNote: null,
     ingredientsNotEstablished: [],
@@ -87,7 +87,7 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
       interimParagraphReferences: "Para 50",
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [interimWithFinalRef],
       [provision],
       []
@@ -113,7 +113,7 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
       qualification: "Distinguished on its own facts.",
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [supporting, rejected],
       [provision],
       []

@@ -65,18 +65,18 @@ describe("evidenceSignal", () => {
     const withEvidence = makeFinding({
       recordId: "SYN-EVID-01",
       provisionIds: ["TEST-PROV-EVID"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidenceTypes: ["bank_statements_flow"],
     });
     const withoutEvidence = makeFinding({
       recordId: "SYN-EVID-02",
       provisionIds: ["TEST-PROV-EVID"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidenceTypes: [],
     });
 
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted.", evidenceSignal: "bank_statements_flow" },
+      { freeText: "There was a false certification.", evidenceSignal: "bank_statements_flow" },
       [withEvidence, withoutEvidence],
       [provision],
       []

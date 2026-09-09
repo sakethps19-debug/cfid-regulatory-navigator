@@ -50,6 +50,19 @@ export interface ProvisionRetrievalRule {
    * ingredients test: satisfying it means the provision is worth
    * examining, not that its elements have been established. */
   explanation: string;
+  /** Optional additional, INDEPENDENTLY-sufficient route(s) into the same
+   * provision id — evaluated with the identical own-group-satisfaction and
+   * own-connectivity rules as requireAllOfGroups (see passesRetrievalGate),
+   * then OR'd against the primary route. Reserved for a provision whose
+   * governing text itself contains more than one free-standing basis for
+   * liability (e.g. the PFUTP Regulation 4(1) Explanation's diversion/
+   * misutilisation/siphoning deeming clause, which does not require
+   * Regulation 4(1)'s general securities-dealing nexus at all) — never used
+   * to loosen what any single route on its own requires. Each route's
+   * groups are independently AND'd and independently connectivity-checked;
+   * a match under one route can never combine with a match under another
+   * to satisfy either. */
+  alternateRoutes?: { requireAllOfGroups: string[][] }[];
 }
 
 // ----- Reusable concept-tag groups -----
@@ -219,6 +232,21 @@ const INVESTIGATION_CONTEXT = ["investigation_process"];
  * exactly for the stated objects". */
 const ISSUE_PROCEEDS_MISUSE = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account", "financial_statement_misstatement"];
 
+/** Diversion/misutilisation/siphoning of assets or earnings, in the terms
+ * the PFUTP Regulation 4(1) Explanation itself uses — mirrors engine.ts's
+ * own PURE_FUND_MOVEMENT_TAGS (how money moved, with no inherent connection
+ * to a securities transaction). Used ONLY for PFUTP-4-1's Explanation-
+ * specific alternate route below, alongside the listed_company topic tag —
+ * never to gate PFUTP 3, PFUTP 4(2)'s own lettered sub-clauses, or SEBI Act
+ * 12A, each of which keeps its own independent predicate. */
+const PURE_FUND_MOVEMENT_CONDUCT = [
+  "fund_diversion",
+  "circular_fund_movement",
+  "fund_routed_personal_account",
+  "fund_transfer_personal_account",
+  "fund_transfer_promoter_entity",
+];
+
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "PFUTP-3-a",
@@ -248,7 +276,25 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     provisionId: "PFUTP-4-1",
     requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. Same minimum facts: a securities transaction connected to fraudulent or deceptive conduct.",
+      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. It is satisfied on either of two independent bases: (1) a securities transaction connected to fraudulent or deceptive conduct, or (2) under the Explanation to Regulation 4(1), diversion, misutilisation or siphoning off of the assets or earnings of a company whose securities are listed — that Explanation deems such conduct to always have been a manipulative, fraudulent or unfair trade practice under sub-regulation (1), without needing the ordinary securities-dealing nexus route (1) requires.",
+    // P0 diversion/PFUTP-4(1) fix: Explanation-specific route, verified
+    // against the official current (last amended 28 June 2024) consolidated
+    // PFUTP Regulations, 2003 (sebi.gov.in), Explanation to Regulation 4(1)
+    // — "any act of diversion, misutilisation or siphoning off of assets or
+    // earnings of a company whose securities are listed ... shall be and
+    // shall always be deemed to have been included in sub-regulation (1)".
+    // Independently sufficient: does NOT require SECURITIES_DEALING_OR_
+    // ISSUE_NEXUS or FRAUDULENT_OR_DECEPTIVE_CONDUCT above, and does not
+    // extend to PFUTP 3, PFUTP 4(2)'s own lettered sub-clauses (each keeps
+    // its own independent predicate — see PFUTP-4-2-* rules below,
+    // unaffected by this route) or SEBI Act 12A. A private/unlisted
+    // company's fund diversion does not satisfy this route, since
+    // "listed_company" is not detected — see concept-tags.ts.
+    alternateRoutes: [
+      {
+        requireAllOfGroups: [["listed_company"], PURE_FUND_MOVEMENT_CONDUCT],
+      },
+    ],
   },
   {
     provisionId: "PFUTP-4-2-a",
@@ -796,9 +842,8 @@ export function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
  * A rule with only one group needs no connectivity check. No rule for this
  * provision = ungated (existing behavior preserved for every provision
  * outside the broad-securities-fraud family this pass targets). */
-export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): boolean {
-  if (!rule) return true;
-  const matchesByGroup = rule.requireAllOfGroups.map((group) => effectiveConcepts.filter((c) => group.includes(c.id)));
+function satisfiesGroups(requireAllOfGroups: string[][], effectiveConcepts: DetectedConcept[]): boolean {
+  const matchesByGroup = requireAllOfGroups.map((group) => effectiveConcepts.filter((c) => group.includes(c.id)));
   if (matchesByGroup.some((matches) => matches.length === 0)) return false;
   if (matchesByGroup.length < 2) return true;
   // Current rules never exceed two groups; connectivity is checked pairwise
@@ -812,4 +857,14 @@ export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, ef
     if (!connected) return false;
   }
   return true;
+}
+
+export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): boolean {
+  if (!rule) return true;
+  if (satisfiesGroups(rule.requireAllOfGroups, effectiveConcepts)) return true;
+  // Each alternate route is a wholly separate, independently-sufficient
+  // basis (see ProvisionRetrievalRule.alternateRoutes) — evaluated with its
+  // own groups and its own connectivity check, never mixed with the primary
+  // route's matches or another alternate route's matches.
+  return (rule.alternateRoutes ?? []).some((route) => satisfiesGroups(route.requireAllOfGroups, effectiveConcepts));
 }

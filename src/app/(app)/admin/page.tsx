@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { getDataChangeLog, getProcessingMetrics, getScenarioFindings, getStructuredFindingCoverageGaps, getValidationIssues } from "@/lib/data";
 import { getGatedProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
+import { formatDate } from "@/lib/formatDate";
 
 const COVERAGE_GAP_TIER_LABELS: Record<1 | 2 | 3, string> = {
   1: "Tier 1: matter entirely uncovered",
@@ -142,7 +143,7 @@ export default async function AdminDashboardPage() {
                 <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                   {g.order.orderStage}
                   {g.order.orderNumber ? ` (${g.order.orderNumber})` : ""}
-                  {g.order.orderDate ? ` · ${g.order.orderDate}` : " · no order date on file"}
+                  {g.order.orderDate ? ` · ${formatDate(g.order.orderDate)}` : " · no order date on file"}
                 </p>
                 <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{g.priorityReason}</p>
                 <div className="mt-1.5">
