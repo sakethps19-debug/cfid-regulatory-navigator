@@ -82,13 +82,13 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
     // shouldn't inherit that provision at full confidence.
     transactionTypes: ["related_party_transaction"],
     actorRoles: ["promoter"],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["false_compliance_certification"],
     provisionIds: [rptProvision.id],
   });
 
   it("downgrades to Low confidence when only conduct and a generic actor overlap, not the transaction type that actually justifies the provision", () => {
     const result = analyzeScenario(
-      { freeText: "There was a diversion of funds by the promoter." },
+      { freeText: "There was a false certification by the promoter." },
       [diversionFinding],
       [rptProvision],
       []
@@ -100,7 +100,7 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
 
   it("reaches at least Medium confidence once the scenario also establishes the transaction type the provision actually turns on", () => {
     const result = analyzeScenario(
-      { freeText: "A related party transaction involving diversion of funds by the promoter was not disclosed." },
+      { freeText: "A related party transaction was not disclosed and there was a false certification by the promoter." },
       [diversionFinding],
       [rptProvision],
       []
@@ -112,7 +112,7 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
 
   it("still surfaces the provision (never silently drops it) — Low confidence, not exclusion, is the mechanism", () => {
     const result = analyzeScenario(
-      { freeText: "There was a diversion of funds by the promoter." },
+      { freeText: "There was a false certification by the promoter." },
       [diversionFinding],
       [rptProvision],
       []

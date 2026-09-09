@@ -64,17 +64,17 @@ describe("missingFacts provenance", () => {
     const findingA = makeFinding({
       recordId: "SYN-A",
       provisionIds: ["TEST-PROV-PROVENANCE"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Bank statement trail for the specific transaction."],
     });
     const findingB = makeFinding({
       recordId: "SYN-B",
       provisionIds: ["TEST-PROV-PROVENANCE"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Board resolution authorizing the transaction."],
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [findingA, findingB],
       [provision],
       []
@@ -97,17 +97,17 @@ describe("missingFacts provenance", () => {
     const findingWithGap = makeFinding({
       recordId: "SYN-WITH-GAP",
       provisionIds: ["TEST-PROV-EMPTY-GROUP"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Independent verification of the transaction."],
     });
     const findingNoGap = makeFinding({
       recordId: "SYN-NO-GAP",
       provisionIds: ["TEST-PROV-EMPTY-GROUP"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: [],
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [findingWithGap, findingNoGap],
       [provision],
       []

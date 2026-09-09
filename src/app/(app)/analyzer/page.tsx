@@ -1,14 +1,16 @@
 import { PageHeader } from "@/components/PageHeader";
-import { ScenarioAnalyzerClient } from "@/components/analyzer/ScenarioAnalyzerClient";
+import { AnalyzerLanding } from "@/components/analyzer/AnalyzerLanding";
+import { getProvisions } from "@/lib/data";
 
-export default function AnalyzerPage() {
+export default async function AnalyzerPage() {
+  const provisions = await getProvisions();
   return (
     <div>
       <PageHeader
         title="Scenario Analyzer"
-        description="Describe a factual scenario to see potentially relevant SEBI Act sections, regulations and other provisions, matched against this pilot's analysed CFID orders. This tool identifies prima facie similarity only, and does not conclude that a violation has occurred."
+        description="Start from a recognised CFID investigation theme to see the substantive regulatory provisions an officer would typically examine, or analyze your own scenario against this pilot's indexed CFID orders. Neither path concludes that a violation has occurred."
       />
-      <ScenarioAnalyzerClient />
+      <AnalyzerLanding provisions={provisions} />
     </div>
   );
 }

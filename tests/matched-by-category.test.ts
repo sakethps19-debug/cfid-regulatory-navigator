@@ -72,7 +72,7 @@ describe("matchedByCategory", () => {
     const result = analyzeScenario(
       {
         freeText:
-          "A preferential allotment was made to the promoter. Company funds were diverted, traced through bank statements showing the flow.",
+          "A preferential allotment was made to the promoter, and company funds were diverted, traced through bank statements showing the flow.",
       },
       [finding],
       [provision],
@@ -113,7 +113,7 @@ describe("matchedByCategory", () => {
     // unmentioned, preserving this test's own purpose (an unmatched
     // category is left empty, never spuriously populated).
     const result = analyzeScenario(
-      { freeText: "A preferential allotment was made to the promoter. Company funds were diverted." },
+      { freeText: "A preferential allotment was made to the promoter, and company funds were diverted." },
       [noMatchFinding],
       [provision],
       []

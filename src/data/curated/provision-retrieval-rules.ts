@@ -50,6 +50,50 @@ export interface ProvisionRetrievalRule {
    * ingredients test: satisfying it means the provision is worth
    * examining, not that its elements have been established. */
   explanation: string;
+  /** Opt-in only, same meaning as the identically-named field on each
+   * alternateRoutes entry below, applied here to the PRIMARY
+   * requireAllOfGroups route instead: when true, this rule's own-group
+   * connectivity check also treats two concepts as connected via the
+   * bounded cross-sentence continuity map (computeContinuitySentenceGroups,
+   * conceptExtraction.ts). Reserved for a provision whose own subject is, by
+   * its nature, routinely split across two adjacent sentences the same way
+   * PFUTP-4-1's diversion route is (a transaction/context sentence
+   * immediately followed by a diversion/misuse sentence referring back to it
+   * only by anaphora) — currently only LODR-32 (issue-proceeds monitoring):
+   * "A listed company raised proceeds through a rights issue. The proceeds
+   * were transferred to promoter-connected entities instead of being used
+   * for the disclosed objects." Left false (same-sentence-only) for every
+   * other rule in this file. */
+  allowSentenceContinuity?: boolean;
+  /** Optional additional, INDEPENDENTLY-sufficient route(s) into the same
+   * provision id — evaluated with the identical own-group-satisfaction and
+   * own-connectivity rules as requireAllOfGroups (see passesRetrievalGate),
+   * then OR'd against the primary route. Reserved for a provision whose
+   * governing text itself contains more than one free-standing basis for
+   * liability (e.g. the PFUTP Regulation 4(1) Explanation's diversion/
+   * misutilisation/siphoning deeming clause, which does not require
+   * Regulation 4(1)'s general securities-dealing nexus at all) — never used
+   * to loosen what any single route on its own requires. Each route's
+   * groups are independently AND'd and independently connectivity-checked;
+   * a match under one route can never combine with a match under another
+   * to satisfy either. */
+  alternateRoutes?: {
+    requireAllOfGroups: string[][];
+    /** Opt-in only: when true, this route's own-group connectivity check
+     * (satisfiesGroups) also treats two concepts as connected when their
+     * sentences are linked by the bounded cross-sentence continuity map
+     * (computeContinuitySentenceGroups, conceptExtraction.ts) — an ordinary
+     * investigation narrative splitting ONE factual object across adjacent
+     * sentences purely for readability (e.g. "A listed company advanced
+     * funds to promoter-connected entities. The funds were subsequently
+     * diverted..."). Same-sentence connectivity (isConnected's base check)
+     * still applies first and is unaffected; this only ADDS a narrow,
+     * deterministic extra basis for connectivity on routes that explicitly
+     * opt in. Never set on requireAllOfGroups (the primary route) or on any
+     * other provision's rule — actor connectivity, the disclosure-family
+     * gates, and every other rule in this file remain same-sentence-only. */
+    allowSentenceContinuity?: boolean;
+  }[];
 }
 
 // ----- Reusable concept-tag groups -----
@@ -204,6 +248,21 @@ const PERSON_IN_CHARGE_OF_COMPANY = [
  * preparation/submission/timeline sub-clauses each require. */
 const FINANCIAL_RESULTS_CHANNEL = ["financial_statement_disclosure", "standalone_financials", "consolidated_financials"];
 
+/** P0 Demo B result-quality fix: Regulation 33's own subject is the
+ * preparation/manner/timeline of FINANCIAL RESULTS CONTENT itself — the
+ * SAME content-correctness family Regulation 48 gates on (see LODR-48
+ * below), not "some substantive violation happened to be alleged and a
+ * financial-results-channel fact was also mentioned". Using the broad
+ * ANY_SUBSTANTIVE_VIOLATION_CONDUCT list here (as the LODR-4-1 umbrella-
+ * principle family legitimately does) let a channel mention connected to
+ * ANY unrelated violation — including a bare non-disclosure fact with no
+ * stated misstatement — promote the entire 11-sub-clause Regulation 33
+ * family. Narrowed to the same misstatement/fictitious-content predicate
+ * LODR-48 itself requires; every existing "must" assertion for this family
+ * across the test suite already uses one of these three tags, so this is a
+ * pure narrowing with no known regression. */
+const FINANCIAL_RESULTS_CONTENT_VIOLATION = ["financial_statement_misstatement", "fictitious_sales_or_revenue", "fictitious_or_nongenuine_assets"];
+
 /** SEBI's own investigation is under way — the minimum context any Section
  * 11(2)/11C power needs to be a candidate at all. */
 const INVESTIGATION_CONTEXT = ["investigation_process"];
@@ -218,6 +277,46 @@ const INVESTIGATION_CONTEXT = ["investigation_process"];
  * treats as the compliant-negation family for "issue proceeds used
  * exactly for the stated objects". */
 const ISSUE_PROCEEDS_MISUSE = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account", "financial_statement_misstatement"];
+
+/** Diversion/misutilisation/siphoning of assets or earnings, in the terms
+ * the PFUTP Regulation 4(1) Explanation itself uses — mirrors engine.ts's
+ * own PURE_FUND_MOVEMENT_TAGS (how money moved, with no inherent connection
+ * to a securities transaction). Used ONLY for PFUTP-4-1's Explanation-
+ * specific alternate route below, alongside the listed_company topic tag —
+ * never to gate PFUTP 3, PFUTP 4(2)'s own lettered sub-clauses, or SEBI Act
+ * 12A, each of which keeps its own independent predicate.
+ *
+ * P0 recall-hardening sprint (general classification-defect fix):
+ * fund_transfer_personal_account and fund_transfer_promoter_entity were
+ * REMOVED from this list. Both are "transaction"-kind concept tags (see
+ * concept-tags.ts) — they record WHERE funds went, a neutral occurrence
+ * fact used throughout this corpus as a `transactionTypes` topic anchor,
+ * never itself an adverse/breach-indicating fact (per engine.ts's own
+ * documented invariant: "'transaction'/'actor'/'evidence'-kind tags are
+ * neutral occurrence facts ... never themselves a breach"). Their prior
+ * inclusion here let a scenario stating ONLY "funds were transferred to a
+ * personal/promoter-controlled account" — with no further adverse
+ * characterisation at all — satisfy this route's own adverse-conduct
+ * group. That is not merely imprecise: it silently broke the SAME
+ * invariant everywhere downstream that relies on it (engine.ts's own
+ * adverseConceptIdsForRule filters strictly by kind==="conduct", so a
+ * gate that passed only via one of these two ids produced ZERO adverse
+ * ids for the promotion-eligibility check — the confirmed root cause of a
+ * gate-passing, genuinely adverse fund-diversion scenario ("Funds
+ * belonging to a listed company were transferred to the personal bank
+ * account of its promoter and were used for purposes unrelated to the
+ * company's business.") being demoted to governing/additional_fact_
+ * required instead of promoted to a candidate breach). The three
+ * remaining ids are all genuinely conduct-kind and require no further
+ * adverse characterisation to satisfy this route, which is exactly
+ * correct: "diverted", "circularly moved" and "routed through a personal
+ * account" ARE themselves the adverse act; "transferred to a personal
+ * account" alone is not (it could be a lawful salary/dividend payment) —
+ * see fund_diversion's own widened synonym family below for how a bare
+ * "personal/promoter account" transfer now still reaches this route once
+ * the scenario states the missing adverse characterisation ("used for
+ * purposes unrelated to...", "not used for the stated purpose", ...). */
+const PURE_FUND_MOVEMENT_CONDUCT = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account"];
 
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
@@ -248,7 +347,36 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     provisionId: "PFUTP-4-1",
     requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
-      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. Same minimum facts: a securities transaction connected to fraudulent or deceptive conduct.",
+      "Regulation 4(1) is the general prohibition on manipulative, fraudulent or unfair trade practice in connection with securities, mirroring Regulation 3. It is satisfied on either of two independent bases: (1) a securities transaction connected to fraudulent or deceptive conduct, or (2) under the Explanation to Regulation 4(1), diversion, misutilisation or siphoning off of the assets or earnings of a company whose securities are listed — that Explanation deems such conduct to always have been a manipulative, fraudulent or unfair trade practice under sub-regulation (1), without needing the ordinary securities-dealing nexus route (1) requires.",
+    // P0 diversion/PFUTP-4(1) fix: Explanation-specific route, verified
+    // against the official current (last amended 28 June 2024) consolidated
+    // PFUTP Regulations, 2003 (sebi.gov.in), Explanation to Regulation 4(1)
+    // — "any act of diversion, misutilisation or siphoning off of assets or
+    // earnings of a company whose securities are listed ... shall be and
+    // shall always be deemed to have been included in sub-regulation (1)".
+    // Independently sufficient: does NOT require SECURITIES_DEALING_OR_
+    // ISSUE_NEXUS or FRAUDULENT_OR_DECEPTIVE_CONDUCT above, and does not
+    // extend to PFUTP 3, PFUTP 4(2)'s own lettered sub-clauses (each keeps
+    // its own independent predicate — see PFUTP-4-2-* rules below,
+    // unaffected by this route) or SEBI Act 12A. A private/unlisted
+    // company's fund diversion does not satisfy this route, since
+    // "listed_company" is not detected — see concept-tags.ts.
+    // P0 multi-sentence factual continuity fix: officer narratives routinely
+    // split this exact fact pattern across two adjacent sentences purely for
+    // readability ("A listed company advanced funds to promoter-connected
+    // entities. The funds were subsequently diverted...") - "listed_company"
+    // sits in the first sentence, the diversion conduct in the next, joined
+    // only by an anaphoric reference to the funds/proceeds/amount/advance/
+    // transaction. allowSentenceContinuity opts this route (and only this
+    // route) into that bounded, closed-class continuation-phrase bridge; see
+    // computeContinuitySentenceGroups (conceptExtraction.ts) for the exact
+    // rule and its safeguards against scenario-wide or cross-entity bridging.
+    alternateRoutes: [
+      {
+        requireAllOfGroups: [["listed_company"], PURE_FUND_MOVEMENT_CONDUCT],
+        allowSentenceContinuity: true,
+      },
+    ],
   },
   {
     provisionId: "PFUTP-4-2-a",
@@ -345,12 +473,29 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
     explanation:
       "[Governance/procedural obligation] Regulation 23(2) requires prior Audit Committee approval of related-party transactions. It requires a related-party-transaction fact connected to a stated approval, disclosure or Audit Committee process failure; a related-party transaction that was genuinely approved and disclosed does not, without more, satisfy it.",
+    // P0 recall-hardening sprint: a strict SUPERSET of an already-correct
+    // fact pattern (the same RPT-approval-lapse narrative, plus one more,
+    // fully consistent sentence about the same transaction's disclosure
+    // fate) was found to silently lose this provision entirely, because
+    // that extra sentence shifted which sentence the query's own
+    // related_party_transaction match landed in relative to the approval-
+    // lapse sentence — same-sentence-only connectivity then failed even
+    // though both facts plainly describe the one RPT the scenario is
+    // about. allowSentenceContinuity bridges exactly this, using the same
+    // bounded, closed-class anaphoric-cue mechanism as PFUTP-4-1/LODR-32
+    // (computeContinuitySentenceGroups, conceptExtraction.ts) — it can
+    // never bridge a genuinely separate, unrelated RPT or transaction
+    // stated elsewhere in a longer scenario.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "LODR-23-4",
     requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
     explanation:
       "[Governance/procedural obligation] Regulation 23(4) requires shareholder approval (by ordinary resolution, the related party not voting) for material related-party transactions. It requires a related-party-transaction fact connected to a stated approval or disclosure failure. This corpus's vocabulary does not yet separately distinguish an Audit-Committee-approval lapse from a shareholder-approval lapse; both currently gate on the same underlying facts.",
+    // P0 recall-hardening sprint: same fix, same reasoning as LODR-23-2
+    // immediately above.
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 30 (material events) -----
@@ -359,6 +504,54 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["material_event_disclosure"], ["non_disclosure_of_information", "false_business_or_corporate_announcement"]],
     explanation:
       "[Disclosure obligation] Regulation 30 requires disclosure of material events/information to the stock exchanges. It requires a material-event/price-sensitive-information fact connected to a stated non-disclosure, delay or inaccuracy in that specific disclosure; wrongdoing occurring elsewhere in a scenario (e.g. fictitious sales in the accounts) does not, by itself, establish a Regulation 30 disclosure failure.",
+  },
+
+  // ----- LODR Regulation 27(2)(a) and Regulation 31 (disclosure-family
+  // contamination fix, pre-merge legal-verification pass) -----
+  //
+  // Both were previously ungated, relying on the same subjectAgnostic
+  // fallback as every other empty-justifyingTags provision. Live-corpus
+  // probe confirmed a false promotion: "A listed company entered into a
+  // related party transaction ... and the transaction was not disclosed"
+  // promoted BOTH to primary_candidate, because every one of their real
+  // finding_provisions links is on a multi-issue finding whose OWN
+  // transactionTypes bag happens to also include related_party_transaction
+  // (that same historical matter separately had an RPT issue too) — see
+  // hasConnectedTopicOverlap in engine.ts. Neither provision's own official
+  // text (SEBI LODR Regulations, 2015, current consolidated text,
+  // sebi.gov.in) has anything to do with related-party transactions:
+  // Regulation 27(2)(a) is the quarterly corporate governance compliance
+  // report submission duty; Regulation 31(1) is the shareholding pattern
+  // statement submission duty. Gating each on its own actual subject (see
+  // the two new topic tags in concept-tags.ts) removes them from the
+  // ungated fallback entirely, so an unrelated RPT non-disclosure fact can
+  // never promote either again, while a scenario genuinely stating that
+  // OWN report/statement was not submitted/disclosed still can.
+  {
+    provisionId: "LODR-27-2-a",
+    // P0 recall-hardening sprint: financial_statement_misstatement added
+    // to the second group — the report was genuinely SUBMITTED but
+    // contained a material misstatement (e.g. of board/committee
+    // composition and independence) is still a Regulation 27(2)(a)
+    // failure (the duty is to submit an ACCURATE report), a distinct fact
+    // pattern from non-submission that non_disclosure_of_information alone
+    // does not capture. Both remain subjectAgnostic conduct tags requiring
+    // same-sentence connectivity to THIS provision's own
+    // governance_compliance_report topic — an unrelated misstatement
+    // elsewhere in the scenario still cannot connect.
+    requireAllOfGroups: [["governance_compliance_report"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
+    explanation:
+      "[Disclosure obligation] Regulation 27(2)(a) requires the listed entity to submit a quarterly compliance report on corporate governance to the stock exchange(s). It requires a fact about that specific report connected to a stated non-submission, delay, inaccuracy or material misstatement; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 27(2)(a) failure.",
+  },
+  {
+    provisionId: "LODR-31-statement",
+    // P0 recall-hardening sprint: same widening as LODR-27-2-a immediately
+    // above — a submitted-but-materially-incorrect shareholding pattern
+    // statement (e.g. omitting promoter-group holdings) is still a
+    // Regulation 31 failure.
+    requireAllOfGroups: [["shareholding_pattern_statement"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
+    explanation:
+      "[Disclosure obligation] Regulation 31(1) requires the listed entity to submit a statement of shareholding pattern to the stock exchange(s). It requires a fact about that specific statement connected to a stated non-submission, delay, inaccuracy or material misstatement; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 31 failure.",
   },
 
   // ----- LODR Regulation 48 (accounting standards) -----
@@ -379,69 +572,69 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   // ----- LODR Regulation 33 (financial results) -----
   {
     provisionId: "LODR-33-1-gen",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(1) sets general requirements for preparing financial results submitted to the stock exchange(s). It requires a financial-results-specific fact; a violation unconnected to the preparation or submission of financial results (e.g. a governance or investigation-only fact) does not satisfy it.",
+      "[Accounting/reporting obligation] Regulation 33(1) sets general requirements for preparing financial results submitted to the stock exchange(s). It requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content); a violation unconnected to the preparation or submission of financial results (e.g. a governance, non-disclosure, or investigation-only fact) does not satisfy it.",
   },
   {
     provisionId: "LODR-33-1-a",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(1)(a) requires financial results to be prepared on an accrual basis, using uniform accounting practices across periods. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(1)(a) requires financial results to be prepared on an accrual basis, using uniform accounting practices across periods. Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-1-c",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(1)(c) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(1)(c) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-1-d",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(1)(d) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(1)(d) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-2-a",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Governance/procedural obligation] Regulation 33(2)(a) concerns approval and signing of financial results before submission to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Governance/procedural obligation] Regulation 33(2)(a) concerns approval and signing of financial results before submission to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-3-gen",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(3) sets the timelines and manner of submitting quarterly/annual financial results. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(3) sets the timelines and manner of submitting quarterly/annual financial results. Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-3-b",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(3)(b) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(3)(b) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-3-c",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(3)(c) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(3)(c) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-3-d",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(3)(d) requires audited standalone financial results within sixty days of the financial year-end, with the audit report and a Statement on Impact of Audit Qualifications or a declaration. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(3)(d) requires audited standalone financial results within sixty days of the financial year-end, with the audit report and a Statement on Impact of Audit Qualifications or a declaration. Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-3-i",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(3)(i) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(3)(i) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
   {
     provisionId: "LODR-33-5",
-    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, FINANCIAL_RESULTS_CONTENT_VIOLATION],
     explanation:
-      "[Accounting/reporting obligation] Regulation 33(5) applies to submission of financial results (read together with Regulation 33(3) in this corpus). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+      "[Accounting/reporting obligation] Regulation 33(5) applies to submission of financial results (read together with Regulation 33(3) in this corpus). Requires a financial-results-specific fact connected to a stated misstatement, fictitious-sales or fictitious-asset fact (Regulation 33 is itself about the correctness of financial-results content) -- not merely some other, unconnected violation elsewhere in the scenario, nor a bare financial-statement mention.",
   },
 
   // ----- LODR Regulation 34 (annual report) -----
@@ -484,6 +677,14 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
     explanation:
       "[Disclosure/governance obligation] Regulation 32/32(7A) requires monitoring and disclosure of issue-proceeds utilisation. Requires an issue-proceeds-specific fact (IPO/rights-issue/preferential-issue proceeds) connected to a stated diversion or misstatement fact; ordinary bank-loan diversion unconnected to a securities issue, and a bare, compliant mention of issue proceeds with no stated misuse, do not satisfy it.",
+    // P0 multi-sentence factual continuity fix: this provision's own subject
+    // is, by its nature, an issue-proceeds CONTEXT fact (a rights/
+    // preferential issue) immediately followed by a diversion/misuse fact
+    // about THOSE proceeds, referred back to only by anaphora ("The
+    // proceeds were transferred..."), the same split-across-adjacent-
+    // sentences pattern PFUTP-4-1's diversion route was fixed for. See
+    // ProvisionRetrievalRule.allowSentenceContinuity above.
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 4 (general principles) -----
@@ -660,6 +861,16 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[Substantive prohibition] Regulation 160 requires preferentially-allotted equity shares to be fully paid up at allotment. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration fact; the bare fact that a preferential allotment occurred does not, by itself, establish a non-payment violation.",
+    // P0 recall-hardening sprint: a preferential allotment is very often
+    // stated in one sentence and the fate of its CONSIDERATION (the
+    // payment/value received for it) in the very next ("A listed company
+    // made a preferential allotment of shares... The consideration for the
+    // allotment was funded through a circular movement of money..."), the
+    // same one-factual-object-split-across-sentences pattern already fixed
+    // for PFUTP-4-1/LODR-32/LODR-23-2/23-4/Ind AS 24. "the consideration"
+    // is now a recognised continuation cue (conceptExtraction.ts), scoped
+    // to exactly this provision family.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "ICDR-167",
@@ -674,6 +885,19 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["financial_statement_misstatement"]],
     explanation:
       "[Accounting/reporting requirement] Ind AS 1 (Presentation of Financial Statements) is a general presentation standard. Requires a stated financial-statement misstatement fact; not shown merely because financial statements are mentioned.",
+  },
+  // P0 Demo B result-quality fix: previously completely ungated (no rule at
+  // all), so it surfaced as a primary candidate on ANY scenario carrying a
+  // generic financial-statement-misstatement/non-disclosure fact, regardless
+  // of subject matter. The live corpus's only IND-AS-23 link (MAGNUM-01) is
+  // squarely about reversed accrued interest and unrecognised bank-loan
+  // interest expense -- Ind AS 23's own actual subject (Borrowing Costs) --
+  // so this gates it on that specific fact instead.
+  {
+    provisionId: "IND-AS-23",
+    requireAllOfGroups: [["interest_or_borrowing_cost_misstatement"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 23 (Borrowing Costs) governs recognition and capitalisation of interest/borrowing costs. Requires a stated fact about interest/borrowing-cost recognition, accrual or capitalisation specifically; a generic financial-statement misstatement or receivables adjustment with no interest/borrowing-cost fact does not, by itself, satisfy it.",
   },
   {
     provisionId: "IND-AS-32",
@@ -704,6 +928,59 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["revenue_recognition"]],
     explanation:
       "[Accounting/reporting requirement] Ind AS 115 (Revenue from Contracts with Customers) requires a revenue-recognition-specific fact; a fictitious ASSET fact does not, by itself, satisfy it merely because the same historical matter also had fictitious sales.",
+  },
+  // P0 recall-hardening sprint: IND-AS-24 (Related Party Disclosures) was
+  // previously completely ungated — every one of its 4 live-corpus links
+  // (FRL-01, SSSL-05, REL-02, REL-05) carries the SAME curated
+  // justifyingTags: ["related_party_transaction", "related_party_
+  // misrepresentation"] — a strong, corpus-grounded basis for gating it on
+  // exactly that pairing, widened to also accept the general non_
+  // disclosure_of_information conduct tag (a related-party transaction and
+  // its outstanding balance simply OMITTED from the financial-statement
+  // RPT disclosures — the SSSL-05/REL-05 fact pattern — is a non-
+  // disclosure of that RPT, not necessarily a "misrepresentation" of it).
+  // allowSentenceContinuity: an RPT is very often stated in one sentence
+  // and its accounting-disclosure fate in the very next ("...entered into
+  // transactions with entities controlled by the promoter group. The
+  // transactions and outstanding balances were omitted from the related-
+  // party disclosures..."), the same one-factual-object-split-across-
+  // sentences pattern PFUTP-4-1/LODR-32/LODR-23-2/23-4 were fixed for.
+  {
+    provisionId: "IND-AS-24",
+    requireAllOfGroups: [RPT_FACT, ["related_party_misrepresentation", "non_disclosure_of_information"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 24 (Related Party Disclosures) requires disclosure, in the notes to financial statements, of related-party transactions and outstanding balances. It requires a related-party-transaction fact connected to a stated misrepresentation or non-disclosure of that transaction/balance in the financial statements; a related-party transaction that was genuinely and accurately disclosed does not, without more, satisfy it.",
+    allowSentenceContinuity: true,
+  },
+  // P0 recall-hardening sprint (Ind AS ungated audit): Ind AS 7, Ind AS 21
+  // and Ind AS 28 were all completely ungated. Each live-corpus link for
+  // all three (SSSL-01, SSSL-02, REL-02, BDMCL-01 — see concept-tags.ts's
+  // header comment on the three new tags below) was reviewed and found to
+  // cite each provision only as part of a broader, generic misstatement
+  // bundle with no fact specific to that standard's OWN accounting subject
+  // stated in the finding itself — except BDMCL-01, whose facts genuinely
+  // are about deliberately staying below the Ind AS 28 "Associate Company"
+  // significant-influence threshold. Each gate below requires the
+  // officer's own entered facts to state something specific to that
+  // standard's own subject; none is satisfied by a generic financial-
+  // statement-misstatement fact alone.
+  {
+    provisionId: "IND-AS-7",
+    requireAllOfGroups: [["cash_flow_statement_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 7 (Statement of Cash Flows) governs the presentation and classification of cash-flow information. Requires a stated fact about the cash-flow statement specifically; a generic financial-statement misstatement with no cash-flow-specific fact does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-21",
+    requireAllOfGroups: [["foreign_exchange_rate_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 21 (The Effects of Changes in Foreign Exchange Rates) governs translation of foreign-currency transactions and operations. Requires a stated fact about foreign-exchange rates or translation specifically; a generic financial-statement misstatement with no forex-specific fact does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-28",
+    requireAllOfGroups: [["associate_or_joint_venture_accounting_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 28 (Investments in Associates and Joint Ventures) governs the equity-method accounting threshold (significant influence, typically 20% or more shareholding). Requires a stated fact about an associate-company/significant-influence/equity-method threshold specifically; a generic related-party or financial-statement misstatement with no such fact does not, by itself, satisfy it.",
   },
 
   // ----- Companies Act, 2013 -----
@@ -751,12 +1028,16 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[SEBI power/remedial provision] Section 24 gives SEBI powers concurrent with the Central Government under Chapter III/IV of the Companies Act (including Section 67) in respect of listed companies' securities issue/transfer matters. In this corpus it is invoked exclusively alongside Section 67(2) (financial assistance for purchase of a company's own shares — see BGL-PREF-01), so it is gated on the same minimum facts: a preferential-allotment fact connected to a stated non-payment/sham-consideration fact. This is a jurisdictional/enabling provision, not itself a substantive prohibition on the company's own conduct, and must never be presented as an independent violation distinct from the underlying Section 67(2)/ICDR breach it lets SEBI act on.",
+    // P0 recall-hardening sprint: same continuity fix as ICDR-160 above.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "COMPANIES-ACT-67-2",
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[Substantive prohibition] Section 67(2) prohibits a public company from giving financial assistance (directly or indirectly, by loan, guarantee, security or otherwise) for the purchase of, or subscription to, its own shares or its holding company's shares. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration/loan-financed-allotment fact; the bare fact that a preferential allotment occurred does not, by itself, establish that the company financed it. This is a company-law obligation distinct from — though it may accompany — a SEBI regulatory (ICDR/PFUTP) violation on the same facts; the two must not be presented as if SEBI's order necessarily adjudicated the Companies Act offence itself unless the source order actually did so.",
+    // P0 recall-hardening sprint: same continuity fix as ICDR-160 above.
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 37A -----
@@ -783,10 +1064,27 @@ export function retrievalRuleForProvision(provisionId: string): ProvisionRetriev
  * in the entered free text, or if either came from a dropdown signal
  * (sentenceIndices: [] — a deliberate, explicit officer assertion about the
  * scenario as a whole, not free text whose proximity to another fact is
- * otherwise unknown). See DetectedConcept.sentenceIndices. */
-export function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
+ * otherwise unknown). See DetectedConcept.sentenceIndices.
+ *
+ * continuityMap is optional and, when supplied, adds exactly one further
+ * basis: the two concepts' sentences are linked by the bounded cross-
+ * sentence continuity map (computeContinuitySentenceGroups,
+ * conceptExtraction.ts) — an ordinary investigation narrative splitting one
+ * factual object across an immediately adjacent sentence via a closed-class
+ * anaphoric cue ("the funds", "such proceeds", ...). Callers pass this map
+ * only for a rule/route that has explicitly opted in
+ * (ProvisionRetrievalRule.alternateRoutes[].allowSentenceContinuity); every
+ * other call site omits it, leaving same-sentence-only connectivity
+ * completely unchanged. */
+export function isConnected(a: DetectedConcept, b: DetectedConcept, continuityMap?: Map<number, Set<number>>): boolean {
   if (a.sentenceIndices.length === 0 || b.sentenceIndices.length === 0) return true;
-  return a.sentenceIndices.some((i) => b.sentenceIndices.includes(i));
+  if (a.sentenceIndices.some((i) => b.sentenceIndices.includes(i))) return true;
+  if (!continuityMap) return false;
+  const closureOf = (indices: number[]) => new Set(indices.flatMap((i) => [...(continuityMap.get(i) ?? new Set([i]))]));
+  const aClosure = closureOf(a.sentenceIndices);
+  const bClosure = closureOf(b.sentenceIndices);
+  for (const i of aClosure) if (bClosure.has(i)) return true;
+  return false;
 }
 
 /** True if the query's effective concepts satisfy every group of the given
@@ -795,10 +1093,13 @@ export function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
  * (see isConnected) — never merely both present anywhere in the scenario.
  * A rule with only one group needs no connectivity check. No rule for this
  * provision = ungated (existing behavior preserved for every provision
- * outside the broad-securities-fraud family this pass targets). */
-export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): boolean {
-  if (!rule) return true;
-  const matchesByGroup = rule.requireAllOfGroups.map((group) => effectiveConcepts.filter((c) => group.includes(c.id)));
+ * outside the broad-securities-fraud family this pass targets).
+ *
+ * continuityMap is threaded straight into isConnected and must only be
+ * passed by a caller evaluating a route that opted in via
+ * allowSentenceContinuity — see passesRetrievalGate below. */
+function satisfiesGroups(requireAllOfGroups: string[][], effectiveConcepts: DetectedConcept[], continuityMap?: Map<number, Set<number>>): boolean {
+  const matchesByGroup = requireAllOfGroups.map((group) => effectiveConcepts.filter((c) => group.includes(c.id)));
   if (matchesByGroup.some((matches) => matches.length === 0)) return false;
   if (matchesByGroup.length < 2) return true;
   // Current rules never exceed two groups; connectivity is checked pairwise
@@ -808,8 +1109,33 @@ export function passesRetrievalGate(rule: ProvisionRetrievalRule | undefined, ef
   for (let i = 0; i < matchesByGroup.length - 1; i++) {
     const left = matchesByGroup[i];
     const right = matchesByGroup[i + 1];
-    const connected = left.some((a) => right.some((b) => isConnected(a, b)));
+    const connected = left.some((a) => right.some((b) => isConnected(a, b, continuityMap)));
     if (!connected) return false;
   }
   return true;
+}
+
+/** continuityMap (see computeContinuitySentenceGroups, conceptExtraction.ts)
+ * is optional and, when supplied, is used ONLY while evaluating an alternate
+ * route that has set allowSentenceContinuity: true — never for the primary
+ * requireAllOfGroups route, and never for a route that has not explicitly
+ * opted in. This keeps the bounded continuity mechanism scoped to exactly
+ * the routes that requested it (currently: PFUTP-4-1's Explanation-based
+ * diversion route only), leaving every other provision's gate, and PFUTP-
+ * 4-1's own primary securities-dealing route, on same-sentence-only
+ * connectivity. */
+export function passesRetrievalGate(
+  rule: ProvisionRetrievalRule | undefined,
+  effectiveConcepts: DetectedConcept[],
+  continuityMap?: Map<number, Set<number>>
+): boolean {
+  if (!rule) return true;
+  if (satisfiesGroups(rule.requireAllOfGroups, effectiveConcepts, rule.allowSentenceContinuity ? continuityMap : undefined)) return true;
+  // Each alternate route is a wholly separate, independently-sufficient
+  // basis (see ProvisionRetrievalRule.alternateRoutes) — evaluated with its
+  // own groups and its own connectivity check, never mixed with the primary
+  // route's matches or another alternate route's matches.
+  return (rule.alternateRoutes ?? []).some((route) =>
+    satisfiesGroups(route.requireAllOfGroups, effectiveConcepts, route.allowSentenceContinuity ? continuityMap : undefined)
+  );
 }

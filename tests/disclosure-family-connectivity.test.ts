@@ -37,6 +37,31 @@
 // check on ANY conduct id (that class of fix was tried and reverted
 // elsewhere for breaking legitimate negated-topic phrasing); it only ever
 // narrows the small, already-generic subjectAgnostic set.
+//
+// PRE-MERGE LEGAL-VERIFICATION PASS (extends this hotfix): the connectivity
+// check above still had a residual gap for these exact two provisions —
+// hasConnectedTopicOverlap treats ANY topic in a SUPPORTING FINDING's own
+// transactionTypes bag as evidence of subject-match, but every one of
+// LODR-27-2-a/LODR-31-statement's real production links is on a
+// MULTI-ISSUE finding whose transactionTypes bag also happens to include
+// related_party_transaction (that same historical matter separately had an
+// RPT issue too). A live-corpus probe confirmed this still let a bare "an
+// RPT occurred and was not disclosed" scenario falsely promote both
+// provisions, even though neither has anything to do with related-party
+// transactions (verified: SEBI LODR Regulations, 2015, current
+// consolidated text — Reg 27(2)(a) is the quarterly corporate-governance
+// compliance-report submission duty; Reg 31(1) is the shareholding-pattern
+// statement submission duty). Both now have their own proper GATED
+// retrieval rule (provision-retrieval-rules.ts) requiring their own
+// subject-specific topic tag (governance_compliance_report /
+// shareholding_pattern_statement, concept-tags.ts) connected to a
+// non-disclosure fact — removing them from the ungated ANY-topic fallback
+// entirely. Tests 1, 3, 4, 5 below are updated accordingly: a blocked
+// gated provision surfaces via gateBlockedProvisionResults now, not
+// governingProvisionResults (that bucket is for UNGATED provisions whose
+// adverse predicate wasn't connected — these two no longer take that
+// path), and an RPT topic alone can never satisfy their gate. Test 7 is
+// replaced with a genuine own-subject positive control for each.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -101,11 +126,11 @@ function link(provisionId: string, justifyingTags: string[] = []) {
 function breachIds(result: ReturnType<typeof analyzeScenario>): string[] {
   return result.provisionResults.map((p) => p.provision.id);
 }
-function governingIds(result: ReturnType<typeof analyzeScenario>): string[] {
-  return result.governingProvisionResults.map((p) => p.provision.id);
-}
 function contradictedIds(result: ReturnType<typeof analyzeScenario>): string[] {
   return result.contradictedProvisionResults.map((p) => p.provision.id);
+}
+function gateBlockedIds(result: ReturnType<typeof analyzeScenario>): string[] {
+  return result.gateBlockedProvisionResults.map((p) => p.provision.id);
 }
 
 // Real production shape: both links carry EMPTY justifyingTags, exactly as
@@ -155,8 +180,13 @@ describe("Disclosure-family connectivity hotfix — mandatory regression matrix"
     );
     expect(breachIds(result)).not.toContain(reg27.id);
     expect(breachIds(result)).not.toContain(reg31.id);
-    expect(governingIds(result)).toContain(reg27.id);
-    expect(governingIds(result)).toContain(reg31.id);
+    // Now fully gated (see file header): a blocked gated provision is
+    // never silently dropped, but surfaces via gateBlockedProvisionResults
+    // ("requires additional facts"), not governingProvisionResults (that
+    // bucket is for ungated provisions whose adverse predicate wasn't
+    // connected — these two no longer take that path at all).
+    expect(gateBlockedIds(result)).toContain(reg27.id);
+    expect(gateBlockedIds(result)).toContain(reg31.id);
     expect(breachIds(result)).toContain(reg30.id);
   });
 
@@ -216,10 +246,12 @@ describe("Disclosure-family connectivity hotfix — mandatory regression matrix"
     expect(breachIds(result)).toContain(reg30.id);
   });
 
-  // 3. Governance compliance report not filed -> Reg 27(2)(a) topically
-  //    relevant (its own finding shares the query's connected topic), Reg
-  //    31 not automatically relevant (no topic overlap at all for it).
-  it("3. a governance-compliance-report-specific finding topically connects to Reg 27(2)(a) without dragging in Reg 31", () => {
+  // 3. An RPT topic connected to a generic non-disclosure fact must NOT
+  //    promote Reg 27(2)(a) — this exact shape ("a related party
+  //    transaction occurred and was not disclosed") is the false positive
+  //    the pre-merge legal-verification pass found and fixed: RPT is not
+  //    Reg 27(2)(a)'s own subject (see file header).
+  it("3. an RPT topic connected to a generic non-disclosure fact does not promote Reg 27(2)(a) (full gating fix)", () => {
     const reg27Finding = makeFinding({
       recordId: "GOV-01",
       caseName: "Governance Report Matter Ltd.",
@@ -228,56 +260,40 @@ describe("Disclosure-family connectivity hotfix — mandatory regression matrix"
       provisionIds: [reg27.id],
       provisionLinks: [link(reg27.id, [])],
     });
+    const result = analyzeScenario(
+      { freeText: "A related-party transaction occurred and the company failed to disclose it to the stock exchanges." },
+      [reg27Finding],
+      [reg27],
+      []
+    );
+    expect(breachIds(result)).not.toContain(reg27.id);
+    expect(gateBlockedIds(result)).toContain(reg27.id);
+  });
+
+  // 4. Mirror of case 3 for Reg 31: an RPT topic connected to a generic
+  //    non-disclosure fact must not promote Reg 31 either.
+  it("4. an RPT topic connected to a generic non-disclosure fact does not promote Reg 31 (full gating fix)", () => {
     const reg31Finding = makeFinding({
       recordId: "SHARE-01",
       caseName: "Unrelated Shareholding Matter Ltd.",
       allegedConduct: ["fund_diversion", "non_disclosure_of_information"],
-      transactionTypes: ["purchase_transaction"],
+      transactionTypes: ["related_party_transaction"],
       provisionIds: [reg31.id],
       provisionLinks: [link(reg31.id, [])],
     });
     const result = analyzeScenario(
       { freeText: "A related-party transaction occurred and the company failed to disclose it to the stock exchanges." },
-      [reg27Finding, reg31Finding],
-      [reg27, reg31],
+      [reg31Finding],
+      [reg31],
       []
     );
-    expect(breachIds(result)).toContain(reg27.id);
     expect(breachIds(result)).not.toContain(reg31.id);
-  });
-
-  // 4. Shareholding pattern omitted -> Reg 31 topically relevant, Reg
-  //    27(2)(a) not automatically relevant (mirror of case 3).
-  it("4. a shareholding-pattern-specific finding topically connects to Reg 31 without dragging in Reg 27(2)(a)", () => {
-    const reg31Finding = makeFinding({
-      recordId: "SHARE-02",
-      caseName: "Shareholding Matter Ltd.",
-      allegedConduct: ["fund_diversion", "non_disclosure_of_information"],
-      transactionTypes: ["purchase_transaction"],
-      provisionIds: [reg31.id],
-      provisionLinks: [link(reg31.id, [])],
-    });
-    const reg27Finding = makeFinding({
-      recordId: "GOV-02",
-      caseName: "Unrelated Governance Matter Ltd.",
-      allegedConduct: ["non_disclosure_of_information"],
-      transactionTypes: ["related_party_transaction"],
-      provisionIds: [reg27.id],
-      provisionLinks: [link(reg27.id, [])],
-    });
-    const result = analyzeScenario(
-      { freeText: "Fund diversion through a purchase transaction occurred and the company failed to disclose it to the stock exchanges." },
-      [reg31Finding, reg27Finding],
-      [reg31, reg27],
-      []
-    );
-    expect(breachIds(result)).toContain(reg31.id);
-    expect(breachIds(result)).not.toContain(reg27.id);
+    expect(gateBlockedIds(result)).toContain(reg31.id);
   });
 
   // 5. Generic "the company failed to disclose information" (no topic
   //    stated at all) -> must not fan out into either disclosure-family
-  //    provision; both remain additional-fact-required.
+  //    provision; both remain gate-blocked/additional-fact-required.
   it("5. a wholly generic nondisclosure statement does not fan out into Reg 27(2)(a) or Reg 31", () => {
     const reg27Finding = makeFinding({
       recordId: "GOV-03",
@@ -296,8 +312,6 @@ describe("Disclosure-family connectivity hotfix — mandatory regression matrix"
     const result = analyzeScenario({ freeText: "The company failed to disclose information." }, [reg27Finding, reg31Finding], [reg27, reg31], []);
     expect(breachIds(result)).not.toContain(reg27.id);
     expect(breachIds(result)).not.toContain(reg31.id);
-    expect(governingIds(result)).toContain(reg27.id);
-    expect(governingIds(result)).toContain(reg31.id);
   });
 
   // 6. Two clean controls -> zero breach candidates.
@@ -345,24 +359,44 @@ describe("Disclosure-family connectivity hotfix — mandatory regression matrix"
     expect(result.provisionResults).toHaveLength(0);
   });
 
-  // 7. Positive control: when a subject-agnostic conduct id IS genuinely
-  //    connected (same sentence) to a topic the finding actually shares,
-  //    promotion still proceeds normally — the fix must not be overbroad.
-  it("7. positive control: a subject-agnostic conduct id connected to a genuinely shared topic still promotes the ungated provision", () => {
+  // 7. Positive controls: Reg 27(2)(a) and Reg 31 can each still surface —
+  //    on their OWN actual subject, now via their proper gated rule
+  //    (governance_compliance_report / shareholding_pattern_statement,
+  //    concept-tags.ts) rather than the generic ungated fallback. The fix
+  //    must not be overbroad: it removes the RPT-topic false bridge, not
+  //    genuine promotion on the provision's real subject.
+  it("7a. positive control: Reg 27(2)(a) surfaces when its own subject (governance compliance report) is genuinely stated and connected to a non-disclosure fact", () => {
     const finding = makeFinding({
       recordId: "CONNECTED-01",
       allegedConduct: ["non_disclosure_of_information"],
-      transactionTypes: ["related_party_transaction"],
+      transactionTypes: ["governance_compliance_report"],
       provisionIds: [reg27.id],
       provisionLinks: [link(reg27.id, [])],
     });
     const result = analyzeScenario(
-      { freeText: "The related-party transaction was not disclosed to the stock exchanges." },
+      { freeText: "The listed company's quarterly compliance report on corporate governance was not disclosed to the stock exchanges." },
       [finding],
       [reg27],
       []
     );
     expect(breachIds(result)).toContain(reg27.id);
+  });
+
+  it("7b. positive control: Reg 31 surfaces when its own subject (shareholding pattern statement) is genuinely stated and connected to a non-disclosure fact", () => {
+    const finding = makeFinding({
+      recordId: "CONNECTED-02",
+      allegedConduct: ["non_disclosure_of_information"],
+      transactionTypes: ["shareholding_pattern_statement"],
+      provisionIds: [reg31.id],
+      provisionLinks: [link(reg31.id, [])],
+    });
+    const result = analyzeScenario(
+      { freeText: "The listed company's shareholding pattern statement was not disclosed to the stock exchanges." },
+      [finding],
+      [reg31],
+      []
+    );
+    expect(breachIds(result)).toContain(reg31.id);
   });
 
   // 8. Subject-SPECIFIC conduct ids remain completely unaffected by this

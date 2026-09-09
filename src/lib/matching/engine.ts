@@ -1,7 +1,7 @@
 import type { FindingStatus, LegalProvision, LegalTest, Order, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
-import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
+import { computeContinuitySentenceGroups, detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
 import { isConnected, passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
@@ -363,9 +363,13 @@ function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForPr
  * SEBI power/remedial provision (e.g. Section 11(2)(i)/(ia)) — has no
  * adverse predicate of its own at all, and returns an empty array; such a
  * provision can never be a "candidate breach", only "governing". */
+function allRouteGroups(rule: ProvisionRetrievalRule): string[][] {
+  return [...rule.requireAllOfGroups, ...(rule.alternateRoutes ?? []).flatMap((r) => r.requireAllOfGroups)];
+}
+
 function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
   if (!rule) return [];
-  return unique(rule.requireAllOfGroups.flat().filter(isAdverseConceptId));
+  return unique(allRouteGroups(rule).flat().filter(isAdverseConceptId));
 }
 
 /** The complement of adverseConceptIdsForRule: the TOPIC-kind (non-conduct)
@@ -378,7 +382,7 @@ function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAd
  * there is genuinely no topic anchor to compare against. */
 function topicConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
   if (!rule) return [];
-  return unique(rule.requireAllOfGroups.flat().filter((id) => !isAdverseConceptId(id)));
+  return unique(allRouteGroups(rule).flat().filter((id) => !isAdverseConceptId(id)));
 }
 
 /** P0 Question-A polarity CONNECTIVITY fix (see factPolarity.ts's own
@@ -465,6 +469,13 @@ export function analyzeScenario(
   // so the UI can disclose it.
   const { correctedText, corrections } = applySemanticAssist(query.freeText);
   const detected = detectConcepts(correctedText);
+  // P0 bounded cross-sentence factual continuity: see
+  // computeContinuitySentenceGroups (conceptExtraction.ts) and
+  // provision-retrieval-rules.ts's allowSentenceContinuity. Passed to
+  // passesRetrievalGate below; only a rule/route that explicitly opts in
+  // (currently: PFUTP-4-1's Explanation-based diversion route) ever uses it
+  // — every other gate stays same-sentence-only.
+  const continuityMap = computeContinuitySentenceGroups(correctedText);
   const actorSignal = query.actorSignal || null;
   const scenarioTypeSignal = query.scenarioTypeSignal || null;
   const evidenceSignal = query.evidenceSignal || null;
@@ -629,7 +640,7 @@ export function analyzeScenario(
     for (const link of sf.finding.provisionLinks) {
       if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
       const rule = retrievalRuleForProvision(link.provisionId);
-      const factualBlocked = !!rule && !passesRetrievalGate(rule, effectiveConcepts);
+      const factualBlocked = !!rule && !passesRetrievalGate(rule, effectiveConcepts, continuityMap);
       const actorBlocked = getActorApplicability(link.provisionId).status === "incompatible";
       if (factualBlocked || actorBlocked) {
         const reason: "factual_prerequisite" | "actor_incompatibility" | "both" =

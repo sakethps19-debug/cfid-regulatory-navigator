@@ -127,7 +127,7 @@ describe("per-provision contrary precedents: material relevance required", () =>
       recordId: "SYN-SUPPORT-WEAK-01",
       provisionIds: ["TEST-PROV-WEAK-CONTRARY"],
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       actorRoles: ["promoter"],
     });
     // This negative finding shares the SAME provision link and the same
@@ -141,7 +141,7 @@ describe("per-provision contrary precedents: material relevance required", () =>
       actorRoles: ["promoter"],
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted by the promoter.", actorSignal: "promoter" },
+      { freeText: "There was a false certification by the promoter.", actorSignal: "promoter" },
       [supporting, weakContrary],
       [provision],
       []
@@ -157,16 +157,16 @@ describe("per-provision contrary precedents: material relevance required", () =>
       recordId: "SYN-SUPPORT-STRONG-01",
       provisionIds: ["TEST-PROV-STRONG-CONTRARY"],
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
     });
     const strongContrary = makeFinding({
       recordId: "SYN-STRONG-CONTRARY-01",
       provisionIds: ["TEST-PROV-STRONG-CONTRARY"],
       findingStatus: "Not Confirmed in Final Order",
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
     });
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted." },
+      { freeText: "There was a false certification." },
       [supporting, strongContrary],
       [provision],
       []

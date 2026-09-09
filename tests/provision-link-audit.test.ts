@@ -61,9 +61,12 @@ describe("getGatedProvisionLinkAuditQueue", () => {
   });
 
   it("excludes a finding that only links to a provision with no retrieval rule at all", () => {
+    // LODR-16-1-b: still ungated (unlike LODR-27-2-a, which the pre-merge
+    // legal-verification pass moved to a gated rule — see
+    // disclosure-family-connectivity.test.ts).
     const finding = makeFinding({
       recordId: "REC-03",
-      provisionLinks: [{ provisionId: "LODR-27-2-a", justifyingTags: [] }],
+      provisionLinks: [{ provisionId: "LODR-16-1-b", justifyingTags: [] }],
     });
     expect(getGatedProvisionLinkAuditQueue([finding])).toHaveLength(0);
   });
@@ -90,7 +93,10 @@ describe("getGatedProvisionLinkAuditQueue", () => {
     });
     const queue = getGatedProvisionLinkAuditQueue([finding]);
     expect(queue).toHaveLength(1);
-    expect(queue[0].unreviewedGatedProvisionIds.sort()).toEqual(["LODR-23-2", "PFUTP-3-a", "SEBI-ACT-12A-a"]);
+    // LODR-27-2-a is now gated too (pre-merge legal-verification pass —
+    // see disclosure-family-connectivity.test.ts) and correctly appears
+    // alongside the other three gated families here.
+    expect(queue[0].unreviewedGatedProvisionIds.sort()).toEqual(["LODR-23-2", "LODR-27-2-a", "PFUTP-3-a", "SEBI-ACT-12A-a"]);
   });
 
   it("sorts findings with more unreviewed gated links first", () => {

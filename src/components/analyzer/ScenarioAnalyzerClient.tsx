@@ -26,7 +26,8 @@ import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengt
 import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
-import { formatDate } from "@/lib/formatDate";
+import { formatDate, formatDateTime } from "@/lib/formatDate";
+import { buildIndicativeRegulatoryAssessment } from "@/lib/indicativeAssessment";
 import { isPresentScenarioRelevant } from "@/lib/matching/historicalTreatment";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
@@ -353,7 +354,7 @@ function downloadTextFile(filename: string, content: string, mimeType = "text/pl
 export function resultToText(result: AnalysisResult): string {
   const lines: string[] = [];
   lines.push("CFID Regulatory Navigator: Scenario Analysis (research assistance only)");
-  lines.push(`Generated: ${new Date().toLocaleString()}`);
+  lines.push(`Generated: ${formatDateTime(new Date())}`);
   lines.push("");
   lines.push("Scenario:");
   lines.push(result.query.freeText);
@@ -371,8 +372,13 @@ export function resultToText(result: AnalysisResult): string {
     conduct: "alleged conduct",
     evidence: "evidence indicator",
   };
+  // Evidence is no longer collected as Analyzer input (see the Evidence
+  // Indicator removal) — an export must never read as the scenario being
+  // "incomplete" merely because evidence wasn't stated.
+  const exportCompletenessDetected = result.completeness.detected.filter((k) => k !== "evidence");
+  const exportCompletenessNotStated = result.completeness.notStated.filter((k) => k !== "evidence");
   lines.push(
-    `Scenario completeness: ${result.completeness.detected.length > 0 ? `touches on ${result.completeness.detected.map((k) => completenessLabels[k]).join(", ")}` : "no recognized category detected"}${result.completeness.notStated.length > 0 ? `; ${result.completeness.notStated.map((k) => completenessLabels[k]).join(", ")} not stated (not established as absent, simply not mentioned)` : ""}.`
+    `Scenario completeness: ${exportCompletenessDetected.length > 0 ? `touches on ${exportCompletenessDetected.map((k) => completenessLabels[k]).join(", ")}` : "no recognized category detected"}${exportCompletenessNotStated.length > 0 ? `; ${exportCompletenessNotStated.map((k) => completenessLabels[k]).join(", ")} not stated (not established as absent, simply not mentioned)` : ""}.`
   );
   lines.push("");
   if (!result.hasResults) {
@@ -556,7 +562,7 @@ export function resultToText(result: AnalysisResult): string {
 export function resultToResearchBrief(result: AnalysisResult): string {
   const lines: string[] = [];
   lines.push("CFID Scenario Research Brief (research assistance only — not a finding)");
-  lines.push(`Generated: ${new Date().toLocaleString()}`);
+  lines.push(`Generated: ${formatDateTime(new Date())}`);
   lines.push("");
 
   lines.push("1. Facts identified");
@@ -626,7 +632,7 @@ export function resultToResearchBrief(result: AnalysisResult): string {
         lines.push(`  Matter: ${mo.caseName} [${mo.comparabilityTier === "strongly_comparable" ? "strongly comparable" : "moderately comparable"}]`);
         for (const c of mo.cases) {
           lines.push(
-            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}${c.orderDate ? ` · ${c.orderDate}` : ""} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
+            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}${c.orderDate ? ` · ${formatDate(c.orderDate)}` : ""} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
           );
         }
       }
@@ -709,7 +715,7 @@ function csvRow(values: string[]): string {
 export function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
   rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
-  rows.push(csvRow([`Generated: ${new Date().toLocaleString()}`]));
+  rows.push(csvRow([`Generated: ${formatDateTime(new Date())}`]));
   const sorted = [...result.provisionResults].sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
   );
@@ -852,7 +858,6 @@ export function ScenarioAnalyzerClient() {
   const [freeText, setFreeText] = useState("");
   const [actorSignal, setActorSignal] = useState("");
   const [scenarioTypeSignal, setScenarioTypeSignal] = useState("");
-  const [evidenceSignal, setEvidenceSignal] = useState("");
   const [conductPeriod, setConductPeriod] = useState("");
   const [entityOrIssuer, setEntityOrIssuer] = useState("");
   const [amountInvolved, setAmountInvolved] = useState("");
@@ -905,7 +910,6 @@ export function ScenarioAnalyzerClient() {
           freeText,
           actorSignal,
           scenarioTypeSignal,
-          evidenceSignal,
           conductPeriod,
           entityOrIssuer,
           amountInvolved,
@@ -929,7 +933,6 @@ export function ScenarioAnalyzerClient() {
     setFreeText("");
     setActorSignal("");
     setScenarioTypeSignal("");
-    setEvidenceSignal("");
     setConductPeriod("");
     setEntityOrIssuer("");
     setAmountInvolved("");
@@ -1009,7 +1012,7 @@ export function ScenarioAnalyzerClient() {
           </div>
         </div>
 
-        <div className="mt-2 grid gap-4 pl-7 sm:grid-cols-3">
+        <div className="mt-2 grid gap-4 pl-7 sm:grid-cols-2">
           <div>
             <label htmlFor="actorSignal" className="block text-sm font-medium text-[var(--color-ink-700)]">
               Actor / role (optional)
@@ -1040,24 +1043,6 @@ export function ScenarioAnalyzerClient() {
             >
               <option value="">Any</option>
               {SCENARIO_TYPE_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="evidenceSignal" className="block text-sm font-medium text-[var(--color-ink-700)]">
-              Evidence indicator (optional)
-            </label>
-            <select
-              id="evidenceSignal"
-              value={evidenceSignal}
-              onChange={(e) => setEvidenceSignal(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[var(--color-border)] px-3 py-2 text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
-            >
-              <option value="">Any</option>
-              {EVIDENCE_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.label}
                 </option>
@@ -1201,8 +1186,28 @@ export function ScenarioAnalyzerClient() {
           ].map((p) => [p.finding.recordId, p.finding])
         ).values()];
         const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
+        // Evidence is no longer collected as Analyzer input (see the
+        // Evidence Indicator removal) — a scenario must never read as
+        // "incomplete" merely because evidence wasn't stated, so "evidence"
+        // is dropped from this completeness display entirely, not just the
+        // "not stated" nudge. Evidence remains available as supporting
+        // precedent metadata elsewhere (per-precedent evidence matrices,
+        // Research Brief) — only this Analyzer-input completeness readout
+        // changes.
+        const completenessDetected = result.completeness.detected.filter((k) => k !== "evidence");
+        const completenessNotStated = result.completeness.notStated.filter((k) => k !== "evidence");
+        const indicativeAssessment = buildIndicativeRegulatoryAssessment(result);
         return (
         <div className="space-y-6">
+          <div className="rounded-sm bg-[var(--color-gold-50)] px-4 py-3.5 ring-1 border-[var(--color-gold-100)]">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold-800)]">Indicative Regulatory Assessment</h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-900)]">{indicativeAssessment.paragraph}</p>
+            <p className="mt-2 text-xs font-medium text-[var(--color-ink-500)]">
+              Potentially relevant provisions: {indicativeAssessment.primaryCount} primary | {indicativeAssessment.relatedAncillaryCount} related/ancillary |{" "}
+              {indicativeAssessment.requiresAdditionalFactsCount} requiring additional facts
+            </p>
+          </div>
+
           {result.hasResults && (
             <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
               This result is based on the currently structured portion of the indexed case register; indexed orders
@@ -1298,12 +1303,12 @@ export function ScenarioAnalyzerClient() {
 
           <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
             <span className="font-semibold">Scenario completeness: </span>
-            {result.completeness.detected.length > 0 && (
-              <>your scenario touches on {result.completeness.detected.map((k) => COMPLETENESS_LABELS[k]).join(", ")}</>
+            {completenessDetected.length > 0 && (
+              <>your scenario touches on {completenessDetected.map((k) => COMPLETENESS_LABELS[k]).join(", ")}</>
             )}
-            {result.completeness.detected.length > 0 && result.completeness.notStated.length > 0 && "; "}
-            {result.completeness.notStated.length > 0 && (
-              <>{result.completeness.notStated.map((k) => COMPLETENESS_LABELS[k]).join(", ")} not stated</>
+            {completenessDetected.length > 0 && completenessNotStated.length > 0 && "; "}
+            {completenessNotStated.length > 0 && (
+              <>{completenessNotStated.map((k) => COMPLETENESS_LABELS[k]).join(", ")} not stated</>
             )}
             <p className="mt-1 text-[var(--color-ink-500)]">
               &quot;Not stated&quot; means this category was not mentioned in the facts entered or the filters
@@ -1784,13 +1789,6 @@ export function ScenarioAnalyzerClient() {
                             typed. It does not exclude any result that fails to match it.
                           </li>
                         )}
-                        {evidenceSignal && (
-                          <li>
-                            &quot;Evidence indicator: {evidenceLabel(evidenceSignal)}&quot; was selected and was treated as an asserted
-                            fact of this scenario for matching, on the same footing as text you typed. It does not exclude any result
-                            that fails to match it.
-                          </li>
-                        )}
                         {result.semanticAssist.length > 0 && <li>One or more terms in the entered text were spelling-corrected before matching (see &quot;Read as&quot; above).</li>}
                       </ul>
                     </div>
@@ -2040,6 +2038,19 @@ export function ScenarioAnalyzerClient() {
                 // isPresentScenarioRelevant in historicalTreatment.ts —
                 // the SAME rule this array already arrives sorted by.
                 const relevantEntries = result.historicalTreatment.entries.filter(isPresentScenarioRelevant);
+                // Task 5 (pre-demo correction sprint) presentation-only
+                // follow-up: primary_candidate/related_ancillary entries
+                // are candidate BREACHES on the present facts; a
+                // governing_relevant entry here (rank 1 — genuinely useful,
+                // not merely contextual) governs the same subject matter
+                // but carries no apparent breach. Split into two visually
+                // distinct groups within this same first-screen section so
+                // the two never read as equally concerning, without moving
+                // governing_relevant out of the first screen entirely or
+                // touching Question-A classification, comparability
+                // scoring, matter identity or outcomes.
+                const candidateEntries = relevantEntries.filter((e) => e.currentCandidateTier !== "governing_relevant");
+                const governingOnlyEntries = relevantEntries.filter((e) => e.currentCandidateTier === "governing_relevant");
                 const otherEntries = result.historicalTreatment.entries.filter((e) => !isPresentScenarioRelevant(e));
                 const otherAttributedEntries = otherEntries.filter((e) => e.presentationTier === "fact_attributed");
                 const otherCitedOnlyEntries = otherEntries.filter((e) => e.presentationTier === "comparable_unverified");
@@ -2171,7 +2182,17 @@ export function ScenarioAnalyzerClient() {
                         Historical treatment for provisions relevant to the present scenario
                       </h4>
                       {relevantEntries.length > 0 ? (
-                        <ul className="mt-2 space-y-2">{relevantEntries.map(renderEntry)}</ul>
+                        <>
+                          {candidateEntries.length > 0 && <ul className="mt-2 space-y-2">{candidateEntries.map(renderEntry)}</ul>}
+                          {governingOnlyEntries.length > 0 && (
+                            <div className={candidateEntries.length > 0 ? "mt-4 border-t border-[var(--color-border)] pt-3" : "mt-2"}>
+                              <p className="text-xs font-medium text-[var(--color-ink-500)]">
+                                Governing provisions — no apparent breach on the present facts
+                              </p>
+                              <ul className="mt-2 space-y-2">{governingOnlyEntries.map(renderEntry)}</ul>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                           No historically comparable matter was found for a provision that is currently a primary, related/ancillary or

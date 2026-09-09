@@ -188,6 +188,123 @@ export function splitIntoSentences(text: string): string[] {
     .filter(Boolean);
 }
 
+// P0 bounded cross-sentence factual continuity (multi-sentence investigation
+// narratives): an ordinary officer narrative routinely splits ONE factual
+// object across sentences purely for readability - "A listed company
+// advanced substantial funds to entities connected with its promoter group.
+// The funds were subsequently transferred through multiple entities and
+// were not used for the stated business purpose." Same-sentence-only
+// connectivity (isConnected, provision-retrieval-rules.ts) cannot bridge
+// this: "listed company" sits in sentence 0, the actual diversion facts in
+// sentence 1, joined only by the anaphor "The funds". This is NOT a general
+// relaxation of connectivity (scenario-wide bag-of-tags is exactly what the
+// P0 provision-precision remediation eliminated) - it is a narrow,
+// deterministic, CLOSED-CLASS continuation-phrase rule: a sentence is
+// treated as continuing the IMMEDIATELY preceding one only when it opens
+// with one of a small set of anaphoric references to a fund/transaction
+// object ("the funds", "such proceeds", "the transaction", ...), and never
+// when a break cue ("separately", "a different X", "an unrelated X") is
+// present - both a genuinely distinct object introduced by name (an
+// unrelated entity's own funds) and an explicit contrast marker fail to
+// match. Deliberately excludes bare "the company" - that phrase recurs in
+// nearly every sentence of this domain's narratives and would functionally
+// re-open scenario-wide bridging (the actor is already tracked separately
+// and robustly via the `company`/`promoter` actor tags; this mechanism
+// exists specifically for the fund/transaction OBJECT a pronoun can hide).
+const CONTINUATION_CUE_PHRASES = [
+  "the funds",
+  "such funds",
+  "these funds",
+  "the said funds",
+  "the amount",
+  "such amount",
+  "these amounts",
+  "the said amount",
+  "the proceeds",
+  "such proceeds",
+  "these proceeds",
+  "the said proceeds",
+  "the advance",
+  "such advance",
+  "these advances",
+  "the said advance",
+  "the transaction",
+  "such transaction",
+  "the said transaction",
+  // "the consideration" added (P0 recall-hardening sprint): the same
+  // anaphoric-object pattern above, for a preferential-allotment narrative
+  // that states the allotment in one sentence and the fate of its
+  // CONSIDERATION (the payment/value received for it) in the next -- e.g.
+  // "A listed company made a preferential allotment of shares. The
+  // consideration for the allotment was funded through a circular
+  // movement of money...". Scoped to only the two provisions whose own
+  // subject is genuinely the sufficiency of that consideration (ICDR-160,
+  // Companies Act ss.24/67(2) — see provision-retrieval-rules.ts); the
+  // word itself is specific enough (payment/value for an allotment, not a
+  // generic English word) to carry the same closed-class-anaphor design as
+  // every other cue above.
+  "the consideration",
+  "such consideration",
+  "the said consideration",
+];
+
+/** Cue phrases that affirmatively signal the sentence is introducing a
+ * SEPARATE, distinct factual episode rather than continuing the prior
+ * one - checked first and, if present WITHIN THE SAME LEADING WINDOW used
+ * for the continuation cue below, always defeats a continuation-cue match
+ * (e.g. "Separately, an unrelated entity diverted funds" must never read as
+ * continuing the previous sentence's funds merely because a later,
+ * unrelated fact also happens to be about funds). Deliberately checked only
+ * within the sentence's OWN leading words, not anywhere in the sentence: an
+ * ordinary sentence can legitimately use a phrase like "unrelated to" deep
+ * inside its own factual assertion without introducing a new episode at all
+ * (e.g. "Such funds were subsequently diverted for purposes unrelated to
+ * the stated business purpose" is still squarely about the SAME funds -
+ * "unrelated to" there modifies the funds' end use, not the sentence's
+ * relationship to the prior one). A break cue only means what it says when
+ * it is itself how the sentence opens. */
+const CONTINUATION_BREAK_CUE_PHRASES = ["separately", "a different", "an unrelated", "unrelated to", "in a separate", "on a separate occasion"];
+
+/** How many leading words of a sentence are scanned for a continuation cue
+ * (and, symmetrically, a break cue) - kept short so either signal must
+ * genuinely open the sentence's own factual assertion ("The funds were...",
+ * "Separately, an unrelated entity..."), not merely appear somewhere within
+ * a long sentence, which would be a much weaker, less deterministic signal
+ * for a continuation cue, and a false trigger on ordinary phrasing for a
+ * break cue (see CONTINUATION_BREAK_CUE_PHRASES above). */
+const CONTINUATION_CUE_LEAD_WORDS = 5;
+
+function sentenceContinuesPrevious(normalizedSentence: string): boolean {
+  const leadWords = normalizedSentence.split(" ").slice(0, CONTINUATION_CUE_LEAD_WORDS).join(" ");
+  if (CONTINUATION_BREAK_CUE_PHRASES.some((cue) => leadWords.includes(cue))) return false;
+  return CONTINUATION_CUE_PHRASES.some((cue) => leadWords.startsWith(cue) || leadWords.includes(` ${cue}`));
+}
+
+/** For each sentence index, the CLOSURE of sentence indices it is
+ * transitively continuity-linked to, backward only (a sentence's closure
+ * always includes itself). Two concepts detected in different sentences
+ * are continuity-connected exactly when their sentences' closures
+ * intersect - see isConnected's continuityMap parameter
+ * (provision-retrieval-rules.ts). A break anywhere stops the chain, so
+ * this can never bridge two genuinely unrelated episodes elsewhere in a
+ * long scenario, only an immediately adjacent, deterministically-signalled
+ * continuation. */
+export function computeContinuitySentenceGroups(freeText: string): Map<number, Set<number>> {
+  const sentences = splitIntoSentences(freeText)
+    .map(normalizeText)
+    .filter(Boolean);
+  const closures = new Map<number, Set<number>>();
+  for (let i = 0; i < sentences.length; i++) {
+    if (i === 0 || !sentenceContinuesPrevious(sentences[i])) {
+      closures.set(i, new Set([i]));
+      continue;
+    }
+    const previousClosure = closures.get(i - 1) ?? new Set([i - 1]);
+    closures.set(i, new Set([...previousClosure, i]));
+  }
+  return closures;
+}
+
 /**
  * Deterministic keyword/synonym detection: for each controlled-vocabulary
  * concept tag, check whether any of its synonym phrases appear as a

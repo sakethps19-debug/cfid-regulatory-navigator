@@ -68,7 +68,7 @@ describe("buildEffectiveScenarioConcepts", () => {
   });
 
   it("does not duplicate a signal id already present from free-text detection", () => {
-    const detected = detectConcepts("Company funds were diverted by the promoter.");
+    const detected = detectConcepts("There was a false certification by the promoter.");
     expect(detected.some((c) => c.id === "promoter")).toBe(true);
     const merged = buildEffectiveScenarioConcepts(detected, "promoter", null, null);
     expect(merged.filter((c) => c.id === "promoter")).toHaveLength(1);
@@ -91,13 +91,13 @@ describe("dropdown-selected concepts are visible in matched-ingredient output, n
     const finding = makeFinding({
       recordId: "SYN-SIGNAL-01",
       provisionIds: ["TEST-PROV-SIGNAL-VISIBILITY"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       actorRoles: ["promoter"],
     });
     // Free text mentions the conduct but deliberately never says "promoter"
     // or any actor-role synonym - only the dropdown selection asserts it.
     const result = analyzeScenario(
-      { freeText: "Company funds were diverted.", actorSignal: "promoter" },
+      { freeText: "There was a false certification.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
@@ -113,17 +113,17 @@ describe("dropdown-selected concepts are visible in matched-ingredient output, n
     const finding = makeFinding({
       recordId: "SYN-PARITY-01",
       provisionIds: ["TEST-PROV-SIGNAL-PARITY"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       actorRoles: ["promoter"],
     });
     const viaFreeText = analyzeScenario(
-      { freeText: "Company funds were diverted by the promoter." },
+      { freeText: "There was a false certification by the promoter." },
       [finding],
       [provision],
       []
     );
     const viaSignal = analyzeScenario(
-      { freeText: "Company funds were diverted.", actorSignal: "promoter" },
+      { freeText: "There was a false certification.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
@@ -140,17 +140,17 @@ describe("dropdown-selected concepts are visible in matched-ingredient output, n
     const finding = makeFinding({
       recordId: "SYN-NO-DOUBLE-01",
       provisionIds: ["TEST-PROV-NO-DOUBLE-COUNT"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       actorRoles: ["promoter"],
     });
     const redundant = analyzeScenario(
-      { freeText: "Company funds were diverted by the promoter.", actorSignal: "promoter" },
+      { freeText: "There was a false certification by the promoter.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
     );
     const freeTextOnly = analyzeScenario(
-      { freeText: "Company funds were diverted by the promoter." },
+      { freeText: "There was a false certification by the promoter." },
       [finding],
       [provision],
       []
@@ -165,17 +165,17 @@ describe("dropdown-selected concepts are visible in matched-ingredient output, n
     const finding = makeFinding({
       recordId: "SYN-NARROW-01",
       provisionIds: ["TEST-PROV-NARROW"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["false_compliance_certification"],
       evidenceTypes: ["bank_statements_flow"],
       provisionLinks: [{ provisionId: "TEST-PROV-NARROW", justifyingTags: ["bank_statements_flow"] }],
     });
     // Free text alone never mentions the evidence type, so the narrowed
     // link should not surface without the dropdown selection.
-    const withoutSignal = analyzeScenario({ freeText: "Company funds were diverted." }, [finding], [provision], []);
+    const withoutSignal = analyzeScenario({ freeText: "There was a false certification." }, [finding], [provision], []);
     expect(withoutSignal.provisionResults.find((p) => p.provision.id === "TEST-PROV-NARROW")).toBeUndefined();
 
     const withSignal = analyzeScenario(
-      { freeText: "Company funds were diverted.", evidenceSignal: "bank_statements_flow" },
+      { freeText: "There was a false certification.", evidenceSignal: "bank_statements_flow" },
       [finding],
       [provision],
       []
