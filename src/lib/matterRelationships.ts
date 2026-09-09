@@ -62,7 +62,7 @@ function labelForRelationship(r: OrderRelationship, currentOrderId: string): str
  * "This final order resolves the interim order below." Reuses the exact
  * same direction table so the sibling-list badges and the narrative
  * sentences below can never drift apart or disagree on direction. */
-function currentOrderRelationLabel(r: OrderRelationship, currentOrderId: string): string | undefined {
+export function currentOrderRelationLabel(r: OrderRelationship, currentOrderId: string): string | undefined {
   const table = RELATIONSHIP_LABELS[r.relationshipType];
   if (!table) return undefined;
   return r.fromOrderId === currentOrderId ? table.whenCurrentIsTo : table.whenCurrentIsFrom;
