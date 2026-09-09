@@ -148,6 +148,24 @@ function classifyOrderStage(finding: ScenarioFinding, orderById: Map<string, Ord
   return "unresolved_or_not_independently_classified";
 }
 
+/** The date of the specific linked order that classifyOrderStage actually
+ * picked (the highest-priority stage among this finding's linked orders) —
+ * never a different order's date, and never fabricated or derived from a
+ * filename/string when no structured order date is on file. A finding can
+ * link to more than one order at the SAME picked stage class only in
+ * unusual data-entry cases; the most recent dated one is used in that case.
+ * Returns null when no linked order at the picked stage carries a date. */
+function resolveOrderDate(finding: ScenarioFinding, orderById: Map<string, Order>, stageClass: HistoricalOrderStageClass): string | null {
+  const datesAtStage = finding.orderIds
+    .map((id) => orderById.get(id))
+    .filter((o): o is Order => !!o)
+    .filter((o) => ORDER_STAGE_TO_CLASS[o.orderStage] === stageClass)
+    .map((o) => o.orderDate)
+    .filter((d): d is string => !!d)
+    .sort();
+  return datesAtStage.length > 0 ? datesAtStage[datesAtStage.length - 1] : null;
+}
+
 // ----- Defect #1/#4 fix: matter identity, three tiers -----
 
 /** Resolves a finding's matterKey via the strongest available identity, in
@@ -461,6 +479,7 @@ export function buildHistoricalTreatment(
     for (const link of sf.finding.provisionLinks) {
       const hasCuratedTags = link.justifyingTags.length > 0;
       if (hasCuratedTags && !link.justifyingTags.some((t) => detectedIds.has(t))) continue; // curated evidence: different fact within this finding
+      const orderStageClass = classifyOrderStage(sf.finding, orderById);
       const entry: HistoricalTreatmentCaseEntry = {
         recordId: sf.finding.recordId,
         caseName: sf.finding.caseName,
@@ -468,7 +487,8 @@ export function buildHistoricalTreatment(
         matterIdBasis,
         findingStatus: sf.finding.findingStatus,
         effectiveStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship),
-        orderStageClass: classifyOrderStage(sf.finding, orderById),
+        orderStageClass,
+        orderDate: resolveOrderDate(sf.finding, orderById, orderStageClass),
         noticeeActors: sf.finding.noticeeActors,
         factualSimilarities: sf.matchedIngredients,
         factualDifferences: additionalPrecedentFactsNotMatched(sf.finding, sf.matchedIngredients),

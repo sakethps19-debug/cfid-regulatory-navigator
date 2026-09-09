@@ -26,6 +26,7 @@ import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengt
 import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
+import { formatDate } from "@/lib/formatDate";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -573,7 +574,7 @@ export function resultToResearchBrief(result: AnalysisResult): string {
         lines.push(`  Matter: ${mo.caseName} [${mo.comparabilityTier === "strongly_comparable" ? "strongly comparable" : "moderately comparable"}]`);
         for (const c of mo.cases) {
           lines.push(
-            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
+            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}${c.orderDate ? ` · ${c.orderDate}` : ""} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
           );
         }
       }
@@ -2068,7 +2069,8 @@ export function ScenarioAnalyzerClient() {
                                           </span>
                                         </div>
                                         <p className="mt-1 text-xs text-[var(--color-ink-700)]">
-                                          Order stage: {c.orderStageClass.replace(/_/g, " ")}
+                                          {HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}
+                                          {c.orderDate && ` · ${formatDate(c.orderDate)}`}
                                           {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
                                         </p>
                                         {c.factualSimilarities.length > 0 && (

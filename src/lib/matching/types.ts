@@ -439,6 +439,12 @@ export interface HistoricalTreatmentCaseEntry {
    * engine.ts), never the finding's bare overall status. */
   effectiveStatus: FindingStatus;
   orderStageClass: HistoricalOrderStageClass;
+  /** The date of the specific linked order orderStageClass was actually
+   * derived from (see resolveOrderDate in historicalTreatment.ts) — null
+   * when no linked order at that stage carries a structured date on file.
+   * Never fabricated, and never derived from a filename or free-text
+   * string when no structured orders.order_date exists. */
+  orderDate: string | null;
   noticeeActors: string[];
   /** Matched-ingredient labels shared with the entered scenario (bare
    * factual overlap, computed the same way as scoreFinding — never a legal

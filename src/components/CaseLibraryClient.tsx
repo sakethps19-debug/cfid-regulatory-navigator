@@ -27,7 +27,7 @@ const ORDER_STAGE_ORDER: OrderStage[] = [
   "Other",
 ];
 
-export function CaseLibraryClient({ orders }: { orders: Order[] }) {
+export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSearchText: string })[] }) {
   const [stageFilter, setStageFilter] = useState<"all" | OrderStage>("all");
   const [query, setQuery] = useState("");
 
@@ -41,7 +41,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
     const q = query.trim().toLowerCase();
     return orders.filter((o) => {
       if (stageFilter !== "all" && o.orderStage !== stageFilter) return false;
-      if (q && ![o.caseName, o.orderNumber, o.scopeNote].some((field) => field?.toLowerCase().includes(q))) return false;
+      if (q && ![o.caseName, o.orderNumber, o.scopeNote, o.provisionSearchText].some((field) => field?.toLowerCase().includes(q))) return false;
       return true;
     });
   }, [orders, stageFilter, query]);
@@ -70,7 +70,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
         ))}
         <input
           type="search"
-          placeholder="Search case name, order number, or scenario keywords…"
+          placeholder="Search case name, order number, or provision (e.g. Regulation 23, Ind AS 24)…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="ml-auto rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-ink-900)]  focus:border-[var(--color-gold-600)] focus:outline-none focus:ring-2 focus:border-[var(--color-gold-100)]"
