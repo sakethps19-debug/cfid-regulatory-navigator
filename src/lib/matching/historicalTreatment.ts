@@ -100,6 +100,7 @@ import type {
   CandidateTier,
   ContraryOnlyProvisionResult,
   GateBlockedProvisionResult,
+  GoverningProvisionResult,
   HistoricalComparabilityTier,
   HistoricalOrderStageClass,
   HistoricalPresentationTier,
@@ -384,6 +385,45 @@ function presentationTierFor(attributedFindingsCount: number, comparableMatterCo
   return "excluded_different";
 }
 
+const PRESENTATION_RANK: Record<HistoricalPresentationTier, number> = { fact_attributed: 3, comparable_unverified: 2, contextually_related: 1, excluded_different: 0 };
+
+/** Demo-priority presentation pass: the officer-facing rank for CURRENT-
+ * SCENARIO applicability (Question A), used as the PRIMARY sort key for
+ * entries — ahead of presentationTier/historical-volume, which only ever
+ * decide order WITHIN one applicability class (see the sort in
+ * buildHistoricalTreatment). A provision cited in dozens of historical
+ * matters but currently gate-blocked (requires_additional_fact),
+ * historical_precedent_only, or not_currently_a_candidate must never
+ * outrank a genuine present-scenario candidate — those three, plus a
+ * governing_relevant entry with only generic contextual overlap (no real
+ * comparable-matter support of its own), all rank 0 and belong in the
+ * officer's collapsed "other provisions seen in comparable matters"
+ * section rather than the first screen. Pure ranking function: never
+ * changes currentCandidateTier, presentationTier, or any count. */
+function applicabilitySectionRank(entry: HistoricalTreatmentProvisionEntry): number {
+  switch (entry.currentCandidateTier) {
+    case "primary_candidate":
+      return 3;
+    case "related_ancillary":
+      return 2;
+    case "governing_relevant":
+      return entry.presentationTier === "contextually_related" ? 0 : 1;
+    default:
+      return 0;
+  }
+}
+
+/** True for an entry belonging in the officer's first-screen section
+ * ("Historical treatment for provisions relevant to the present
+ * scenario") rather than the collapsed "other provisions seen in
+ * comparable matters" section. Exported so the UI splits entries into the
+ * two sections using the exact same rule this module ranks them by,
+ * rather than re-deriving a parallel definition. See
+ * applicabilitySectionRank. */
+export function isPresentScenarioRelevant(entry: HistoricalTreatmentProvisionEntry): boolean {
+  return applicabilitySectionRank(entry) > 0;
+}
+
 export function buildHistoricalTreatment(
   effectiveConcepts: DetectedConcept[],
   scenarioFreeText: string,
@@ -392,7 +432,22 @@ export function buildHistoricalTreatment(
   orders: Order[],
   provisionResults: ProvisionResult[],
   gateBlockedProvisionResults: GateBlockedProvisionResult[],
-  contraryOnlyProvisionResults: ContraryOnlyProvisionResult[]
+  contraryOnlyProvisionResults: ContraryOnlyProvisionResult[],
+  // Demo-priority presentation pass: previously omitted from this
+  // cross-reference entirely, so a genuinely governing (additional-fact-
+  // required / no-apparent-breach) or affirmatively contradicted provision
+  // read here as the same generic "not_currently_a_candidate" as a
+  // provision Question A never considered at all — never wrong, but not
+  // the full picture Task 2/6 of this pass calls for ("governing_relevant
+  // where genuinely useful", "RPT provisions may remain visible in the
+  // governing/contradicted context"). Both default to an empty array so
+  // every existing call site remains valid without updating. Classifies
+  // NOTHING new — both arrays are the SAME already-computed Question-A
+  // output threaded through one step further, exactly mirroring the
+  // existing provisionResults/gateBlockedProvisionResults/
+  // contraryOnlyProvisionResults pattern below.
+  governingProvisionResults: GoverningProvisionResult[] = [],
+  contradictedProvisionResults: GoverningProvisionResult[] = []
 ): HistoricalTreatmentResult {
   const orderById = new Map(orders.map((o) => [o.id, o]));
   const provisionById = new Map(provisions.map((p) => [p.id, p]));
@@ -525,6 +580,23 @@ export function buildHistoricalTreatment(
       note: `On the present facts, the only comparable precedent(s) for this provision were NOT confirmed — no supporting precedent exists for it here.`,
     });
   }
+  // Demo-priority presentation pass: governing (additional-fact-required /
+  // no-apparent-breach) and affirmatively CONTRADICTED provisions — see
+  // the buildHistoricalTreatment parameter doc comment above. Each
+  // GoverningProvisionResult already carries its own well-formed `note`
+  // (from engine.ts), reused verbatim here rather than re-derived, so a
+  // contradicted provision's note stays distinguishable from a merely
+  // governing one even though both currently share candidateTier
+  // "governing_relevant" (see CandidateTier — there is no separate
+  // "contradicted" tier; polarityClass is the only finer signal).
+  for (const g of governingProvisionResults) {
+    if (currentByProvision.has(g.provision.id)) continue;
+    currentByProvision.set(g.provision.id, { tier: g.candidateTier, note: `On the present facts, ${g.note}` });
+  }
+  for (const c of contradictedProvisionResults) {
+    if (currentByProvision.has(c.provision.id)) continue;
+    currentByProvision.set(c.provision.id, { tier: c.candidateTier, note: `On the present facts, ${c.note}` });
+  }
 
   const entries: HistoricalTreatmentProvisionEntry[] = [];
   for (const [provisionId, cases] of casesByProvision.entries()) {
@@ -629,15 +701,21 @@ export function buildHistoricalTreatment(
     });
   }
 
-  // Attributed provisions sort first, then comparable-unverified, then
-  // contextually-related — the SAME presentationTier boundary the UI
-  // renders as three (four, counting the audit-only excluded view)
-  // separate sections, so an officer scanning top-to-bottom always sees
-  // the strongest section first. Within a tier, sorted by matter counts.
-  const PRESENTATION_RANK: Record<HistoricalPresentationTier, number> = { fact_attributed: 3, comparable_unverified: 2, contextually_related: 1, excluded_different: 0 };
+  // Demo-priority presentation pass: CURRENT-SCENARIO APPLICABILITY
+  // (Question A) must rank before HISTORICAL FREQUENCY (Question B) — a
+  // provision cited in dozens of historical matters but currently
+  // gate-blocked on the present facts must never visually outrank a
+  // primary candidate with only a handful of historical matters. This is
+  // the PRIMARY sort key, ahead of the presentationTier/volume tiebreakers
+  // below (which still decide order WITHIN one applicability class).
+  // Ranking only — changes no comparability tier, no comparableMatterCount,
+  // no presentationTier, no outcome data, only the ORDER entries are
+  // returned in. See applicabilitySectionRank/isPresentScenarioRelevant.
   entries.sort(
     (a, b) =>
+      applicabilitySectionRank(b) - applicabilitySectionRank(a) ||
       PRESENTATION_RANK[b.presentationTier] - PRESENTATION_RANK[a.presentationTier] ||
+      b.stronglyComparableMatterCount - a.stronglyComparableMatterCount ||
       b.comparableMatterCount - a.comparableMatterCount ||
       b.contextuallyRelatedMatterCount - a.contextuallyRelatedMatterCount
   );

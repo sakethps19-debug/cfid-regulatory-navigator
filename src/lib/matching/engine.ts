@@ -1085,7 +1085,9 @@ export function analyzeScenario(
     orders,
     provisionResults,
     gateBlockedProvisionResults,
-    contraryOnlyProvisionResults
+    contraryOnlyProvisionResults,
+    governingProvisionResults,
+    contradictedProvisionResults
   );
 
   return {
