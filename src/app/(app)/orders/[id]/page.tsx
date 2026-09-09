@@ -167,7 +167,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   ))}
                 </ul>
               ) : fallbackNoticeeNames.length > 0 ? (
-                fallbackNoticeeNames.join(", ")
+                <>
+                  <p className="text-xs italic text-[var(--color-ink-500)]">
+                    Structured noticee list not yet captured for this order — names below are recorded in this
+                    order&apos;s structured findings, not independently verified as the complete noticee list.
+                  </p>
+                  <p className="mt-1">{fallbackNoticeeNames.join(", ")}</p>
+                </>
               ) : (
                 "Not yet captured for this order"
               )}
@@ -191,15 +197,23 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       {provisionsConsidered.length > 0 && (
         <Card className="mb-6">
-          <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Provisions considered</h2>
+          <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Provisions considered</h2>
+          <p className="mb-3 text-left text-xs text-[var(--color-ink-500)]">
+            Every provision this order&apos;s findings actually cite — substantive prohibitions, disclosure and
+            governance obligations, and the penalty/power/attribution provisions the order itself invoked. This is
+            historical-order research, not a claim that each is a violation.
+          </p>
           <ul className="flex flex-wrap gap-2">
             {provisionsConsidered.map(({ summary, provision: p }) => (
               <li key={p.id}>
                 <Link
                   href={`/provisions/${p.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-sm bg-[var(--color-neutral-50)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
+                  className="inline-flex flex-wrap items-center gap-1.5 rounded-sm bg-[var(--color-neutral-50)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
                 >
                   {p.instrument} · {p.provisionNumber}
+                  <span className="rounded-sm bg-[var(--color-neutral-100)] px-1.5 py-0.5 text-xs font-normal text-[var(--color-ink-500)]">
+                    {summary.legalFunctionLabel}
+                  </span>
                   {summary.notUpheldOnly && (
                     <span className="rounded-sm bg-[var(--color-neutral-100)] px-1.5 py-0.5 text-xs font-normal text-[var(--color-ink-500)]">
                       not upheld

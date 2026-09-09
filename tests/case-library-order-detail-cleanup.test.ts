@@ -8,6 +8,8 @@ import { sortOrdersNewestFirst } from "@/lib/sortOrdersNewestFirst";
 import { caseLibraryOrderTypeFamily, CASE_LIBRARY_ORDER_TYPE_FAMILY_ORDER } from "@/lib/orderTypeDisplayFamily";
 import { orderBroadScenarios } from "@/lib/orderBroadScenarios";
 import { orderProvisionsConsidered } from "@/lib/orderProvisionsConsidered";
+import { isEligibleForFixedScenarioOutput } from "@/lib/fixedScenarioResolver";
+import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 import type { Order, OrderStage, ScenarioFinding } from "@/types/domain";
 
 function makeOrder(overrides: Partial<Order> & { id: string }): Order {
@@ -159,8 +161,36 @@ describe("caseLibraryOrderTypeFamily", () => {
 });
 
 // ---------------------------------------------------------------------
-// Part 9/18-8,9,10: Provisions Considered — exact identity, child != parent,
-// negative/not-upheld provisions remain listed but flagged
+// Item 6-1: contrast test — Fixed Scenario Analysis's candidate-violation
+// eligibility filter (a DIFFERENT question from Case Detail's "what did
+// this order consider") still correctly excludes penalty/power/
+// attribution provisions from every candidate-violation scenario.
+// ---------------------------------------------------------------------
+describe("Fixed Scenario Analysis still excludes penalty/power/attribution provisions from candidate-violation output (unaffected by the Case Detail correction)", () => {
+  it("SEBI-ACT-15HA/15HB/27 are ineligible for Fixed Scenario candidate-violation output", () => {
+    expect(isEligibleForFixedScenarioOutput("SEBI-ACT-15HA")).toBe(false);
+    expect(isEligibleForFixedScenarioOutput("SEBI-ACT-15HB")).toBe(false);
+    expect(isEligibleForFixedScenarioOutput("SEBI-ACT-27")).toBe(false);
+  });
+
+  it("no curated FIXED_SCENARIOS entry lists SEBI-ACT-15HA/15HB/27 as a candidate provision", () => {
+    for (const s of FIXED_SCENARIOS) {
+      expect(s.provisionIds).not.toContain("SEBI-ACT-15HA");
+      expect(s.provisionIds).not.toContain("SEBI-ACT-15HB");
+      expect(s.provisionIds).not.toContain("SEBI-ACT-27");
+    }
+  });
+
+});
+
+// ---------------------------------------------------------------------
+// Part 9/18-8,9,10 (as corrected): Provisions Considered — exact
+// identity, child != parent, negative/not-upheld provisions remain
+// listed but flagged, and — CORRECTION — penalty/power/attribution
+// provisions are NEVER filtered out here (that filter belongs only to
+// Fixed Scenario Analysis's candidate-violation question, a different
+// question from "what did this order actually consider"). Every
+// provision is labelled by its legal function instead.
 // ---------------------------------------------------------------------
 describe("orderProvisionsConsidered", () => {
   it("preserves exact provision identity — LODR-4-1-a is never conflated with bare LODR-4-1, and never with PFUTP-4-1", () => {
@@ -190,7 +220,7 @@ describe("orderProvisionsConsidered", () => {
     expect(ids).not.toContain("LODR-32");
   });
 
-  it("a provision considered but NOT upheld (every recorded relationship is not_upheld) remains listed, flagged notUpheldOnly", () => {
+  it("a provision considered but NOT upheld (every recorded relationship is not_upheld) remains listed, flagged notUpheldOnly, with its legal-function label", () => {
     const findings = [
       makeFinding({
         recordId: "MFS-01",
@@ -199,10 +229,12 @@ describe("orderProvisionsConsidered", () => {
       }),
     ];
     const summaries = orderProvisionsConsidered(findings);
-    expect(summaries).toEqual([{ provisionId: "PFUTP-4-2-r", notUpheldOnly: true }]);
+    expect(summaries).toEqual([
+      { provisionId: "PFUTP-4-2-r", notUpheldOnly: true, legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition" },
+    ]);
   });
 
-  it("excludes bare penalty/power/attribution provisions (SEBI Act 15HA/15HB/27) even when they are the only provisionLinks a finding has — a real corpus case (Suzlon Energy Limited's adjudication order) has exactly this shape, and must not display bare 15HA/15HB as if they were the substantive violation considered", () => {
+  it("CORRECTION: penalty/power/attribution provisions (SEBI Act 15HA/15HB/27) ARE shown here when actually cited — Case Detail answers 'what did this order consider', not the Fixed Scenario Analysis candidate-violation question, so they are never filtered out; each carries its own legal-function label rather than a false substantive-violation impression", () => {
     const findings = [
       makeFinding({
         recordId: "SUZLON-01",
@@ -213,7 +245,26 @@ describe("orderProvisionsConsidered", () => {
         ],
       }),
     ];
-    expect(orderProvisionsConsidered(findings)).toEqual([]);
+    const summaries = orderProvisionsConsidered(findings);
+    expect(summaries.map((s) => s.provisionId).sort()).toEqual(["SEBI-ACT-15HA", "SEBI-ACT-15HB"]);
+    for (const s of summaries) {
+      expect(s.legalFunction).toBe("penalty_provision");
+      expect(s.legalFunctionLabel).toBe("Penalty provision");
+    }
+  });
+
+  it("SEBI-ACT-27 (attribution) is shown here, labelled Liability/attribution provision, when cited", () => {
+    const findings = [
+      makeFinding({
+        recordId: "F-04",
+        provisionIds: ["SEBI-ACT-27"],
+        provisionLinks: [{ provisionId: "SEBI-ACT-27", justifyingTags: [], relationship: "alleged" }],
+      }),
+    ];
+    const summaries = orderProvisionsConsidered(findings);
+    expect(summaries).toEqual([
+      { provisionId: "SEBI-ACT-27", notUpheldOnly: false, legalFunction: "liability_attribution_provision", legalFunctionLabel: "Liability/attribution provision" },
+    ]);
   });
 
   it("a provision with a mixed disposition (upheld against one noticee, not_upheld against another) is NOT flagged as not-upheld-only — an establishment is never hidden behind a mixed provision", () => {
@@ -230,7 +281,33 @@ describe("orderProvisionsConsidered", () => {
       }),
     ];
     const summaries = orderProvisionsConsidered(findings);
-    expect(summaries).toEqual([{ provisionId: "PFUTP-3-b", notUpheldOnly: false }]);
+    expect(summaries).toEqual([
+      { provisionId: "PFUTP-3-b", notUpheldOnly: false, legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition" },
+    ]);
+  });
+
+  it("Item 6-2/3: Max Financial Services shows exactly its seven recorded not_upheld provisions, each labelled not-upheld, and contributes zero positive template support anywhere in the master taxonomy", () => {
+    const maxFinancialProvisionIds = ["SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-2-k", "PFUTP-4-2-r", "LODR-30"];
+    const findings = [
+      makeFinding({
+        recordId: "MFS-01",
+        provisionIds: maxFinancialProvisionIds,
+        provisionLinks: maxFinancialProvisionIds.map((provisionId) => ({ provisionId, justifyingTags: [], relationship: "not_upheld" })),
+      }),
+    ];
+    const summaries = orderProvisionsConsidered(findings);
+    expect(summaries.map((s) => s.provisionId).sort()).toEqual([...maxFinancialProvisionIds].sort());
+    for (const s of summaries) {
+      expect(s.notUpheldOnly).toBe(true);
+    }
+    // Zero positive template support: none of these seven appear in the
+    // master capital-raising taxonomy (the only scenarios this pass's
+    // integration work touched) as a positively-mapped provision.
+    for (const s of FIXED_SCENARIOS.filter((sc) => sc.product === "Capital Raising / Issue of Securities")) {
+      for (const provisionId of maxFinancialProvisionIds) {
+        expect(s.provisionIds).not.toContain(provisionId);
+      }
+    }
   });
 });
 
@@ -351,6 +428,17 @@ describe("Order Detail: Noticees section source discipline", () => {
     const src = read("src/app/(app)/orders/[id]/page.tsx");
     expect(src).toContain("structuredNoticees");
     expect(src).toContain("Not yet captured for this order");
+  });
+
+  it("CORRECTION Part 5: the noticeeActors fallback is visibly qualified as NOT the structured/verified noticee list — never silently presented as equivalent to structured order_noticees data", () => {
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    expect(src).toMatch(/Structured noticee list not yet captured/i);
+    // The qualifier text must sit inside the fallback branch (rendered only
+    // when structuredNoticees.length === 0 and fallbackNoticeeNames.length
+    // > 0), not merged into the same branch as the structured-data render.
+    const fallbackBranchMatch = src.match(/fallbackNoticeeNames\.length > 0[\s\S]{0,400}/);
+    expect(fallbackBranchMatch).not.toBeNull();
+    expect(fallbackBranchMatch![0]).toMatch(/Structured noticee list not yet captured/i);
   });
 });
 
