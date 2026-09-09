@@ -209,6 +209,56 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     label: "Annual report disclosure",
     synonyms: ["annual report", "director's report", "directors report", "statement on impact of audit qualifications", "audit qualification disclosure"],
   },
+  // Added during the pre-merge legal-verification pass (disclosure-family
+  // contamination audit): LODR-27(2)(a) and LODR-31 are both ungated,
+  // and both had EVERY one of their real production links backed by
+  // large, multi-issue findings (FCEL-01, MFL-01, MISL-01, SHARON-01,
+  // SIL-01) whose finding.transactionTypes bag also happens to include
+  // related_party_transaction (because those SAME historical matters
+  // separately involved an RPT issue too). Since the ungated fallback's
+  // hasConnectedTopicOverlap check (engine.ts) treats ANY topic in a
+  // supporting finding's transactionTypes as evidence that a connected
+  // subjectAgnostic non-disclosure fact is "about" that finding's cited
+  // provisions, a scenario stating nothing more than "an RPT ... was not
+  // disclosed" was found (live-corpus probe) to falsely promote both
+  // provisions to primary_candidate — even though neither provision's own
+  // official text (verified: SEBI LODR Regulations, 2015, current
+  // consolidated text, sebi.gov.in) has anything to do with related-party
+  // transactions. Reg 27(2)(a)'s own subject is the quarterly corporate
+  // governance compliance report; Reg 31's is the shareholding pattern
+  // statement. Neither existing topic tag captured either subject, so the
+  // ungated fallback had no way to require genuine subject-specific
+  // connectivity. These two new topic tags give each provision its own
+  // proper gated retrieval rule (see provision-retrieval-rules.ts)
+  // instead — the same established remediation pattern already used for
+  // LODR-30/material_event_disclosure above.
+  {
+    id: "governance_compliance_report",
+    kind: "transaction",
+    label: "Quarterly corporate governance compliance report",
+    synonyms: [
+      "corporate governance compliance report",
+      "governance compliance report",
+      "quarterly compliance report on corporate governance",
+      "compliance report on corporate governance",
+      "quarterly governance report",
+      "governance report was not submitted",
+      "compliance report was not submitted",
+    ],
+  },
+  {
+    id: "shareholding_pattern_statement",
+    kind: "transaction",
+    label: "Shareholding pattern statement",
+    synonyms: [
+      "shareholding pattern",
+      "statement of shareholding pattern",
+      "shareholding pattern statement",
+      "holding of specified securities",
+      "shareholding pattern was not submitted",
+      "shareholding pattern was not disclosed",
+    ],
+  },
   // Added for the non-PFUTP provision-precision remediation pass: LODR
   // Regulation 30 requires an actual material-event/information-disclosure
   // fact, not merely that wrongdoing occurred elsewhere in the scenario

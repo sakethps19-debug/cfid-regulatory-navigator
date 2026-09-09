@@ -141,7 +141,12 @@ describe("Per-link finding_provisions.relationship overrides the finding's overa
   });
 
   it("a link with no curated relationship falls back to the finding's own overall status unchanged (no regression for the majority of links)", () => {
-    const provision = makeProvision({ id: "LODR-31-statement" });
+    // LODR-2-zc: still ungated and actor-unspecific (unlike
+    // LODR-31-statement, which the pre-merge legal-verification pass moved
+    // to a gated rule — see disclosure-family-connectivity.test.ts) and
+    // unrelated to this test's actual subject (per-link relationship/status
+    // classification).
+    const provision = makeProvision({ id: "LODR-2-zc" });
     const finding = makeFinding({
       recordId: "MOCK-02",
       findingStatus: "Confirmed in Final Order",

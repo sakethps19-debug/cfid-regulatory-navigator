@@ -407,6 +407,40 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
       "[Disclosure obligation] Regulation 30 requires disclosure of material events/information to the stock exchanges. It requires a material-event/price-sensitive-information fact connected to a stated non-disclosure, delay or inaccuracy in that specific disclosure; wrongdoing occurring elsewhere in a scenario (e.g. fictitious sales in the accounts) does not, by itself, establish a Regulation 30 disclosure failure.",
   },
 
+  // ----- LODR Regulation 27(2)(a) and Regulation 31 (disclosure-family
+  // contamination fix, pre-merge legal-verification pass) -----
+  //
+  // Both were previously ungated, relying on the same subjectAgnostic
+  // fallback as every other empty-justifyingTags provision. Live-corpus
+  // probe confirmed a false promotion: "A listed company entered into a
+  // related party transaction ... and the transaction was not disclosed"
+  // promoted BOTH to primary_candidate, because every one of their real
+  // finding_provisions links is on a multi-issue finding whose OWN
+  // transactionTypes bag happens to also include related_party_transaction
+  // (that same historical matter separately had an RPT issue too) — see
+  // hasConnectedTopicOverlap in engine.ts. Neither provision's own official
+  // text (SEBI LODR Regulations, 2015, current consolidated text,
+  // sebi.gov.in) has anything to do with related-party transactions:
+  // Regulation 27(2)(a) is the quarterly corporate governance compliance
+  // report submission duty; Regulation 31(1) is the shareholding pattern
+  // statement submission duty. Gating each on its own actual subject (see
+  // the two new topic tags in concept-tags.ts) removes them from the
+  // ungated fallback entirely, so an unrelated RPT non-disclosure fact can
+  // never promote either again, while a scenario genuinely stating that
+  // OWN report/statement was not submitted/disclosed still can.
+  {
+    provisionId: "LODR-27-2-a",
+    requireAllOfGroups: [["governance_compliance_report"], ["non_disclosure_of_information"]],
+    explanation:
+      "[Disclosure obligation] Regulation 27(2)(a) requires the listed entity to submit a quarterly compliance report on corporate governance to the stock exchange(s). It requires a fact about that specific report connected to a stated non-submission, delay or inaccuracy; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 27(2)(a) failure.",
+  },
+  {
+    provisionId: "LODR-31-statement",
+    requireAllOfGroups: [["shareholding_pattern_statement"], ["non_disclosure_of_information"]],
+    explanation:
+      "[Disclosure obligation] Regulation 31(1) requires the listed entity to submit a statement of shareholding pattern to the stock exchange(s). It requires a fact about that specific statement connected to a stated non-submission, delay or inaccuracy; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 31 failure.",
+  },
+
   // ----- LODR Regulation 48 (accounting standards) -----
   // The single highest-volume empty-tagged provision in the live corpus (28
   // links). Gated on a financial-results channel fact connected to a
