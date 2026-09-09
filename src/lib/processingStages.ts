@@ -57,6 +57,26 @@ export function isDeepAnalyzed(stage: ProcessingStage): boolean {
   return stage === "citations_checked" || stage === "legally_reviewed";
 }
 
+/** "Deep-analyzed" / "turned into full scenario findings" as claimed to an
+ * officer (e.g. Admin's "Orders Awaiting Analysis" register, the Admin
+ * Dashboard's corpus summary) requires BOTH: isDeepAnalyzed(stage) (the
+ * order's own document work is done) AND that the order actually has at
+ * least one linked scenario_finding row. A live audit found processing_stage
+ * alone is not trustworthy for this claim: every order in the corpus can
+ * carry a "citations_checked"/"legally_reviewed" stage while some genuinely
+ * have zero linked findings (the same gap
+ * getStructuredFindingCoverageGaps()/ProcessingMetrics.
+ * ordersContributingStructuredFindings surfaces) -- asserting "deep-analyzed"
+ * from the stage label alone previously produced the false "92 of 92 have
+ * been turned into full scenario findings" claim when only 82 of 92 orders
+ * actually had one. hasLinkedFinding must be computed the same way as
+ * ordersContributingStructuredFindings (by actual presence in
+ * scenario_findings.order_id/final_order_id), never re-derived differently
+ * per call site. */
+export function isDeepAnalyzedWithFindings(stage: ProcessingStage, hasLinkedFinding: boolean): boolean {
+  return isDeepAnalyzed(stage) && hasLinkedFinding;
+}
+
 /** Tailwind ring/background classes per stage, used for status chips. */
 export const PROCESSING_STAGE_STYLES: Record<ProcessingStage, string> = {
   indexed: "bg-[var(--color-neutral-100)] text-[var(--color-ink-700)] ring-[var(--color-border)]",
