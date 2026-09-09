@@ -22,6 +22,7 @@ const PRIMARY_NAV_ITEMS = [
 // architecture choice, not a security boundary.
 const SECONDARY_NAV_ITEMS = [
   { href: "/case-journey", label: "Case Journey" },
+  { href: "/compare-scenarios", label: "Compare Scenarios" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/library", label: "Source Library" },
   { href: "/methodology", label: "Methodology & Limitations" },

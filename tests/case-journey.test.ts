@@ -431,10 +431,11 @@ describe("Case Journey UI wiring (source guards)", () => {
     expect(navbar).toContain('{ href: "/law-library", label: "Law" }');
   });
 
-  it("does not add a 'Compare Scenarios' entry in this pass", async () => {
+  it("Compare Scenarios (added in a later pass) sits alongside Case Journey under More, never replacing it", async () => {
     const fs = await import("fs");
     const navbar = fs.readFileSync(new URL("../src/components/NavBar.tsx", import.meta.url), "utf8");
-    expect(navbar).not.toMatch(/Compare Scenarios/);
+    expect(navbar).toContain('{ href: "/case-journey", label: "Case Journey" }');
+    expect(navbar).toMatch(/href:\s*"\/compare-scenarios",\s*label:\s*"Compare Scenarios"/);
   });
 
   it("each journey stage card links to its own order's Case Detail page and official source", async () => {
