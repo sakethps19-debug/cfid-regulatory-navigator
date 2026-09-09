@@ -79,9 +79,9 @@ describe("readable prose measure separated from workspace width (Part 13)", () =
 });
 
 describe("grids gain columns on wide displays without excluding narrower ones (Part 2/3/5/9/12)", () => {
-  it("Home's primary-task grid gains a column at xl on top of the existing sm:grid-cols-2", () => {
+  it("Home's primary-task grid matches its exact card count at xl -- 3 cards (Analyze/Cases/Law) after the legacy Compare card was removed (pre-demo remediation, Section 11), never a 4th empty grid slot", () => {
     const page = src("src/app/(app)/dashboard/page.tsx");
-    expect(page).toMatch(/grid gap-4 sm:grid-cols-2 xl:grid-cols-4/);
+    expect(page).toMatch(/grid gap-4 sm:grid-cols-2 xl:grid-cols-3/);
   });
 
   it("Fixed Scenario Analysis's scenario-card grid gains a column at xl, and its provision-groups list becomes two columns at xl", () => {

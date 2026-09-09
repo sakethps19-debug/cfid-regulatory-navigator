@@ -4,12 +4,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+// Rebalanced around the three primary officer tasks (pre-demo remediation,
+// Section 11): Analyze, Cases, Law. The legacy pairwise "Compare" tool
+// (/compare) previously sat here as a fourth primary item, but now
+// competes conceptually with the two purpose-built comparison views this
+// app has since grown — Case Journey (within one matter) and Compare
+// Scenarios (across matters) — both already in the secondary menu below.
+// /compare itself is NOT removed or redirected (it has real, non-duplicated
+// functionality: ad hoc pairwise finding comparison and the interim→final
+// reversals list, neither available anywhere else), only demoted out of
+// primary nav and given a label that reads as functionally distinct rather
+// than a third competing "compare" concept — see SECONDARY_NAV_ITEMS.
 const PRIMARY_NAV_ITEMS = [
   { href: "/dashboard", label: "Home" },
   { href: "/analyzer", label: "Analyze" },
   { href: "/case-library", label: "Cases" },
   { href: "/law-library", label: "Law" },
-  { href: "/compare", label: "Compare" },
 ];
 
 // Research Tools and admin/reference routes, all one tap away under "More"
@@ -23,6 +33,7 @@ const PRIMARY_NAV_ITEMS = [
 const SECONDARY_NAV_ITEMS = [
   { href: "/case-journey", label: "Case Journey" },
   { href: "/compare-scenarios", label: "Compare Scenarios" },
+  { href: "/compare", label: "Precedent Comparison (pairwise)" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/library", label: "Source Library" },
   { href: "/methodology", label: "Methodology & Limitations" },
