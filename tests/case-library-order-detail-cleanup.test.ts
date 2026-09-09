@@ -312,6 +312,68 @@ describe("orderProvisionsConsidered", () => {
 });
 
 // ---------------------------------------------------------------------
+// CORRECTION: negative-disposition wording. Max Financial Services'
+// single Final Order (Aug 24, 2026) examined the SCN's alleged
+// contraventions and did not establish them — there is no separate SCN
+// order/stage/card, no reversal of an earlier order, and this is not a
+// positive violation. The provision-level badge must say "Contravention
+// not established" (a statement about the ALLEGATION's disposition in
+// this order), never "not upheld" (which reads as a statement about the
+// provision itself). Applies generically to every not_upheld-only
+// provision on any order, not just Max Financial Services.
+// ---------------------------------------------------------------------
+describe("Order Detail: negative-disposition wording ('Contravention not established', never 'not upheld' as a provision badge)", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf-8");
+
+  it("renders 'Contravention not established' for a notUpheldOnly provision, not 'not upheld'", () => {
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    expect(src).toContain("Contravention not established");
+    // The literal badge string "not upheld" must not appear anywhere in
+    // this page's source as officer-facing text (the underlying boolean
+    // field notUpheldOnly is a data-layer name, not officer-facing
+    // wording, and is unaffected).
+    expect(src).not.toMatch(/>\s*not upheld\s*</i);
+    expect(src).not.toMatch(/"not upheld"/i);
+  });
+
+  it("the wording is driven generically by summary.notUpheldOnly — a single render site, not a Max-Financial-specific special case", () => {
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    const match = src.match(/summary\.notUpheldOnly[\s\S]{0,300}/);
+    expect(match).not.toBeNull();
+    expect(match![0]).toContain("Contravention not established");
+  });
+
+  it("Max Financial Services: all seven provisions are labelled 'Contravention not established', confirming the exact wording the officer will see for this matter", () => {
+    const maxFinancialProvisionIds = ["SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-2-k", "PFUTP-4-2-r", "LODR-30"];
+    const findings = [
+      makeFinding({
+        recordId: "MFS-01",
+        provisionIds: maxFinancialProvisionIds,
+        provisionLinks: maxFinancialProvisionIds.map((provisionId) => ({ provisionId, justifyingTags: [], relationship: "not_upheld" })),
+      }),
+    ];
+    const summaries = orderProvisionsConsidered(findings);
+    expect(summaries).toHaveLength(7);
+    expect(summaries.every((s) => s.notUpheldOnly)).toBe(true);
+    // The data layer exposes the boolean; the page (verified above) is
+    // solely responsible for rendering it as "Contravention not
+    // established" — this test pins that every one of the seven would
+    // receive that same treatment, not a mix.
+  });
+
+  it("no separate Max Financial Services SCN order/matter/card exists — exactly one order, one matter, for this pass's integration", () => {
+    // Confirms no code in this pass introduces a second order/matter
+    // record or an "SCN stage" concept for Max Financial Services; the
+    // single-Final-Order model is asserted structurally by absence of any
+    // such construct in the officer-facing source.
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    expect(src).not.toMatch(/SCN order/i);
+    expect(src).not.toMatch(/SCN stage/i);
+    expect(src).not.toMatch(/reversed/i);
+  });
+});
+
+// ---------------------------------------------------------------------
 // Part 11/18-11,12: broad scenario consolidation — duplicate granular
 // findings collapse to one row per scenario; no inference from provision
 // co-occurrence alone

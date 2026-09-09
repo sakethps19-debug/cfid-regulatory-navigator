@@ -216,7 +216,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   </span>
                   {summary.notUpheldOnly && (
                     <span className="rounded-sm bg-[var(--color-neutral-100)] px-1.5 py-0.5 text-xs font-normal text-[var(--color-ink-500)]">
-                      not upheld
+                      Contravention not established
                     </span>
                   )}
                 </Link>
