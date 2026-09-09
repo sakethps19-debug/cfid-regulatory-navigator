@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { getDataChangeLog, getProcessingMetrics, getScenarioFindings, getStructuredFindingCoverageGaps, getValidationIssues } from "@/lib/data";
-import { getBroadFraudProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
+import { getGatedProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
 
 const COVERAGE_GAP_TIER_LABELS: Record<1 | 2 | 3, string> = {
   1: "Tier 1: matter entirely uncovered",
@@ -19,7 +19,7 @@ export default async function AdminDashboardPage() {
     getScenarioFindings(),
   ]);
   const unresolvedIssues = issues.filter((i) => !i.resolved).length;
-  const provisionLinkAuditQueue = getBroadFraudProvisionLinkAuditQueue(scenarioFindings);
+  const provisionLinkAuditQueue = getGatedProvisionLinkAuditQueue(scenarioFindings);
 
   // Grouped under Corpus / Processing / Review, per the same distinction
   // the rest of the app draws between "how much is indexed", "where each
@@ -78,8 +78,8 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Admin Processing Dashboard"
-        description="Live counts computed directly from the database on every page load; nothing here is cached or estimated."
+        title="Admin Dashboard"
+        description="Corpus, legal-data, verification, data-quality and processing status for administrators — not shown to regular research users. Live counts computed directly from the database on every page load; nothing here is cached or estimated."
       />
       <p className="mb-6 text-xs text-[var(--color-ink-500)]">
         This dashboard, the validation-issues list, and the change log below are read-only: nothing on these pages
@@ -99,6 +99,24 @@ export default async function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Orders Awaiting Analysis</h3>
+            <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {metrics.deepAnalyzedCount} of {metrics.totalIndexed} indexed orders have been turned into full
+              scenario findings; the verified and residual registers behind that count, order by order. Read-only.
+            </p>
+          </div>
+          <Link
+            href="/admin/awaiting-analysis"
+            className="rounded-md bg-[var(--color-gold-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-gold-800)]"
+          >
+            Open Orders Awaiting Analysis →
+          </Link>
+        </div>
+      </Card>
 
       {coverageGaps.length > 0 && (
         <div className="mt-6">
@@ -139,12 +157,13 @@ export default async function AdminDashboardPage() {
       <Card className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">PFUTP / SEBI Act 12A link legal-review queue</h3>
+            <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Gated provision link legal-review queue</h3>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {provisionLinkAuditQueue.length} findings link to at least one PFUTP/SEBI Act 12A provision with an
-              empty justifying-tags value (currently treated as universal). The Scenario Analyzer&apos;s
-              provision-level retrieval gate (P0 provision-precision remediation) is a global, query-time backstop;
-              it is not a certification that any individual link below is correctly attributed. Read-only.
+              {provisionLinkAuditQueue.length} findings link to at least one gated provision (PFUTP, SEBI Act, LODR,
+              ICDR or Ind AS) with an empty justifying-tags value (currently treated as universal). The Scenario
+              Analyzer&apos;s provision-level retrieval gate (P0 provision-precision remediation) is a global,
+              query-time backstop; it is not a certification that any individual link below is correctly attributed.
+              Read-only.
             </p>
           </div>
           <Link

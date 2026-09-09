@@ -30,6 +30,9 @@ function baseProvisionResult(overrides: Partial<ProvisionResult>): ProvisionResu
     missingFacts: [],
     provisionVersions: [],
     applicableVersionNote: "",
+    legalFunction: "substantive_prohibition",
+    candidateTier: "primary_candidate",
+    actorApplicability: { status: "not_actor_specific", note: null },
     ...overrides,
   };
 }

@@ -71,10 +71,10 @@ function currentOrderRelationLabel(r: OrderRelationship, currentOrderId: string)
 /** Sentence-phrasing for each of the short badge labels above. "supersedes"
  * marks the labels that imply the active side's outcome legally controls
  * the other side (finalises/confirms/revokes/modifies-style relationships)
- * — only then does the generated sentence add a "controls over the earlier
- * findings" clause; purely-linking relationships (same matter/investigation,
- * different noticee group, precedes/follows with no stated supersession)
- * never get that clause. */
+ * — only then does the generated sentence add a "takes precedence over the
+ * earlier findings" clause; purely-linking relationships (same matter/
+ * investigation, different noticee group, precedes/follows with no stated
+ * supersession) never get that clause. */
 const LABEL_TO_SENTENCE_VERB: Record<string, { verb: string; supersedes: boolean }> = {
   Finalises: { verb: "resolves", supersedes: true },
   Confirms: { verb: "confirms", supersedes: true },

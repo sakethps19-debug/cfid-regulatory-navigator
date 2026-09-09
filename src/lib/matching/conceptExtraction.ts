@@ -181,7 +181,7 @@ function isWholeSentenceNegated(sentenceNormalized: string): boolean {
  * established, though LODR disclosure lapses were confirmed..."), and
  * without this split a negation cue on one side of the contrast was
  * wrongly suppressing a genuine, unnegated match stated on the other side. */
-function splitIntoSentences(text: string): string[] {
+export function splitIntoSentences(text: string): string[] {
   return text
     .split(/[.!?;\n]+|,?\s+\b(?:though|but|however|although|whereas|yet)\b,?\s*/i)
     .map((s) => s.trim())

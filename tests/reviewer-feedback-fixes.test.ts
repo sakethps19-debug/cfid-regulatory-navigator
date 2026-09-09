@@ -31,10 +31,10 @@
 // PFUTP/SEBI-Act-12A family) for a pure fund-movement match; the
 // underlying precedent is still surfaced, but as a "related factual
 // precedent" under AnalysisResult.gateBlockedProvisionResults, never as a
-// candidate provision. buildWhyRelevant's fund-movement explanation branch
-// remains live for provision families this pass did not gate (e.g. SEBI
-// Act Section 11(2)(e), SEBI's general power to prohibit unfair trade
-// practices) -- see the second describe block below.
+// candidate provision. SEBI Act Section 11(2)(e) (SEBI's general power to
+// prohibit unfair trade practices) was gated the same way by the later
+// non-PFUTP provision-precision remediation pass -- see the second describe
+// block below.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
@@ -177,11 +177,20 @@ describe("PFUTP 3(b) on a pure fund-movement match: now gated, not merely explai
   });
 });
 
-describe("SEBI Act 11(2)(e) (SEBI's general power to prohibit unfair trade practices): fund-movement explanation, not (yet) gated", () => {
-  // Section 11(2)(e) is not part of the PFUTP/SEBI-Act-12A/ICDR family this
-  // remediation pass gated (see docs/provision-gating-remediation.md,
-  // "Remaining scope"); buildWhyRelevant's explanatory branch remains the
-  // operative safeguard for it, exactly as originally designed.
+describe("SEBI Act 11(2)(e) (SEBI's general power to prohibit unfair trade practices): now gated, not merely explained", () => {
+  // Superseded by the non-PFUTP provision-precision remediation pass: the
+  // header comment above (and this describe block's own former name, "fund-
+  // movement explanation, not (yet) gated") flagged Section 11(2)(e) as the
+  // one broad-fraud-family provision this app's own isBroadSecuritiesFraudProvision
+  // regex already recognised (engine.ts) but had not yet been given a
+  // provision-retrieval-rules.ts gate. It now has one, identical in shape to
+  // PFUTP-3(b)'s (see the describe block above): a securities dealing/issue
+  // fact connected to fraudulent/deceptive conduct. buildWhyRelevant's
+  // fund-movement explanatory branch is no longer reachable for a QUERY that
+  // matches only fund-movement tags (such a query now fails the gate itself
+  // and never reaches provisionResults) — it remains live only for the rarer
+  // case where the query as a whole passes the gate but this SPECIFIC
+  // precedent's own overlap with the query happens to be fund-movement-only.
   const sebiAct11 = makeProvision({ id: "SEBI-ACT-11-2-e", subject: "Power to prohibit fraudulent and unfair trade practices relating to securities markets." });
   const pureFundMovementFinding = makeFinding({
     recordId: "MOCK-CDEL-01",
@@ -189,18 +198,15 @@ describe("SEBI Act 11(2)(e) (SEBI's general power to prohibit unfair trade pract
     provisionIds: [sebiAct11.id],
   });
 
-  it("still surfaces the provision (not suppressed — it reflects a real order citation)", () => {
+  it("does NOT surface the provision for a pure fund-movement match — no securities dealing/issue fact is stated", () => {
     const result = analyzeScenario({ freeText: "There was a diversion of funds by the promoter." }, [pureFundMovementFinding], [sebiAct11], []);
-    expect(result.provisionResults.some((p) => p.provision.id === sebiAct11.id)).toBe(true);
+    expect(result.provisionResults.some((p) => p.provision.id === sebiAct11.id)).toBe(false);
+    const blocked = result.gateBlockedProvisionResults.find((g) => g.provision.id === sebiAct11.id);
+    expect(blocked).toBeDefined();
+    expect(blocked?.relatedFactualPrecedents.some((p) => p.finding.recordId === "MOCK-CDEL-01")).toBe(true);
   });
 
-  it("explains the fund-movement-to-securities-fraud connection in whyRelevant when that's the only matched ingredient", () => {
-    const result = analyzeScenario({ freeText: "There was a diversion of funds by the promoter." }, [pureFundMovementFinding], [sebiAct11], []);
-    const pr = result.provisionResults.find((p) => p.provision.id === sebiAct11.id);
-    expect(pr?.whyRelevant).toMatch(/general securities-fraud clause/i);
-  });
-
-  it("does not add the extra explanation when a genuinely securities-flavored ingredient also matched", () => {
+  it("still does NOT surface the provision when only OTHER fraud conduct (no dealing/issue fact) also matched", () => {
     const richFinding = makeFinding({
       recordId: "MOCK-RICH",
       allegedConduct: ["fund_diversion", "fictitious_sales_or_revenue"],
@@ -212,7 +218,25 @@ describe("SEBI Act 11(2)(e) (SEBI's general power to prohibit unfair trade pract
       [sebiAct11],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === sebiAct11.id);
-    expect(pr?.whyRelevant).not.toMatch(/general securities-fraud clause/i);
+    expect(result.provisionResults.some((p) => p.provision.id === sebiAct11.id)).toBe(false);
+  });
+
+  it("DOES surface the provision once an actual securities dealing/issue fact is also stated", () => {
+    const dealingFinding = makeFinding({
+      recordId: "MOCK-DEALING",
+      allegedConduct: ["fund_diversion", "fictitious_sales_or_revenue"],
+      transactionTypes: ["preferential_allotment"],
+      provisionIds: [sebiAct11.id],
+    });
+    const result = analyzeScenario(
+      {
+        freeText:
+          "There was a diversion of funds and the company recorded fictitious sales, structured through a preferential allotment of shares.",
+      },
+      [dealingFinding],
+      [sebiAct11],
+      []
+    );
+    expect(result.provisionResults.some((p) => p.provision.id === sebiAct11.id)).toBe(true);
   });
 });

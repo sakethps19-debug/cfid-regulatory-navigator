@@ -1,8 +1,11 @@
-// P0 provision-precision remediation: guards getBroadFraudProvisionLinkAuditQueue,
-// the pure function behind the new PFUTP/SEBI-Act-12A link legal-review
-// queue (src/app/(app)/admin/provision-link-audit/page.tsx).
+// P0 provision-precision remediation: guards getGatedProvisionLinkAuditQueue,
+// the pure function behind the link legal-review queue
+// (src/app/(app)/admin/provision-link-audit/page.tsx). Originally scoped to
+// PFUTP/SEBI-Act-12A only; generalized by the non-PFUTP remediation pass to
+// every provision family that now carries a provision-retrieval-rules.ts
+// rule (LODR, SEBI Act non-12A, ICDR, Ind AS) — see provisionLinkAudit.ts.
 import { describe, expect, it } from "vitest";
-import { getBroadFraudProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
+import { getGatedProvisionLinkAuditQueue } from "@/lib/provisionLinkAudit";
 import type { ScenarioFinding } from "@/types/domain";
 
 function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; provisionLinks: ScenarioFinding["provisionLinks"] }): ScenarioFinding {
@@ -38,15 +41,15 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
   };
 }
 
-describe("getBroadFraudProvisionLinkAuditQueue", () => {
+describe("getGatedProvisionLinkAuditQueue", () => {
   it("includes a finding with an empty-justifyingTags PFUTP link", () => {
     const finding = makeFinding({
       recordId: "REC-01",
       provisionLinks: [{ provisionId: "PFUTP-3-a", justifyingTags: [] }],
     });
-    const queue = getBroadFraudProvisionLinkAuditQueue([finding]);
+    const queue = getGatedProvisionLinkAuditQueue([finding]);
     expect(queue).toHaveLength(1);
-    expect(queue[0].unreviewedBroadFraudProvisionIds).toEqual(["PFUTP-3-a"]);
+    expect(queue[0].unreviewedGatedProvisionIds).toEqual(["PFUTP-3-a"]);
   });
 
   it("excludes a finding whose PFUTP link already has narrowing justifyingTags", () => {
@@ -54,32 +57,43 @@ describe("getBroadFraudProvisionLinkAuditQueue", () => {
       recordId: "REC-02",
       provisionLinks: [{ provisionId: "PFUTP-3-a", justifyingTags: ["price_manipulation_nexus"] }],
     });
-    expect(getBroadFraudProvisionLinkAuditQueue([finding])).toHaveLength(0);
+    expect(getGatedProvisionLinkAuditQueue([finding])).toHaveLength(0);
   });
 
-  it("excludes a finding that only links to non-gated provisions (e.g. LODR)", () => {
+  it("excludes a finding that only links to a provision with no retrieval rule at all", () => {
     const finding = makeFinding({
       recordId: "REC-03",
-      provisionLinks: [{ provisionId: "LODR-23-2", justifyingTags: [] }],
+      provisionLinks: [{ provisionId: "LODR-27-2-a", justifyingTags: [] }],
     });
-    expect(getBroadFraudProvisionLinkAuditQueue([finding])).toHaveLength(0);
+    expect(getGatedProvisionLinkAuditQueue([finding])).toHaveLength(0);
   });
 
-  it("lists every unreviewed broad-fraud provision id for a finding with multiple such links", () => {
+  it("includes a finding with an empty-justifyingTags LODR Regulation 23(2) link (gated by the non-PFUTP remediation pass)", () => {
+    const finding = makeFinding({
+      recordId: "REC-03B",
+      provisionLinks: [{ provisionId: "LODR-23-2", justifyingTags: [] }],
+    });
+    const queue = getGatedProvisionLinkAuditQueue([finding]);
+    expect(queue).toHaveLength(1);
+    expect(queue[0].unreviewedGatedProvisionIds).toEqual(["LODR-23-2"]);
+  });
+
+  it("lists every unreviewed gated provision id for a finding with multiple such links across families", () => {
     const finding = makeFinding({
       recordId: "REC-04",
       provisionLinks: [
         { provisionId: "PFUTP-3-a", justifyingTags: [] },
         { provisionId: "SEBI-ACT-12A-a", justifyingTags: [] },
         { provisionId: "LODR-23-2", justifyingTags: [] },
+        { provisionId: "LODR-27-2-a", justifyingTags: [] },
       ],
     });
-    const queue = getBroadFraudProvisionLinkAuditQueue([finding]);
+    const queue = getGatedProvisionLinkAuditQueue([finding]);
     expect(queue).toHaveLength(1);
-    expect(queue[0].unreviewedBroadFraudProvisionIds.sort()).toEqual(["PFUTP-3-a", "SEBI-ACT-12A-a"]);
+    expect(queue[0].unreviewedGatedProvisionIds.sort()).toEqual(["LODR-23-2", "PFUTP-3-a", "SEBI-ACT-12A-a"]);
   });
 
-  it("sorts findings with more unreviewed broad-fraud links first", () => {
+  it("sorts findings with more unreviewed gated links first", () => {
     const oneLinkFinding = makeFinding({ recordId: "REC-ONE", provisionLinks: [{ provisionId: "PFUTP-3-a", justifyingTags: [] }] });
     const twoLinkFinding = makeFinding({
       recordId: "REC-TWO",
@@ -88,7 +102,7 @@ describe("getBroadFraudProvisionLinkAuditQueue", () => {
         { provisionId: "SEBI-ACT-12A-a", justifyingTags: [] },
       ],
     });
-    const queue = getBroadFraudProvisionLinkAuditQueue([oneLinkFinding, twoLinkFinding]);
+    const queue = getGatedProvisionLinkAuditQueue([oneLinkFinding, twoLinkFinding]);
     expect(queue.map((e) => e.recordId)).toEqual(["REC-TWO", "REC-ONE"]);
   });
 });

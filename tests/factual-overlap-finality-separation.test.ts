@@ -34,23 +34,28 @@ describe("compareByFactualScoreThenFinality", () => {
 
 describe("Factual overlap score is never adjusted for procedural stage", () => {
   it("an interim-only finding and a final-order finding with identical detected-concept overlap score identically", () => {
-    const freeText = "Fictitious sales and assets disclosed through financial statements.";
+    // Retargeted the query text (Question-A polarity correction pass): the
+    // prior text ("Fictitious sales and assets...") relied on the
+    // pilot-era generated fixture's own STALE, pre-split allegedConduct tag
+    // id "fictitious_sales_or_assets", which no longer exists in
+    // concept-tags.ts (see the fictitious_sales_or_assets tag split, task
+    // #43) and so no longer positively matches anything — meaning this
+    // scenario now states no genuinely-detected adverse conduct at all,
+    // and LODR-33 (ungated) correctly demotes to governingProvisionResults
+    // under the new "candidate breach requires a positively-matched
+    // adverse concept" rule. Both REL-04 and SSSL-01 ALSO independently
+    // carry "actual_price_manipulation" in their own allegedConduct (a
+    // still-current tag id) — using that fact instead exercises the exact
+    // same finality-must-not-affect-score guarantee this test exists for,
+    // while remaining a genuine candidate breach under the new rule.
+    const freeText = "There was manipulation of the security price.";
     const result = analyzeScenario({ freeText }, scenarioFindings, provisions, legalTests);
-    // Retargeted from SEBI-ACT-12A to LODR-33 (P0 provision-precision
-    // remediation): this bare query states no securities dealing/issue
-    // fact, so SEBI-ACT-12A is now correctly gate-blocked (see
-    // provision-retrieval-rules.ts) and no longer appears in
-    // provisionResults at all - testing score parity on a blocked
-    // provision would prove nothing. LODR-33 is ungated (not part of the
-    // broad-securities-fraud family this pass targets) and both REL-04 and
-    // SSSL-01 cite it in the same fixture data, so it exercises the exact
-    // same finality-must-not-affect-score guarantee this test exists for.
     const pr = result.provisionResults.find((p) => p.provision.id === "LODR-33");
     expect(pr).toBeDefined();
     // REL-04 (Prima facie, interim) and SSSL-01 (Confirmed in Final Order)
-    // both cite this provision with the same allegedConduct overlap
-    // ["fictitious_sales_or_assets","financial_statement_misstatement"] and
-    // no other detected categories here — their scores must be equal.
+    // both cite this provision and both independently carry
+    // "actual_price_manipulation" in their own allegedConduct — their
+    // scores must be equal regardless of finality.
     const rel04 = pr!.supportingPrecedents.find((s) => s.finding.recordId === "REL-04");
     const sssl01 = pr!.supportingPrecedents.find((s) => s.finding.recordId === "SSSL-01");
     if (rel04 && sssl01) {

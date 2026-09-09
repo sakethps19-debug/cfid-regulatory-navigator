@@ -19,7 +19,12 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "financial_statement_disclosure",
     kind: "transaction",
     label: "Financial statement disclosure",
-    synonyms: ["financial statement", "financial statements", "disclosure of financials", "published financials", "annual accounts"],
+    // "financial results" added (non-PFUTP provision-precision remediation
+    // pass): LODR Regulation 33's own statutory subject is "financial
+    // results" -- the term this tag's synonyms omitted entirely, silently
+    // under-detecting the channel fact Regulation 33/48's own retrieval
+    // gate requires (provision-retrieval-rules.ts).
+    synonyms: ["financial statement", "financial statements", "disclosure of financials", "published financials", "annual accounts", "financial results", "quarterly results", "annual results"],
   },
   {
     id: "consolidated_financials",
@@ -81,7 +86,13 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     id: "preferential_allotment",
     kind: "transaction",
     label: "Preferential allotment",
-    synonyms: ["preferential allotment", "preferential issue", "preferential shares", "allotment of shares", "share allotment", "shares allotted", "warrants allotted", "cash preferential allotment", "lock-in period", "lock in period", "lock-in violation", "circumvented lock-in"],
+    // "allotment consideration" added (Question-A polarity acceptance
+    // pass): the mandated preferential-allotment paired test text
+    // ("Allotment consideration was circularly funded by issuer.") refers
+    // to the consideration for an allotment without repeating "share" or
+    // "preferential" — a real officer phrasing this corpus's prior
+    // synonym list did not yet cover.
+    synonyms: ["preferential allotment", "preferential issue", "preferential shares", "allotment of shares", "share allotment", "shares allotted", "warrants allotted", "cash preferential allotment", "lock-in period", "lock in period", "lock-in violation", "circumvented lock-in", "allotment consideration"],
   },
   {
     id: "rights_issue",
@@ -146,11 +157,58 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     label: "Annual report disclosure",
     synonyms: ["annual report", "director's report", "directors report", "statement on impact of audit qualifications", "audit qualification disclosure"],
   },
+  // Added for the non-PFUTP provision-precision remediation pass: LODR
+  // Regulation 30 requires an actual material-event/information-disclosure
+  // fact, not merely that wrongdoing occurred elsewhere in the scenario
+  // (see provision-retrieval-rules.ts). No existing tag captured this
+  // specific channel/subject-matter fact.
+  {
+    id: "material_event_disclosure",
+    kind: "transaction",
+    label: "Material event / price-sensitive information disclosure",
+    // "material litigation" added (Question-A polarity acceptance pass,
+    // Regulation 30 paired test): material litigation is itself a
+    // recurring category of Regulation 30 event-based disclosure, not
+    // covered by the more generic synonyms above.
+    // "material default" added (P0 Question-A polarity connectivity pass):
+    // another recurring Regulation 30 event-disclosure category.
+    synonyms: ["material event", "material information", "material development", "material litigation", "material default", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
+  },
   {
     id: "business_segment_disclosure",
     kind: "transaction",
     label: "Business segment disclosure",
     synonyms: ["business segment", "reportable segment", "segment disclosure", "nature of business disclosure"],
+  },
+  // Added for the deterministic-engine completion pass (Companies Act
+  // Section 180(1)(a) / LODR Regulation 37A): both provisions require an
+  // actual disposal/transfer of an undertaking or substantial investment
+  // fact, not merely that a subsidiary or related party is mentioned. No
+  // existing tag captured this specific transaction.
+  {
+    id: "asset_or_undertaking_disposal",
+    kind: "transaction",
+    label: "Disposal/transfer of undertaking or substantial investment",
+    synonyms: [
+      "sale of undertaking",
+      "transfer of undertaking",
+      "disposal of undertaking",
+      "disposed of its investments",
+      "disposed of the investments",
+      "transferred its investments",
+      "transfer of investments",
+      "realigned and reorganized its investments",
+      "realigned and reorganised its investments",
+      "reorganization of investments",
+      "reorganisation of investments",
+      "disposal of the whole undertaking",
+      "disposal of substantially the whole undertaking",
+      "disposed of the whole undertaking",
+      "disposed of substantially the whole undertaking",
+      "gift of investments",
+      "transferred by way of gift",
+      "transfer by way of gift",
+    ],
   },
   {
     id: "corporate_announcement",
@@ -258,7 +316,29 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "chairman", kind: "actor", label: "Chairman", synonyms: ["chairman", "chairperson", "executive chairman", "non-executive chairman", "chairman-cum-managing director"] },
   { id: "cfo", kind: "actor", label: "Chief Financial Officer", synonyms: ["cfo", "chief financial officer"] },
   { id: "ceo", kind: "actor", label: "Chief Executive Officer", synonyms: ["ceo", "chief executive officer"] },
+  // A bare "auditor" synonym was tried here (Question-A polarity
+  // acceptance pass) and reverted: it collided with the existing
+  // actor-incompatibility precision tests (#9/#10/#13/#16 in
+  // deterministic-engine-completion-pass.test.ts), which deliberately use
+  // phrases like "auditor eligibility rules"/"the auditor's own tenure" in
+  // EXPLANATORY clauses about a DIFFERENT actor's incompatibility — a bare
+  // "auditor" match wrongly flipped those to actor-compatible. See the
+  // Auditor paired test in question-a-polarity-clean-controls.test.ts for
+  // how the bare-"Auditor" mandate text is instead handled without this
+  // tag (an ungated synthetic provision keyed on the conduct tag alone).
   { id: "statutory_auditor", kind: "actor", label: "Statutory auditor", synonyms: ["statutory auditor", "incumbent auditor", "audit firm", "signing partner", "auditors resigned"] },
+  // Added for the deterministic-engine completion pass (actor-applicability
+  // layer + Companies Act Section 136 subsidiary-disclosure gating): a
+  // subsidiary/controlled entity is a distinct actor from the listed
+  // company itself and from an ordinary related party (a subsidiary is
+  // controlled, not merely connected).
+  { id: "subsidiary", kind: "actor", label: "Subsidiary / controlled entity", synonyms: ["subsidiary", "wholly-owned subsidiary", "step-down subsidiary", "controlled entity", "subsidiary company"] },
+  // Catch-all for a Key Managerial Personnel/officer role this corpus's
+  // vocabulary does not otherwise name specifically (e.g. a Company
+  // Secretary acting outside their Compliance Officer capacity, a Chief
+  // Risk Officer) — used only so a stated-but-unclassified officer role
+  // is not silently treated as no actor being named at all.
+  { id: "kmp_other_officer", kind: "actor", label: "Key Managerial Personnel / other officer", synonyms: ["key managerial personnel", "kmp", "chief risk officer", "vice president finance", "whole-time key managerial personnel"] },
 
   // ----- Evidence types -----
   { id: "bank_statements_flow", kind: "evidence", label: "Bank statements / fund-flow trail", synonyms: ["bank statement", "bank statements", "fund flow", "money trail", "bank trail", "fund-flow evidence"] },
@@ -307,10 +387,57 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // investigator, and the CFID stress-test scenario it was written against
   // ("failed to furnish accounting records sought under a SEBI summons") is
   // the latter, not the former.
-  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses"] },
-  { id: "non_cooperation_with_investigation", kind: "conduct", label: "Non-cooperation with investigation", synonyms: ["non-cooperation", "did not cooperate", "failed to produce records", "failed to furnish", "failed to furnish records", "failed to furnish documents", "failed to furnish accounting records", "did not furnish", "did not respond to summons", "denied access", "withheld", "refused to share", "refused to hand over"] },
+  // "failed to disclose" and "concealed"/"concealment" added (P0 Question-A
+  // polarity connectivity pass): common natural phrasings of a genuine
+  // non-disclosure allegation this vocabulary previously missed entirely
+  // ("failure to disclose" only covered the noun form; "concealed" was
+  // already used as a NEGATABLE compliance-cue topic word in
+  // factPolarity.ts's own LIST_TOPICS, but was never itself a recognized
+  // ADVERSE synonym here, so a genuine concealment allegation was never
+  // positively detected at all).
+  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
+  // "summons were ignored"/"ignored the summons" added (Question-A
+  // polarity acceptance pass, investigation paired test): a common way to
+  // describe non-response to process distinct from the existing
+  // "did not respond to summons" phrasing.
+  { id: "non_cooperation_with_investigation", kind: "conduct", label: "Non-cooperation with investigation", synonyms: ["non-cooperation", "did not cooperate", "failed to produce records", "failed to furnish", "failed to furnish records", "failed to furnish documents", "failed to furnish accounting records", "did not furnish", "did not respond to summons", "denied access", "withheld", "refused to share", "refused to hand over", "summons were ignored", "ignored the summons", "summons was ignored"] },
   { id: "related_party_misrepresentation", kind: "conduct", label: "Related-party misrepresentation", synonyms: ["misrepresented related party", "false rpt disclosure", "rpt not genuine"] },
-  { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised"] },
+  // Added for the non-PFUTP provision-precision remediation pass: LODR
+  // Regulation 23(2)/23(4) each require a stated APPROVAL failure (Audit
+  // Committee, or shareholder), distinct from a bare non-disclosure fact —
+  // an RPT that was fully disclosed but never put to the required approval
+  // step is a real, common fact pattern the existing non_disclosure_of_
+  // information tag does not capture (see provision-retrieval-rules.ts).
+  {
+    id: "rpt_approval_lapse",
+    kind: "conduct",
+    label: "Related-party transaction approval lapse",
+    // "not approved by audit committee" (dropping "the") added
+    // (Question-A polarity acceptance pass, RPT paired test): the same
+    // approval-lapse fact stated without the definite article.
+    synonyms: [
+      "without prior audit committee approval",
+      "without audit committee approval",
+      "without the required shareholder approval",
+      "without shareholder approval",
+      "no audit committee approval",
+      "no shareholder approval",
+      "not approved by the audit committee",
+      "not approved by audit committee",
+      "not approved by shareholders",
+      "without the required audit committee approval",
+      // "not placed before the audit committee" added (P0 Question-A
+      // polarity connectivity pass): a common way to describe the same
+      // approval-lapse fact without using the word "approved" at all.
+      "not placed before the audit committee",
+      "not placed before the board",
+    ],
+  },
+  // "transferred to promoter-controlled entities without business purpose"
+  // added (P0 Question-A polarity connectivity pass): a common way bank
+  // records are described as establishing diversion, distinct from a bare
+  // "diverted" allegation and often paired with a promoter's own denial.
+  { id: "fund_diversion", kind: "conduct", label: "Diversion of funds", synonyms: ["diversion of funds", "diverted funds", "misutilisation of funds", "misuse of proceeds", "siphoning", "fund diversion", "diverted the proceeds", "siphoned off", "diverted", "misappropriated", "misutilised", "transferred to promoter-controlled entities without business purpose", "without business purpose"] },
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
   // "without paying any/genuine consideration" variants added (P0
@@ -320,10 +447,24 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // "paying"/"any" inserted between "without" and "consideration" - a
   // realistic gap the pure substring matcher otherwise misses.
   { id: "sham_preferential_allotment", kind: "conduct", label: "Fraudulent/sham preferential allotment", synonyms: ["sham allotment", "fraudulent preferential allotment", "fraudulent allotment", "shares without consideration", "allotment without payment", "non-cash allotment", "allotment without acquiring assets", "no genuine payment", "without paying any genuine consideration", "without paying genuine consideration", "without genuine consideration", "fabricated bank statements"] },
-  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "no genuine payment"] },
+  // "circularly funded" added (Question-A polarity acceptance pass,
+  // preferential-allotment paired test): the mandated adverse text
+  // ("Allotment consideration was circularly funded by issuer") states the
+  // same circular-financing fact this tag's own "allotment financed
+  // circularly" synonym covers, in the more natural word order officers
+  // commonly use.
+  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "no genuine payment", "circularly funded"] },
   { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
   { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee not properly constituted / meetings not held", synonyms: ["audit committee not constituted", "not properly constituted", "audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "improperly constituted audit committee", "ac meetings not conducted", "audit committee did not meet", "no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "existed only on paper", "audit committee only on paper"] },
-  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "vacant for"] },
+  // "position remained vacant" added (Question-A polarity acceptance pass,
+  // governance/Compliance Officer paired test): the mandated adverse text
+  // ("Compliance Officer position remained vacant beyond permitted
+  // period") inserts "remained" between "position" and "vacant", which the
+  // prior contiguous "position vacant" synonym did not match.
+  // "had no compliance officer" added (P0 Question-A polarity connectivity
+  // pass): a common natural phrasing ("the company had no Compliance
+  // Officer for five months") this vocabulary previously missed.
+  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for", "had no compliance officer", "no compliance officer for"] },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },
   { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
   // Second-order remediation (2026): the single tag "price_manipulation_nexus"
@@ -363,6 +504,39 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     synonyms: ["induced investors to trade", "induced to trade", "inducing trades", "investors induced to trade"],
   },
   { id: "aiding_abetting", kind: "conduct", label: "Aiding and abetting", synonyms: ["aided and abetted", "aiding and abetting", "assisted in the scheme", "facilitated the fraud"] },
+  // Added for the deterministic-engine completion pass (Companies Act
+  // Section 139/141(3)(d)/(e) auditor rotation and eligibility gating). The
+  // sparse (1-link) corpus for these three provisions does not support
+  // separately tagging a rotation lapse (Section 139) from the personal
+  // ineligibility grounds in Section 141(3)(d)/(e) (holding securities /
+  // a business relationship) — a genuine, disclosed limitation, not an
+  // invented distinction; see provision-retrieval-rules.ts.
+  {
+    id: "auditor_tenure_or_independence_issue",
+    kind: "conduct",
+    label: "Auditor rotation/tenure or independence issue",
+    synonyms: [
+      "auditor rotation",
+      "non-compliance with the auditor rotation",
+      "did not rotate the auditor",
+      "beyond the permitted tenure",
+      "cooling-off period",
+      "continued as auditor beyond",
+      "auditor rotation requirement",
+      "held securities in the company",
+      "business relationship with the company",
+      "auditor independence",
+      "auditor ineligible",
+      "ineligible to act as auditor",
+      // Added (Question-A polarity acceptance pass, auditor paired test):
+      // the mandated adverse text ("Auditor failed statutory independence
+      // eligibility requirement") states a bare failed-independence/
+      // eligibility fact without any of the rotation/tenure-specific
+      // phrasing above.
+      "failed statutory independence",
+      "independence eligibility requirement",
+    ],
+  },
 ];
 
 export const CONTRARY_PRECEDENT_TRIGGER_TAGS = new Set([

@@ -1,11 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
-import type { AnalysisResult, ProvisionResult } from "@/lib/matching/types";
+import {
+  HISTORICAL_ORDER_STAGE_LABELS,
+  QUESTION_A_POLARITY_LABELS,
+  type AnalysisResult,
+  type HistoricalTreatmentProvisionEntry,
+  type ProvisionResult,
+} from "@/lib/matching/types";
 import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
+import { CandidateTierBadge, LegalFunctionTag } from "@/components/CandidateTierBadge";
 import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
@@ -215,6 +223,23 @@ function PublicationWarningNote({ status }: { status: string }) {
   );
 }
 
+/** Cross-tool navigation: links from a cited precedent/finding to the
+ * Order Detail page(s) it draws on (a finding can span an interim and a
+ * final order — orderIds carries both). Renders nothing for a finding with
+ * no linked order on file, rather than a dead link. */
+function OrderLinks({ orderIds }: { orderIds: string[] }) {
+  if (orderIds.length === 0) return null;
+  return (
+    <>
+      {orderIds.map((orderId) => (
+        <Link key={orderId} href={`/orders/${orderId}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
+          View order detail →
+        </Link>
+      ))}
+    </>
+  );
+}
+
 function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -362,6 +387,16 @@ export function resultToText(result: AnalysisResult): string {
       }
     }
   }
+  if (result.governingProvisionResults.length > 0 || result.contradictedProvisionResults.length > 0) {
+    lines.push("----------------------------------------");
+    lines.push("Provisions governing the transaction — no apparent breach on stated facts:");
+    for (const gp of result.governingProvisionResults) {
+      lines.push(`  [${QUESTION_A_POLARITY_LABELS[gp.polarityClass]}] ${gp.provision.instrument} · ${gp.provision.provisionNumber}: ${gp.note}`);
+    }
+    for (const cp of result.contradictedProvisionResults) {
+      lines.push(`  [${QUESTION_A_POLARITY_LABELS[cp.polarityClass]}] ${cp.provision.instrument} · ${cp.provision.provisionNumber}: ${cp.note}`);
+    }
+  }
   if (result.globalContraryPrecedents.length > 0 || result.contraryPrecedentSearchNote) {
     lines.push("----------------------------------------");
     lines.push("Additional contrary precedents retrieved for fund-movement / allotment style facts:");
@@ -406,6 +441,147 @@ export function resultToText(result: AnalysisResult): string {
   );
   lines.push(
     "This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
+  );
+  return lines.join("\n");
+}
+
+/** Deterministic "Scenario Research Brief" — a concise, officer-facing
+ * export distinct from resultToText's full technical dump above. Built
+ * entirely from fields AnalysisResult already computed (no new data-
+ * fetching, no generative text): facts identified, regulatory issues with
+ * a one-line deterministic reason each, facts requiring verification,
+ * historical CFID treatment, evidence/records worth examining (drawn only
+ * from existing evidenceTypes tags and missingFacts gap text — never an
+ * invented evidentiary checklist), and official sources. See
+ * "application-wide demo-readiness sprint" mandate, Investigation Research
+ * Brief section, for the required structure. */
+export function resultToResearchBrief(result: AnalysisResult): string {
+  const lines: string[] = [];
+  lines.push("CFID Scenario Research Brief (research assistance only — not a finding)");
+  lines.push(`Generated: ${new Date().toLocaleString()}`);
+  lines.push("");
+
+  lines.push("1. Facts identified");
+  lines.push(result.query.freeText);
+  const completenessLabels: Record<string, string> = {
+    transaction: "transaction type",
+    actor: "actor / role",
+    conduct: "alleged conduct",
+    evidence: "evidence indicator",
+  };
+  if (result.detectedConceptLabels.length > 0) {
+    lines.push(`Material factual concepts recognized: ${result.detectedConceptLabels.join(", ")}.`);
+  }
+  if (result.completeness.detected.length > 0) {
+    lines.push(`Categories touched on: ${result.completeness.detected.map((k) => completenessLabels[k]).join(", ")}.`);
+  }
+  lines.push("");
+
+  lines.push("2. Regulatory issues for examination");
+  if (!result.hasResults) {
+    lines.push("No potentially relevant provisions were identified from the pilot's analysed precedents on the facts entered.");
+  } else {
+    const sorted = [...result.provisionResults].sort((a, b) => compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber));
+    for (const pr of sorted) {
+      lines.push(`- ${pr.provision.instrument} ${pr.provision.provisionNumber} (${pr.provision.subject ?? ""}) [${matchStrengthLabel(pr.confidence)}]`);
+      lines.push(`    Why potentially relevant: ${pr.whyRelevant}`);
+    }
+    for (const gp of result.governingProvisionResults) {
+      lines.push(`- ${gp.provision.instrument} ${gp.provision.provisionNumber}: governs the transaction, no apparent breach on stated facts (${QUESTION_A_POLARITY_LABELS[gp.polarityClass]}).`);
+    }
+    for (const cp of result.contraryOnlyProvisionResults) {
+      lines.push(`- ${cp.provision.instrument} ${cp.provision.provisionNumber}: warrants caution — contrary treatment identified in a comparable matter, no supporting precedent. ${cp.note}`);
+    }
+  }
+  lines.push("");
+
+  lines.push("3. Facts requiring verification");
+  lines.push("Absence of a fact below from the scenario entered is not established as absent — it was simply not stated.");
+  let anyMissing = false;
+  for (const pr of result.provisionResults) {
+    for (const group of pr.missingFacts) {
+      anyMissing = true;
+      lines.push(`- Re ${pr.provision.provisionNumber}, per comparable finding ${group.recordId}: ${group.gaps.join("; ")}`);
+    }
+  }
+  for (const gb of result.gateBlockedProvisionResults) {
+    if (!gb.gateExplanation) continue;
+    anyMissing = true;
+    lines.push(`- ${gb.provision.instrument} ${gb.provision.provisionNumber} is not yet shown as potentially relevant: ${gb.gateExplanation}`);
+  }
+  if (!anyMissing) lines.push("None recorded for the provisions and precedents cited above.");
+  lines.push("");
+
+  lines.push("4. Historical CFID Treatment");
+  lines.push(
+    "Historical frequency or treatment does not determine whether a provision applies to the present scenario — it is offered for awareness of regulatory practice only."
+  );
+  const historicalEntries = result.historicalTreatment.entries.filter(
+    (e) => e.presentationTier === "fact_attributed" || e.presentationTier === "comparable_unverified"
+  );
+  if (historicalEntries.length === 0) {
+    lines.push("No comparable indexed matters were identified for the facts entered.");
+  } else {
+    for (const e of historicalEntries) {
+      lines.push(`${e.provision.instrument} ${e.provision.provisionNumber}: ${e.currentApplicabilityNote}`);
+      for (const mo of e.matterOutcomes) {
+        lines.push(`  Matter: ${mo.caseName} [${mo.comparabilityTier === "strongly_comparable" ? "strongly comparable" : "moderately comparable"}]`);
+        for (const c of mo.cases) {
+          lines.push(
+            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
+          );
+        }
+      }
+    }
+  }
+  lines.push("");
+
+  lines.push("5. Evidence / records to examine");
+  lines.push("Drawn only from evidence indicators already recorded against comparable precedents — not an invented checklist.");
+  const matchedEvidence = new Set<string>();
+  const precedentEvidence = new Map<string, string>();
+  for (const pr of result.provisionResults) {
+    for (const id of pr.matchedByCategory.evidenceTypes) matchedEvidence.add(id);
+    for (const p of [...pr.upheldPrecedents, ...pr.supportingPrecedents]) {
+      for (const id of p.finding.evidenceTypes) {
+        if (!precedentEvidence.has(id)) precedentEvidence.set(id, evidenceLabel(id));
+      }
+    }
+  }
+  if (matchedEvidence.size > 0) {
+    lines.push(`Evidence indicators already reflected in the facts entered: ${[...matchedEvidence].map(evidenceLabel).join(", ")}.`);
+  }
+  const outstandingEvidence = [...precedentEvidence.entries()].filter(([id]) => !matchedEvidence.has(id));
+  if (outstandingEvidence.length > 0) {
+    lines.push(
+      `Evidence indicators recorded against comparable precedents but not yet reflected in the facts entered — worth examining: ${outstandingEvidence.map(([, label]) => label).join(", ")}.`
+    );
+  }
+  if (matchedEvidence.size === 0 && outstandingEvidence.length === 0) {
+    lines.push("No evidence indicators recorded against the provisions and precedents cited above.");
+  }
+  lines.push("");
+
+  lines.push("6. Official sources");
+  const sourceUrls = new Map<string, string>();
+  for (const pr of result.provisionResults) {
+    for (const p of [...pr.upheldPrecedents, ...pr.supportingPrecedents, ...pr.contraryPrecedents]) {
+      sourceUrls.set(p.finding.recordId, p.finding.officialSourceUrl);
+    }
+  }
+  for (const e of historicalEntries) {
+    for (const mo of e.matterOutcomes) {
+      for (const c of mo.cases) sourceUrls.set(c.recordId, c.officialSourceUrl);
+    }
+  }
+  if (sourceUrls.size > 0) {
+    for (const [recordId, url] of sourceUrls) lines.push(`- ${recordId}: ${url}`);
+  } else {
+    lines.push("No official source documents cited above.");
+  }
+  lines.push("");
+  lines.push(
+    "This brief is research assistance only, generated deterministically from indexed CFID precedents. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
   );
   return lines.join("\n");
 }
@@ -528,6 +704,26 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         gb.note,
         gb.relatedFactualPrecedents.map((rp) => rp.finding.recordId).join("; "),
+      ])
+    );
+  }
+  for (const gp of [...result.governingProvisionResults, ...result.contradictedProvisionResults]) {
+    rows.push(
+      csvRow([
+        `Governing - ${QUESTION_A_POLARITY_LABELS[gp.polarityClass]}`,
+        gp.provision.instrument,
+        gp.provision.provisionNumber,
+        gp.provision.subject ?? "",
+        "",
+        "0",
+        "0 of 0",
+        "",
+        "",
+        "",
+        "",
+        "",
+        gp.note,
+        gp.relatedPrecedents.map((rp) => rp.finding.recordId).join("; "),
       ])
     );
   }
@@ -859,10 +1055,17 @@ export function ScenarioAnalyzerClient() {
               </button>
               <button
                 type="button"
+                onClick={() => downloadTextFile("cfid-scenario-research-brief.txt", resultToResearchBrief(result))}
+                className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
+              >
+                Download Research Brief
+              </button>
+              <button
+                type="button"
                 onClick={() => downloadTextFile("cfid-scenario-analysis.txt", resultToText(result))}
                 className="min-h-11 rounded-md border border-[var(--color-border)] px-5 py-2 font-medium text-[var(--color-ink-700)] hover:bg-[var(--color-neutral-50)]"
               >
-                Export as text
+                Export full technical detail
               </button>
               {result.provisionResults.length > 0 && (
                 <button
@@ -939,12 +1142,58 @@ export function ScenarioAnalyzerClient() {
           )}
 
           {result.detectedConceptLabels.length > 0 && (
-            <div className="rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
-              <span className="font-semibold">Concepts detected in your scenario: </span>
+            <div id="results-issues" className="scroll-mt-20 rounded-sm bg-[var(--color-gold-50)] p-4 text-sm text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-100)]">
+              <span className="font-semibold">Issues identified: </span>
               {result.detectedConceptLabels.join(", ")}
               <p className="mt-1 text-xs font-normal text-[var(--color-gold-800)]/80">
-                This is a classification of the entered text by the engine, not an established fact.
+                Factual/regulatory issue families the engine recognized in the text you entered — a classification of
+                what you wrote, not an established fact. The provisions below are retrieved from these.
               </p>
+            </div>
+          )}
+
+          {result.hasResults && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {result.provisionResults.length > 0 && (
+                <a
+                  href="#results-provisions"
+                  className="rounded-full bg-[var(--color-navy-950)] px-3 py-1.5 font-medium text-white hover:bg-[var(--color-navy-800)]"
+                >
+                  {result.provisionResults.length} potentially relevant provision{result.provisionResults.length === 1 ? "" : "s"} →
+                </a>
+              )}
+              {result.gateBlockedProvisionResults.length > 0 && (
+                <a
+                  href="#results-gate-blocked"
+                  className="rounded-full bg-[var(--status-neutral-bg)] px-3 py-1.5 font-medium text-[var(--status-neutral-text)] ring-1 ring-inset border-[var(--status-neutral-ring)] hover:opacity-80"
+                >
+                  {result.gateBlockedProvisionResults.length} needing additional facts →
+                </a>
+              )}
+              {(result.governingProvisionResults.length > 0 || result.contradictedProvisionResults.length > 0) && (
+                <a
+                  href="#results-governing"
+                  className="rounded-full bg-[var(--color-neutral-100)] px-3 py-1.5 font-medium text-[var(--color-ink-700)] hover:opacity-80"
+                >
+                  {result.governingProvisionResults.length + result.contradictedProvisionResults.length} governing, no apparent breach →
+                </a>
+              )}
+              {result.contraryOnlyProvisionResults.length > 0 && (
+                <a
+                  href="#results-caution"
+                  className="rounded-full bg-[var(--status-amber-bg)] px-3 py-1.5 font-medium text-[var(--status-amber-text)] ring-1 ring-inset border-[var(--status-amber-ring)] hover:opacity-80"
+                >
+                  {result.contraryOnlyProvisionResults.length} warranting caution →
+                </a>
+              )}
+              {result.historicalTreatment.entries.length > 0 && (
+                <a
+                  href="#results-historical"
+                  className="rounded-full bg-[var(--color-gold-50)] px-3 py-1.5 font-medium text-[var(--color-gold-800)] ring-1 ring-inset border-[var(--color-gold-100)] hover:opacity-80"
+                >
+                  Historical Treatment →
+                </a>
+              )}
             </div>
           )}
 
@@ -973,7 +1222,7 @@ export function ScenarioAnalyzerClient() {
           )}
 
           {result.provisionResults.length > 0 && (
-            <div className="rounded-sm border border-[var(--color-border)] bg-white">
+            <div id="results-provisions" className="scroll-mt-20 rounded-sm border border-[var(--color-border)] bg-white">
               <div className="border-b border-[var(--color-border)] bg-[var(--color-navy-950)] px-4 py-2.5 sm:px-6">
                 <p className="text-sm font-semibold text-white">
                   Potentially relevant regulatory provisions:{" "}
@@ -1059,14 +1308,29 @@ export function ScenarioAnalyzerClient() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
-                      {pr.provision.instrument} · {pr.provision.provisionNumber}
+                      <Link href={`/provisions/${pr.provision.id}`} className="hover:underline">
+                        {pr.provision.instrument} · {pr.provision.provisionNumber}
+                      </Link>
                     </h3>
                     <p className="text-sm text-[var(--color-ink-700)]">{pr.provision.subject}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <CandidateTierBadge tier={pr.candidateTier} />
+                      <LegalFunctionTag legalFunction={pr.legalFunction} />
+                    </div>
+                    <Link
+                      href={`/provisions/${pr.provision.id}`}
+                      className="mt-1 inline-block text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                    >
+                      View provision detail →
+                    </Link>
                   </div>
                   <ConfidenceBadge level={pr.confidence} />
                 </div>
 
                 <p className="mt-3 text-sm text-[var(--color-ink-700)]">{pr.whyRelevant}</p>
+                {pr.actorApplicability.status === "requires_verification" && pr.actorApplicability.note && (
+                  <p className="mt-2 text-xs italic text-[var(--status-amber-text)]">{pr.actorApplicability.note}</p>
+                )}
                 <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">{pr.applicableVersionNote}</p>
 
                 <div className="mt-2">
@@ -1160,8 +1424,9 @@ export function ScenarioAnalyzerClient() {
                           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                             {u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}
                           </p>
-                          <div className="mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
                             <SourceLink href={u.finding.officialSourceUrl} />
+                            <OrderLinks orderIds={u.finding.orderIds} />
                           </div>
                         </li>
                       ))}
@@ -1226,8 +1491,9 @@ export function ScenarioAnalyzerClient() {
                               Outcome in the cited precedent: {s.finding.precedentOutcomeNote}
                             </p>
                           )}
-                          <div className="mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
                             <SourceLink href={s.finding.officialSourceUrl} />
+                            <OrderLinks orderIds={s.finding.orderIds} />
                           </div>
                         </li>
                       ))}
@@ -1261,8 +1527,9 @@ export function ScenarioAnalyzerClient() {
                             <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                               {c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}
                             </p>
-                            <div className="mt-1">
+                            <div className="mt-1 flex flex-wrap items-center gap-3">
                               <SourceLink href={c.finding.officialSourceUrl} />
+                              <OrderLinks orderIds={c.finding.orderIds} />
                             </div>
                           </li>
                         ))}
@@ -1445,7 +1712,7 @@ export function ScenarioAnalyzerClient() {
           ))}
 
           {result.contraryOnlyProvisionResults.length > 0 && (
-            <article className="rounded-sm bg-[var(--status-amber-bg)] p-4 ring-1 border-[var(--status-amber-ring)] sm:p-6">
+            <article id="results-caution" className="scroll-mt-20 rounded-sm bg-[var(--status-amber-bg)] p-4 ring-1 border-[var(--status-amber-ring)] sm:p-6">
               <h3 className="text-base font-semibold text-[var(--status-amber-text)]">
                 Provisions warranting caution: contrary treatment identified, no supporting precedent
               </h3>
@@ -1501,9 +1768,9 @@ export function ScenarioAnalyzerClient() {
           )}
 
           {result.gateBlockedProvisionResults.length > 0 && (
-            <article className="rounded-sm bg-[var(--status-neutral-bg)] p-4 ring-1 border-[var(--status-neutral-ring)] sm:p-6">
+            <article id="results-gate-blocked" className="scroll-mt-20 rounded-sm bg-[var(--status-neutral-bg)] p-4 ring-1 border-[var(--status-neutral-ring)] sm:p-6">
               <h3 className="text-base font-semibold text-[var(--status-neutral-text)]">
-                Provisions not shown as potentially relevant: retrieval prerequisite not met
+                Facts requiring verification: retrieval prerequisite not met
               </h3>
               <p className="mt-1 text-sm text-[var(--status-neutral-text)]">
                 A factually similar structured finding also cites each provision below, but that provision&apos;s own
@@ -1516,11 +1783,22 @@ export function ScenarioAnalyzerClient() {
               <ul className="mt-3 space-y-3">
                 {result.gateBlockedProvisionResults.map((gb) => (
                   <li key={gb.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-neutral-ring)]">
-                    <p className="text-sm font-medium text-[var(--color-ink-900)]">
-                      {gb.provision.instrument} · {gb.provision.provisionNumber}
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                        {gb.provision.instrument} · {gb.provision.provisionNumber}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <CandidateTierBadge tier={gb.candidateTier} />
+                        <LegalFunctionTag legalFunction={gb.legalFunction} />
+                      </div>
+                    </div>
                     <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gb.provision.subject}</p>
-                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">Retrieval prerequisite: {gb.gateExplanation}</p>
+                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">
+                      {gb.blockReason === "actor_incompatibility" ? "Actor applicability: " : "Retrieval prerequisite: "}
+                      {gb.blockReason === "factual_prerequisite" && gb.gateExplanation}
+                      {gb.blockReason === "actor_incompatibility" && "the actor(s) named do not match who this provision's own text applies to"}
+                      {gb.blockReason === "both" && "neither the required facts nor a compatible actor are stated"}
+                    </p>
                     <p className="mt-1 text-xs text-[var(--color-ink-700)]">{gb.note}</p>
                     <ul className="mt-2 space-y-2">
                       {gb.relatedFactualPrecedents.map((rp) => (
@@ -1542,6 +1820,267 @@ export function ScenarioAnalyzerClient() {
                   </li>
                 ))}
               </ul>
+            </article>
+          )}
+
+          {(result.governingProvisionResults.length > 0 || result.contradictedProvisionResults.length > 0) && (
+            <article id="results-governing" className="scroll-mt-20 rounded-sm bg-white p-4 ring-1 border-[var(--color-border)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
+                Provisions governing the transaction — no apparent breach on stated facts
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+                These provisions apply to the subject matter of the entered facts (e.g. an RPT, an investigation, a
+                statutory audit), but the facts as entered do not indicate a breach — either because the entered
+                scenario affirmatively states compliance, the provision is a bare definition or SEBI power with no
+                adverse predicate of its own, or the specific adverse fact is simply not stated either way. A new
+                officer should never read this section as &quot;there may be a violation&quot; — it means only that
+                the provision governs the transaction.
+              </p>
+              {result.governingProvisionResults.length > 0 && (
+                <ul className="mt-3 space-y-3">
+                  {result.governingProvisionResults.map((gp) => (
+                    <li key={gp.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--color-border)]">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                          {gp.provision.instrument} · {gp.provision.provisionNumber}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center rounded-sm bg-transparent px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                            {QUESTION_A_POLARITY_LABELS[gp.polarityClass]}
+                          </span>
+                          <LegalFunctionTag legalFunction={gp.legalFunction} />
+                        </div>
+                      </div>
+                      <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gp.provision.subject}</p>
+                      <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{gp.note}</p>
+                      <ul className="mt-2 space-y-2">
+                        {gp.relatedPrecedents.map((rp) => (
+                          <li key={rp.finding.recordId} className="rounded-lg bg-[var(--color-neutral-50)] p-2.5 ring-1 border-[var(--color-border)]">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <StatusBadge status={rp.finding.findingStatus} />
+                              <span className="text-sm font-medium text-[var(--color-ink-900)]">{rp.finding.recordId}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--color-ink-700)]">{rp.finding.scenarioTitle}</p>
+                            <div className="mt-1">
+                              <SourceLink href={rp.finding.officialSourceUrl} />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {result.contradictedProvisionResults.length > 0 && (
+                <>
+                  <h4 className="mt-4 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                    Not triggered — contradicted by stated facts
+                  </h4>
+                  <ul className="mt-2 space-y-3">
+                    {result.contradictedProvisionResults.map((cp) => (
+                      <li key={cp.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--color-border)]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                            {cp.provision.instrument} · {cp.provision.provisionNumber}
+                          </p>
+                          <LegalFunctionTag legalFunction={cp.legalFunction} />
+                        </div>
+                        <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{cp.note}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </article>
+          )}
+
+          {result.historicalTreatment.entries.length > 0 && (
+            <article id="results-historical" className="scroll-mt-20 rounded-sm bg-white p-4 ring-1 border-[var(--color-border)] sm:p-6">
+              <h3 className="text-base font-semibold text-[var(--color-ink-900)]">
+                Historical treatment across CFID cases
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+                A separate question from the results above: how has CFID historically treated comparable facts.
+                Historical frequency here never determines whether a provision applies to your facts; that
+                determination is made only by the results above and the &quot;on the present facts&quot; note on
+                each row below. A provision being <strong>cited</strong> somewhere in a comparable matter is not the
+                same claim as a provision being <strong>attributed</strong> to the specific fact that makes this
+                matter comparable — the two sections below are kept visually separate for exactly that reason.
+              </p>
+              <p className="mt-2 text-xs text-[var(--color-ink-700)]">
+                Comparable matters this scenario surfaced: {result.historicalTreatment.overallMatterCounts.stronglyComparable} strongly comparable,{" "}
+                {result.historicalTreatment.overallMatterCounts.moderatelyComparable} moderately comparable,{" "}
+                {result.historicalTreatment.overallMatterCounts.contextuallyRelated} contextually related (generic overlap only, no provisions attributed),{" "}
+                {result.historicalTreatment.overallMatterCounts.weakExcluded} excluded as too weak to surface at all.
+              </p>
+              <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">{result.historicalTreatment.matterDedupBasis}</p>
+              <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">
+                Matter identity: {result.historicalTreatment.matterIdentityStats.resolvedViaMatterId} case entries resolved via a real matter record,{" "}
+                {result.historicalTreatment.matterIdentityStats.resolvedViaOrderMetadata} via the linked order&apos;s own curated matter name,{" "}
+                {result.historicalTreatment.matterIdentityStats.resolvedViaCaseName} via the disclosed case-name fallback (the weakest tier — a
+                data-quality gap, not a legal distinction).
+              </p>
+
+              {(() => {
+                const attributedEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "fact_attributed");
+                const citedOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "comparable_unverified");
+                const contextualOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "contextually_related");
+
+                function renderEntry(e: HistoricalTreatmentProvisionEntry) {
+                  const histKey = `hist-${e.provision.id}`;
+                  const histExpanded = expanded.has(histKey);
+                  return (
+                    <li key={e.provision.id} className="rounded-lg bg-[var(--color-neutral-50)] p-3 ring-1 border-[var(--color-border)]">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-ink-900)]">
+                            <Link href={`/provisions/${e.provision.id}`} className="hover:underline">
+                              {e.provision.instrument} · {e.provision.provisionNumber}
+                            </Link>
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">
+                            {e.comparableMatterCount > 0
+                              ? `${e.comparableMatterCount} comparable matter${e.comparableMatterCount === 1 ? "" : "s"} (${e.stronglyComparableMatterCount} strongly, ${e.moderatelyComparableMatterCount} moderately comparable)`
+                              : "No strongly/moderately comparable matter"}
+                            {e.contextuallyRelatedMatterCount > 0 && ` · ${e.contextuallyRelatedMatterCount} contextually related`}
+                            {" · "}
+                            {e.attributedFindingsCount > 0
+                              ? `${e.attributedFindingsCount} attributed to the matching fact`
+                              : "factual attribution not yet verified for any case"}
+                            {e.unverifiedFindingsCount > 0 && `, ${e.unverifiedFindingsCount} cited but unattributed`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {e.currentCandidateTier === "not_currently_a_candidate" ? (
+                            <span className="inline-flex items-center rounded-sm bg-transparent px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                              Not currently a candidate
+                            </span>
+                          ) : (
+                            <CandidateTierBadge tier={e.currentCandidateTier} />
+                          )}
+                          <LegalFunctionTag legalFunction={e.legalFunction} />
+                        </div>
+                      </div>
+                      <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{e.currentApplicabilityNote}</p>
+                      {e.matterOutcomes.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(histKey)}
+                            className="mt-2 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                          >
+                            {histExpanded ? "Hide" : "Show"} the {e.matterOutcomes.length} comparable matter{e.matterOutcomes.length === 1 ? "" : "s"}
+                          </button>
+                          {histExpanded && (
+                            <ul className="mt-2 space-y-2">
+                              {e.matterOutcomes.map((mo) => (
+                                <li key={mo.matterKey} className="rounded-lg bg-white p-2.5 ring-1 border-[var(--color-border)]">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-sm bg-[var(--color-neutral-50)] px-2 py-0.5 text-xs text-[var(--color-ink-700)] ring-1 ring-inset ring-[var(--color-border)]">
+                                      {mo.comparabilityTier === "strongly_comparable" ? "Strongly comparable" : "Moderately comparable"}
+                                    </span>
+                                    <span className="text-sm font-medium text-[var(--color-ink-900)]">{mo.caseName}</span>
+                                    {mo.matterIdBasis === "case_name_fallback" && (
+                                      <span className="inline-flex items-center rounded-sm bg-[var(--status-amber-bg)] px-2 py-0.5 text-xs text-[var(--status-amber-text)] ring-1 ring-inset ring-[var(--status-amber-ring)]">
+                                        matter identity: case-name fallback
+                                      </span>
+                                    )}
+                                    {mo.matterIdBasis === "order_metadata_fallback" && (
+                                      <span className="inline-flex items-center rounded-sm bg-transparent px-2 py-0.5 text-xs text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
+                                        matter identity: order&apos;s own curated name
+                                      </span>
+                                    )}
+                                    {mo.outcome === "mixed_noticee_outcome" ? (
+                                      <span className="inline-flex items-center rounded-sm bg-[var(--status-amber-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--status-amber-text)] ring-1 ring-inset ring-[var(--status-amber-ring)]">
+                                        Mixed outcome across noticees
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-[var(--color-ink-500)]">{mo.outcome.replace(/^uniformly_/, "").replace(/_/g, " ")}</span>
+                                    )}
+                                  </div>
+                                  {mo.comparabilityRationale && (
+                                    <p className="mt-1 text-xs text-[var(--color-ink-500)]">{mo.comparabilityRationale}</p>
+                                  )}
+                                  <ul className="mt-2 space-y-2">
+                                    {mo.cases.map((c) => (
+                                      <li key={`${c.recordId}-${c.orderStageClass}`} className="rounded-lg bg-[var(--color-neutral-50)] p-2 ring-1 border-[var(--color-border)]">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <StatusBadge status={c.effectiveStatus} />
+                                          <span className="text-sm font-medium text-[var(--color-ink-900)]">{c.recordId}</span>
+                                          <span
+                                            className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs ring-1 ring-inset ${
+                                              c.attributionStatus === "attributed"
+                                                ? "bg-[var(--color-navy-900)] text-white ring-[var(--color-navy-900)]"
+                                                : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
+                                            }`}
+                                          >
+                                            {c.attributionStatus === "attributed" ? "Attributed to matching fact" : "Cited — attribution not yet verified"}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-[var(--color-ink-700)]">
+                                          Order stage: {c.orderStageClass.replace(/_/g, " ")}
+                                          {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
+                                        </p>
+                                        {c.factualSimilarities.length > 0 && (
+                                          <p className="mt-1 text-xs text-[var(--color-ink-700)]">Factual similarities: {c.factualSimilarities.join("; ")}</p>
+                                        )}
+                                        {c.factualDifferences.length > 0 && (
+                                          <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">
+                                            This precedent&apos;s own additional facts (not shared with your scenario): {c.factualDifferences.join("; ")}
+                                          </p>
+                                        )}
+                                        {c.paragraphReference && <p className="mt-1 text-xs text-[var(--color-ink-500)]">{c.paragraphReference}</p>}
+                                        <div className="mt-1 flex flex-wrap items-center gap-3">
+                                          <SourceLink href={c.officialSourceUrl} />
+                                          <OrderLinks orderIds={c.orderIds} />
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      )}
+                    </li>
+                  );
+                }
+
+                return (
+                  <>
+                    {attributedEntries.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Provisions attributed to the matching factual issue
+                        </h4>
+                        <ul className="mt-2 space-y-2">{attributedEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                    {citedOnlyEntries.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Provisions cited in comparable matters — factual attribution not yet verified
+                        </h4>
+                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                          These provisions were cited somewhere in a matter this scenario is comparable to, but the specific link&apos;s own
+                          curation does not yet confirm it concerns the SAME fact that makes the matter comparable — never read as &quot;historically
+                          invoked for this fact pattern&quot;.
+                        </p>
+                        <ul className="mt-2 space-y-2">{citedOnlyEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                    {contextualOnlyEntries.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                          Cited only in contextually related matters (generic overlap only)
+                        </h4>
+                        <ul className="mt-2 space-y-2">{contextualOnlyEntries.map(renderEntry)}</ul>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </article>
           )}
 

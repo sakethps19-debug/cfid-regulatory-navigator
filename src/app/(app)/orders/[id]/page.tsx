@@ -3,22 +3,28 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { FindingsByStatus } from "@/components/FindingsByStatus";
-import { directionsForOrderIds, getOrderById, getOrders, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
+import { directionsForOrderIds, getOrderById, getOrders, getProvisions, getScenarioFindings, orderRelationshipsForOrder } from "@/lib/data";
 import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRelationships";
 import { formatDate } from "@/lib/formatDate";
+import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [allFindings, relationships, allOrders] = await Promise.all([
+  const [allFindings, relationships, allOrders, allProvisions] = await Promise.all([
     getScenarioFindings(),
     orderRelationshipsForOrder(order.id),
     getOrders(),
+    getProvisions(),
   ]);
   const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
   const siblingOrders = siblingOrdersInMatter(order, allOrders, relationships);
+  const provisionIdsConsidered = [...new Set(findings.flatMap((f) => f.provisionIds))];
+  const provisionsConsidered = allProvisions
+    .filter((p) => provisionIdsConsidered.includes(p.id))
+    .sort((a, b) => a.provisionNumber.localeCompare(b.provisionNumber));
   // Directions/outcomes for this order's own matter, scoped by verified
   // order_relationships siblings — never by caseName (see the P2-18 audit
   // note on directionsForOrderIds in data.ts).
@@ -98,6 +104,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <Card className="mb-6">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">CFID verification</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{cfidVerificationDisplayText(order.cfidVerificationBasis)}</dd>
+          </div>
+          <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Order number</dt>
             <dd className="mt-1 font-mono text-sm text-[var(--color-ink-700)]">{order.orderNumber}</dd>
           </div>
@@ -123,6 +133,24 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </Card>
 
+      {provisionsConsidered.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Provisions considered</h2>
+          <ul className="flex flex-wrap gap-2">
+            {provisionsConsidered.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/provisions/${p.id}`}
+                  className="inline-flex items-center rounded-sm bg-[var(--color-neutral-50)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
+                >
+                  {p.instrument} · {p.provisionNumber}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {directions.length > 0 && (
         <Card className="mb-6">
           <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Directions &amp; outcomes</h2>
@@ -139,7 +167,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       <Card>
         <h2 className="mb-4 text-base font-semibold text-[var(--color-ink-900)]">Scenario findings from this order</h2>
-        <FindingsByStatus findings={findings} />
+        <FindingsByStatus findings={findings} currentOrderId={order.id} />
       </Card>
     </div>
   );

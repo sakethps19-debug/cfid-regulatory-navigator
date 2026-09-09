@@ -141,7 +141,7 @@ describe("Per-link finding_provisions.relationship overrides the finding's overa
   });
 
   it("a link with no curated relationship falls back to the finding's own overall status unchanged (no regression for the majority of links)", () => {
-    const provision = makeProvision({ id: "LODR-30" });
+    const provision = makeProvision({ id: "LODR-31-statement" });
     const finding = makeFinding({
       recordId: "MOCK-02",
       findingStatus: "Confirmed in Final Order",

@@ -21,6 +21,10 @@ function allRecordIds(result: AnalysisResult): string[] {
     ids.push(...pr.contraryPrecedents.map((p) => p.finding.recordId));
     ids.push(...pr.upheldPrecedents.map((p) => p.finding.recordId));
   }
+  // Question-A polarity correction pass: see matching-engine.test.ts's own
+  // copy of this helper for why the two new arrays are included here too.
+  for (const gp of result.governingProvisionResults) ids.push(...gp.relatedPrecedents.map((p) => p.finding.recordId));
+  for (const cp of result.contradictedProvisionResults) ids.push(...cp.relatedPrecedents.map((p) => p.finding.recordId));
   ids.push(...result.globalContraryPrecedents.map((p) => p.finding.recordId));
   return ids;
 }

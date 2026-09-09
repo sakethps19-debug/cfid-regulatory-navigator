@@ -113,6 +113,112 @@ const INVESTOR_COMMUNICATION_CHANNEL = [
   "business_segment_disclosure",
 ];
 
+// ----- Non-PFUTP provision-precision remediation (this pass) -----
+//
+// The prior two passes gated PFUTP/SEBI Act 12A only; live production data
+// showed the SAME architecture defect present across LODR (284 links, 248
+// with empty justifying_tags), SEBI Act non-12A (52 links, 100% empty),
+// Indian Accounting Standards (26 links, 22 empty), Companies Act (8 links,
+// 100% empty) and ICDR (3 links, 100% empty): with no provision-level
+// rule, retrievalRuleForProvision() returned undefined and every one of
+// these provisions was completely ungated, surfacing on nothing more than
+// weak (Low-confidence, 1-2 category) score overlap. A live-corpus probe of
+// a scenario stating an RPT "conducted at fair value and disclosed in
+// full... all financial statements accurate and no irregularities found"
+// returned 56 candidate provisions, including both SEBI Act fraud-penalty
+// provisions (15HA/15HB) and the entire LODR Regulation 4/33/34/48 family.
+// See docs/provision-gating-remediation-v3.md for the full matrix.
+//
+// Groups below are, like the PFUTP ones above, composed entirely from
+// existing curated vocabulary (plus one new tag, material_event_disclosure,
+// added for Regulation 30, which had no existing tag for its own specific
+// subject matter) and use the same connectivity mechanism.
+
+/** A related-party TRANSACTION fact — sufficient on its own for the
+ * materiality-threshold provision (Regulation 23(1) proviso), which is
+ * itself about whether an RPT crosses a value threshold, not about a
+ * separate procedural failure. */
+const RPT_FACT = ["related_party_transaction"];
+
+/** A stated failure in the RPT approval/disclosure process — required, in
+ * addition to RPT_FACT, for provisions imposing a specific procedural duty
+ * (Audit Committee approval, shareholder approval): a genuinely approved,
+ * fully disclosed RPT must not satisfy these. This corpus's vocabulary does
+ * not yet separately distinguish an Audit-Committee-approval lapse from a
+ * shareholder-approval lapse from a bare RPT misrepresentation — all three
+ * gate on the same signal here; a genuine limitation, disclosed rather than
+ * papered over with an invented distinction the vocabulary cannot support. */
+const RPT_PROCESS_LAPSE = ["non_disclosure_of_information", "audit_committee_deficiency", "related_party_misrepresentation", "rpt_approval_lapse"];
+
+/** Any conduct fact this corpus's vocabulary treats as a genuine
+ * substantive violation, as opposed to a bare topic/actor/evidence mention.
+ * Used to gate provisions that are themselves general principles or
+ * residual penalties riding on SOME violation, rather than independent
+ * triggers of their own (LODR Regulation 4(1)/4(2)(f) family, SEBI Act
+ * Section 15HB) — shown once a substantive violation is otherwise
+ * established, never on a clean/compliant scenario. */
+const ANY_SUBSTANTIVE_VIOLATION_CONDUCT = [
+  "financial_statement_misstatement",
+  "fictitious_sales_or_revenue",
+  "fictitious_or_nongenuine_assets",
+  "non_disclosure_of_information",
+  "related_party_misrepresentation",
+  "fund_diversion",
+  "circular_fund_movement",
+  "fund_routed_personal_account",
+  "false_business_or_corporate_announcement",
+  "sham_preferential_allotment",
+  "unsupported_share_allotment_consideration",
+  "audit_committee_deficiency",
+  "compliance_officer_deficiency",
+  "false_compliance_certification",
+  "director_governance_failure",
+  "non_cooperation_with_investigation",
+  ...TRADING_CONDUCT_ANY,
+];
+
+/** Actor tags identifying a natural person potentially "in charge of and
+ * responsible to the company for the conduct of its business" — the
+ * category SEBI Act Section 27's company-attribution mechanism actually
+ * targets. Deliberately excludes statutory_auditor (an independent
+ * professional, not a person in charge of the company's business) and
+ * related_party_counterparty (an outside role); an officer researching a
+ * statutory auditor's own exposure should look to the provision governing
+ * THAT duty specifically, not Section 27's attribution mechanism. */
+const PERSON_IN_CHARGE_OF_COMPANY = [
+  "promoter",
+  "managing_director",
+  "executive_director",
+  "chairman",
+  "cfo",
+  "ceo",
+  "compliance_officer",
+  "director_general",
+  "nominee_director",
+  "independent_director",
+  "audit_committee_member",
+];
+
+/** Financial results (as opposed to the broader annual-report/corporate-
+ * announcement channel) — the specific channel LODR Regulation 33's
+ * preparation/submission/timeline sub-clauses each require. */
+const FINANCIAL_RESULTS_CHANNEL = ["financial_statement_disclosure", "standalone_financials", "consolidated_financials"];
+
+/** SEBI's own investigation is under way — the minimum context any Section
+ * 11(2)/11C power needs to be a candidate at all. */
+const INVESTIGATION_CONTEXT = ["investigation_process"];
+
+/** Question-A polarity acceptance pass: LODR-32's own subject
+ * (issue-proceeds monitoring/disclosure) is a genuine substantive
+ * obligation, not a bare definition or SEBI power — unlike LODR-23-1 or
+ * the SEBI Section 11(2) power family, it needs its own adverse predicate,
+ * not merely the rights_issue topic, or it would always read as
+ * "governing, no breach" even on a scenario stating issue proceeds were
+ * diverted. Reuses the same fund-misuse vocabulary factPolarity.ts already
+ * treats as the compliant-negation family for "issue proceeds used
+ * exactly for the stated objects". */
+const ISSUE_PROCEEDS_MISUSE = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account", "financial_statement_misstatement"];
+
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "PFUTP-3-a",
@@ -225,6 +331,445 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
     explanation:
       "Regulation 3 (clauses (a)-(d)) prohibits fraudulent or deceptive conduct in connection with dealing in or the issue of securities. Requires a securities transaction connected to fraudulent or deceptive conduct.",
+  },
+
+  // ----- LODR Regulation 23 (related-party transactions) -----
+  {
+    provisionId: "LODR-23-1",
+    requireAllOfGroups: [RPT_FACT],
+    explanation:
+      "[Definition/materiality threshold] Regulation 23(1)'s proviso sets the value threshold above which a related-party transaction becomes material. It requires only a related-party-transaction fact; whether that transaction actually crosses the threshold is a further question the entered facts should separately address.",
+  },
+  {
+    provisionId: "LODR-23-2",
+    requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
+    explanation:
+      "[Governance/procedural obligation] Regulation 23(2) requires prior Audit Committee approval of related-party transactions. It requires a related-party-transaction fact connected to a stated approval, disclosure or Audit Committee process failure; a related-party transaction that was genuinely approved and disclosed does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-23-4",
+    requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
+    explanation:
+      "[Governance/procedural obligation] Regulation 23(4) requires shareholder approval (by ordinary resolution, the related party not voting) for material related-party transactions. It requires a related-party-transaction fact connected to a stated approval or disclosure failure. This corpus's vocabulary does not yet separately distinguish an Audit-Committee-approval lapse from a shareholder-approval lapse; both currently gate on the same underlying facts.",
+  },
+
+  // ----- LODR Regulation 30 (material events) -----
+  {
+    provisionId: "LODR-30",
+    requireAllOfGroups: [["material_event_disclosure"], ["non_disclosure_of_information", "false_business_or_corporate_announcement"]],
+    explanation:
+      "[Disclosure obligation] Regulation 30 requires disclosure of material events/information to the stock exchanges. It requires a material-event/price-sensitive-information fact connected to a stated non-disclosure, delay or inaccuracy in that specific disclosure; wrongdoing occurring elsewhere in a scenario (e.g. fictitious sales in the accounts) does not, by itself, establish a Regulation 30 disclosure failure.",
+  },
+
+  // ----- LODR Regulation 48 (accounting standards) -----
+  // The single highest-volume empty-tagged provision in the live corpus (28
+  // links). Gated on a financial-results channel fact connected to a
+  // stated MISSTATEMENT specifically (Regulation 48's own subject is
+  // compliance with prescribed accounting standards) — never used as a
+  // generic synonym for "financial statements were wrong" in some looser
+  // sense (a bare disclosure-timeliness or governance lapse does not
+  // satisfy it).
+  {
+    provisionId: "LODR-48",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ["financial_statement_misstatement", "fictitious_sales_or_revenue", "fictitious_or_nongenuine_assets"]],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 48 requires compliance with the accounting standards specified for listed entities. It requires a financial-results-specific fact connected to a stated misstatement, fictitious-revenue or fictitious-asset fact (all genuine accounting-standard non-compliance); a bare disclosure-timeliness or governance lapse, or a financial-statement mention with no such fact, does not satisfy it.",
+  },
+
+  // ----- LODR Regulation 33 (financial results) -----
+  {
+    provisionId: "LODR-33-1-gen",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(1) sets general requirements for preparing financial results submitted to the stock exchange(s). It requires a financial-results-specific fact; a violation unconnected to the preparation or submission of financial results (e.g. a governance or investigation-only fact) does not satisfy it.",
+  },
+  {
+    provisionId: "LODR-33-1-a",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(1)(a) requires financial results to be prepared on an accrual basis, using uniform accounting practices across periods. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-1-c",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(1)(c) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-1-d",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(1)(d) concerns the manner of preparing/presenting financial results submitted to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-2-a",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Governance/procedural obligation] Regulation 33(2)(a) concerns approval and signing of financial results before submission to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-3-gen",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(3) sets the timelines and manner of submitting quarterly/annual financial results. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-3-b",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(3)(b) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-3-c",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(3)(c) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-3-d",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(3)(d) requires audited standalone financial results within sixty days of the financial year-end, with the audit report and a Statement on Impact of Audit Qualifications or a declaration. Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-3-i",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(3)(i) concerns submission of financial results to the stock exchange(s). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+  {
+    provisionId: "LODR-33-5",
+    requireAllOfGroups: [FINANCIAL_RESULTS_CHANNEL, ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 33(5) applies to submission of financial results (read together with Regulation 33(3) in this corpus). Requires a financial-results-specific fact connected to a stated violation, not merely that financial statements are mentioned.",
+  },
+
+  // ----- LODR Regulation 34 (annual report) -----
+  {
+    provisionId: "LODR-34-2-a",
+    requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 34(2)(a) requires the annual report to contain the audited standalone financial statements. Requires an annual-report-specific fact; an accounting error not connected to the annual report itself does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "LODR-34-2-b",
+    requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 34(2)(b) requires the annual report to contain the audited consolidated financial statements. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
+  },
+  {
+    provisionId: "LODR-34-3",
+    requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Disclosure obligation] Regulation 34(3) requires the annual report to contain the other disclosures specified in the Companies Act, 2013 and Schedule V. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
+  },
+  {
+    provisionId: "LODR-SCHEDULE-V-A-1",
+    requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Disclosure obligation] Schedule V, Part A, Clause 1 requires annual-report disclosure of related-party transactions per the applicable Accounting Standard. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
+  },
+
+  // ----- LODR Regulation 46 (website) -----
+  {
+    provisionId: "LODR-46-2-s",
+    requireAllOfGroups: [["consolidated_financials"], ["non_disclosure_of_information"]],
+    explanation:
+      "[Disclosure obligation] Regulation 46(2)(s) requires website publication of subsidiary financial statements. Requires a subsidiary/consolidation-specific fact connected to a stated non-publication/non-disclosure fact; a company committing fraud elsewhere does not, by itself, establish a website-publication failure, and the bare presence of subsidiary financials being genuinely and correctly published does not satisfy it either.",
+  },
+
+  // ----- LODR Regulation 32 (issue-proceeds monitoring) -----
+  {
+    provisionId: "LODR-32",
+    requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
+    explanation:
+      "[Disclosure/governance obligation] Regulation 32/32(7A) requires monitoring and disclosure of issue-proceeds utilisation. Requires an issue-proceeds-specific fact (IPO/rights-issue/preferential-issue proceeds) connected to a stated diversion or misstatement fact; ordinary bank-loan diversion unconnected to a securities issue, and a bare, compliant mention of issue proceeds with no stated misuse, do not satisfy it.",
+  },
+
+  // ----- LODR Regulation 4 (general principles) -----
+  // Deliberately gated on ANY established substantive violation, not a
+  // provision-specific predicate: these are general/umbrella principles the
+  // Regulations themselves state apply "in letter and spirit" across every
+  // other obligation, not independent triggers of their own. Shown as
+  // related/general-principle candidates once some violation is otherwise
+  // established, never on a clean/compliant scenario. See docs/
+  // provision-gating-remediation-v3.md for why this corpus's vocabulary
+  // does not support gating each lettered sub-clause more narrowly.
+  {
+    provisionId: "LODR-4-1",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1) is the umbrella clause of general disclosure/governance principles a listed entity must abide by. Shown as a related general-principle candidate once some other substantive violation is established by the entered facts; not itself an independent trigger.",
+  },
+  {
+    provisionId: "LODR-4-1-a",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(a): information shall be prepared and disclosed in accordance with applicable accounting/disclosure standards. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-b",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(b): prescribed accounting standards shall be implemented in letter and spirit, with an independent, competent auditor. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-c",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(c): the listed entity shall refrain from misrepresentation and ensure information given to exchanges/investors is not misleading. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-d",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(d): the listed entity shall recognise stakeholder rights and give timely, effective redress. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-e",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(e): timely and accurate disclosure of all material matters, financial situation, performance, ownership and governance. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-g",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(g): the listed entity shall abide by all applicable securities-law provisions and Board/exchange guidelines. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-h",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(h): specified disclosures/obligations shall be followed in letter and spirit, taking all stakeholders' interests into account. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-i",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(i): event-based/periodic filings shall contain relevant information. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-1-j",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(1)(j): periodic filings shall enable investors to track performance over regular intervals. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-2-f",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(2)(f) is the umbrella board-responsibilities clause under which numbered sub-duties (i)-(iii) sit. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-2-f-i",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(2)(f)(i), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-2-f-ii",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(2)(f)(ii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-2-f-iii",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[General principle] Regulation 4(2)(f)(iii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+  },
+  {
+    provisionId: "LODR-4-2-e-i",
+    requireAllOfGroups: [["financial_statement_misstatement"]],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 4(2)(e)(i) requires financial statements to give a true and fair view in accordance with applicable accounting standards. Unlike the general-principle 4(1)/4(2)(f) family above, this sub-clause's own subject is specific enough to require a stated financial-statement misstatement fact, not merely any violation elsewhere.",
+  },
+
+  // ----- SEBI Act, 1992 (non-12A) -----
+  {
+    provisionId: "SEBI-ACT-11C-2",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT, ["non_cooperation_with_investigation"]],
+    explanation:
+      "[Investigation/cooperation obligation] Section 11C(2) imposes a duty to preserve and produce books, registers, documents and records to the investigating authority. Requires an investigation context connected to a stated non-cooperation/non-production fact; a scenario stating SEBI investigated and the entity fully cooperated does not satisfy it.",
+  },
+  {
+    provisionId: "SEBI-ACT-11C-3",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT, ["non_cooperation_with_investigation"]],
+    explanation:
+      "[Investigation/cooperation obligation] Section 11C(3) is the investigating authority's power to require production of books, registers, documents and records. Requires an investigation context connected to a stated non-cooperation/non-production fact.",
+  },
+  {
+    provisionId: "SEBI-ACT-11C-5",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT, ["non_cooperation_with_investigation"]],
+    explanation:
+      "[Investigation/cooperation obligation] Section 11C(5) is a further investigating-authority power under Section 11C. Requires an investigation context connected to a stated non-cooperation fact.",
+  },
+  {
+    provisionId: "SEBI-ACT-11-2-i",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT],
+    explanation:
+      "[SEBI power/remedial provision] Section 11(2)(i) is SEBI's power to inspect books/registers/documents of a registered intermediary. Requires only an investigation context; this is a power SEBI may exercise, not a substantive prohibition on the entity's own conduct.",
+  },
+  {
+    provisionId: "SEBI-ACT-11-2-ia",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT],
+    explanation:
+      "[SEBI power/remedial provision] Section 11(2)(ia) is SEBI's power to call for information/records relevant to an investigation. Requires only an investigation context; a power SEBI may exercise, not a substantive prohibition.",
+  },
+  {
+    provisionId: "SEBI-ACT-11-2-gen",
+    requireAllOfGroups: [INVESTIGATION_CONTEXT],
+    explanation:
+      "[SEBI power/remedial provision] Section 11(2) is the umbrella power for SEBI to protect investors and regulate the securities market. Requires only an investigation/regulatory-action context.",
+  },
+  {
+    provisionId: "SEBI-ACT-11-2-e",
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
+    explanation:
+      "[SEBI power/remedial provision] Section 11(2)(e) is SEBI's power to prohibit fraudulent and unfair trade practices, mirroring PFUTP. Same minimum facts as the PFUTP fraud family: a securities transaction connected to fraudulent or deceptive conduct.",
+  },
+  {
+    provisionId: "SEBI-ACT-15HA",
+    requireAllOfGroups: [SECURITIES_DEALING_OR_ISSUE_NEXUS, FRAUDULENT_OR_DECEPTIVE_CONDUCT],
+    explanation:
+      "[Penalty provision, not itself a violation] Section 15HA is the monetary penalty for fraudulent and unfair trade practices; its quantum is fixed separately under Sections 15-I/15J. Gated on the same minimum facts as the PFUTP/12A fraud family it penalises: a securities transaction connected to fraudulent or deceptive conduct.",
+  },
+  {
+    provisionId: "SEBI-ACT-15HB",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Residual penalty provision, not itself a violation] Section 15HB is the catch-all penalty for any SEBI Act/rule/regulation/direction contravention with no separately specified penalty. It is not, on its own, a standalone conduct standard; shown once some other substantive violation is established by the entered facts.",
+  },
+  {
+    provisionId: "SEBI-ACT-27",
+    requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT, PERSON_IN_CHARGE_OF_COMPANY],
+    explanation:
+      "[Liability/attribution provision, not itself a violation] Section 27 attributes a company's contravention to persons who were, at the relevant time, in charge of and responsible to the company for the conduct of its business (subject to their own consent/connivance/negligence defence). It is not a generic company-violation provision: it requires a substantive violation fact connected to a stated actor in such a role, not merely that a director/officer exists somewhere in the matter. It must never be read as extending automatically to every named individual once the company itself is found to have violated a provision.",
+  },
+
+  // ----- SEBI (ICDR) Regulations, 2018 -----
+  {
+    provisionId: "ICDR-158-CH-V",
+    requireAllOfGroups: [["preferential_allotment"]],
+    explanation:
+      "[Substantive prohibition] Regulation 158 (Chapter V) sets preferential-issue guidelines, including the exemption for share issuance on conversion of a genuine loan. Requires a preferential-allotment-specific fact.",
+  },
+  {
+    provisionId: "ICDR-160",
+    requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
+    explanation:
+      "[Substantive prohibition] Regulation 160 requires preferentially-allotted equity shares to be fully paid up at allotment. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration fact; the bare fact that a preferential allotment occurred does not, by itself, establish a non-payment violation.",
+  },
+  {
+    provisionId: "ICDR-167",
+    requireAllOfGroups: [["preferential_allotment"]],
+    explanation:
+      "[Substantive prohibition] Regulation 167 sets the lock-in period for preferential allottees (3 years for promoter/promoter-group, 1 year for others). Requires a preferential-allotment fact. This corpus's vocabulary does not yet separately tag a lock-in-specific fact from the bare allotment fact (the existing preferential_allotment tag's own synonyms include lock-in phrasing); a genuine, disclosed limitation rather than an invented distinction.",
+  },
+
+  // ----- Indian Accounting Standards -----
+  {
+    provisionId: "IND-AS-1",
+    requireAllOfGroups: [["financial_statement_misstatement"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 1 (Presentation of Financial Statements) is a general presentation standard. Requires a stated financial-statement misstatement fact; not shown merely because financial statements are mentioned.",
+  },
+  {
+    provisionId: "IND-AS-32",
+    requireAllOfGroups: [["investment_valuation"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 32 (Financial Instruments: Presentation) requires a financial-instrument/investment-valuation-specific fact; the bare presence of trade receivables or other assets does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-109",
+    requireAllOfGroups: [["investment_valuation"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 109 (Financial Instruments: recognition/measurement, including expected credit loss) requires a financial-instrument/investment-valuation-specific fact; the bare existence of trade receivables does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-107",
+    requireAllOfGroups: [["investment_valuation"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 107 (Financial Instruments: Disclosures) requires a financial-instrument/investment-valuation-specific fact.",
+  },
+  {
+    provisionId: "IND-AS-110",
+    requireAllOfGroups: [["consolidated_financials"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 110 (Consolidated Financial Statements) requires a subsidiary/control/consolidation-specific fact connected to a stated violation (e.g. a misstatement from wrongly excluding a controlled subsidiary); a standalone accounting error unconnected to consolidation, or a bare, compliant mention of consolidated financials, does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-115",
+    requireAllOfGroups: [["revenue_recognition"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 115 (Revenue from Contracts with Customers) requires a revenue-recognition-specific fact; a fictitious ASSET fact does not, by itself, satisfy it merely because the same historical matter also had fictitious sales.",
+  },
+
+  // ----- Companies Act, 2013 -----
+  // Deterministic-engine completion pass: the prior non-PFUTP remediation
+  // pass deliberately left every Companies Act provision ungated because
+  // the live corpus is sparse (8 links total across 7 provisions, all
+  // empty-tagged, 1-2 links each). Sparse precedent data is not, on its
+  // own, a reason to leave a provision universally retrievable — each rule
+  // below is built from the actual live finding(s) that cite it (see
+  // scripts/tmp-companies-act-review.ts), never inferred from case title
+  // alone, and disclosed where the corpus cannot support a finer-grained
+  // predicate than a conservative one.
+  {
+    provisionId: "COMPANIES-ACT-136",
+    requireAllOfGroups: [["consolidated_financials"], ["non_disclosure_of_information"]],
+    explanation:
+      "[Disclosure obligation] Section 136(1) requires a company to circulate/make available its financial statements to members, INCLUDING subsidiary financial statements. This is a Companies Act circulation-to-members obligation, distinct from a SEBI/LODR exchange-facing disclosure violation (contrast Regulation 46(2)(s), the LODR website-publication counterpart, gated the same way). Requires a subsidiary/consolidation-specific fact connected to a stated non-disclosure fact; a company committing an unrelated violation elsewhere does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-139",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Governance/procedural obligation] Section 139 read with Rule 6(3) of the Companies (Audit and Auditors) Rules, 2014 requires rotation of the statutory auditor/audit firm within prescribed tenure limits. Requires a statutory-auditor actor fact connected to a stated tenure/rotation-specific fact; this corpus's vocabulary does not separately distinguish a rotation lapse from the personal ineligibility grounds in Section 141(3)(d)/(e) below — a genuine, disclosed limitation given the sparse (1-link) corpus for this provision, not an invented finer distinction.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-141-3-d",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Substantive prohibition] Section 141(3)(d) disqualifies a person from acting as auditor while holding a security of, or interest in, the company (or a related company) beyond a prescribed value, including through a partner. Requires a statutory-auditor actor fact connected to a stated independence/ineligibility fact; management's own conduct, without a stated fact about the AUDITOR's personal position, does not satisfy it. Same disclosed vocabulary limitation as Section 139 above.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-141-3-e",
+    requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_independence_issue"]],
+    explanation:
+      "[Substantive prohibition] Section 141(3)(e) disqualifies a person from acting as auditor where they (or their relative/partner) have a prescribed business relationship with the company or its holding/subsidiary/associate company. Requires a statutory-auditor actor fact connected to a stated independence/ineligibility fact. Same disclosed vocabulary limitation as Section 139 above.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-180-1-a",
+    requireAllOfGroups: [["asset_or_undertaking_disposal"]],
+    explanation:
+      "[Governance/procedural obligation] Section 180(1)(a) requires board authorisation by special resolution before selling, leasing or otherwise disposing of the whole, or substantially the whole, of an undertaking above the prescribed net-worth threshold. Requires only an asset/undertaking-disposal fact — like LODR Regulation 23(1)'s RPT-materiality proviso, this provision's own subject is itself a materiality/procedural threshold, not a bare topic mention; both live findings citing this provision (HEXA-01, NALWA-01) concern exactly this fact pattern (a subsidiary's investments transferred/reorganised to promoter-group entities), and both were NOT upheld on the merits — whether a given disposal actually crossed the statutory threshold or lacked the required resolution is a further question the entered facts should separately address.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-24",
+    requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
+    explanation:
+      "[SEBI power/remedial provision] Section 24 gives SEBI powers concurrent with the Central Government under Chapter III/IV of the Companies Act (including Section 67) in respect of listed companies' securities issue/transfer matters. In this corpus it is invoked exclusively alongside Section 67(2) (financial assistance for purchase of a company's own shares — see BGL-PREF-01), so it is gated on the same minimum facts: a preferential-allotment fact connected to a stated non-payment/sham-consideration fact. This is a jurisdictional/enabling provision, not itself a substantive prohibition on the company's own conduct, and must never be presented as an independent violation distinct from the underlying Section 67(2)/ICDR breach it lets SEBI act on.",
+  },
+  {
+    provisionId: "COMPANIES-ACT-67-2",
+    requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
+    explanation:
+      "[Substantive prohibition] Section 67(2) prohibits a public company from giving financial assistance (directly or indirectly, by loan, guarantee, security or otherwise) for the purchase of, or subscription to, its own shares or its holding company's shares. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration/loan-financed-allotment fact; the bare fact that a preferential allotment occurred does not, by itself, establish that the company financed it. This is a company-law obligation distinct from — though it may accompany — a SEBI regulatory (ICDR/PFUTP) violation on the same facts; the two must not be presented as if SEBI's order necessarily adjudicated the Companies Act offence itself unless the source order actually did so.",
+  },
+
+  // ----- LODR Regulation 37A -----
+  // Deliberately left ungated by the prior pass (a low-volume, 1-2-link
+  // provision); now gated on the same asset/undertaking-disposal fact
+  // Companies Act Section 180(1)(a) requires, since it is the SAME
+  // fact pattern (an interested public shareholder voting on an
+  // undertaking-disposal resolution) viewed from the LODR side.
+  {
+    provisionId: "LODR-37A",
+    requireAllOfGroups: [["asset_or_undertaking_disposal"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 37A prohibits a public shareholder who is directly or indirectly a party to a sale/lease/disposal of the whole or substantially the whole undertaking from voting on the resolution approving it. Requires an asset/undertaking-disposal fact — the same materiality/procedural-threshold predicate Companies Act Section 180(1)(a) requires (see above); whether the specific voting shareholder was actually interested is a further question the entered facts should separately address.",
   },
 ];
 

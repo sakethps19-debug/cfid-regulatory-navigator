@@ -5,19 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const PRIMARY_NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/analyzer", label: "Scenario Analyzer" },
-  { href: "/case-library", label: "Case Library" },
-  { href: "/law-library", label: "Law Library" },
-  { href: "/compare", label: "Precedent Comparison" },
-  { href: "/fraud-test", label: "Fraud Doctrine" },
+  { href: "/dashboard", label: "Home" },
+  { href: "/analyzer", label: "Analyze" },
+  { href: "/case-library", label: "Cases" },
+  { href: "/law-library", label: "Law" },
+  { href: "/compare", label: "Compare" },
 ];
 
+// Research Tools and admin/reference routes, all one tap away under "More"
+// rather than cluttering primary navigation. The Admin Dashboard is listed
+// here deliberately (not in primary nav) so it never reads as an ordinary
+// research function — see NavBar's own note below on why it isn't
+// role-gated: this app's authorization is a single email allowlist with no
+// separate admin role, so every authenticated user who can reach any page
+// can also reach this one; hiding it from primary nav is an information-
+// architecture choice, not a security boundary.
 const SECONDARY_NAV_ITEMS = [
+  { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/library", label: "Source Library" },
-  { href: "/awaiting-analysis", label: "Orders Awaiting Analysis" },
-  { href: "/admin", label: "Admin Processing Dashboard" },
   { href: "/methodology", label: "Methodology & Limitations" },
+  { href: "/admin", label: "Admin Dashboard" },
 ];
 
 /** Original abstract mark — a bound register/ledger with a verification
@@ -160,7 +167,7 @@ export function NavBar() {
               <NavLink key={item.href} href={item.href} label={item.label} active={isActive(item.href)} onClick={() => setOpen(false)} />
             ))}
             <div className="mt-2 border-t border-[var(--color-navy-800)] pt-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-gold-100)]/60">
-              Admin &amp; reference
+              More
             </div>
             {SECONDARY_NAV_ITEMS.map((item) => (
               <NavLink key={item.href} href={item.href} label={item.label} active={isActive(item.href)} onClick={() => setOpen(false)} />

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { FindingStatus, ScenarioFinding } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SourceLink } from "@/components/Card";
@@ -99,11 +100,19 @@ const PROVISION_RELATIONSHIP_LABELS: Record<string, string> = {
 function FindingRow({
   finding,
   relationship,
+  currentOrderId,
 }: {
   finding: ScenarioFinding;
   relationship?: string;
+  /** The order id of the page this row is already rendered on (Order
+   * Detail) — excluded from the "View order" links below so a finding
+   * never links back to the very order the officer is already reading.
+   * Omitted on Provision Detail, where every linked order is worth a
+   * link. */
+  currentOrderId?: string;
 }) {
   const relationshipLabel = relationship ? PROVISION_RELATIONSHIP_LABELS[relationship] : undefined;
+  const linkableOrderIds = finding.orderIds.filter((id) => id !== currentOrderId);
   return (
     <li className="rounded-lg border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -125,8 +134,13 @@ function FindingRow({
         {finding.interimParagraphReferences && <span>Interim: {finding.interimParagraphReferences}. </span>}
         {finding.finalParagraphReferences && <span>Final: {finding.finalParagraphReferences}.</span>}
       </p>
-      <div className="mt-1">
+      <div className="mt-1 flex flex-wrap items-center gap-3">
         <SourceLink href={finding.officialSourceUrl} />
+        {linkableOrderIds.map((orderId) => (
+          <Link key={orderId} href={`/orders/${orderId}`} className="text-sm font-medium text-[var(--color-gold-700)] hover:underline">
+            View order detail →
+          </Link>
+        ))}
       </div>
     </li>
   );
@@ -135,6 +149,7 @@ function FindingRow({
 export function FindingsByStatus({
   findings,
   provisionRelationship,
+  currentOrderId,
 }: {
   findings: ScenarioFinding[];
   /** Optional: given a finding, returns how a specific provision (the
@@ -142,6 +157,8 @@ export function FindingsByStatus({
    * PROVISION_RELATIONSHIP_LABELS. Omit when there is no single provision
    * in context (e.g. an order detail page listing every finding). */
   provisionRelationship?: (finding: ScenarioFinding) => string | undefined;
+  /** See FindingRow's currentOrderId. */
+  currentOrderId?: string;
 }) {
   if (findings.length === 0) {
     return <p className="text-sm text-[var(--color-ink-500)]">No scenario findings are linked to this item in the pilot data.</p>;
@@ -158,7 +175,7 @@ export function FindingsByStatus({
             <p className="text-xs text-[var(--color-ink-500)]">{hint}</p>
             <ul className="mt-2 space-y-2">
               {items.map((f) => (
-                <FindingRow key={f.recordId} finding={f} relationship={provisionRelationship?.(f)} />
+                <FindingRow key={f.recordId} finding={f} relationship={provisionRelationship?.(f)} currentOrderId={currentOrderId} />
               ))}
             </ul>
           </div>

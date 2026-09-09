@@ -1,10 +1,27 @@
-import type { FindingStatus, LegalProvision, LegalTest, ProvisionVersion, ScenarioFinding } from "@/types/domain";
+import type { FindingStatus, LegalProvision, LegalTest, Order, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
-import { passesRetrievalGate, retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
-import type { AnalysisResult, ConfidenceLevel, ContraryOnlyProvisionResult, GateBlockedProvisionResult, GuardrailNote, MatchedByCategory, PrecedentRef, ProvisionResult, ScenarioCompleteness, ScenarioQuery } from "./types";
+import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
+import { passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
+import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
+import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
+import { buildHistoricalTreatment } from "./historicalTreatment";
+import type {
+  ActorApplicability,
+  AnalysisResult,
+  ConfidenceLevel,
+  ContraryOnlyProvisionResult,
+  GateBlockedProvisionResult,
+  GoverningProvisionResult,
+  GuardrailNote,
+  MatchedByCategory,
+  PrecedentRef,
+  ProvisionResult,
+  ScenarioCompleteness,
+  ScenarioQuery,
+} from "./types";
 import { formatDate } from "@/lib/formatDate";
 import { EXCLUDED_PUBLICATION_STATUSES } from "@/lib/publicationLifecycle";
 
@@ -17,114 +34,28 @@ import { EXCLUDED_PUBLICATION_STATUSES } from "@/lib/publicationLifecycle";
 // decision to keep it visible with a caution attached. See
 // src/lib/publicationLifecycle.ts, the single source of truth for this set.
 
-const NEGATIVE_STATUSES = new Set(["Not Confirmed in Final Order", "Withdrawn"]);
-const UPHELD_STATUSES = new Set(["Confirmed in Final Order", "Partly Confirmed in Final Order"]);
-// A finding with one of these statuses has had NO merits determination made
-// either way — "Alleged" is a bare, untested allegation; "Inconclusive" is an
-// investigation that could not determine the answer; "Procedural observation"
-// decides only a preliminary/jurisdictional point, not the underlying
-// conduct. These still show (with their true status badge, never hidden) as
-// weak supporting evidence, but must never drive a provision to High
-// confidence on keyword overlap alone — that would read an untested
-// allegation as settled precedent. See deriveConfidence.
-const UNRESOLVED_STATUSES = new Set(["Alleged", "Inconclusive", "Procedural observation"]);
-const MIN_FINDING_SCORE = 3; // require at least one meaningful (weight-3) category match
-
-// A finding is "final" only when its own explicit, curated findingStatus
-// records an actual final-order disposition — confirmed, partly confirmed,
-// or explicitly rejected there. This is deliberately NOT the presence of a
-// finalParagraphReferences citation string: that field can be populated for
-// a finding whose own status is still Confirmed-at-interim/Prima
-// facie/Inconclusive/Procedural observation (e.g. a forward-reference to
-// where a related allegation was later dealt with), which would otherwise
-// let an interim finding masquerade as final. Confirmed against live data:
-// BGDL-01, GENSOL-01/02/03, RHFL-01, LINDE-01/02, EROS-01, ZEE-LOC-01,
-// PIFL-01, SIL-01, NAGL-01, PDCL-01, LSIL-01, MFL-02, BGL-PREF-04 and
-// BHSL-PROC-01 all currently carry a final_paragraph_references value while
-// their own finding_status is not a final-order disposition.
-const FINAL_ORDER_DISPOSITIONS = new Set<FindingStatus>([
-  "Confirmed in Final Order",
-  "Partly Confirmed in Final Order",
-  "Not Confirmed in Final Order",
-]);
-export function isFinalOrderFinding(status: FindingStatus): boolean {
-  return FINAL_ORDER_DISPOSITIONS.has(status);
-}
-
-export type SupportCategory = "Final merits support" | "Interim / prima facie" | "Contextual / unresolved";
-
-/** Every finding grouped into the "Supporting precedent(s)" section
- * (i.e. any non-negative status) was previously presented as one
- * undifferentiated list — a bare "Alleged" finding (no merits assessment
- * of any kind) sat visually alongside a "Confirmed at interim" one (an
- * actual, if not-yet-final, adjudication), inviting the same weight to
- * be read into both. This function splits that section into three
- * genuinely distinct categories so the UI/exports can subdivide it:
- *   - "Final merits support": UPHELD_STATUSES - already shown separately
- *     above as upheldPrecedents, but classified here too for completeness.
- *   - "Interim / prima facie": some assessment has actually happened
- *     (an interim order, or a prima facie view formed), just not a final
- *     one.
- *   - "Contextual / unresolved": UNRESOLVED_STATUSES - no merits
- *     assessment has been reached at all (a bare allegation, an
- *     inconclusive investigation, or a decision on an unrelated
- *     preliminary point only).
- * Assumes a non-negative status (i.e. a finding that would appear in
- * supportingPrecedents/upheldPrecedents, never contraryPrecedents) - a
- * NEGATIVE_STATUSES status falls through to "Interim / prima facie",
- * which is not meaningful for it; callers should never pass one. */
-export function supportCategory(status: FindingStatus): SupportCategory {
-  if (UPHELD_STATUSES.has(status)) return "Final merits support";
-  if (UNRESOLVED_STATUSES.has(status)) return "Contextual / unresolved";
-  return "Interim / prima facie";
-}
-
-/** Resolves the status a specific finding-provision LINK should be treated
- * as carrying, honoring the per-link finding_provisions.relationship
- * curation over the finding's own overall findingStatus where the two
- * diverge. A multi-provision finding is routinely "partly confirmed"
- * overall because one of its several cited provisions was confirmed, while
- * a DIFFERENT provision on the same finding (e.g. a PFUTP/fraud charge
- * bundled alongside a confirmed LODR disclosure lapse) was only alleged, or
- * was itself expressly not established — a bundled disposition, not a
- * finding on THIS provision. Concretely: a link recorded "not_upheld"
- * downgrades to "Not Confirmed in Final Order" for this provision
- * regardless of the finding's overall status (this specific charge was
- * decided negatively); a link recorded "alleged" downgrades to "Alleged"
- * (cited/considered only, no merits determination on THIS provision); a
- * link recorded "upheld", or with no relationship curated at all, uses the
- * finding's own findingStatus unchanged — this is a downgrade-only
- * mechanism, never an upgrade past what the finding's own overall status
- * already reflects. See P0 provision-precision remediation v2, section 11. */
-export function effectiveLinkStatus(findingStatus: FindingStatus, relationship: string | undefined): FindingStatus {
-  if (relationship === "not_upheld") return "Not Confirmed in Final Order";
-  if (relationship === "alleged") return "Alleged";
-  return findingStatus;
-}
-
-/** Orders two scored findings for DISPLAY PURPOSES ONLY (which precedent
- * appears first, which three make the top-3-per-provision cut) — never for
- * anything officer-facing. Sorts by factual-overlap score first; a
- * finding's procedural stage (final vs. interim/unresolved) only breaks an
- * EXACT tie on that score, never overrides a genuinely higher factual
- * score. This is the deliberate replacement for a former `score *= 1.15`
- * finality multiplier folded directly into the score: that multiplier let
- * procedural stage make two fact patterns look "more factually similar"
- * than they actually were (a interim-stage finding scoring 9 could be
- * outranked by a final-order finding scoring merely 8, since 8*1.15=9.2) —
- * exactly the dimension-conflation this scoring model must not have. A
- * secondary, ties-only tiebreak has no such effect: it can only ever
- * reorder findings that are already factually equal, which is a legitimate
- * display preference (an equally-on-point final order is more citable than
- * an equally-on-point interim one), not a factual-similarity claim. */
-export function compareByFactualScoreThenFinality(a: { score: number; finding: ScenarioFinding }, b: { score: number; finding: ScenarioFinding }): number {
-  if (a.score !== b.score) return b.score - a.score;
-  return Number(isFinalOrderFinding(b.finding.findingStatus)) - Number(isFinalOrderFinding(a.finding.findingStatus));
-}
-
-function humanizeTag(id: string): string {
-  return id.replace(/_/g, " ");
-}
+// Every symbol below was previously defined directly in this file; moved to
+// scoring.ts (deterministic-engine completion pass) so historicalTreatment.ts
+// can share the exact same factual-overlap scoring without a circular import
+// (historicalTreatment.ts is called FROM this file). Re-exported here so
+// every existing import of these names from "@/lib/matching/engine" keeps
+// working unchanged — see scoring.ts for the full definitions and comments.
+import {
+  NEGATIVE_STATUSES,
+  UPHELD_STATUSES,
+  UNRESOLVED_STATUSES,
+  MIN_FINDING_SCORE,
+  isFinalOrderFinding,
+  supportCategory,
+  effectiveLinkStatus,
+  compareByFactualScoreThenFinality,
+  unique,
+  scoreFinding,
+  additionalPrecedentFactsNotMatched,
+  type SupportCategory,
+  type ScoredFinding,
+} from "./scoring";
+export { isFinalOrderFinding, supportCategory, effectiveLinkStatus, compareByFactualScoreThenFinality, scoreFinding, type SupportCategory, type ScoredFinding };
 
 /** The single canonical list of concepts this query asserts, merging
  * free-text detection with the officer's explicit dropdown selections
@@ -162,30 +93,6 @@ export function buildEffectiveScenarioConcepts(
     seenIds.add(tag.id);
   }
   return merged;
-}
-
-/** MECHANICAL tag subtraction only: this precedent's own curated
- * fact-element TAGS (transaction type / actor role / conduct / evidence)
- * that were not part of what matched the query — bare vocabulary labels
- * like "Related party" or "Bank statements", never a legal analysis. This
- * is deliberately named and typed apart from
- * ScenarioFinding.ingredientsNotEstablished (PrecedentRef.
- * additionalPrecedentFactsNotMatched below), which is the genuinely
- * curated, reasoned "legal ingredients not established" content from
- * scenario_findings.ingredients_not_established — a human-written
- * explanation of which specific elements of a charge were considered but
- * not made out for THAT precedent's own outcome. Conflating the two under
- * one name or one label risks the mechanical list reading as if it were
- * that curated legal analysis, which it is not. */
-function additionalPrecedentFactsNotMatched(finding: ScenarioFinding, matchedIngredients: string[]): string[] {
-  const matchedSet = new Set(matchedIngredients);
-  const allOwnTags = unique([
-    ...finding.transactionTypes,
-    ...finding.actorRoles,
-    ...finding.allegedConduct,
-    ...finding.evidenceTypes,
-  ]);
-  return allOwnTags.map(humanizeTag).filter((label) => !matchedSet.has(label));
 }
 
 function buildDistinguishingNote(finding: ScenarioFinding): string | undefined {
@@ -237,28 +144,6 @@ function buildApplicableVersionNote(versions: ProvisionVersion[]): string {
   return "The version of this provision applicable at the time of the conduct in question has not been independently verified; the current statutory text should not be assumed to have applied; the official source should be confirmed before any reliance is placed on it.";
 }
 
-interface ScoredFinding {
-  finding: ScenarioFinding;
-  score: number;
-  matchedIngredients: string[];
-  /** Same overlap as matchedIngredients but as raw concept-tag ids, not
-   * display labels — used where the specific tag identity matters (e.g.
-   * buildWhyRelevant's fund-movement-only check), not just its human text. */
-  matchedIds: string[];
-  /** matchedIngredients split back out by the category it was matched
-   * against (transaction type / actor role / alleged conduct / evidence
-   * type) — surfaced in the UI's "Why was this result retrieved?" panel so
-   * an officer can see not just that something matched but what kind of
-   * fact it was. */
-  matchedByCategory: MatchedByCategory;
-  categoriesMatched: number;
-  substantiveCategoriesMatched: number;
-}
-
-function unique<T>(items: T[]): T[] {
-  return [...new Set(items)];
-}
-
 // Defense in depth: evidentiaryGaps must only ever contain genuine
 // outstanding evidence for the PRESENT scenario, never a note about a cited
 // precedent's own historical outcome (that belongs in
@@ -268,56 +153,6 @@ function unique<T>(items: T[]): T[] {
 // alongside genuine outstanding items.
 function isGenuineEvidentiaryGap(text: string): boolean {
   return !/^none outstanding/i.test(text.trim());
-}
-
-function scoreFinding(finding: ScenarioFinding, effectiveConcepts: DetectedConcept[]): ScoredFinding {
-  // effectiveConcepts already merges free-text detection with the
-  // officer's dropdown selections (see buildEffectiveScenarioConcepts) —
-  // both are scored identically here, on the same per-category weight,
-  // since a dropdown selection is a signal asserting the same kind of
-  // fact free text would, not a separate boost mechanism.
-  const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
-  const detectedLabelById = new Map(effectiveConcepts.map((c) => [c.id, c.label]));
-
-  const transactionOverlap = finding.transactionTypes.filter((t) => detectedIds.has(t));
-  const actorOverlap = finding.actorRoles.filter((a) => detectedIds.has(a));
-  const conductOverlap = finding.allegedConduct.filter((c) => detectedIds.has(c));
-  const evidenceOverlap = finding.evidenceTypes.filter((e) => detectedIds.has(e));
-
-  // score is a pure factual-overlap measure — deliberately never adjusted
-  // for procedural stage (final/interim) or historical disposition. Those
-  // are separate dimensions, shown separately (see StatusBadge /
-  // findingStatusLabel) and must never be able to make one fact pattern
-  // read as more or less factually similar than another. Display-order
-  // ties are broken by finality separately, see
-  // compareByFactualScoreThenFinality — never by adjusting this number.
-  const score = transactionOverlap.length * 3 + actorOverlap.length * 2 + conductOverlap.length * 3 + evidenceOverlap.length * 1;
-  const matchedIds = unique([...transactionOverlap, ...actorOverlap, ...conductOverlap, ...evidenceOverlap]);
-  const matchedIngredients = unique(matchedIds.map((id) => detectedLabelById.get(id) ?? id));
-  const toLabels = (ids: string[]) => unique(ids.map((id) => detectedLabelById.get(id) ?? id));
-  const matchedByCategory: MatchedByCategory = {
-    transactionTypes: toLabels(transactionOverlap),
-    actorRoles: toLabels(actorOverlap),
-    allegedConduct: toLabels(conductOverlap),
-    evidenceTypes: toLabels(evidenceOverlap),
-  };
-
-  const categoriesMatched = [transactionOverlap, actorOverlap, conductOverlap, evidenceOverlap].filter(
-    (arr) => arr.length > 0
-  ).length;
-
-  // Transaction type and alleged conduct are what a provision's relevance
-  // actually turns on ("what happened", weight 3 each) — actor role and
-  // evidence type (weight 2 and 1) are comparatively generic context that
-  // shows up across unrelated violations (almost every fraud finding names
-  // a "promoter" as an actor, for instance). Confidence tiering keys off
-  // this substantive count separately from the raw categoriesMatched count
-  // so a finding that only matched on conduct-plus-actor doesn't read as
-  // equally strong as one that matched on conduct-plus-transaction-type —
-  // see deriveConfidence.
-  const substantiveCategoriesMatched = [transactionOverlap, conductOverlap].filter((arr) => arr.length > 0).length;
-
-  return { finding, score, matchedIngredients, matchedIds, matchedByCategory, categoriesMatched, substantiveCategoriesMatched };
 }
 
 function toPrecedentRef(sf: ScoredFinding, linkRelationship?: string): PrecedentRef {
@@ -452,13 +287,174 @@ function buildWhyRelevant(provision: LegalProvision, best: ScoredFinding): strin
   return text;
 }
 
+/** Actor/noticee-specific candidate retrieval (deterministic-engine
+ * completion pass). Checks a provision's own actor-applicability rule (see
+ * data/curated/provision-actor-applicability.ts) against the entered
+ * scenario's stated actor concepts. This is NOT a liability-determination
+ * engine — it never decides who is actually liable, only whether the
+ * CANDIDATE itself should be shown as applicable, flagged as needing actor
+ * verification, or withheld because the only actor(s) named are
+ * incompatible with what this provision's own text requires (e.g. a
+ * Compliance Officer-specific provision must not surface merely because a
+ * promoter is named elsewhere in the matter). A provision with no rule is
+ * "not_actor_specific" — completely unaffected, identical to before this
+ * pass. */
+function checkActorApplicability(
+  provisionId: string,
+  effectiveConcepts: DetectedConcept[],
+  anchorIds: string[]
+): ActorApplicability {
+  const rule = actorRuleForProvision(provisionId);
+  if (!rule) return { status: "not_actor_specific", note: null };
+  // P0 actor-applicability CONNECTIVITY fix: an actor named elsewhere in the
+  // scenario, in a sentence unconnected to THIS provision's own adverse
+  // proposition, must never by itself make the provision read as
+  // actor-incompatible (false withholding) or actor-compatible (false
+  // compatibility) — the actor-level analogue of the polarity-connectivity
+  // fix (see connectedPolarityHits above). Only actor concepts stated in a
+  // sentence that also carries this provision's own anchor concept (its
+  // rule's own topic/adverse ids, or — for an ungated provision — the
+  // union of allegedConduct ids actually linked to it in this scenario's
+  // structured findings, sibling-scoped — see ungatedAnchorIdsByProvision
+  // below) count as "the actor" for this provision's adverse proposition.
+  // When no anchor concept was detected in any sentence at all, there is no
+  // nexus information to scope by, so this falls back to the whole
+  // scenario's actor concepts — the same behavior as before this fix, and
+  // the same conservative "requires_verification" outcome as the
+  // no-actor-anywhere case just below.
+  const connectedSentences = new Set<number>();
+  for (const c of effectiveConcepts) {
+    if (anchorIds.includes(c.id)) {
+      for (const i of c.sentenceIndices) connectedSentences.add(i);
+    }
+  }
+  const allActorConcepts = effectiveConcepts.filter((c) => c.kind === "actor");
+  const statedActorConcepts =
+    connectedSentences.size === 0 ? allActorConcepts : allActorConcepts.filter((c) => c.sentenceIndices.some((i) => connectedSentences.has(i)));
+  if (statedActorConcepts.length === 0) {
+    return {
+      status: "requires_verification",
+      note: `Actor applicability requires verification: this provision's own obligation runs to ${rule.actorDescription}. The entered facts do not identify which actor is involved, so this is shown as a candidate without an actor determination — it should not be relied on against any specific individual until that is confirmed.`,
+    };
+  }
+  const compatible = statedActorConcepts.some((c) => rule.applicableActorTags.includes(c.id));
+  if (compatible) return { status: "compatible", note: null };
+  const namedActors = unique(statedActorConcepts.map((c) => c.label)).join(", ");
+  return {
+    status: "incompatible",
+    note: `This provision's own obligation runs to ${rule.actorDescription}. The actor(s) identified in the entered facts (${namedActors}) do not fall within that category on the facts as stated.`,
+  };
+}
+
+/** See CandidateTier in types.ts — a provision that has already passed both
+ * the factual retrieval gate and the actor-applicability check is either a
+ * "primary_candidate" (its own legal function can anchor a charge) or a
+ * "related_ancillary" one (a general principle, penalty, attribution
+ * mechanism, SEBI power or bare definition riding on some other
+ * established violation) — never presented as equivalent. */
+function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForProvision>): "primary_candidate" | "related_ancillary" {
+  return isPrimaryCapable(legalFunction) ? "primary_candidate" : "related_ancillary";
+}
+
+/** Question-A polarity correction pass: the ADVERSE (conduct-kind) concept
+ * ids a gated provision's own retrieval rule requires, if any. A rule
+ * whose groups are entirely topic-kind (transaction/actor/evidence) — a
+ * bare definition/threshold (e.g. LODR 23(1)'s materiality proviso) or a
+ * SEBI power/remedial provision (e.g. Section 11(2)(i)/(ia)) — has no
+ * adverse predicate of its own at all, and returns an empty array; such a
+ * provision can never be a "candidate breach", only "governing". */
+function adverseConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
+  if (!rule) return [];
+  return unique(rule.requireAllOfGroups.flat().filter(isAdverseConceptId));
+}
+
+/** The complement of adverseConceptIdsForRule: the TOPIC-kind (non-conduct)
+ * concept ids a gated provision's own retrieval rule requires — the
+ * regulatory-nexus anchor a compliance statement must itself be co-stated
+ * with (same sentence) before it may be treated as connected to THIS
+ * provision. Empty for a rule with no topic group at all (e.g. LODR 4(1)'s
+ * general-principle predicate, gated purely on ANY_SUBSTANTIVE_VIOLATION_
+ * CONDUCT) — the nexus check is skipped rather than forced either way when
+ * there is genuinely no topic anchor to compare against. */
+function topicConceptIdsForRule(rule: ProvisionRetrievalRule | undefined, isAdverseConceptId: (id: string) => boolean): string[] {
+  if (!rule) return [];
+  return unique(rule.requireAllOfGroups.flat().filter((id) => !isAdverseConceptId(id)));
+}
+
+/** P0 Question-A polarity CONNECTIVITY fix (see factPolarity.ts's own
+ * header for the defect this replaces): a compliance/negation statement
+ * found anywhere in the entered text may be treated as ruling out an
+ * adverse predicate for a SPECIFIC provision only when it passes every one
+ * of these connectivity tests — reasoning at the level of "this proposition,
+ * connected to this provision's own subject and actor" rather than "this
+ * scenario contains a matching compliant tag somewhere":
+ *
+ * 1. NOT independently detected: if the same concept id was positively
+ *    detected ANYWHERE in the scenario (even disconnected from this
+ *    provision's own gate — e.g. a second, separately-worded transaction),
+ *    a genuine adverse mention exists and this must never read as an
+ *    affirmative contradiction — see the "already detected" exclusion
+ *    below, which is checked before anything else.
+ * 2. SAME REGULATORY NEXUS: the compliance statement's own sentence must
+ *    itself mention a topic-kind concept belonging to this provision's own
+ *    topic requirement (its rule's topic group for a gated provision, or
+ *    the supporting precedent's own transaction types for an ungated one)
+ *    — "RPT fully disclosed" never connects to a Regulation 30 event-
+ *    disclosure predicate, and "Transaction A fully disclosed" never
+ *    connects to a separately-stated "Transaction B concealed" (different
+ *    sentence, no shared topic detection in the compliant sentence itself
+ *    beyond the generic RPT topic every RPT sentence shares — see the
+ *    "already detected" exclusion above, which is what actually keeps
+ *    Transaction A and B apart once the vocabulary recognises Transaction
+ *    B's own adverse fact at all).
+ * 3. SAME ACTOR, where the provision is actor-specific: a compliance
+ *    statement naming a specific (non-company) actor is scoped to that
+ *    actor only, and must not be read as covering a provision whose own
+ *    text runs to a different actor category (provision-actor-
+ *    applicability.ts's own applicableActorTags) — "the Audit Committee
+ *    complied" must never cure a Compliance Officer-specific predicate. A
+ *    compliance statement naming no specific actor (company-wide) is not
+ *    restricted by this test, matching the existing, deliberately
+ *    conservative convention in checkActorApplicability itself (silence
+ *    on actor is never treated as incompatible).
+ */
+function connectedPolarityHits(
+  evidence: PolarityEvidence[],
+  targetConceptIds: string[],
+  provisionTopicIds: string[],
+  relevantActorIds: string[],
+  detectedIds: Set<string>
+): PolarityEvidence[] {
+  return evidence.filter((ev) => {
+    if (!targetConceptIds.includes(ev.conceptId)) return false;
+    if (detectedIds.has(ev.conceptId)) return false;
+    // A rule's own "topic" group can itself be an ACTOR-kind concept (e.g.
+    // Companies Act 139's own predicate runs to the statutory_auditor
+    // ACTOR, not a transaction-kind topic) — the nexus/subject check must
+    // accept either a co-detected transaction-kind OR actor-kind concept
+    // as satisfying it; only the SEPARATE actor-compatibility check below
+    // cares specifically about actor identity.
+    if (provisionTopicIds.length > 0 && ![...ev.nexusTopicIds, ...ev.actorIds].some((id) => provisionTopicIds.includes(id))) return false;
+    if (relevantActorIds.length > 0 && ev.actorIds.length > 0 && !ev.actorIds.some((a) => relevantActorIds.includes(a))) return false;
+    return true;
+  });
+}
+
 export function analyzeScenario(
   query: ScenarioQuery,
   scenarioFindings: ScenarioFinding[],
   provisions: LegalProvision[],
   legalTests: LegalTest[],
   provisionVersionsByProvisionId: Map<string, ProvisionVersion[]> = new Map(),
-  fullTextCandidates: ScenarioFinding[] = []
+  fullTextCandidates: ScenarioFinding[] = [],
+  /** Optional Order[] data (see types/domain.ts) used ONLY by the
+   * historical-treatment view (buildHistoricalTreatment) to classify each
+   * comparable case's order stage (interim/confirmatory/final WTM/
+   * adjudication/SAT-Supreme Court) precisely via Order.orderStage. Defaults
+   * to empty so every existing call site (tests, the blind-validation
+   * suites) remains valid without updating — historicalTreatment then falls
+   * back to a coarser, disclosed classification. See historicalTreatment.ts. */
+  orders: Order[] = []
 ): AnalysisResult {
   // Semantic-assist pre-pass: fix likely typos against the curated
   // vocabulary before concept detection runs, so a scenario like
@@ -481,6 +477,24 @@ export function analyzeScenario(
   // in scoring.
   const effectiveConcepts = buildEffectiveScenarioConcepts(detected, actorSignal, scenarioTypeSignal, evidenceSignal);
   const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+
+  // Question-A polarity correction pass: which existing conduct-tag ids the
+  // ENTERED scenario affirmatively states did NOT occur (compliance), as
+  // opposed to merely not mentioning them (silence) — see factPolarity.ts.
+  // Used below to decide whether a topically-matching provision reads as a
+  // candidate BREACH, a governing-but-compliant provision, or a provision
+  // whose adverse predicate is affirmatively contradicted, never to change
+  // WHICH provisions match a precedent in the first place.
+  const factPolarity = detectFactPolarity(correctedText, effectiveConcepts);
+  // Every "conduct"-kind concept tag in this vocabulary IS, by
+  // construction, an adverse/violation-indicating fact (see
+  // concept-tags.ts) — "transaction"/"actor"/"evidence"-kind tags are
+  // neutral occurrence facts (WHAT happened, WHO was involved, WHAT
+  // evidence exists), never themselves a breach. This is the single,
+  // general (not per-provision-hand-curated) signal the candidate-breach
+  // vs governing-relevant classification below is built on.
+  const conceptKindById = new Map(CONCEPT_TAGS.map((t) => [t.id, t.kind]));
+  const isAdverseConceptId = (id: string) => conceptKindById.get(id) === "conduct";
 
   // Publication/quarantine lifecycle: Draft, Quarantined and Withdrawn
   // findings never reach the matching engine, in either the deterministic
@@ -540,49 +554,180 @@ export function analyzeScenario(
     sf: ScoredFinding;
     relationship?: string;
     effStatus: FindingStatus;
+    /** This specific finding-provision link's own justifyingTags (see
+     * ScenarioFinding.provisionLinks) — carried through so an UNGATED
+     * provision's own conduct-match computation below can be scoped to
+     * just this link's own declared subject when curated, rather than the
+     * finding's ENTIRE allegedConduct array, which may legitimately span
+     * several DIFFERENT provisions/organs bundled into one finding record
+     * (e.g. one finding covering both an Audit Committee deficiency and an
+     * unrelated Compliance Officer vacancy) — see connectivity note below. */
+    justifyingTags: string[];
   }
+  // Actor-applicability is computed ONCE per provision id per query (it
+  // depends only on the provision and the entered scenario's actor
+  // concepts, never on which specific historical link is being checked),
+  // so it is cached here rather than recomputed per link.
+  const actorApplicabilityCache = new Map<string, ActorApplicability>();
+  // P0 actor-applicability connectivity fix: per-provision anchor ids for
+  // the actor-nexus check above — for a GATED provision, its own rule's
+  // topic+adverse ids (fixed, provision-only, safe to cache once per
+  // provisionId); for an UNGATED provision, there is no rule to consult, so
+  // this aggregates the allegedConduct of every structured finding actually
+  // linked to that provision anywhere in this scenario's scored findings —
+  // still provision-only (not per-individual-link), so the once-per-
+  // provisionId cache below remains correct. Sibling-claims-only scoped
+  // (see siblingScopedConduct) so a finding bundling several organs into
+  // one record (e.g. Audit Committee + Compliance Officer) never bleeds
+  // the OTHER organ's own conduct ids into this provision's anchor set —
+  // deliberately conduct-only, not transactionTypes, for the same reason:
+  // justifyingTags (the only scoping signal curated data provides) is only
+  // ever populated with conduct-kind ids, so a topic-kind transactionType
+  // has no way to be attributed to one organ over another on a bundled
+  // finding and is excluded from the anchor rather than risk silently
+  // bleeding it in unscoped.
+  function siblingScopedConduct(finding: ScenarioFinding, forProvisionId: string): string[] {
+    const siblingClaims = new Set(
+      finding.provisionLinks.filter((l) => l.provisionId !== forProvisionId && l.justifyingTags.length > 0).flatMap((l) => l.justifyingTags)
+    );
+    if (siblingClaims.size === 0) return finding.allegedConduct;
+    const ownTags = finding.provisionLinks.find((l) => l.provisionId === forProvisionId)?.justifyingTags ?? [];
+    return finding.allegedConduct.filter((id) => !siblingClaims.has(id) || ownTags.includes(id));
+  }
+  const ungatedAnchorIdsByProvision = new Map<string, Set<string>>();
+  for (const sf of scored) {
+    for (const link of sf.finding.provisionLinks) {
+      const set = ungatedAnchorIdsByProvision.get(link.provisionId) ?? new Set<string>();
+      for (const c of siblingScopedConduct(sf.finding, link.provisionId)) set.add(c);
+      ungatedAnchorIdsByProvision.set(link.provisionId, set);
+    }
+  }
+  function getActorApplicability(provisionId: string): ActorApplicability {
+    let cached = actorApplicabilityCache.get(provisionId);
+    if (!cached) {
+      const rule = retrievalRuleForProvision(provisionId);
+      const anchorIds = rule
+        ? unique([...topicConceptIdsForRule(rule, isAdverseConceptId), ...adverseConceptIdsForRule(rule, isAdverseConceptId)])
+        : [...(ungatedAnchorIdsByProvision.get(provisionId) ?? new Set<string>())];
+      cached = checkActorApplicability(provisionId, effectiveConcepts, anchorIds);
+      actorApplicabilityCache.set(provisionId, cached);
+    }
+    return cached;
+  }
+
   const findingsByProvision = new Map<string, LinkedFinding[]>();
   const gateBlockedFindingsByProvision = new Map<string, ScoredFinding[]>();
+  // Tracks WHY each gate-blocked provision was blocked (see
+  // GateBlockedProvisionResult.blockReason) — a provision can be blocked by
+  // its factual retrieval prerequisite, by actor incompatibility, or (rare)
+  // both, and the officer-facing note must say which, never conflate them.
+  const blockReasonByProvision = new Map<string, "factual_prerequisite" | "actor_incompatibility" | "both">();
   for (const sf of scored) {
     for (const link of sf.finding.provisionLinks) {
       if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
       const rule = retrievalRuleForProvision(link.provisionId);
-      if (rule && !passesRetrievalGate(rule, effectiveConcepts)) {
+      const factualBlocked = !!rule && !passesRetrievalGate(rule, effectiveConcepts);
+      const actorBlocked = getActorApplicability(link.provisionId).status === "incompatible";
+      if (factualBlocked || actorBlocked) {
+        const reason: "factual_prerequisite" | "actor_incompatibility" | "both" =
+          factualBlocked && actorBlocked ? "both" : factualBlocked ? "factual_prerequisite" : "actor_incompatibility";
+        const existingReason = blockReasonByProvision.get(link.provisionId);
+        blockReasonByProvision.set(link.provisionId, !existingReason || existingReason === reason ? reason : "both");
         gateBlockedFindingsByProvision.set(link.provisionId, [...(gateBlockedFindingsByProvision.get(link.provisionId) ?? []), sf]);
         continue;
       }
-      const entry: LinkedFinding = { sf, relationship: link.relationship, effStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship) };
+      const entry: LinkedFinding = {
+        sf,
+        relationship: link.relationship,
+        effStatus: effectiveLinkStatus(sf.finding.findingStatus, link.relationship),
+        justifyingTags: link.justifyingTags,
+      };
       findingsByProvision.set(link.provisionId, [...(findingsByProvision.get(link.provisionId) ?? []), entry]);
     }
   }
 
-  // Provisions blocked by the gate above are never silently dropped: a
+  // Provisions blocked by either gate above are never silently dropped: a
   // factually similar historical matter that also happened to involve (say)
-  // a PFUTP finding is still information worth an officer knowing about —
-  // just not as a "this provision may apply" candidate, since the present
-  // scenario does not state the specific nexus PFUTP requires. Same
-  // never-silently-drop principle already applied to contrary-only
-  // provisions (see contraryOnlyProvisionResults below).
+  // a PFUTP finding, or one whose only stated actor is incompatible with a
+  // Compliance Officer-specific provision, is still information worth an
+  // officer knowing about — just not as a "this provision may apply"
+  // candidate. Same never-silently-drop principle already applied to
+  // contrary-only provisions (see contraryOnlyProvisionResults below).
   const gateBlockedProvisionResults: GateBlockedProvisionResult[] = [];
+  // Question-A polarity correction pass (item 7 — "unknown vs compliant"):
+  // a provision blocked purely on its FACTUAL prerequisite (never actor
+  // incompatibility, which is a different question entirely) is split
+  // further here. If the entered scenario affirmatively CONTRADICTS the
+  // specific adverse concept(s) this provision's own rule requires, that
+  // is a materially different, stronger signal than genuine silence — see
+  // contradictedProvisionResults, kept structurally separate so "breach
+  // status unknown" is never conflated with "breach status affirmatively
+  // ruled out".
+  const contradictedProvisionResults: GoverningProvisionResult[] = [];
   for (const [provisionId, findings] of gateBlockedFindingsByProvision.entries()) {
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
     const rule = retrievalRuleForProvision(provisionId);
-    if (!rule) continue;
+    const reason = blockReasonByProvision.get(provisionId) ?? "factual_prerequisite";
+    const actorApplicability = getActorApplicability(provisionId);
     const sortedFindings = [...findings].sort(compareByFactualScoreThenFinality);
+    const countPhrase = `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}`;
+
+    const adverseIds = adverseConceptIdsForRule(rule, isAdverseConceptId);
+    // A rule with no topic group of its own (a bare single-predicate
+    // provision like Ind AS 1's misstatement requirement) has no ruleTopicIds
+    // to test connectivity against; fall back to the linked precedent's own
+    // transactionTypes as a coarser nexus anchor rather than skipping the
+    // nexus check outright (which would let ANY same-worded compliance
+    // phrase connect unconditionally regardless of subject).
+    const ruleTopicIds = topicConceptIdsForRule(rule, isAdverseConceptId);
+    const provisionTopicIds = ruleTopicIds.length > 0 ? ruleTopicIds : unique(sortedFindings.flatMap((sf) => sf.finding.transactionTypes));
+    const contradictedHits = connectedPolarityHits(
+      factPolarity.evidence,
+      adverseIds,
+      provisionTopicIds,
+      actorRuleForProvision(provisionId)?.applicableActorTags ?? [],
+      detectedIds
+    );
+    if (reason === "factual_prerequisite" && contradictedHits.length > 0) {
+      const reasons = [...new Set(contradictedHits.map((ev) => ev.rationale))];
+      contradictedProvisionResults.push({
+        provision,
+        relatedPrecedents: sortedFindings.slice(0, 3).map((sf) => toPrecedentRef(sf)),
+        polarityClass: "not_triggered_contradicted",
+        note: `${countPhrase}, but the entered scenario affirmatively rules out the specific adverse fact this provision's own text requires: ${rule?.explanation ?? ""} ${reasons.join(" ")} This provision is not triggered on the present facts.`,
+        legalFunction: legalFunctionForProvision(provisionId),
+        candidateTier: "governing_relevant",
+      });
+      continue;
+    }
+
+    let note: string;
+    if (reason === "factual_prerequisite") {
+      note = `${countPhrase}, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
+    } else if (reason === "actor_incompatibility") {
+      note = `${countPhrase}, but ${actorApplicability.note} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if a compatible actor turns out to be involved.`;
+    } else {
+      note = `${countPhrase}, but neither the facts this provision's own text requires (${rule?.explanation ?? ""}) nor a compatible actor (${actorApplicability.note}) are stated. This provision is not shown as potentially relevant on the present facts.`;
+    }
     gateBlockedProvisionResults.push({
       provision,
       relatedFactualPrecedents: sortedFindings.slice(0, 3).map((sf) => toPrecedentRef(sf)),
-      gateExplanation: rule.explanation,
-      note: `${findings.length} structured finding${findings.length > 1 ? "s" : ""} factually overlapping this scenario also cite ${provision.provisionNumber}, but the facts entered do not include what this provision's own text requires: ${rule.explanation} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`,
+      gateExplanation: rule?.explanation ?? "",
+      note,
+      legalFunction: legalFunctionForProvision(provisionId),
+      candidateTier: "requires_additional_fact",
+      blockReason: reason,
     });
   }
   gateBlockedProvisionResults.sort((a, b) =>
     compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0])
   );
+  contradictedProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   const provisionResults: ProvisionResult[] = [];
   const contraryOnlyProvisionResults: ContraryOnlyProvisionResult[] = [];
+  const governingProvisionResults: GoverningProvisionResult[] = [];
   for (const [provisionId, findings] of findingsByProvision.entries()) {
     const provision = provisions.find((p) => p.id === provisionId);
     if (!provision) continue;
@@ -609,8 +754,97 @@ export function analyzeScenario(
           provision,
           contraryPrecedents: contrary.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
           note: `No supporting precedent for this provision was identified in the currently structured corpus for this scenario. ${contrary.length} materially comparable precedent${contrary.length > 1 ? "s were" : " was"} found where this provision was considered and NOT confirmed on similar facts, so this provision may warrant caution rather than reliance, and the underlying order(s) should be examined for whether the same distinguishing factors are present here.`,
+          legalFunction: legalFunctionForProvision(provisionId),
+          candidateTier: "historical_precedent_only",
         });
       }
+      continue;
+    }
+
+    // Question-A polarity correction pass: "topic present" alone is NOT
+    // sufficient regulatory relevance — a provision belongs in
+    // provisionResults ("candidate breach") only if at least one ADVERSE
+    // (conduct-kind) concept tag was positively matched. For a GATED
+    // provision, passesRetrievalGate has ALREADY confirmed the entered
+    // scenario's own effectiveConcepts satisfy every one of the rule's
+    // groups (connected, where required) — so whether the ADVERSE group
+    // specifically was satisfied is checked against the QUERY's own
+    // detectedIds directly, exactly what the gate itself validated, not
+    // against any one precedent's own tag overlap (a precedent's curated
+    // allegedConduct list frequently doesn't happen to repeat the exact
+    // adverse tag the CURRENT query's own facts satisfied the gate with —
+    // that would wrongly demote a genuine gate-satisfied breach). A rule
+    // whose groups are entirely topic-kind (a bare definition or SEBI
+    // power) has no adverse ids at all, so this is always empty for those,
+    // exactly as intended. For an UNGATED provision there is no rule to
+    // consult, so the only available signal is the specific supporting
+    // precedent's own matched conduct-tag overlap.
+    const rule = retrievalRuleForProvision(provisionId);
+    // P0 connectivity fix: an UNGATED provision has no rule to check the
+    // query's own detectedIds against, so it falls back to the specific
+    // supporting finding's own matched conduct-tag overlap — but ONE
+    // finding record can legitimately be linked to SEVERAL provisions
+    // covering DIFFERENT organs/predicates (e.g. one finding bundling both
+    // an Audit Committee deficiency and an unrelated Compliance Officer
+    // vacancy). f.sf.matchedIdsByCategory.allegedConduct is computed once
+    // per FINDING, not per link, so without this scoping a conduct id
+    // matched for a DIFFERENT provision on the same finding would wrongly
+    // count here too. Deliberately narrow: only excludes a conduct id that
+    // is EXCLUSIVELY claimed by a SIBLING provision link's own
+    // justifyingTags on this same finding (curated evidence that id
+    // belongs to the sibling's own subject, not this one) — a conduct id
+    // no sibling link claims, or that this link claims for itself, is
+    // never excluded. This intentionally does NOT require every relevant
+    // conduct id to be pre-listed in this link's own justifyingTags (that
+    // field's existing, validated role is a topical PARTICIPATION gate —
+    // see line ~547 — not an exhaustive relevance list; a finding with a
+    // single provisionLink, or with no sibling curated to a different
+    // organ, is completely unaffected by this scoping). */
+    const linkScopedAllegedConduct = (f: LinkedFinding, ids: string[]) => {
+      const siblingClaims = new Set(
+        f.sf.finding.provisionLinks.filter((l) => l.provisionId !== provisionId && l.justifyingTags.length > 0).flatMap((l) => l.justifyingTags)
+      );
+      if (siblingClaims.size === 0) return ids;
+      return ids.filter((id) => !siblingClaims.has(id) || f.justifyingTags.includes(id));
+    };
+    const conductIdsMatched = rule
+      ? adverseConceptIdsForRule(rule, isAdverseConceptId).filter((id) => detectedIds.has(id))
+      : unique(supporting.flatMap((f) => linkScopedAllegedConduct(f, f.sf.matchedIdsByCategory.allegedConduct)));
+    if (conductIdsMatched.length === 0) {
+      const relevantAdverseIds = rule
+        ? adverseConceptIdsForRule(rule, isAdverseConceptId)
+        : unique(supporting.flatMap((f) => linkScopedAllegedConduct(f, f.sf.finding.allegedConduct)));
+      const provisionTopicIds = rule ? topicConceptIdsForRule(rule, isAdverseConceptId) : unique(supporting.flatMap((f) => f.sf.finding.transactionTypes));
+      const contradictedHits = connectedPolarityHits(
+        factPolarity.evidence,
+        relevantAdverseIds,
+        provisionTopicIds,
+        actorRuleForProvision(provisionId)?.applicableActorTags ?? [],
+        detectedIds
+      );
+      const legalFunction = legalFunctionForProvision(provisionId);
+      const countPhrase = `${supporting.length} structured finding${supporting.length > 1 ? "s" : ""} factually overlapping this scenario also cite${supporting.length > 1 ? "" : "s"} ${provision.provisionNumber}`;
+      let polarityClass: "governing_no_breach" | "additional_fact_required";
+      let note: string;
+      if (relevantAdverseIds.length === 0) {
+        polarityClass = "governing_no_breach";
+        note = `${countPhrase}. This provision governs the subject matter of the entered facts, but has no independent adverse predicate of its own (${rule?.explanation ?? "a definitional, accounting-standard, or SEBI-power provision"}) — it is relevant to the transaction, not itself a candidate contravention.`;
+      } else if (contradictedHits.length > 0) {
+        const reasons = [...new Set(contradictedHits.map((ev) => ev.rationale))];
+        polarityClass = "governing_no_breach";
+        note = `${countPhrase}, but the entered scenario affirmatively states compliance with the adverse fact this provision's own precedent record turns on. ${reasons.join(" ")} This provision governs the transaction; no apparent breach is shown on the present facts.`;
+      } else {
+        polarityClass = "additional_fact_required";
+        note = `${countPhrase}, but whether the specific adverse fact this provision's own precedent record turns on is present here is not stated either way. This provision governs the transaction; additional facts are required before it reads as a candidate breach.`;
+      }
+      governingProvisionResults.push({
+        provision,
+        relatedPrecedents: supporting.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+        polarityClass,
+        note,
+        legalFunction,
+        candidateTier: "governing_relevant",
+      });
       continue;
     }
 
@@ -624,6 +858,7 @@ export function analyzeScenario(
     const { level, reasons } = deriveConfidence(best.sf, supporting.length, best.effStatus);
     const provisionVersions = provisionVersionsByProvisionId.get(provisionId) ?? [];
     const upheld = findings.filter((f) => UPHELD_STATUSES.has(f.effStatus));
+    const legalFunction = legalFunctionForProvision(provisionId);
 
     provisionResults.push({
       provision,
@@ -650,6 +885,9 @@ export function analyzeScenario(
         .filter((m) => m.gaps.length > 0),
       provisionVersions,
       applicableVersionNote: buildApplicableVersionNote(provisionVersions),
+      legalFunction,
+      candidateTier: deriveCandidateTier(legalFunction),
+      actorApplicability: getActorApplicability(provisionId),
     });
   }
 
@@ -657,6 +895,7 @@ export function analyzeScenario(
   contraryOnlyProvisionResults.sort((a, b) =>
     compareByFactualScoreThenFinality(a.contraryPrecedents[0], b.contraryPrecedents[0])
   );
+  governingProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   // Independently retrieve contrary precedents for fund-movement / allotment
   // style scenarios, per the pilot's explicit safeguard, even if they did
@@ -746,12 +985,33 @@ export function analyzeScenario(
     ? publishedFullTextCandidates.filter((f) => !alreadySurfacedIds.has(f.recordId))
     : [];
 
+  // Question B ("how has CFID historically treated materially similar
+  // facts?") — architecturally separate from everything above (Question A,
+  // "what applies to MY facts?"). Built from the SAME effectiveConcepts and
+  // published findings, but deliberately WITHOUT applying the retrieval gate
+  // or actor-applicability check when deciding what counts as "materially
+  // similar" — see historicalTreatment.ts for the full architecture and the
+  // critical invariant (historical frequency never determines legal
+  // applicability).
+  const historicalTreatment = buildHistoricalTreatment(
+    effectiveConcepts,
+    correctedText,
+    publishedScenarioFindings,
+    provisions,
+    orders,
+    provisionResults,
+    gateBlockedProvisionResults,
+    contraryOnlyProvisionResults
+  );
+
   return {
     query,
     detectedConceptLabels: unique(detected.map((c) => c.label)),
     provisionResults,
     contraryOnlyProvisionResults,
     gateBlockedProvisionResults,
+    governingProvisionResults,
+    contradictedProvisionResults,
     globalContraryPrecedents,
     contraryPrecedentSearchNote,
     applicableGuardrails,
@@ -759,10 +1019,13 @@ export function analyzeScenario(
       provisionResults.length > 0 ||
       contraryOnlyProvisionResults.length > 0 ||
       gateBlockedProvisionResults.length > 0 ||
+      governingProvisionResults.length > 0 ||
+      contradictedProvisionResults.length > 0 ||
       globalContraryPrecedents.length > 0 ||
       fullTextSupplementalFindings.length > 0,
     fullTextSupplementalFindings,
     semanticAssist: corrections,
     completeness,
+    historicalTreatment,
   };
 }
