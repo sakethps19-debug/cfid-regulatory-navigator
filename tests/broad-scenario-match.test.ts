@@ -156,3 +156,31 @@ describe("Provision page: broad CFID scenario consolidation is not a tag-propaga
     expect(broadScenariosForProvision([])).toEqual([]);
   });
 });
+
+// Pre-demo remediation finding (P1, Section 10): Law Library's fact/concept
+// search for "personal account" returned zero results even though Analyze
+// recognizes this exact factual concept and the diversion-siphoning-
+// misutilisation scenario's own explanation names "routing of company
+// funds through personal accounts". Root cause: the bare phrase "personal
+// account" is a synonym of the TRANSACTION-kind concept tag
+// (fund_transfer_personal_account), while only its near-duplicate
+// CONDUCT-kind sibling (fund_routed_personal_account) was linked in the
+// scenario's keyConceptIds -- so the query detected a concept with no
+// scenario link at all.
+describe("Law Library 'personal account' search (pre-demo remediation)", () => {
+  it("matches the diversion/siphoning/misutilisation scenario for the bare phrase 'personal account'", () => {
+    const matched = matchScenariosForQuery("personal account");
+    expect(matched.map((s) => s.id)).toContain("diversion-siphoning-misutilisation");
+  });
+
+  it("still matches via the conduct-kind synonym phrase ('routed through personal account'), unaffected by the fix", () => {
+    const matched = matchScenariosForQuery("company funds routed through personal account");
+    expect(matched.map((s) => s.id)).toContain("diversion-siphoning-misutilisation");
+  });
+
+  it("the scenario's keyConceptIds includes both the transaction-kind and conduct-kind personal-account concept ids", () => {
+    const scenario = FIXED_SCENARIOS.find((s) => s.id === "diversion-siphoning-misutilisation")!;
+    expect(scenario.keyConceptIds).toContain("fund_transfer_personal_account");
+    expect(scenario.keyConceptIds).toContain("fund_routed_personal_account");
+  });
+});

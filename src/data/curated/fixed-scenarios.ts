@@ -149,7 +149,20 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
       "PFUTP-4-2-k",
       "PFUTP-4-2-r",
     ],
-    keyConceptIds: ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account"],
+    // fund_transfer_personal_account (transaction-kind: the fact that funds
+    // moved through a personal account) and fund_routed_personal_account
+    // (conduct-kind: the same fact characterized as conduct) are near-
+    // duplicate concepts describing the identical fund-diversion pathway
+    // this scenario's own explanation names ("routing of company funds
+    // through personal accounts"). Only the conduct-kind id was previously
+    // listed here -- a real defect: an officer's bare "personal account"
+    // query (Law Library's fact/concept search) detects the
+    // transaction-kind concept (its synonym list is the one that contains
+    // the literal phrase "personal account"), which had no scenario link at
+    // all, so the search returned zero results despite this scenario
+    // existing and covering exactly that fact pattern. Both ids now linked
+    // so either detection path reaches this scenario.
+    keyConceptIds: ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account", "fund_transfer_personal_account"],
   },
   {
     id: "fraudulent-fictitious-allotment",
