@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CONCEPT_TAGS } from "@/data/curated/concept-tags";
 import {
@@ -275,11 +275,17 @@ function PublicationWarningNote({ status }: { status: string }) {
  * no linked order on file, rather than a dead link. */
 function OrderLinks({ orderIds }: { orderIds: string[] }) {
   if (orderIds.length === 0) return null;
+  // A finding can span more than one order (interim + final). Order
+  // metadata (matter/stage/order number) isn't available at this depth of
+  // the render tree, but identical, unnumbered "View order detail →" links
+  // rendered back-to-back are indistinguishable to an officer deciding
+  // which to open -- numbering them is the safe minimum fix that doesn't
+  // require guessing which order is interim vs. final from position alone.
   return (
     <>
-      {orderIds.map((orderId) => (
+      {orderIds.map((orderId, i) => (
         <Link key={orderId} href={`/orders/${orderId}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
-          View order detail →
+          {orderIds.length > 1 ? `View order ${i + 1} of ${orderIds.length} →` : "View order detail →"}
         </Link>
       ))}
     </>
@@ -869,6 +875,21 @@ export function ScenarioAnalyzerClient() {
   const [flagSubmitting, setFlagSubmitting] = useState(false);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [flagError, setFlagError] = useState<string | null>(null);
+  // After a result arrives, focus/scroll to it so the officer isn't left
+  // looking at an unchanged form -- the result can be far enough below the
+  // fold (long templates/optional fields) that "submit and nothing visibly
+  // happens" was a real complaint. scroll-mt-20 (already used throughout
+  // this file's own internal jump links) keeps the sticky app header from
+  // covering the result's own heading once scrolled to; tabIndex=-1 lets a
+  // non-interactive container receive focus without being tab-reachable
+  // itself, and the aria-live region announces completion to screen readers
+  // without requiring sighted scroll position to notice.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!result) return;
+    resultRef.current?.focus();
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
 
   async function handleFlagSubmit(pr: ProvisionResult) {
     const findingRecordId = pr.supportingPrecedents[0]?.finding.recordId;
@@ -1196,7 +1217,11 @@ export function ScenarioAnalyzerClient() {
         const completenessNotStated = result.completeness.notStated.filter((k) => k !== "evidence");
         const indicativeAssessment = buildIndicativeRegulatoryAssessment(result);
         return (
-        <div className="space-y-6">
+        <div ref={resultRef} tabIndex={-1} id="analyzer-result" className="scroll-mt-20 space-y-6 outline-none">
+          <p role="status" aria-live="polite" className="sr-only">
+            Analysis complete: {result.provisionResults.length} potentially relevant provision
+            {result.provisionResults.length === 1 ? "" : "s"} identified.
+          </p>
           <div className="rounded-sm bg-[var(--color-gold-50)] px-4 py-3.5 ring-1 border-[var(--color-gold-100)]">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-gold-800)]">Indicative Regulatory Assessment</h2>
             <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-900)]">{indicativeAssessment.paragraph}</p>

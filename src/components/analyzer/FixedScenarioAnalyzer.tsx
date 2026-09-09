@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/Card";
 import { resolveAllFixedScenarios, type ResolvedFixedScenario } from "@/lib/fixedScenarioResolver";
 import type { LegalProvision } from "@/types/domain";
@@ -63,8 +63,22 @@ export function FixedScenarioAnalyzer({ provisions, onSwitchToFreeForm }: { prov
 }
 
 function FixedScenarioResult({ scenario }: { scenario: ResolvedFixedScenario }) {
+  // Reveal-and-focus the result on every selection (including switching
+  // from one curated scenario straight to another), so an officer picking
+  // a theme lower on the grid isn't left looking at an unchanged card list
+  // with the result rendered off-screen below it.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    resultRef.current?.focus();
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [scenario.id]);
+
   return (
-    <Card>
+    <div ref={resultRef} tabIndex={-1} className="scroll-mt-20 outline-none">
+      <p role="status" aria-live="polite" className="sr-only">
+        Showing potentially relevant provisions for {scenario.name}.
+      </p>
+      <Card>
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">Scenario</span>
         <h3 className="font-serif text-lg font-semibold text-[var(--color-ink-900)]">{scenario.name}</h3>
@@ -105,6 +119,7 @@ function FixedScenarioResult({ scenario }: { scenario: ResolvedFixedScenario }) 
           </div>
         )}
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
