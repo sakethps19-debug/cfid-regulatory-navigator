@@ -4,7 +4,7 @@ import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/
 import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
-import { passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
+import { isConnected, passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
 import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
 import { buildHistoricalTreatment } from "./historicalTreatment";
@@ -495,6 +495,9 @@ export function analyzeScenario(
   // vs governing-relevant classification below is built on.
   const conceptKindById = new Map(CONCEPT_TAGS.map((t) => [t.id, t.kind]));
   const isAdverseConceptId = (id: string) => conceptKindById.get(id) === "conduct";
+  // P0 disclosure-family connectivity hotfix: see ConceptTag.subjectAgnostic.
+  const subjectAgnosticConceptIds = new Set(CONCEPT_TAGS.filter((t) => t.subjectAgnostic).map((t) => t.id));
+  const isSubjectAgnosticConceptId = (id: string) => subjectAgnosticConceptIds.has(id);
 
   // Publication/quarantine lifecycle: Draft, Quarantined and Withdrawn
   // findings never reach the matching engine, in either the deterministic
@@ -850,9 +853,47 @@ export function analyzeScenario(
       }
       return scoped;
     };
+    // P0 disclosure-family connectivity hotfix: for an UNGATED provision, a
+    // SUBJECT-AGNOSTIC adverse concept id (see ConceptTag.subjectAgnostic —
+    // currently only non_disclosure_of_information) must not, by itself,
+    // promote this provision into a breach candidate. Matching it proves
+    // only that SOME disclosure was allegedly not made, not that it was
+    // THIS provision's own disclosure subject (shareholding pattern,
+    // governance compliance report, financial-statement RPT disclosure,
+    // loan default, ...) that went undisclosed.
+    //
+    // It counts only when the QUERY's own occurrence of that agnostic
+    // concept is CONNECTED (same sentence — see isConnected, the identical
+    // mechanism passesRetrievalGate already uses for gated rules) to a
+    // query-detected topic concept that this specific supporting finding's
+    // own transactionTypes also cites. A finding-level "this finding
+    // touches SOME topic the query also mentions ANYWHERE" is not enough —
+    // a scenario can legitimately state a compliant RPT disclosure in one
+    // sentence and an unrelated non-disclosure in another (e.g. Demo C:
+    // "...was appropriately disclosed. Separately, ... failed to disclose
+    // a material loan default...") and a finding whose only real overlap is
+    // the RPT sentence must not borrow the OTHER sentence's non-disclosure
+    // for itself. A GATED provision's own rule already enforces this via
+    // its topic group, so this only ever narrows the ungated fallback
+    // path; a subject-specific conduct id (e.g.
+    // related_party_misrepresentation) is completely unaffected.
+    const hasConnectedTopicOverlap = (f: LinkedFinding, agnosticIds: string[]) => {
+      const findingTopicIds = new Set(f.sf.finding.transactionTypes);
+      const overlappingQueryTopics = effectiveConcepts.filter((c) => c.kind === "transaction" && findingTopicIds.has(c.id));
+      if (overlappingQueryTopics.length === 0) return false;
+      const agnosticOccurrences = effectiveConcepts.filter((c) => agnosticIds.includes(c.id));
+      return agnosticOccurrences.some((ac) => overlappingQueryTopics.some((tc) => isConnected(ac, tc)));
+    };
     const conductIdsMatched = rule
       ? adverseConceptIdsForRule(rule, isAdverseConceptId).filter((id) => detectedIds.has(id))
-      : unique(supporting.flatMap((f) => linkScopedAllegedConduct(f, f.sf.matchedIdsByCategory.allegedConduct)));
+      : unique(
+          supporting.flatMap((f) => {
+            const ids = linkScopedAllegedConduct(f, f.sf.matchedIdsByCategory.allegedConduct);
+            const [agnostic, specific] = [ids.filter(isSubjectAgnosticConceptId), ids.filter((id) => !isSubjectAgnosticConceptId(id))];
+            if (agnostic.length === 0) return specific;
+            return hasConnectedTopicOverlap(f, agnostic) ? ids : specific;
+          })
+        );
     if (conductIdsMatched.length === 0) {
       const relevantAdverseIds = rule
         ? adverseConceptIdsForRule(rule, isAdverseConceptId)
