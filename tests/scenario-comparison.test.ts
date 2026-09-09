@@ -555,6 +555,90 @@ describe("buildScenarioComparison: provisions scoped to only the matched finding
 });
 
 // ---------------------------------------------------------------------
+// Correction pass: order-specific provision provenance. finding_provisions
+// carries only (finding_id, provision_id, relationship, justifying_tags) --
+// confirmed via a read-only schema query during this pass -- so a
+// provision link belongs to a FINDING, never to a (finding, order) pair.
+// A finding whose orderIds spans two orders (Seacoast's SSSL-*, Par
+// Drugs' PDCL-01) must never have its provisions silently asserted as
+// "considered in this specific order": each row must instead flag those
+// provisions as finding-level-only linkage, while a genuinely
+// single-order finding's provisions remain confidently order-specific
+// with no unnecessary qualifier.
+// ---------------------------------------------------------------------
+describe("order-specific provision provenance: never manufactured from finding.orderIds alone", () => {
+  it("a multi-order finding's provisions are flagged orderSpecific=false on EVERY row it appears on -- never silently asserted as order-specific", () => {
+    const rows = buildScenarioComparison(FRAUDULENT_ALLOTMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const seacoastRows = rows.filter((r) => r.order.matterId === SEACOAST_MATTER.id);
+    expect(seacoastRows).toHaveLength(2);
+    for (const row of seacoastRows) {
+      // SSSL-03 is the only matched finding on both rows, and it spans 2 orders.
+      expect(row.findings.every((f) => f.orderIds.length > 1)).toBe(true);
+      expect(row.provisionsConsidered.every((p) => p.orderSpecific === false)).toBe(true);
+      expect(row.hasFindingLevelOnlyProvisionLinkage).toBe(true);
+    }
+  });
+
+  it("Par Drugs' PDCL-01 (orderIds spans Interim + Confirmatory) produces the same finding-level flag on BOTH its rows", () => {
+    const rows = buildScenarioComparison(RPT_IRREGULARITIES, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const parDrugsRows = rows.filter((r) => r.order.matterId === PAR_DRUGS_MATTER.id);
+    expect(parDrugsRows).toHaveLength(2);
+    for (const row of parDrugsRows) {
+      expect(row.hasFindingLevelOnlyProvisionLinkage).toBe(true);
+      expect(row.provisionsConsidered.find((p) => p.provisionId === "LODR-23-2")?.orderSpecific).toBe(false);
+    }
+  });
+
+  it("finding-level provision linkage REMAINS VISIBLE (never hidden) -- LODR-23-2 still appears in provisionsConsidered, just flagged non-order-specific", () => {
+    const rows = buildScenarioComparison(RPT_IRREGULARITIES, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const parDrugsInterimRow = rows.find((r) => r.order.id === PAR_DRUGS_INTERIM.id)!;
+    expect(parDrugsInterimRow.provisionsConsidered.map((p) => p.provisionId)).toContain("LODR-23-2");
+  });
+
+  it("a genuinely single-order finding's provisions are orderSpecific=true, and the row shows NO finding-level qualifier -- never an unnecessary warning", () => {
+    const rows = buildScenarioComparison(FUND_DIVERSION, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const tarapurRow = rows.find((r) => r.order.id === TARAPUR_ORDER.id)!; // TTL-01: orderIds.length === 1
+    expect(tarapurRow.findings.every((f) => f.orderIds.length === 1)).toBe(true);
+    expect(tarapurRow.provisionsConsidered.every((p) => p.orderSpecific === true)).toBe(true);
+    expect(tarapurRow.hasFindingLevelOnlyProvisionLinkage).toBe(false);
+
+    const rajeshRows = buildScenarioComparison(FINANCIAL_MISSTATEMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS).filter(
+      (r) => r.order.matterId === RAJESH_MATTER.id
+    );
+    for (const row of rajeshRows) {
+      expect(row.hasFindingLevelOnlyProvisionLinkage).toBe(false);
+    }
+  });
+
+  it("a provision confirmed by at least one single-order finding on a row is orderSpecific=true even if a different multi-order finding on the SAME row also cites it", () => {
+    // Synthetic mixed row: one single-order finding and one multi-order
+    // finding on the SAME order, both citing PFUTP-4-1.
+    const singleOrderFinding = makeFinding({
+      recordId: "MIX-01",
+      orderIds: [SEACOAST_FINAL.id],
+      allegedConduct: ["fictitious_sales_or_revenue"],
+      provisionLinks: [{ provisionId: "PFUTP-4-1", justifyingTags: [], relationship: "upheld" }],
+    });
+    const multiOrderFinding = makeFinding({
+      recordId: "MIX-02",
+      orderIds: [SEACOAST_INTERIM.id, SEACOAST_FINAL.id],
+      allegedConduct: ["fictitious_sales_or_revenue"],
+      provisionLinks: [{ provisionId: "PFUTP-4-1", justifyingTags: [], relationship: "upheld" }],
+    });
+    const rows = buildScenarioComparison(FINANCIAL_MISSTATEMENT, ALL_ORDERS, [singleOrderFinding, multiOrderFinding], NO_DIRECTIONS, ALL_MATTERS);
+    const finalRow = rows.find((r) => r.order.id === SEACOAST_FINAL.id)!;
+    const entry = finalRow.provisionsConsidered.find((p) => p.provisionId === "PFUTP-4-1")!;
+    expect(entry.orderSpecific).toBe(true);
+    // The row still has a multi-order finding present, but since every
+    // citation of PFUTP-4-1 is independently order-specific, this
+    // particular provision's own flag is true -- hasFindingLevelOnlyProvisionLinkage
+    // is a row-level OR across provisions, so it still reflects whether
+    // ANY provision on the row lacks order-specific backing (none does here).
+    expect(finalRow.hasFindingLevelOnlyProvisionLinkage).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------
 // 16/17. No Analyzer scoring imports, no LLM/API calls.
 // ---------------------------------------------------------------------
 describe("scenarioComparison.ts: no Analyzer scoring, no LLM/API calls", () => {
@@ -574,9 +658,9 @@ describe("scenarioComparison.ts: no Analyzer scoring, no LLM/API calls", () => {
 describe("summarizeScenarioComparison: descriptive counts", () => {
   it("computes exact matter/order/stage/disposition counts from a crafted row set", () => {
     const rows: ComparisonRow[] = [
-      { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [SSSL_03], provisionsConsidered: [], directions: [], dispositions: ["Not Confirmed in Final Order"] },
-      { order: SEACOAST_FINAL, matter: SEACOAST_MATTER, findings: [SSSL_01], provisionsConsidered: [], directions: [], dispositions: ["Confirmed in Final Order"] },
-      { order: RAJESH_INTERIM, matter: RAJESH_MATTER, findings: [REL_01], provisionsConsidered: [], directions: [], dispositions: ["Prima facie"] },
+      { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [SSSL_03], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Not Confirmed in Final Order"] },
+      { order: SEACOAST_FINAL, matter: SEACOAST_MATTER, findings: [SSSL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Confirmed in Final Order"] },
+      { order: RAJESH_INTERIM, matter: RAJESH_MATTER, findings: [REL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Prima facie"] },
     ];
     const summary = summarizeScenarioComparison(rows);
     expect(summary.mattersRepresented).toBe(2);
@@ -590,10 +674,59 @@ describe("summarizeScenarioComparison: descriptive counts", () => {
   });
 
   it("comparisonRowMatterLabel falls back to the order's own caseName only when no matter resolved", () => {
-    const rowWithMatter: ComparisonRow = { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [], provisionsConsidered: [], directions: [], dispositions: [] };
-    const rowWithoutMatter: ComparisonRow = { order: makeOrder({ id: "orphan", caseName: "Orphan Case" }), matter: null, findings: [], provisionsConsidered: [], directions: [], dispositions: [] };
+    const rowWithMatter: ComparisonRow = { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: [] };
+    const rowWithoutMatter: ComparisonRow = { order: makeOrder({ id: "orphan", caseName: "Orphan Case" }), matter: null, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: [] };
     expect(comparisonRowMatterLabel(rowWithMatter)).toBe("Seacoast Shipping Services Limited");
     expect(comparisonRowMatterLabel(rowWithoutMatter)).toBe("Orphan Case");
+  });
+
+  // -- Correction-pass regression: unique-finding deduplication --
+  it("a single finding linked to two orders (SSSL-03, orderIds=[interim, final]) is counted ONCE across its two rows, not twice", () => {
+    const rows = buildScenarioComparison(FRAUDULENT_ALLOTMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    // SSSL-03 matches FRAUDULENT_ALLOTMENT and spans both Seacoast orders --
+    // it therefore produces two ROWS (interim + final) but must still count
+    // as ONE finding in the descriptive summary, not two.
+    const seacoastRows = rows.filter((r) => r.order.matterId === SEACOAST_MATTER.id);
+    expect(seacoastRows).toHaveLength(2); // interim row + final row
+    const matchedRecordIds = new Set(rows.flatMap((r) => r.findings.map((f) => f.recordId)));
+    expect(matchedRecordIds).toEqual(new Set(["SSSL-03"]));
+    const summary = summarizeScenarioComparison(rows);
+    expect(summary.notEstablishedFindings).toBe(1); // SSSL-03 counted once, not twice across its 2 rows
+  });
+
+  it("two DIFFERENT findings linked to the same single order count as 2, never merged into 1", () => {
+    const rows: ComparisonRow[] = [
+      {
+        order: TARAPUR_ORDER,
+        matter: TARAPUR_MATTER,
+        findings: [TTL_01, { ...TTL_01, recordId: "TTL-01B", findingStatus: "Confirmed in Final Order" }],
+        provisionsConsidered: [],
+        hasFindingLevelOnlyProvisionLinkage: false,
+        directions: [],
+        dispositions: ["Confirmed in Final Order"],
+      },
+    ];
+    const summary = summarizeScenarioComparison(rows);
+    expect(summary.establishedOrPartlyEstablishedFindings).toBe(2);
+  });
+
+  it("positive and negative dispositions remain separately counted after deduplication", () => {
+    const rows = buildScenarioComparison(FINANCIAL_MISSTATEMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const summary = summarizeScenarioComparison(rows);
+    expect(summary.establishedOrPartlyEstablishedFindings).toBeGreaterThan(0);
+    // No provision-count/frequency/percentage field exists on the summary
+    // at all -- the type itself has no rate/probability field.
+    const keys = Object.keys(summary);
+    expect(keys).toEqual(["mattersRepresented", "ordersRepresented", "finalOrders", "interimConfirmatorySpecialOrders", "establishedOrPartlyEstablishedFindings", "notEstablishedFindings"]);
+  });
+
+  it("no percentages/probabilities/rates are introduced anywhere in the summary shape", () => {
+    const rows = buildScenarioComparison(FINANCIAL_MISSTATEMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+    const summary = summarizeScenarioComparison(rows);
+    for (const value of Object.values(summary)) {
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(0);
+    }
   });
 });
 

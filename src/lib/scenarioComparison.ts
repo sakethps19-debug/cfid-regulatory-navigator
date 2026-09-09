@@ -24,6 +24,31 @@
 // comparison rows; this is a correct, honest reflection of the existing
 // taxonomy's own design, not a bug in this module, and must never be
 // worked around with a looser matching rule.
+//
+// PROVENANCE CORRECTION (post-review): finding_provisions carries only
+// (finding_id, provision_id, relationship, justifying_tags) — confirmed via
+// a read-only schema query during this pass. There is NO order-specific
+// provision provenance anywhere in the schema: a provision link belongs to
+// a FINDING, never to a (finding, order) pair. scenario_findings.orderIds
+// (order_id + final_order_id) can legitimately span two orders for one
+// finding (e.g. Seacoast's SSSL-* findings, Par Drugs' PDCL-01, each
+// linked to both an interim and a later order). For such a finding, its
+// provisionLinks prove the provisions were considered IN CONNECTION WITH
+// THAT FINDING — they do NOT, by themselves, prove each provision was
+// specifically considered in each individual order the finding happens to
+// reference. orderProvisionsConsidered() (also used, unmodified, by Case
+// Detail) has this exact same limitation baked in: it merges provisionLinks
+// across whatever findings it's given with no order-awareness at all, so
+// Case Detail's own "Provisions considered" section carries the identical
+// assumption today for any multi-order finding. This module does NOT
+// refactor Case Detail (out of scope for this pass — see the final
+// report); it instead computes, per row, which of that row's cited
+// provisions are backed by a finding genuinely linked to ONLY this one
+// order (orderSpecific: true) versus a finding that also spans another
+// order, where the citation is real and traceable to that finding but not
+// proven specific to this order alone (orderSpecific: false) — see
+// ComparisonProvisionEntry below. No migration is created for this: the
+// schema gap is real and is reported, never invented around.
 import type { DirectionOutcome, FindingStatus, Matter, Order, ScenarioFinding } from "@/types/domain";
 import { FIXED_SCENARIOS, type FixedScenario } from "@/data/curated/fixed-scenarios";
 import { broadScenariosForFinding } from "@/lib/broadScenarioMatch";
@@ -41,6 +66,24 @@ export function findingsForScenario(scenarioId: string, findings: ScenarioFindin
   return findings.filter((f) => broadScenariosForFinding(f).some((s) => s.id === scenarioId));
 }
 
+/** A provision cited by this row's matched finding(s), plus whether that
+ * citation is proven specific to THIS order or only traceable to a
+ * finding that also spans another order. See this file's header comment
+ * for why finding_provisions cannot, by itself, prove order-specificity
+ * for a multi-order finding. */
+export interface ComparisonProvisionEntry extends ProvisionConsideredSummary {
+  /** True only when EVERY finding on this row citing this provision is
+   * itself linked to exactly one order (finding.orderIds.length === 1) —
+   * i.e. there is no ambiguity about which order this citation belongs
+   * to. False when this provision is known only through a finding that
+   * ALSO spans a different order: the citation is real and traceable to
+   * that finding, but not proven specific to this order alone. A
+   * provision independently confirmed by at least one genuinely
+   * single-order finding on this row is still true, even if a different,
+   * multi-order finding on the same row also happens to cite it. */
+  orderSpecific: boolean;
+}
+
 export interface ComparisonRow {
   order: Order;
   /** Resolved from order.matterId against the supplied matters list — null
@@ -55,15 +98,24 @@ export interface ComparisonRow {
    * its own order-level directions/provisions — the two orders are never
    * merged into one row. */
   findings: ScenarioFinding[];
-  /** orderProvisionsConsidered(findings above), reused verbatim and scoped
-   * to only the matched findings — a provision cited solely by a
-   * DIFFERENT, unmatched finding on this same order never appears here.
-   * Carries each provision's legal-function label and notUpheldOnly flag
-   * exactly as Case/Order Detail already computes them; the Fixed
-   * Scenario Analysis candidate-violation exclusion filter is never
-   * applied (this is historical-order research, the same distinction
-   * orderProvisionsConsidered's own docstring already draws). */
-  provisionsConsidered: ProvisionConsideredSummary[];
+  /** Every provision cited by `findings` above, each flagged for whether
+   * that citation is proven order-specific or only finding-level (see
+   * ComparisonProvisionEntry). A provision cited solely by a DIFFERENT,
+   * unmatched finding on this same order never appears here. Carries each
+   * provision's legal-function label and notUpheldOnly flag exactly as
+   * Case/Order Detail already computes them (via orderProvisionsConsidered,
+   * reused unmodified); the Fixed Scenario Analysis candidate-violation
+   * exclusion filter is never applied (this is historical-order research,
+   * the same distinction orderProvisionsConsidered's own docstring already
+   * draws). */
+  provisionsConsidered: ComparisonProvisionEntry[];
+  /** True when at least one entry in provisionsConsidered has
+   * orderSpecific=false — i.e. this row cites at least one provision whose
+   * only provenance is a finding that also spans another order. The UI
+   * uses this to decide whether to show the finding-level qualifier note;
+   * it is never shown when every cited provision is genuinely
+   * order-specific. */
+  hasFindingLevelOnlyProvisionLinkage: boolean;
   /** This order's own order_directions rows (via directionsForOrderIds at
    * the call site) — order-level, never per-finding, matching the actual
    * order_directions schema (no finding_id column) and Part 15's "exact
@@ -109,11 +161,26 @@ export function buildScenarioComparison(
     for (const f of findingsForOrder) {
       if (!dispositions.includes(f.findingStatus)) dispositions.push(f.findingStatus);
     }
+
+    // A finding genuinely linked to only ONE order (orderIds.length === 1)
+    // carries unambiguous order-specific provenance for this row; a
+    // finding also linked to another order does not (see this file's
+    // header comment). A provision confirmed via at least one
+    // single-order finding is order-specific even if a different,
+    // multi-order finding on the same row also cites it.
+    const orderSpecificFindings = findingsForOrder.filter((f) => f.orderIds.length === 1);
+    const orderSpecificProvisionIds = new Set(orderProvisionsConsidered(orderSpecificFindings).map((p) => p.provisionId));
+    const provisionsConsidered: ComparisonProvisionEntry[] = orderProvisionsConsidered(findingsForOrder).map((summary) => ({
+      ...summary,
+      orderSpecific: orderSpecificProvisionIds.has(summary.provisionId),
+    }));
+
     rows.push({
       order,
       matter: order.matterId ? (matterById.get(order.matterId) ?? null) : null,
       findings: findingsForOrder,
-      provisionsConsidered: orderProvisionsConsidered(findingsForOrder),
+      provisionsConsidered,
+      hasFindingLevelOnlyProvisionLinkage: provisionsConsidered.some((p) => !p.orderSpecific),
       directions: directionsByOrderId.get(orderId) ?? [],
       dispositions,
     });
@@ -231,22 +298,35 @@ export interface ScenarioComparisonSummary {
    * one combined bucket here; the table/filter itself still shows each
    * order's own exact stage. */
   interimConfirmatorySpecialOrders: number;
-  /** Findings whose own recorded disposition is a positive
-   * establishment at some stage (Confirmed in Final Order, Partly
-   * Confirmed in Final Order, or Confirmed at interim). Findings whose
-   * disposition is Prima facie/Alleged/Inconclusive/Withdrawn/Procedural
-   * observation are counted in NEITHER this nor notEstablishedFindings --
-   * they are not yet a determination either way, and forcing them into
-   * either bucket would misstate the record. */
+  /** UNIQUE findings (deduplicated by recordId — see below) whose own
+   * recorded disposition is a positive establishment at some stage
+   * (Confirmed in Final Order, Partly Confirmed in Final Order, or
+   * Confirmed at interim). Findings whose disposition is Prima facie/
+   * Alleged/Inconclusive/Withdrawn/Procedural observation are counted in
+   * NEITHER this nor notEstablishedFindings -- they are not yet a
+   * determination either way, and forcing them into either bucket would
+   * misstate the record. */
   establishedOrPartlyEstablishedFindings: number;
-  /** Findings recorded as Not Confirmed in Final Order -- the negative/
-   * non-establishment precedents this feature must never hide. */
+  /** UNIQUE findings (deduplicated by recordId) recorded as Not Confirmed
+   * in Final Order -- the negative/non-establishment precedents this
+   * feature must never hide. */
   notEstablishedFindings: number;
 }
 
+/** rows.length already counts each ORDER once (buildScenarioComparison
+ * groups by order id), so mattersRepresented/ordersRepresented/finalOrders
+ * need no deduplication. Findings are a different unit: a single finding
+ * genuinely linked to two orders (e.g. Seacoast's SSSL-* findings, Par
+ * Drugs' PDCL-01) appears once per order's own row (correctly -- each
+ * order gets its own row), but must still be counted ONCE, not once per
+ * row, in the finding-level established/not-established counts below --
+ * these are descriptive counts of distinct findings, never of
+ * row-finding occurrences. Deduplicated by ScenarioFinding.recordId, the
+ * corpus's own stable finding identifier. */
 export function summarizeScenarioComparison(rows: ComparisonRow[]): ScenarioComparisonSummary {
   const matterIds = new Set<string>();
   let finalOrders = 0;
+  const seenFindingRecordIds = new Set<string>();
   let establishedOrPartlyEstablishedFindings = 0;
   let notEstablishedFindings = 0;
 
@@ -254,6 +334,8 @@ export function summarizeScenarioComparison(rows: ComparisonRow[]): ScenarioComp
     if (row.matter) matterIds.add(row.matter.id);
     if (row.order.orderStage === "Final order") finalOrders += 1;
     for (const f of row.findings) {
+      if (seenFindingRecordIds.has(f.recordId)) continue;
+      seenFindingRecordIds.add(f.recordId);
       if (f.findingStatus === "Confirmed in Final Order" || f.findingStatus === "Partly Confirmed in Final Order" || f.findingStatus === "Confirmed at interim") {
         establishedOrPartlyEstablishedFindings += 1;
       } else if (f.findingStatus === "Not Confirmed in Final Order") {

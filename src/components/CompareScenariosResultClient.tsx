@@ -22,34 +22,63 @@ const SORT_OPTIONS: { value: ComparisonSortKey; label: string }[] = [
   { value: "disposition", label: "By disposition" },
 ];
 
-function ProvisionBadges({ row, provisionById }: { row: ComparisonRow; provisionById: Map<string, LegalProvision> }) {
-  if (row.provisionsConsidered.length === 0) {
-    return <p className="text-xs italic text-[var(--color-ink-300)]">No provisions on file for the matched finding(s).</p>;
-  }
+/** finding_provisions carries no order-specific column (see
+ * scenarioComparison.ts's header comment) -- a provision cited only
+ * through a finding that also spans another order is real and traceable
+ * to that finding, but not proven specific to THIS order alone. This
+ * section's own heading and, where needed, an explicit qualifier note
+ * reflect that distinction rather than overclaiming "considered in this
+ * order" for every citation. The heading itself only ever downgrades to
+ * the conservative wording when this row actually has a finding-level-only
+ * citation -- a row whose provenance is genuinely order-specific keeps the
+ * plain "Provisions considered in this order" heading. */
+function ProvisionsSection({ row, provisionById }: { row: ComparisonRow; provisionById: Map<string, LegalProvision> }) {
   return (
-    <ul className="flex flex-wrap gap-1.5">
-      {row.provisionsConsidered.map((summary) => {
-        const provision = provisionById.get(summary.provisionId);
-        return (
-          <li key={summary.provisionId}>
-            <Link
-              href={`/provisions/${summary.provisionId}`}
-              className="inline-flex flex-wrap items-center gap-1 rounded-sm bg-[var(--color-neutral-50)] px-2 py-1 text-xs font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
-            >
-              {provision ? `${provision.instrument} · ${provision.provisionNumber}` : summary.provisionId}
-              <span className="rounded-sm bg-[var(--color-neutral-100)] px-1 py-0.5 text-[10px] font-normal text-[var(--color-ink-500)]">
-                {summary.legalFunctionLabel}
-              </span>
-              {summary.notUpheldOnly && (
-                <span className="rounded-sm bg-[var(--color-neutral-100)] px-1 py-0.5 text-[10px] font-normal text-[var(--color-ink-500)]">
-                  Contravention not established
-                </span>
-              )}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+        {row.hasFindingLevelOnlyProvisionLinkage ? "Provisions linked to matched finding(s)" : "Provisions considered in this order"}
+      </p>
+      {row.hasFindingLevelOnlyProvisionLinkage && (
+        <p className="mt-0.5 max-w-prose text-[11px] italic text-[var(--color-ink-500)]">
+          Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.
+        </p>
+      )}
+      {row.provisionsConsidered.length === 0 ? (
+        <p className="mt-1 text-xs italic text-[var(--color-ink-300)]">No provisions on file for the matched finding(s).</p>
+      ) : (
+        <ul className="mt-1 flex flex-wrap gap-1.5">
+          {row.provisionsConsidered.map((summary) => {
+            const provision = provisionById.get(summary.provisionId);
+            return (
+              <li key={summary.provisionId}>
+                <Link
+                  href={`/provisions/${summary.provisionId}`}
+                  className="inline-flex flex-wrap items-center gap-1 rounded-sm bg-[var(--color-neutral-50)] px-2 py-1 text-xs font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
+                >
+                  {provision ? `${provision.instrument} · ${provision.provisionNumber}` : summary.provisionId}
+                  <span className="rounded-sm bg-[var(--color-neutral-100)] px-1 py-0.5 text-[10px] font-normal text-[var(--color-ink-500)]">
+                    {summary.legalFunctionLabel}
+                  </span>
+                  {summary.notUpheldOnly && (
+                    <span className="rounded-sm bg-[var(--color-neutral-100)] px-1 py-0.5 text-[10px] font-normal text-[var(--color-ink-500)]">
+                      Contravention not established
+                    </span>
+                  )}
+                  {!summary.orderSpecific && (
+                    <span
+                      className="rounded-sm bg-[var(--color-neutral-100)] px-1 py-0.5 text-[10px] font-normal text-[var(--color-ink-500)]"
+                      title="This citation is traceable to a finding that also spans another captured order -- not proven specific to this order alone."
+                    >
+                      Finding-level
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -210,7 +239,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Stage</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Broad factual issue</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Disposition</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Provisions considered</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Provisions</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Outcome / directions</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Source</th>
             </tr>
@@ -238,7 +267,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
                     <DispositionBadges dispositions={row.dispositions} />
                   </td>
                   <td className="max-w-xs px-3 py-2 align-top">
-                    <ProvisionBadges row={row} provisionById={provisionById} />
+                    <ProvisionsSection row={row} provisionById={provisionById} />
                   </td>
                   <td className="max-w-xs px-3 py-2 align-top">
                     <DirectionsSummary row={row} />
@@ -275,10 +304,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
                 <DispositionBadges dispositions={row.dispositions} />
               </div>
               <div className="mt-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Provisions considered</p>
-                <div className="mt-1">
-                  <ProvisionBadges row={row} provisionById={provisionById} />
-                </div>
+                <ProvisionsSection row={row} provisionById={provisionById} />
               </div>
               <div className="mt-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Outcome / directions</p>

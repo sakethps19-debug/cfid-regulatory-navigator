@@ -100,6 +100,31 @@ describe("negative-precedent wording: 'Contravention not established', never 'no
   });
 });
 
+describe("order-specific provision provenance UI: correct wording, shown only when needed", () => {
+  const client = src("src/components/CompareScenariosResultClient.tsx");
+
+  it("uses 'Provisions considered in this order' for order-specific rows and 'Provisions linked to matched finding(s)' otherwise, driven by hasFindingLevelOnlyProvisionLinkage", () => {
+    expect(client).toContain("Provisions considered in this order");
+    expect(client).toContain("Provisions linked to matched finding(s)");
+    expect(client).toMatch(/row\.hasFindingLevelOnlyProvisionLinkage\s*\?\s*"Provisions linked to matched finding\(s\)"\s*:\s*"Provisions considered in this order"/);
+  });
+
+  it("shows the finding-level qualifier note only conditionally on hasFindingLevelOnlyProvisionLinkage, never unconditionally", () => {
+    expect(client).toContain("Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.");
+    expect(client).toMatch(/row\.hasFindingLevelOnlyProvisionLinkage\s*&&\s*\(/);
+  });
+
+  it("marks a non-order-specific provision badge distinctly (Finding-level tag), never silently identical to an order-specific one", () => {
+    expect(client).toMatch(/!summary\.orderSpecific\s*&&/);
+    expect(client).toContain("Finding-level");
+  });
+
+  it("the column header for the desktop table stays neutral ('Provisions') since the specific per-row wording can't live in a shared <th>", () => {
+    expect(client).toMatch(/<th[^>]*>Provisions<\/th>/);
+    expect(client).not.toMatch(/<th[^>]*>Provisions considered<\/th>/);
+  });
+});
+
 describe("responsive layout: reuses the wide app shell, no forced desktop-only width", () => {
   it("the result client renders both a desktop/tablet table (md:block) and a stacked mobile card list (md:hidden), same dual-render pattern as CaseLibraryClient", () => {
     const client = src("src/components/CompareScenariosResultClient.tsx");
