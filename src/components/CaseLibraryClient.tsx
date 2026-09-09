@@ -2,43 +2,45 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Order, ProcessingStage } from "@/types/domain";
+import type { Order, OrderStage } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
 import { formatDate } from "@/lib/formatDate";
-import { isDeepAnalyzed, PROCESSING_STAGE_SHORT_LABELS, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
+import { isDeepAnalyzed } from "@/lib/processingStages";
 
-const STAGE_LABELS = PROCESSING_STAGE_SHORT_LABELS;
-const STAGE_STYLES = PROCESSING_STAGE_STYLES;
-
-// Filter-chip order: most-complete first, so "Legally reviewed" (the small,
-// real number) isn't buried after a long list of not-yet-started stages.
-const STAGE_ORDER: ProcessingStage[] = [
-  "legally_reviewed",
-  "citations_checked",
-  "scenario_findings_extracted",
-  "text_extracted",
-  "downloaded",
-  "retrieval_attempted",
-  "needs_manual_review",
-  "retrieval_failed",
-  "awaiting_retrieval",
-  "indexed",
+// Demo-polish sprint: this page previously filtered/labelled every order by
+// its internal PIPELINE processing stage (indexed / downloaded / citations
+// checked / legally reviewed, etc.) — corpus-management metadata that
+// belongs on the Admin Dashboard, not on a regular officer's research
+// screen (see the application-wide demo-readiness sprint's "remove admin
+// metrics from regular-user surfaces" principle). Filtering now uses the
+// order's own legal ORDER STAGE (interim/confirmatory/final/adjudication/
+// etc.) instead — a genuinely research-relevant dimension an officer would
+// actually want to narrow by.
+const ORDER_STAGE_ORDER: OrderStage[] = [
+  "Interim order",
+  "Interim order cum show cause notice",
+  "Confirmatory order",
+  "Final order",
+  "Adjudication order",
+  "Settlement order",
+  "Revocation order",
+  "Other",
 ];
 
 export function CaseLibraryClient({ orders }: { orders: Order[] }) {
-  const [stageFilter, setStageFilter] = useState<"all" | ProcessingStage>("all");
+  const [stageFilter, setStageFilter] = useState<"all" | OrderStage>("all");
   const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
-    const map = new Map<ProcessingStage, number>();
-    for (const o of orders) map.set(o.processingStage, (map.get(o.processingStage) ?? 0) + 1);
+    const map = new Map<OrderStage, number>();
+    for (const o of orders) map.set(o.orderStage, (map.get(o.orderStage) ?? 0) + 1);
     return map;
   }, [orders]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders.filter((o) => {
-      if (stageFilter !== "all" && o.processingStage !== stageFilter) return false;
+      if (stageFilter !== "all" && o.orderStage !== stageFilter) return false;
       if (q && ![o.caseName, o.orderNumber, o.scopeNote].some((field) => field?.toLowerCase().includes(q))) return false;
       return true;
     });
@@ -55,7 +57,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
         >
           All ({orders.length})
         </button>
-        {STAGE_ORDER.filter((s) => (counts.get(s) ?? 0) > 0).map((s) => (
+        {ORDER_STAGE_ORDER.filter((s) => (counts.get(s) ?? 0) > 0).map((s) => (
           <button
             key={s}
             onClick={() => setStageFilter(s)}
@@ -63,7 +65,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
               stageFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
-            {STAGE_LABELS[s]} ({counts.get(s) ?? 0})
+            {s} ({counts.get(s) ?? 0})
           </button>
         ))}
         <input
@@ -88,7 +90,7 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Case</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Order</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Date</th>
-              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Processing stage</th>
+              <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Research status</th>
               <th className="px-3 py-2 text-left font-semibold text-[var(--color-ink-700)]">Link</th>
             </tr>
           </thead>
@@ -118,10 +120,13 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
                   <td className="whitespace-nowrap px-3 py-2 align-top text-[var(--color-ink-700)]">{formatDate(o.orderDate) || "-"}</td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
                     <span
-                      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
-                      title={o.retrievalFailureReason ?? undefined}
+                      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
+                        deepAnalyzed
+                          ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]"
+                          : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
+                      }`}
                     >
-                      {STAGE_LABELS[o.processingStage]}
+                      {deepAnalyzed ? "Detailed research available" : "Not yet available for detailed research"}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
@@ -160,10 +165,13 @@ export function CaseLibraryClient({ orders }: { orders: Order[] }) {
                   </div>
                 </div>
                 <span
-                  className={`inline-flex shrink-0 items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${STAGE_STYLES[o.processingStage]}`}
-                  title={o.retrievalFailureReason ?? undefined}
+                  className={`inline-flex shrink-0 items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
+                    deepAnalyzed
+                      ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]"
+                      : "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]"
+                  }`}
                 >
-                  {STAGE_LABELS[o.processingStage]}
+                  {deepAnalyzed ? "Research available" : "Not yet available"}
                 </span>
               </div>
               {deepAnalyzed && o.scopeNote && <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{o.scopeNote}</p>}
