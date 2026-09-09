@@ -71,20 +71,72 @@ export interface WordCorrection {
 }
 
 /**
- * Corrects a single normalized (lowercase, alnum) word against the curated
- * vocabulary if — and only if — exactly one vocabulary word is within
- * tolerance. An exact vocabulary hit needs no correction (returns null); a
- * tie between two equally-close vocabulary words is left uncorrected rather
- * than guessed.
+ * Terms that must NEVER be silently rewritten into a different word, even
+ * within edit-distance tolerance, because each is a valid but legally
+ * distinct legal/accounting/evidentiary/governance concept whose meaning
+ * changes if swapped for a near neighbour (verification vs certification
+ * chief among them — the specific defect this guard was added for: a bare
+ * edit-distance search found "verification" was not itself a literal
+ * curated-synonym word, while "certification" was (via "false
+ * certification"), so a correctly-spelled "verification" was silently
+ * rewritten to "certification"). A word in this set is always already
+ * "recognized" (never itself corrected to anything else), regardless of
+ * whether it happens to also appear as a curated synonym word — protecting
+ * it does not depend on the curated vocabulary's own contents, which can
+ * change independently of this list.
+ */
+export const PROTECTED_TERMS = new Set([
+  "verification",
+  "certification",
+  "representation",
+  "misrepresentation",
+  "disclosure",
+  "approval",
+  "authorization",
+  "authorisation",
+  "audit",
+  "investigation",
+  "diversion",
+  "misutilisation",
+  "misutilization",
+  "allotment",
+  "consideration",
+]);
+
+/**
+ * The full correction-candidate pool: curated vocabulary words plus every
+ * protected term (so a genuine misspelling of a protected term, e.g.
+ * "verfication", still correctly resolves back to that SAME protected term
+ * — a spelling fix, not a meaning change — rather than drifting to whatever
+ * unrelated curated word happens to be nearest once the correct target
+ * isn't even a candidate). Deduplicated since a protected term may already
+ * also be a literal curated synonym word (e.g. "certification").
+ */
+const CORRECTION_CANDIDATES: string[] = [...new Set([...VOCABULARY, ...PROTECTED_TERMS])];
+
+/**
+ * Corrects a single normalized (lowercase, alnum) word against the
+ * correction-candidate pool if — and only if — exactly one candidate is
+ * within tolerance. An exact-vocabulary or exact-protected-term hit needs
+ * no correction (returns null); a tie between two equally-close candidates
+ * is left uncorrected rather than guessed. A word already in PROTECTED_TERMS
+ * is always treated as already-recognized and is NEVER corrected to
+ * anything else, regardless of edit distance to some other word — this is
+ * the hard guarantee that a correctly-typed "verification" can never
+ * silently become "certification" (or any other protected term), no matter
+ * what the curated vocabulary contains. Once the input itself has cleared
+ * that guard, the candidate pool (including other protected terms) is
+ * searched normally, so a genuine typo can still resolve to its own correct
+ * word, protected or not.
  */
 function correctWord(word: string): string | null {
-  if (word.length < 7 || VOCABULARY.includes(word)) return null;
+  if (word.length < 7 || VOCABULARY.includes(word) || PROTECTED_TERMS.has(word)) return null;
   const tolerance = toleranceForLength(word.length);
   if (tolerance === 0) return null;
   let best: string | null = null;
   let bestDist = tolerance + 1;
   let tie = false;
-  for (const candidate of VOCABULARY) {
+  for (const candidate of CORRECTION_CANDIDATES) {
     if (Math.abs(candidate.length - word.length) > tolerance) continue;
     const d = levenshteinDistance(word, candidate, tolerance);
     if (d > tolerance) continue;
