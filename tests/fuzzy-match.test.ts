@@ -10,7 +10,7 @@
 // words where a one-letter edit collides with ordinary English (see the
 // "found"/"fund" case below).
 import { describe, expect, it } from "vitest";
-import { applySemanticAssist, levenshteinDistance } from "@/lib/matching/fuzzyMatch";
+import { applySemanticAssist, levenshteinDistance, PROTECTED_TERMS } from "@/lib/matching/fuzzyMatch";
 import { analyzeScenario } from "@/lib/matching/engine";
 import type { LegalProvision, ScenarioFinding } from "@/types/domain";
 
@@ -126,6 +126,57 @@ describe("applySemanticAssist", () => {
 
   it("returns no corrections for empty text", () => {
     expect(applySemanticAssist("")).toEqual({ correctedText: "", corrections: [] });
+  });
+});
+
+// Pre-demo remediation finding (P0): a correctly-spelled "verification" was
+// silently rewritten to "certification" because "verification" itself was
+// never a literal curated concept-tag synonym word (so it fell through to
+// the edit-distance search), while "certification" was (via the curated
+// synonym "false certification") and sat within edit-distance tolerance.
+// These are valid but legally DIFFERENT concepts and must never be
+// auto-substituted for one another. See PROTECTED_TERMS in fuzzyMatch.ts.
+describe("applySemanticAssist: protected vocabulary never normalizes one valid term into a different valid term", () => {
+  it("verification is never normalized to certification -- the specific reported defect", () => {
+    const text = "The order records independent verification of the transaction records by the compliance team.";
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(correctedText).toContain("verification");
+    expect(correctedText).not.toContain("certification");
+    expect(corrections).toEqual([]);
+  });
+
+  it("certification is never normalized to verification (the reverse direction)", () => {
+    const text = "The CEO/CFO certification under Regulation 17(8) was allegedly false.";
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(corrections).toEqual([]);
+  });
+
+  it("every listed protected term, standing alone, is left untouched by applySemanticAssist when correctly spelled", () => {
+    for (const term of PROTECTED_TERMS) {
+      const { correctedText, corrections } = applySemanticAssist(term);
+      expect(correctedText).toBe(term);
+      expect(corrections.some((c) => c.original === term)).toBe(false);
+    }
+  });
+
+  it("a genuine misspelling of a protected term still corrects back to that SAME term (a spelling fix, not a meaning change)", () => {
+    const { correctedText, corrections } = applySemanticAssist("Independent verfication of the disclosur was not obtained.");
+    expect(correctedText).toContain("verification");
+    expect(correctedText).toContain("disclosure");
+    expect(corrections).toEqual(
+      expect.arrayContaining([
+        { original: "verfication", corrected: "verification" },
+        { original: "disclosur", corrected: "disclosure" },
+      ])
+    );
+  });
+
+  it("retains the pre-existing 'preferential' typo correction unaffected by the protected-vocabulary guard", () => {
+    const { correctedText, corrections } = applySemanticAssist("An alleged prefrential allotment to related parties.");
+    expect(correctedText).toContain("preferential allotment");
+    expect(corrections).toEqual([{ original: "prefrential", corrected: "preferential" }]);
   });
 });
 
