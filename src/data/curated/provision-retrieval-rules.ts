@@ -784,7 +784,7 @@ export function retrievalRuleForProvision(provisionId: string): ProvisionRetriev
  * (sentenceIndices: [] — a deliberate, explicit officer assertion about the
  * scenario as a whole, not free text whose proximity to another fact is
  * otherwise unknown). See DetectedConcept.sentenceIndices. */
-function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
+export function isConnected(a: DetectedConcept, b: DetectedConcept): boolean {
   if (a.sentenceIndices.length === 0 || b.sentenceIndices.length === 0) return true;
   return a.sentenceIndices.some((i) => b.sentenceIndices.includes(i));
 }

@@ -11,6 +11,15 @@ export interface ConceptTag {
   kind: ConceptKind;
   label: string;
   synonyms: string[];
+  /** P0 disclosure-family connectivity hotfix: true only for a conduct-kind
+   * concept whose own definition spans EVERY disclosure subject matter
+   * (e.g. "failed to disclose" says nothing about WHAT was not disclosed).
+   * Such a concept can never, by itself, promote an ungated provision into
+   * a breach candidate — see engine.ts's conductIdsMatched computation —
+   * because unlike a subject-specific conduct concept (e.g.
+   * "related_party_misrepresentation"), matching it proves nothing about
+   * which disclosure obligation the entered scenario actually concerns. */
+  subjectAgnostic?: boolean;
 }
 
 export const CONCEPT_TAGS: ConceptTag[] = [
@@ -172,7 +181,20 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     // covered by the more generic synonyms above.
     // "material default" added (P0 Question-A polarity connectivity pass):
     // another recurring Regulation 30 event-disclosure category.
-    synonyms: ["material event", "material information", "material development", "material litigation", "material default", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
+    // "loan default"/"default on loan"/"default in repayment" etc. added
+    // (P0 disclosure-family connectivity hotfix): defaults on payment of
+    // interest/repayment of principal on loans from banks/financial
+    // institutions are a Regulation 30 mandatory ("deemed material")
+    // disclosure event under Para A of Part A of Schedule III to the LODR
+    // Regulations, per SEBI Circular SEBI/HO/CFD/CMD1/CIR/P/2019/140 dated
+    // November 21, 2019 (official text verified: sebi.gov.in, "Disclosures
+    // by listed entities of defaults on payment of interest/repayment of
+    // principal amount on loans from banks/financial institutions and
+    // unlisted debt securities") — without this, a scenario stating a plain
+    // "loan default" fact never satisfied Regulation 30's own topic gate at
+    // all, so the disclosure failure fell through to unrelated ungated
+    // disclosure provisions instead.
+    synonyms: ["material event", "material information", "material development", "material litigation", "material default", "loan default", "default on loan", "default on the loan", "default in repayment", "default in payment", "default on payment", "default in the repayment", "repayment default", "defaulted on repayment", "defaulted on a loan", "default on borrowings", "price sensitive information", "price-sensitive information", "disclosure to the stock exchange", "disclosure to stock exchanges", "disclosure to the exchange", "event-based disclosure"],
   },
   {
     id: "business_segment_disclosure",
@@ -395,7 +417,14 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // factPolarity.ts's own LIST_TOPICS, but was never itself a recognized
   // ADVERSE synonym here, so a genuine concealment allegation was never
   // positively detected at all).
-  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
+  // P0 disclosure-family connectivity hotfix: marked subjectAgnostic — see
+  // ConceptTag.subjectAgnostic and engine.ts's conductIdsMatched fix. This
+  // concept's synonyms are deliberately generic across every disclosure
+  // subject (shareholding pattern, governance compliance report, loan
+  // default, RPT financial-statement disclosure, ...), which is exactly
+  // why it must never independently promote an ungated provision without
+  // an accompanying subject-specific topical fact.
+  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", subjectAgnostic: true, synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
   // "summons were ignored"/"ignored the summons" added (Question-A
   // polarity acceptance pass, investigation paired test): a common way to
   // describe non-response to process distinct from the existing
