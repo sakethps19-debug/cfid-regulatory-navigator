@@ -50,6 +50,48 @@ export interface ProvisionConsideredSummary {
  * (never hidden merely because disposition was negative) with
  * notUpheldOnly=true so the caller can render it as secondary/factual
  * rather than indistinguishable from an established citation. */
+export interface OrderProvisionConsideredSummary extends ProvisionConsideredSummary {
+  /** True when this provision has at least one independent citation from a
+   * finding linked only to this order (finding.orderIds.length === 1) —
+   * i.e. genuinely unambiguous provenance already exists for it on this
+   * order. False when the provision is supported only through multi-order
+   * finding(s) (finding_provisions carries no order-specific column — see
+   * this file's module doc), in which case the corpus establishes
+   * finding-level linkage but not order-specific provenance. Same
+   * conservative pattern as Compare Scenarios' ComparisonProvisionEntry
+   * (scenarioComparison.ts). */
+  orderSpecific: boolean;
+}
+
+export interface OrderProvisionsConsideredResult {
+  provisions: OrderProvisionConsideredSummary[];
+  /** True when at least one provision above has orderSpecific=false — the
+   * caller uses this to decide whether to show the finding-level qualifier
+   * note; never shown when every cited provision is genuinely
+   * order-specific. */
+  hasFindingLevelOnlyProvisionLinkage: boolean;
+}
+
+/** Case/Order Detail's provision list, each flagged for whether its
+ * citation is proven specific to this order or only traceable to a finding
+ * that also spans another captured order. `findings` must already be
+ * scoped to this order (e.g. via `allFindings.filter(f =>
+ * f.orderIds.includes(order.id))`) — this function performs no order
+ * filtering of its own beyond distinguishing single- vs multi-order
+ * findings within that set. */
+export function provisionsConsideredForOrder(findings: ScenarioFinding[]): OrderProvisionsConsideredResult {
+  const orderSpecificFindings = findings.filter((f) => f.orderIds.length === 1);
+  const orderSpecificProvisionIds = new Set(orderProvisionsConsidered(orderSpecificFindings).map((s) => s.provisionId));
+  const provisions = orderProvisionsConsidered(findings).map((summary) => ({
+    ...summary,
+    orderSpecific: orderSpecificProvisionIds.has(summary.provisionId),
+  }));
+  return {
+    provisions,
+    hasFindingLevelOnlyProvisionLinkage: provisions.some((p) => !p.orderSpecific),
+  };
+}
+
 export function orderProvisionsConsidered(findings: ScenarioFinding[]): ProvisionConsideredSummary[] {
   const relationshipsByProvisionId = new Map<string, Set<string>>();
   for (const finding of findings) {

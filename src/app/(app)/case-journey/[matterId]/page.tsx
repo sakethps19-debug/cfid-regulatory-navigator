@@ -36,7 +36,7 @@ export default async function CaseJourneyPage({ params }: { params: Promise<{ ma
       </div>
       <PageHeader
         title={matter.normalizedMatterName}
-        description="The matter's captured orders, in chronological procedural sequence. This is a lifecycle summary, not a substitute for each order's own Case Detail page."
+        description="This matter's captured orders, in chronological order. Relationships shown between orders are drawn only from an explicit recorded link, never inferred from dates alone. Not a substitute for each order's own Case Detail page."
       />
 
       {journey.singleOrder && (

@@ -9,7 +9,7 @@ import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRe
 import { formatDate } from "@/lib/formatDate";
 import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 import { orderGist } from "@/lib/orderGist";
-import { orderProvisionsConsidered } from "@/lib/orderProvisionsConsidered";
+import { provisionsConsideredForOrder } from "@/lib/orderProvisionsConsidered";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -40,10 +40,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const siblingOrders = siblingOrdersInMatter(order, allOrders, relationships);
   const issuesExamined = [...new Set(findings.map((f) => f.category).filter((c): c is string => !!c))];
   const provisionById = new Map(allProvisions.map((p) => [p.id, p]));
-  const provisionsConsidered = orderProvisionsConsidered(findings)
+  const { provisions: rawProvisionsConsidered, hasFindingLevelOnlyProvisionLinkage } = provisionsConsideredForOrder(findings);
+  const provisionsConsidered = rawProvisionsConsidered
     .flatMap((summary) => {
       const provision = provisionById.get(summary.provisionId);
-      return provision ? [{ summary, provision }] : [];
+      return provision ? [{ summary, provision, orderSpecific: summary.orderSpecific }] : [];
     })
     .sort((a, b) => a.provision.provisionNumber.localeCompare(b.provision.provisionNumber));
 
@@ -200,14 +201,22 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       {provisionsConsidered.length > 0 && (
         <Card className="mb-6">
-          <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Provisions considered</h2>
-          <p className="mb-3 text-left text-xs text-[var(--color-ink-500)]">
-            Every provision this order&apos;s findings actually cite — substantive prohibitions, disclosure and
-            governance obligations, and the penalty/power/attribution provisions the order itself invoked. This is
-            historical-order research, not a claim that each is a violation.
+          <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">
+            {hasFindingLevelOnlyProvisionLinkage ? "Provisions linked to this order's finding(s)" : "Provisions considered in this order"}
+          </h2>
+          <p className="mb-1 text-left text-xs text-[var(--color-ink-500)]">
+            Every provision cited by this order&apos;s linked finding(s) — substantive prohibitions, disclosure and
+            governance obligations, and the penalty/power/attribution provisions cited in connection with them. This
+            is historical-order research, not a claim that each is a violation.
           </p>
+          {hasFindingLevelOnlyProvisionLinkage && (
+            <p className="mb-3 max-w-prose text-left text-xs italic text-[var(--color-ink-500)]">
+              Provision linkage is recorded at finding level in the current corpus and may span more than one
+              captured order — a &quot;Finding-level&quot; provision below is not proven specific to this order alone.
+            </p>
+          )}
           <ul className="flex flex-wrap gap-2">
-            {provisionsConsidered.map(({ summary, provision: p }) => (
+            {provisionsConsidered.map(({ summary, provision: p, orderSpecific }) => (
               <li key={p.id}>
                 <Link
                   href={`/provisions/${p.id}`}
@@ -220,6 +229,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   {summary.notUpheldOnly && (
                     <span className="rounded-sm bg-[var(--color-neutral-100)] px-1.5 py-0.5 text-xs font-normal text-[var(--color-ink-500)]">
                       Contravention not established
+                    </span>
+                  )}
+                  {!orderSpecific && (
+                    <span
+                      className="rounded-sm bg-[var(--color-neutral-100)] px-1.5 py-0.5 text-xs font-normal text-[var(--color-ink-500)]"
+                      title="This citation is traceable to a finding that also spans another captured order -- not proven specific to this order alone."
+                    >
+                      Finding-level
                     </span>
                   )}
                 </Link>
