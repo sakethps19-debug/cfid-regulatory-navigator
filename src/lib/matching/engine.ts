@@ -1,7 +1,7 @@
 import type { FindingStatus, LegalProvision, LegalTest, Order, ProvisionVersion, ScenarioFinding } from "@/types/domain";
 import { CONCEPT_TAGS, CONTRARY_PRECEDENT_TRIGGER_TAGS, type ConceptKind } from "@/data/curated/concept-tags";
 import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/guardrail-triggers";
-import { detectConcepts, type DetectedConcept } from "./conceptExtraction";
+import { computeContinuitySentenceGroups, detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
 import { isConnected, passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
@@ -469,6 +469,13 @@ export function analyzeScenario(
   // so the UI can disclose it.
   const { correctedText, corrections } = applySemanticAssist(query.freeText);
   const detected = detectConcepts(correctedText);
+  // P0 bounded cross-sentence factual continuity: see
+  // computeContinuitySentenceGroups (conceptExtraction.ts) and
+  // provision-retrieval-rules.ts's allowSentenceContinuity. Passed to
+  // passesRetrievalGate below; only a rule/route that explicitly opts in
+  // (currently: PFUTP-4-1's Explanation-based diversion route) ever uses it
+  // — every other gate stays same-sentence-only.
+  const continuityMap = computeContinuitySentenceGroups(correctedText);
   const actorSignal = query.actorSignal || null;
   const scenarioTypeSignal = query.scenarioTypeSignal || null;
   const evidenceSignal = query.evidenceSignal || null;
@@ -633,7 +640,7 @@ export function analyzeScenario(
     for (const link of sf.finding.provisionLinks) {
       if (link.justifyingTags.length > 0 && !link.justifyingTags.some((t) => detectedIds.has(t))) continue;
       const rule = retrievalRuleForProvision(link.provisionId);
-      const factualBlocked = !!rule && !passesRetrievalGate(rule, effectiveConcepts);
+      const factualBlocked = !!rule && !passesRetrievalGate(rule, effectiveConcepts, continuityMap);
       const actorBlocked = getActorApplicability(link.provisionId).status === "incompatible";
       if (factualBlocked || actorBlocked) {
         const reason: "factual_prerequisite" | "actor_incompatibility" | "both" =

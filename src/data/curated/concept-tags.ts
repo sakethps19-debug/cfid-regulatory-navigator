@@ -473,6 +473,42 @@ export const CONCEPT_TAGS: ConceptTag[] = [
 
   // ----- Alleged conduct -----
   { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", subjectAgnostic: true, synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
+  // P0 Demo B result-quality fix: IND-AS-23 (Borrowing Costs) was previously
+  // ungated (no retrieval rule at all -- see provision-retrieval-rules.ts),
+  // so it surfaced as a primary candidate on ANY financial-results-channel
+  // fact anywhere, including scenarios with nothing to do with interest or
+  // borrowing costs. The live corpus's only IND-AS-23 link (MAGNUM-01) is
+  // squarely about accrued-interest reversal and unrecognised bank-loan
+  // interest expense -- IND-AS-23's own actual subject -- so this narrow
+  // tag gates it on that specific fact instead of generic misstatement.
+  {
+    id: "interest_or_borrowing_cost_misstatement",
+    kind: "conduct",
+    label: "Interest/borrowing-cost misstatement",
+    synonyms: [
+      "accrued interest reversed",
+      "reversal of accrued interest",
+      "reversed accrued interest",
+      "accumulated accrued interest",
+      "failed to recognize interest expense",
+      "failed to recognise interest expense",
+      "did not recognize interest expense",
+      "did not recognise interest expense",
+      "unrecognized interest expense",
+      "unrecognised interest expense",
+      "bank loan interest expense",
+      "understated interest liability",
+      "understated its restructured liability",
+      "understated restructured liability",
+      "capitalisation of interest",
+      "capitalization of interest",
+      "borrowing cost",
+      "borrowing costs",
+      "interest expense on borrowings",
+      "interest on borrowings not recognised",
+      "interest on borrowings not recognized",
+    ],
+  },
   // Split from a single "fictitious_sales_or_assets" tag after a user
   // correctly pointed out that SSSL-02 (a sham preferential allotment
   // backed by a fictitious receivable, no revenue transaction at all) was
@@ -593,6 +629,19 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "not utilised for the stated purpose",
       "not utilized for the stated purpose",
       "no genuine business purpose",
+      // Rights/preferential-issue phrasing of the identical "diverted, not
+      // used as stated" fact pattern above, just using issue-document
+      // "objects" language (SEBI orders routinely describe diverted issue
+      // proceeds as "not utilised for the objects stated in the offer
+      // document") rather than "business purpose" — same conduct, same
+      // same-sentence gate, no broader search introduced.
+      "instead of being used for the disclosed objects",
+      "not used for the disclosed objects",
+      "not utilised for the disclosed objects",
+      "not utilized for the disclosed objects",
+      "not used for the stated objects",
+      "not utilised for the stated objects",
+      "not utilized for the stated objects",
     ],
   },
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
