@@ -72,15 +72,15 @@ export function findingsForScenario(scenarioId: string, findings: ScenarioFindin
  * for why finding_provisions cannot, by itself, prove order-specificity
  * for a multi-order finding. */
 export interface ComparisonProvisionEntry extends ProvisionConsideredSummary {
-  /** True only when EVERY finding on this row citing this provision is
-   * itself linked to exactly one order (finding.orderIds.length === 1) —
-   * i.e. there is no ambiguity about which order this citation belongs
-   * to. False when this provision is known only through a finding that
-   * ALSO spans a different order: the citation is real and traceable to
-   * that finding, but not proven specific to this order alone. A
-   * provision independently confirmed by at least one genuinely
-   * single-order finding on this row is still true, even if a different,
-   * multi-order finding on the same row also happens to cite it. */
+  /** True when this provision has at least one independent citation from a
+   * matched finding linked only to this order (finding.orderIds.length ===
+   * 1) — i.e. genuinely unambiguous provenance already exists for it on
+   * this row. False when the provision is supported only through
+   * multi-order finding(s), in which case the corpus establishes
+   * finding-level linkage but not order-specific provenance. A provision
+   * with at least one qualifying single-order citation is true even if a
+   * different, multi-order finding on the same row also happens to cite
+   * it. */
   orderSpecific: boolean;
 }
 
