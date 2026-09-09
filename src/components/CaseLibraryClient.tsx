@@ -2,71 +2,65 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Order, OrderStage } from "@/types/domain";
+import type { Order } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
 import { formatDate } from "@/lib/formatDate";
 import { isDeepAnalyzed } from "@/lib/processingStages";
 import { stripPipelineLanguage } from "@/lib/orderGist";
-
-// Demo-polish sprint: this page previously filtered/labelled every order by
-// its internal PIPELINE processing stage (indexed / downloaded / citations
-// checked / legally reviewed, etc.) — corpus-management metadata that
-// belongs on the Admin Dashboard, not on a regular officer's research
-// screen (see the application-wide demo-readiness sprint's "remove admin
-// metrics from regular-user surfaces" principle). Filtering now uses the
-// order's own legal ORDER STAGE (interim/confirmatory/final/adjudication/
-// etc.) instead — a genuinely research-relevant dimension an officer would
-// actually want to narrow by.
-const ORDER_STAGE_ORDER: OrderStage[] = [
-  "Interim order",
-  "Interim order cum show cause notice",
-  "Confirmatory order",
-  "Final order",
-  "Adjudication order",
-  "Settlement order",
-  "Revocation order",
-  "Other",
-];
+import { CASE_LIBRARY_ORDER_TYPE_FAMILY_ORDER, caseLibraryOrderTypeFamily, type CaseLibraryOrderTypeFamily } from "@/lib/orderTypeDisplayFamily";
 
 export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSearchText: string })[] }) {
-  const [stageFilter, setStageFilter] = useState<"all" | OrderStage>("all");
+  const [familyFilter, setFamilyFilter] = useState<"all" | CaseLibraryOrderTypeFamily>("all");
   const [query, setQuery] = useState("");
 
+  // Officer-facing display normalization only (Part 3 of the Cases
+  // cleanup pass): collapses the exact orderStage values that read as one
+  // simple family to an officer scanning the register (e.g. "Interim
+  // order" and "Interim order cum show cause notice" both read as
+  // "Interim") WITHOUT touching orders.order_type or orderStage itself —
+  // see orderTypeDisplayFamily.ts. The full order-type reclassification
+  // audit across the corpus is a separate, later workstream.
   const counts = useMemo(() => {
-    const map = new Map<OrderStage, number>();
-    for (const o of orders) map.set(o.orderStage, (map.get(o.orderStage) ?? 0) + 1);
+    const map = new Map<CaseLibraryOrderTypeFamily, number>();
+    for (const o of orders) {
+      const family = caseLibraryOrderTypeFamily(o.orderStage);
+      map.set(family, (map.get(family) ?? 0) + 1);
+    }
     return map;
   }, [orders]);
 
+  // orders is already sorted newest-first by the server (see
+  // sortOrdersNewestFirst) — Array.prototype.filter preserves that order,
+  // so filtering/searching here never needs to re-sort.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders.filter((o) => {
-      if (stageFilter !== "all" && o.orderStage !== stageFilter) return false;
+      if (familyFilter !== "all" && caseLibraryOrderTypeFamily(o.orderStage) !== familyFilter) return false;
       if (q && ![o.caseName, o.orderNumber, o.scopeNote, o.provisionSearchText].some((field) => field?.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [orders, stageFilter, query]);
+  }, [orders, familyFilter, query]);
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <button
-          onClick={() => setStageFilter("all")}
+          onClick={() => setFamilyFilter("all")}
           className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-            stageFilter === "all" ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
+            familyFilter === "all" ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
           }`}
         >
           All ({orders.length})
         </button>
-        {ORDER_STAGE_ORDER.filter((s) => (counts.get(s) ?? 0) > 0).map((s) => (
+        {CASE_LIBRARY_ORDER_TYPE_FAMILY_ORDER.filter((f) => (counts.get(f) ?? 0) > 0).map((f) => (
           <button
-            key={s}
-            onClick={() => setStageFilter(s)}
+            key={f}
+            onClick={() => setFamilyFilter(f)}
             className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-              stageFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
+              familyFilter === f ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
-            {s} ({counts.get(s) ?? 0})
+            {f} ({counts.get(f) ?? 0})
           </button>
         ))}
         <input
@@ -113,7 +107,7 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
                   </td>
                   <td className="px-3 py-2 align-top">
                     <span className="inline-block rounded-sm bg-[var(--color-gold-100)] px-2 py-0.5 text-xs font-semibold text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-600)]/50">
-                      {o.orderStage}
+                      {caseLibraryOrderTypeFamily(o.orderStage)}
                     </span>
                     <div className="mt-1 font-mono text-xs text-[var(--color-ink-700)]">{o.orderNumber ?? "-"}</div>
                   </td>
@@ -148,7 +142,7 @@ export function CaseLibraryClient({ orders }: { orders: (Order & { provisionSear
                   )}
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--color-ink-700)]">
                     <span className="inline-block rounded-sm bg-[var(--color-gold-100)] px-2 py-0.5 font-semibold text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-600)]/50">
-                      {o.orderStage}
+                      {caseLibraryOrderTypeFamily(o.orderStage)}
                     </span>
                     <span>{formatDate(o.orderDate) || "-"}</span>
                   </div>

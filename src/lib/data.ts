@@ -9,6 +9,7 @@ import type {
   LegalTest,
   Matter,
   Order,
+  OrderNoticee,
   OrderRelationship,
   OrderStage,
   ProcessingMetrics,
@@ -191,6 +192,27 @@ export async function getOrders(): Promise<Order[]> {
     counts.set(row.order_id, (counts.get(row.order_id) ?? 0) + 1);
   }
   return (orderRows ?? []).map((row) => mapOrder(row, counts.get(row.id) ?? 0));
+}
+
+/** Structured noticee/respondent data (noticees joined through
+ * order_noticees), for Case/Order Detail's "Noticees" section. Bulk-fetched
+ * once (this corpus's small — 6 curated noticee rows across 2 matters as of
+ * this pass, not yet a full 92-order reconstruction, deliberately left for
+ * a separate pass) rather than per-order, matching every other bulk getter
+ * in this file. Callers filter to their own order id; an order absent from
+ * the result has no structured noticee data on file — callers must show
+ * that as "not yet captured", never invent a name to fill the gap. */
+export async function getOrderNoticees(): Promise<OrderNoticee[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("order_noticees").select("order_id, role, noticees(full_name, entity_type)");
+  if (error) throw error;
+  return (data ?? [])
+    .map((row) => {
+      const noticee = Array.isArray(row.noticees) ? row.noticees[0] : row.noticees;
+      if (!noticee) return null;
+      return { orderId: row.order_id, fullName: noticee.full_name, entityType: noticee.entity_type, role: row.role };
+    })
+    .filter((n): n is OrderNoticee => n !== null);
 }
 
 /** Matters already established via order_relationships — never a guessed

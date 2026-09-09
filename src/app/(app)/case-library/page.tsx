@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { CaseLibraryClient } from "@/components/CaseLibraryClient";
 import { getOrders, getProvisions, getScenarioFindings } from "@/lib/data";
+import { sortOrdersNewestFirst } from "@/lib/sortOrdersNewestFirst";
 
 export default async function CaseLibraryPage() {
   const [orders, findings, provisions] = await Promise.all([getOrders(), getScenarioFindings(), getProvisions()]);
@@ -19,12 +20,18 @@ export default async function CaseLibraryPage() {
       provisionSearchTextByOrderId.set(orderId, existing ? `${existing} ${text}` : text);
     }
   }
-  const ordersWithProvisionSearchText = orders.map((o) => ({ ...o, provisionSearchText: provisionSearchTextByOrderId.get(o.id) ?? "" }));
+  // Newest order first, deterministic tie-break — see
+  // sortOrdersNewestFirst's own doc comment. Sorted once, server-side,
+  // before filtering/search ever touches the list, so every filtered view
+  // stays in the same chronological order.
+  const ordersWithProvisionSearchText = sortOrdersNewestFirst(
+    orders.map((o) => ({ ...o, provisionSearchText: provisionSearchTextByOrderId.get(o.id) ?? "" }))
+  );
   return (
     <div>
       <PageHeader
         title="Case Library"
-        description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). A case whose findings have been turned into structured research data links through to full findings, provisions considered, and related orders in the same matter.'}
+        description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). Newest order first. A case whose findings have been turned into structured research data links through to full findings, provisions considered, and related orders in the same matter.'}
       />
       <CaseLibraryClient orders={ordersWithProvisionSearchText} />
     </div>

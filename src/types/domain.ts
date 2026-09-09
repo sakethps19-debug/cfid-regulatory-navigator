@@ -117,6 +117,21 @@ export interface Order {
   normalizedMatterName: string | null;
 }
 
+/** A single noticee/respondent actually named as such in a specific order —
+ * structured data from the noticees/order_noticees tables (never inferred
+ * from a finding's free-text actor list, an auditor/banker/counterparty
+ * merely mentioned in the narrative, or a subsidiary/director who was not
+ * themselves named a noticee). See Case/Order Detail's "Noticees" section
+ * (officer-facing cleanup pass): "against whom was this proceeding actually
+ * directed" is answered from this structured relationship, not from
+ * scenario_findings.noticee_actor_names or any inference. */
+export interface OrderNoticee {
+  orderId: string;
+  fullName: string;
+  entityType: string | null;
+  role: string | null;
+}
+
 /** One order that currently contributes ZERO structured findings to
  * Scenario Analyzer retrieval — computed by actual presence (an order id
  * absent from every scenario_findings.order_id/final_order_id), never
