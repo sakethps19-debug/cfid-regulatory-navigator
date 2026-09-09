@@ -1,23 +1,32 @@
 import { PageHeader } from "@/components/PageHeader";
 import { CaseLibraryClient } from "@/components/CaseLibraryClient";
-import { getOrders } from "@/lib/data";
-import { isDeepAnalyzed } from "@/lib/processingStages";
+import { getOrders, getProvisions, getScenarioFindings } from "@/lib/data";
 
 export default async function CaseLibraryPage() {
-  const orders = await getOrders();
-  const deepAnalyzedCount = orders.filter((o) => isDeepAnalyzed(o.processingStage)).length;
-  const pendingCount = orders.length - deepAnalyzedCount;
-  const pendingClause =
-    pendingCount > 0
-      ? ` The remaining ${pendingCount} ${pendingCount === 1 ? "is" : "are"} genuine, CFID-verified orders whose text has not yet been retrieved and analysed in this environment (see the stage badge and the Admin Processing Dashboard for why).`
-      : " Every order in the register has now reached that stage; see the Admin Processing Dashboard for the current count.";
+  const [orders, findings, provisions] = await Promise.all([getOrders(), getScenarioFindings(), getProvisions()]);
+  const provisionSearchTextById = new Map(provisions.map((p) => [p.id, `${p.instrument} ${p.provisionNumber}`.toLowerCase()]));
+  // Which provisions (as searchable "instrument + number" text) each order's
+  // own findings cite — reuses the existing structured finding/provision
+  // relationships already loaded elsewhere in the app, not a new search
+  // backend. Built here (server-side, once) rather than in the client so
+  // the client component only ever receives plain, already-joined strings.
+  const provisionSearchTextByOrderId = new Map<string, string>();
+  for (const finding of findings) {
+    const text = finding.provisionIds.map((id) => provisionSearchTextById.get(id)).filter((t): t is string => !!t).join(" ");
+    if (!text) continue;
+    for (const orderId of finding.orderIds) {
+      const existing = provisionSearchTextByOrderId.get(orderId);
+      provisionSearchTextByOrderId.set(orderId, existing ? `${existing} ${text}` : text);
+    }
+  }
+  const ordersWithProvisionSearchText = orders.map((o) => ({ ...o, provisionSearchText: provisionSearchTextByOrderId.get(o.id) ?? "" }));
   return (
     <div>
       <PageHeader
         title="Case Library"
-        description={`All ${orders.length} orders from the authoritative CFID order register (see Methodology for how it's compiled), with their current processing stage, order stage, date and scope. ${deepAnalyzedCount} of ${orders.length} have reached "Citations checked": broken down into scenario findings with paragraph citations, and their case name links through to the full breakdown. A further "Legally reviewed" stage is reached only once a CFID officer has reviewed and signed off on that analysis; no order has reached it yet.${pendingClause} Search across case name, order number and scope note, or filter by processing stage, to find a specific order.`}
+        description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). A case whose findings have been turned into structured research data (see its Research status) links through to full findings, provisions considered, and related orders in the same matter.'}
       />
-      <CaseLibraryClient orders={orders} />
+      <CaseLibraryClient orders={ordersWithProvisionSearchText} />
     </div>
   );
 }

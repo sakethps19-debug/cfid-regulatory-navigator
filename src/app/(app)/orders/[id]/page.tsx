@@ -21,6 +21,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   ]);
   const findings = allFindings.filter((f) => f.orderIds.includes(order.id));
   const siblingOrders = siblingOrdersInMatter(order, allOrders, relationships);
+  const issuesExamined = [...new Set(findings.map((f) => f.category).filter((c): c is string => !!c))];
+  const noticeeNames = [...new Set(findings.flatMap((f) => f.noticeeActors))];
   const provisionIdsConsidered = [...new Set(findings.flatMap((f) => f.provisionIds))];
   const provisionsConsidered = allProvisions
     .filter((p) => provisionIdsConsidered.includes(p.id))
@@ -116,8 +118,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{order.authority}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Noticees</dt>
-            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{order.noticeesCount}</dd>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Noticees / relevant actors</dt>
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {noticeeNames.length > 0 ? noticeeNames.join(", ") : `${order.noticeesCount} (names not yet captured for this order's findings)`}
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Procedural status</dt>
@@ -127,6 +131,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Scope note</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{order.scopeNote}</dd>
           </div>
+          {issuesExamined.length > 0 && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Issues examined</dt>
+              <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{issuesExamined.join("; ")}</dd>
+            </div>
+          )}
         </dl>
         <div className="mt-4">
           <SourceLink href={order.officialUrl}>Official SEBI source (PDF/HTML)</SourceLink>

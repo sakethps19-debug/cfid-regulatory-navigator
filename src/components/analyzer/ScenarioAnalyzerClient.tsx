@@ -7,6 +7,7 @@ import {
   HISTORICAL_ORDER_STAGE_LABELS,
   QUESTION_A_POLARITY_LABELS,
   type AnalysisResult,
+  type GateBlockedProvisionResult,
   type HistoricalTreatmentProvisionEntry,
   type ProvisionResult,
 } from "@/lib/matching/types";
@@ -14,6 +15,7 @@ import type { LegalProvision } from "@/types/domain";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { CandidateTierBadge, LegalFunctionTag } from "@/components/CandidateTierBadge";
+import { LEGAL_FUNCTION_LABELS } from "@/data/curated/legal-function-classification";
 import { LegalReviewBadge } from "@/components/LegalReviewBadge";
 import { FindingMaturityBadge } from "@/components/FindingMaturityBadge";
 import { SourceLink } from "@/components/Card";
@@ -24,6 +26,7 @@ import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengt
 import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
+import { formatDate } from "@/lib/formatDate";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -57,6 +60,49 @@ function groupByFramework(provisionResults: ProvisionResult[]): { label: string;
     label,
     items: [...items].sort((a, b) => compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)),
   }));
+}
+
+/** Officer-facing reason text for a gate-blocked provision — shared by the
+ * grouping below and any single-provision display, so the wording is never
+ * duplicated and drifted between the two. */
+function gateBlockedReasonText(gb: GateBlockedProvisionResult): string {
+  if (gb.blockReason === "actor_incompatibility") {
+    return "the actor(s) named do not match who this provision's own text applies to";
+  }
+  if (gb.blockReason === "both") {
+    return "neither the required facts nor a compatible actor are stated";
+  }
+  return gb.gateExplanation || "additional facts required";
+}
+
+/** Groups gate-blocked provisions by their legal function (demo-polish
+ * sprint: "Scenario Analyzer must be useful, not merely safe") — a real
+ * scenario can gate-block dozens of provisions, each with its own
+ * genuinely distinct retrieval-prerequisite text (a substantive PFUTP
+ * clause, a penalty provision, a bare general-principle placeholder, an
+ * accounting-standard requirement — every one legitimately different), so
+ * grouping by identical reason text barely compresses anything. Legal
+ * function (see legal-function-classification.ts — already computed by
+ * the engine and shown elsewhere via LegalFunctionTag) is a coarse,
+ * meaningful categorization an officer already recognizes from the rest
+ * of the page: "12 substantive prohibitions", "9 accounting/reporting
+ * requirements", "11 general principles" reads as real information, not
+ * an arbitrary bucket. Each provision keeps its own full reason text,
+ * available on hover and via its Provision Detail link — grouping only
+ * changes how many times an officer has to read past one, never what is
+ * disclosed. Largest group first. Never changes WHICH provisions are
+ * gate-blocked or why — presentation only. */
+export function groupGateBlocked(items: GateBlockedProvisionResult[]): { legalFunction: GateBlockedProvisionResult["legalFunction"]; items: GateBlockedProvisionResult[] }[] {
+  const groups = new Map<string, { legalFunction: GateBlockedProvisionResult["legalFunction"]; items: GateBlockedProvisionResult[] }>();
+  for (const gb of items) {
+    const group = groups.get(gb.legalFunction) ?? { legalFunction: gb.legalFunction, items: [] };
+    group.items.push(gb);
+    groups.set(gb.legalFunction, group);
+  }
+  for (const group of groups.values()) {
+    group.items.sort((a, b) => compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber));
+  }
+  return [...groups.values()].sort((a, b) => b.items.length - a.items.length);
 }
 
 const ACTOR_OPTIONS = CONCEPT_TAGS.filter((t) => t.kind === "actor");
@@ -528,7 +574,7 @@ export function resultToResearchBrief(result: AnalysisResult): string {
         lines.push(`  Matter: ${mo.caseName} [${mo.comparabilityTier === "strongly_comparable" ? "strongly comparable" : "moderately comparable"}]`);
         for (const c of mo.cases) {
           lines.push(
-            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
+            `    - Order ${c.recordId} · ${HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}${c.orderDate ? ` · ${c.orderDate}` : ""} · status: ${findingStatusLabel(c.effectiveStatus)} · factual similarity: ${c.factualSimilarities.join(", ") || "none recorded"}${c.paragraphReference ? ` · ${c.paragraphReference}` : ""} · ${c.officialSourceUrl}`
           );
         }
       }
@@ -1089,6 +1135,7 @@ export function ScenarioAnalyzerClient() {
 
       {result && (() => {
         const frameworkGroups = groupByFramework(result.provisionResults);
+        const gateBlockedGroups = groupGateBlocked(result.gateBlockedProvisionResults);
         const citedProvisionSentences = buildProvisionCitationSentences(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
@@ -1770,56 +1817,60 @@ export function ScenarioAnalyzerClient() {
           {result.gateBlockedProvisionResults.length > 0 && (
             <article id="results-gate-blocked" className="scroll-mt-20 rounded-sm bg-[var(--status-neutral-bg)] p-4 ring-1 border-[var(--status-neutral-ring)] sm:p-6">
               <h3 className="text-base font-semibold text-[var(--status-neutral-text)]">
-                Facts requiring verification: retrieval prerequisite not met
+                Additional facts required ({result.gateBlockedProvisionResults.length})
               </h3>
               <p className="mt-1 text-sm text-[var(--status-neutral-text)]">
                 A factually similar structured finding also cites each provision below, but that provision&apos;s own
-                text requires specific facts (e.g. a securities dealing/issue nexus and a deceptive or fraudulent
-                conduct nexus, for PFUTP / SEBI Act Section 12A) that the scenario as entered does not state. These
-                are deliberately excluded from the &quot;Potentially relevant regulatory provisions&quot; above rather
-                than listed as candidates, since the minimum facts they require have not been entered. The related
-                factual precedent(s) are shown for context only, not as support for this specific provision.
+                text requires specific facts that the scenario as entered does not state — these are deliberately
+                excluded from &quot;Potentially relevant regulatory provisions&quot; above, grouped here by what is
+                actually missing rather than repeated one card at a time.
               </p>
-              <ul className="mt-3 space-y-3">
-                {result.gateBlockedProvisionResults.map((gb) => (
-                  <li key={gb.provision.id} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-neutral-ring)]">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-[var(--color-ink-900)]">
-                        {gb.provision.instrument} · {gb.provision.provisionNumber}
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <CandidateTierBadge tier={gb.candidateTier} />
-                        <LegalFunctionTag legalFunction={gb.legalFunction} />
-                      </div>
-                    </div>
-                    <p className="mt-0.5 text-xs text-[var(--color-ink-700)]">{gb.provision.subject}</p>
-                    <p className="mt-1.5 text-xs font-medium text-[var(--color-ink-700)]">
-                      {gb.blockReason === "actor_incompatibility" ? "Actor applicability: " : "Retrieval prerequisite: "}
-                      {gb.blockReason === "factual_prerequisite" && gb.gateExplanation}
-                      {gb.blockReason === "actor_incompatibility" && "the actor(s) named do not match who this provision's own text applies to"}
-                      {gb.blockReason === "both" && "neither the required facts nor a compatible actor are stated"}
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--color-ink-700)]">{gb.note}</p>
-                    <ul className="mt-2 space-y-2">
-                      {gb.relatedFactualPrecedents.map((rp) => (
-                        <li key={rp.finding.recordId} className="rounded-lg bg-[var(--status-neutral-bg)]/60 p-2.5 ring-1 border-[var(--status-neutral-ring)]">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Related CFID factual precedent</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <StatusBadge status={rp.finding.findingStatus} />
-                            <LegalReviewBadge reviewed={rp.finding.humanLegalReviewCompleted} />
-                            <FindingMaturityBadge finding={rp.finding} />
-                            <span className="text-sm font-medium text-[var(--color-ink-900)]">{rp.finding.recordId}</span>
-                          </div>
-                          <p className="mt-1 text-sm text-[var(--color-ink-700)]">{rp.finding.scenarioTitle}</p>
-                          <div className="mt-1">
-                            <SourceLink href={rp.finding.officialSourceUrl} />
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
+              <button
+                type="button"
+                onClick={() => toggleExpanded("results-gate-blocked-all")}
+                className="mt-3 text-sm font-medium text-[var(--status-neutral-text)] underline hover:no-underline"
+              >
+                {expanded.has("results-gate-blocked-all") ? "Hide technical retrieval details" : `Show technical retrieval details (${result.gateBlockedProvisionResults.length} provisions, ${gateBlockedGroups.length} categor${gateBlockedGroups.length === 1 ? "y" : "ies"})`}
+              </button>
+              {expanded.has("results-gate-blocked-all") && (
+                <ul className="mt-3 space-y-3">
+                  {gateBlockedGroups.map((group) => {
+                    const groupKey = `gate-group-${group.legalFunction}`;
+                    const groupExpanded = expanded.has(groupKey);
+                    return (
+                      <li key={groupKey} className="rounded-lg bg-white p-3 ring-1 border-[var(--status-neutral-ring)]">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(groupKey)}
+                          className="flex w-full flex-wrap items-start justify-between gap-2 text-left"
+                        >
+                          <span className="text-sm text-[var(--color-ink-700)]">
+                            <span className="font-medium text-[var(--color-ink-900)]">{group.items.length}</span>{" "}
+                            {LEGAL_FUNCTION_LABELS[group.legalFunction].toLowerCase()}{group.items.length === 1 ? "" : "s"} — each requires facts (or an actor) the scenario as entered does not state; point at any one for its own reason
+                          </span>
+                          <span className="text-xs font-medium text-[var(--color-gold-700)]">{groupExpanded ? "Hide" : "Show"} provisions</span>
+                        </button>
+                        {groupExpanded && (
+                          <ul className="mt-2 flex flex-wrap gap-1.5">
+                            {group.items.map((gb) => (
+                              <li key={gb.provision.id}>
+                                <Link
+                                  href={`/provisions/${gb.provision.id}`}
+                                  title={gateBlockedReasonText(gb)}
+                                  className="inline-flex items-center rounded-sm bg-[var(--status-neutral-bg)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-900)] ring-1 ring-inset ring-[var(--status-neutral-ring)] hover:bg-[var(--color-gold-50)] hover:text-[var(--color-gold-800)]"
+                                >
+                                  {gb.provision.instrument} · {gb.provision.provisionNumber}
+                                  {gb.relatedFactualPrecedents.length > 0 && ` (${gb.relatedFactualPrecedents.length})`}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </article>
           )}
 
@@ -2018,7 +2069,8 @@ export function ScenarioAnalyzerClient() {
                                           </span>
                                         </div>
                                         <p className="mt-1 text-xs text-[var(--color-ink-700)]">
-                                          Order stage: {c.orderStageClass.replace(/_/g, " ")}
+                                          {HISTORICAL_ORDER_STAGE_LABELS[c.orderStageClass]}
+                                          {c.orderDate && ` · ${formatDate(c.orderDate)}`}
                                           {c.noticeeActors.length > 0 && ` · Noticee(s): ${c.noticeeActors.join(", ")}`}
                                         </p>
                                         {c.factualSimilarities.length > 0 && (

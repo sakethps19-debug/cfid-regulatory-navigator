@@ -800,12 +800,55 @@ export function analyzeScenario(
     // see line ~547 — not an exhaustive relevance list; a finding with a
     // single provisionLink, or with no sibling curated to a different
     // organ, is completely unaffected by this scoping). */
+    // P0 promotion-connectivity fix (demo-polish sprint): sibling-scoping
+    // alone only strips a conduct id EXCLUSIVELY claimed by a DIFFERENT
+    // link on the same finding — it does nothing when THIS link's own
+    // justifyingTags are simply silent on the matched id, which is exactly
+    // how a multi-issue finding's finding-level allegedConduct bag (never
+    // per-link) can promote an ungated provision on a matched conduct id
+    // that belongs to a completely different fact than the one this link
+    // was actually curated for. Concretely: a related-party-misrepresentation
+    // finding curated with justifyingTags ["related_party_transaction",
+    // "related_party_misrepresentation"] for its Ind AS 24 link also
+    // happens to carry a generic "non-disclosure of information" tag at
+    // the FINDING level (from some other aspect of that historical
+    // matter) — without this check, an entirely unrelated non-disclosure
+    // stated elsewhere in the CURRENT scenario (e.g. a loan-default
+    // disclosure failure) would match that generic tag and promote Ind AS
+    // 24 as if the RPT itself were undisclosed, even where the scenario
+    // affirmatively states the RPT was properly disclosed. When a link
+    // carries curated justifyingTags, they are the authoritative statement
+    // of which concept ids this SPECIFIC provision-finding pairing is
+    // about — restricts to the ADVERSE (conduct-kind) ones among them,
+    // since justifyingTags can also carry topic/actor ids never meant to
+    // gate the ADVERSE side of this check. A link with EMPTY justifyingTags
+    // keeps the existing "universal — applies whenever any of the
+    // finding's own tags match" convention, completely unaffected by this
+    // fix, exactly as before. Applies identically to the query's own
+    // matched ids (conductIdsMatched, below) and to the finding's full
+    // allegedConduct bag (relevantAdverseIds, below) — the same
+    // authoritative scoping either way.
     const linkScopedAllegedConduct = (f: LinkedFinding, ids: string[]) => {
       const siblingClaims = new Set(
         f.sf.finding.provisionLinks.filter((l) => l.provisionId !== provisionId && l.justifyingTags.length > 0).flatMap((l) => l.justifyingTags)
       );
-      if (siblingClaims.size === 0) return ids;
-      return ids.filter((id) => !siblingClaims.has(id) || f.justifyingTags.includes(id));
+      let scoped = siblingClaims.size === 0 ? ids : ids.filter((id) => !siblingClaims.has(id) || f.justifyingTags.includes(id));
+      // Only restrict when this link's OWN justifyingTags actually name at
+      // least one adverse (conduct-kind) concept — i.e. when the curator
+      // meant justifyingTags to identify WHICH adverse fact this link is
+      // about (IND-AS-24's own real justifyingTags do exactly this:
+      // ["related_party_transaction" (topic), "related_party_misrepresentation"
+      // (conduct)]). A link whose justifyingTags are entirely topic/actor/
+      // evidence-kind (used purely as a different-purpose participation
+      // gate — e.g. narrowing on an evidence type, with the actual conduct
+      // carried at the finding level) carries no adverse-identification
+      // signal at all here, so it must not be treated as if it claimed
+      // "no adverse concept is relevant" and empty out every match.
+      const ownAdverseJustifyingTags = new Set(f.justifyingTags.filter(isAdverseConceptId));
+      if (ownAdverseJustifyingTags.size > 0) {
+        scoped = scoped.filter((id) => ownAdverseJustifyingTags.has(id));
+      }
+      return scoped;
     };
     const conductIdsMatched = rule
       ? adverseConceptIdsForRule(rule, isAdverseConceptId).filter((id) => detectedIds.has(id))
