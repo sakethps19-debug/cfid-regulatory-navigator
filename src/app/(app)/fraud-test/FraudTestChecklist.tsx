@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { attentionCount as computeAttentionCount, evaluateFraudDoctrineTest, type FactorState } from "@/lib/fraudDoctrineTest";
 
 interface Factor {
   id: string;
@@ -8,13 +9,27 @@ interface Factor {
   source: string;
 }
 
-// Limb (i): injury/inducement. Any ONE of these being present is enough on
-// its own — Rakhi Trading held that once manipulation itself is cogently
-// established, inducement is presumed and need not be separately proved.
+// Limb (i): injury/inducement. Per the verified text of Reliance v. SEBI
+// para 175(i) (quoted in full on the parent page), the test is CONJUNCTIVE,
+// not a menu of independently sufficient factors: "injury due to wrongful
+// act is established, i.e., inducement to deal in securities has caused the
+// other person to be adversely affected AND allowed the party accused of
+// fraud to gain unlawful profits or avert ordinary losses" -- dealing alone,
+// without established injury/wrongful gain/avoided loss, does not complete
+// the limb. l1-dealt and l1-manipulation-established each supply only the
+// inducement/dealing half of that conjunction (the latter via Rakhi
+// Trading's presumption of inducement once manipulation is cogently
+// established) -- neither, on its own, has been verified to also supply the
+// injury/gain half, so neither is treated as independently sufficient here.
+// l1-injury's own label already states the complete conjunction (dealing
+// THAT CAUSED injury/gain), so it alone carries the verified citation. The
+// decision logic itself lives in src/lib/fraudDoctrineTest.ts (independently
+// unit-tested); this file only renders it.
 const LIMB_1_FACTORS: Factor[] = [
   {
     id: "l1-dealt",
-    label: "Investors or the counterparty are shown to have actually dealt in securities (bought/sold/subscribed) as a result of the conduct",
+    label:
+      "Investors or the counterparty are shown to have actually dealt in securities (bought/sold/subscribed) as a result of the conduct (inducement component only -- see note below)",
     source: "Kanhaiyalal Baldevbhai Patel, paras 30, 56",
   },
   {
@@ -24,7 +39,8 @@ const LIMB_1_FACTORS: Factor[] = [
   },
   {
     id: "l1-manipulation-established",
-    label: "The factum of manipulation itself is cogently and sufficiently established from the facts (non-genuine transactions, artificial price/volume)",
+    label:
+      "The factum of manipulation itself is cogently and sufficiently established from the facts (non-genuine transactions, artificial price/volume) -- presumes inducement only, not injury/gain (inducement component only -- see note below)",
     source: "SEBI v. Rakhi Trading (P) Ltd., (2018) 13 SCC 753, para 78, inducement then presumed, no separate proof required",
   },
 ];
@@ -72,8 +88,6 @@ const LIMB_2_FACTORS: Factor[] = [
 // fact that is genuinely present in the record from one that is merely
 // unclear, or one still awaiting verification or further evidence, rather
 // than collapsing all of those into a single unchecked box.
-type FactorState = "not-stated" | "present" | "unclear" | "requires-verification" | "additional-evidence-required";
-
 const FACTOR_STATE_OPTIONS: { value: FactorState; label: string }[] = [
   { value: "not-stated", label: "Not stated" },
   { value: "present", label: "Present" },
@@ -142,48 +156,12 @@ export function FraudTestChecklist() {
     });
   }
 
-  const isPresent = (f: Factor) => states.get(f.id) === "present";
-  const needsAttention = (f: Factor) => {
-    const s = states.get(f.id);
-    return s === "unclear" || s === "requires-verification" || s === "additional-evidence-required";
-  };
-  const limb1Count = LIMB_1_FACTORS.filter(isPresent).length;
-  const limb2Count = LIMB_2_FACTORS.filter(isPresent).length;
-  const attentionCount = [...LIMB_1_FACTORS, ...LIMB_2_FACTORS].filter(needsAttention).length;
-
-  const result = useMemo(() => {
-    const limb1Satisfied = limb1Count > 0;
-    const limb2Satisfied = limb2Count > 0;
-    if (limb1Satisfied && limb2Satisfied) {
-      return {
-        tone: "satisfied" as const,
-        text: "Both limbs have at least one selection: on these selections the fraud test may be satisfied without needing to fall back on the other limb.",
-      };
-    }
-    if (limb1Satisfied) {
-      return {
-        tone: "satisfied" as const,
-        text: "Limb (i), injury/inducement, has a selection. Per Reliance v. SEBI para 175(i), that alone is enough; deceitful intent does not additionally need to be proved.",
-      };
-    }
-    if (limb2Satisfied) {
-      return {
-        tone: limb2Count >= 2 ? ("satisfied" as const) : ("borderline" as const),
-        text:
-          limb2Count >= 2
-            ? "Limb (ii), intent from attending circumstances, has multiple selections. Per Reliance v. SEBI para 175(ii), cogent circumstantial intent alone is enough; injury does not additionally need to be proved."
-            : "Only one limb (ii) factor is selected. The Supreme Court treated intent as something to be inferred from the cumulative effect of several factors (Ketan Parekh para 20); a single factor alone may be a weak signal.",
-      };
-    }
-    return {
-      tone: "not-satisfied" as const,
-      text: "Neither limb has a selection. Per Reliance v. SEBI, manipulation, cornering, or an accounting irregularity alone, without established injury/inducement or cogent evidence of intent, does not by itself establish fraud under PFUTP Regulation 2(1)(c).",
-    };
-  }, [limb1Count, limb2Count]);
+  const result = useMemo(() => evaluateFraudDoctrineTest(states), [states]);
+  const attention = useMemo(() => computeAttentionCount(states), [states]);
 
   const attentionNote =
-    attentionCount > 0
-      ? `${attentionCount} factor${attentionCount > 1 ? "s are" : " is"} marked Unclear, Requires verification, or Additional evidence required; the read above does not account for those until they are resolved to Present or Not stated.`
+    attention > 0
+      ? `${attention} factor${attention > 1 ? "s are" : " is"} marked Unclear, Requires verification, or Additional evidence required; the read above does not account for those until they are resolved to Present or Not stated.`
       : null;
 
   const toneClasses = {
@@ -204,7 +182,10 @@ export function FraudTestChecklist() {
       <div className="mt-4 grid gap-6 md:grid-cols-2">
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (i): Injury from inducement</h3>
-          <p className="mt-1 text-xs text-[var(--color-ink-500)]">Any one of these, on its own, is sufficient for this limb.</p>
+          <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+            This limb requires the established-injury/wrongful-gain/avoided-loss factor. The other two factors
+            establish only the dealing/inducement component and do not complete the limb on their own.
+          </p>
           <FactorList factors={LIMB_1_FACTORS} states={states} onChange={setFactorState} />
         </div>
         <div>
