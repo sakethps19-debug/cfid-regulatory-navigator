@@ -174,10 +174,15 @@ export default function MethodologyPage() {
           its scenario findings, provisions and paragraph references exactly as they appear in the order (never
           inferred or invented), and insert them into the relational database (see{" "}
           <code>scripts/db/build-import-sql.ts</code> and <code>scripts/db/run-import.ts</code>) with{" "}
-          <code>processing_stage</code> updated to <code>legally_reviewed</code>. Every write goes through the
-          service role and is subject to the same validation the pilot library was: a citation without a paragraph
-          reference or official URL is recorded as a <code>validation_issues</code> row rather than shown as
-          settled.
+          <code>processing_stage</code> updated to <code>citations_checked</code> — the deep-analysis-complete stage,
+          reached once findings and their paragraph citations have been checked against the source order. Every
+          write goes through the service role and is subject to the same validation the pilot library was: a
+          citation without a paragraph reference or official URL is recorded as a <code>validation_issues</code> row
+          rather than shown as settled.{" "}
+          <strong>This procedure never sets <code>processing_stage</code> to <code>legally_reviewed</code></strong> —
+          that is a separate, later step reserved for an actual CFID officer&apos;s own sign-off, distinct from and
+          not a precondition for deep analysis. A newly imported order appears immediately as deep-analyzed, not as
+          legally reviewed.
         </p>
       </CollapsibleSection>
 

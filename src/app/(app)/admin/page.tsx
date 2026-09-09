@@ -106,8 +106,10 @@ export default async function AdminDashboardPage() {
           <div>
             <h3 className="text-base font-semibold text-[var(--color-ink-900)]">Orders Awaiting Analysis</h3>
             <p className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {metrics.deepAnalyzedCount} of {metrics.totalIndexed} indexed orders have been turned into full
-              scenario findings; the verified and residual registers behind that count, order by order. Read-only.
+              {metrics.ordersContributingStructuredFindings} of {metrics.totalIndexed} indexed orders have been
+              turned into full scenario findings ({metrics.totalIndexed - metrics.ordersContributingStructuredFindings}{" "}
+              still awaiting detailed analysis — see the coverage-gap queue below); the verified and residual
+              registers behind that count, order by order. Read-only.
             </p>
           </div>
           <Link

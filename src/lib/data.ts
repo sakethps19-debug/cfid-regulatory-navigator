@@ -23,7 +23,7 @@ import type {
   VerifiedCfidOrderRow,
 } from "@/types/domain";
 import type { Database } from "@/types/database";
-import { isDeepAnalyzed, PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
+import { isDeepAnalyzedWithFindings, PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ScenarioFindingRow = Database["public"]["Tables"]["scenario_findings"]["Row"];
@@ -371,24 +371,43 @@ export async function getResidualOrders(): Promise<ResidualOrderRow[]> {
   return (data ?? []).map(mapResidual);
 }
 
-/** The full 89-order universe, shaped for the "Orders Awaiting Analysis" /
- * Case Library views: every row from `orders`, marked deep_analyzed once its
- * processing has reached citations_checked (broken down into scenario
- * findings with paragraph citations) or beyond, verified_pending_analysis
- * otherwise. legally_reviewed is a further, distinct stage reserved for
+/** The full order-register universe, shaped for the "Orders Awaiting
+ * Analysis" / Case Library views: every row from `orders`, marked
+ * deep_analyzed once its processing has reached citations_checked (broken
+ * down into scenario findings with paragraph citations) or beyond AND it
+ * actually has at least one structured finding linked to it (via
+ * scenario_findings.order_id or final_order_id) — verified_pending_analysis
+ * otherwise. Both conditions matter: a live audit found that processing_stage
+ * alone is not trustworthy here — every order in the corpus can carry
+ * "citations_checked" while some genuinely have zero linked findings (the
+ * same gap getStructuredFindingCoverageGaps() surfaces), so "deep_analyzed"
+ * must never be asserted purely from the pipeline-stage label, on pain of
+ * claiming an order "has been turned into full scenario findings" when it
+ * has not. legally_reviewed is a further, distinct stage reserved for
  * actual human/CFID-officer sign-off and is not required for deep_analyzed —
  * see src/lib/processingStages.ts. */
 export async function getVerifiedCfidOrders(): Promise<VerifiedCfidOrderRow[]> {
-  const orders = await getOrders();
-  return orders.map((o) => ({
-    id: o.id,
-    caseName: o.caseName,
-    orderIdentifier: o.orderNumber ?? "",
-    officialUrl: o.officialUrl,
-    cfidConfirmed: o.cfidVerified,
-    analysisStatus: isDeepAnalyzed(o.processingStage) ? "deep_analyzed" : "verified_pending_analysis",
-    linkedOrderIds: isDeepAnalyzed(o.processingStage) ? [o.id] : [],
-  }));
+  const supabase = await createClient();
+  const [orders, { data: orderRefRows, error }] = await Promise.all([
+    getOrders(),
+    supabase.from("scenario_findings").select("order_id, final_order_id"),
+  ]);
+  if (error) throw error;
+  const orderIdsWithFindings = new Set(
+    (orderRefRows ?? []).flatMap((r) => [r.order_id, r.final_order_id].filter((v): v is string => Boolean(v)))
+  );
+  return orders.map((o) => {
+    const deepAnalyzed = isDeepAnalyzedWithFindings(o.processingStage, orderIdsWithFindings.has(o.id));
+    return {
+      id: o.id,
+      caseName: o.caseName,
+      orderIdentifier: o.orderNumber ?? "",
+      officialUrl: o.officialUrl,
+      cfidConfirmed: o.cfidVerified,
+      analysisStatus: deepAnalyzed ? ("deep_analyzed" as const) : ("verified_pending_analysis" as const),
+      linkedOrderIds: deepAnalyzed ? [o.id] : [],
+    };
+  });
 }
 
 

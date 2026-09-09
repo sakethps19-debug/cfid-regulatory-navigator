@@ -3,7 +3,13 @@
 // recorded attempt was made and failed) must never be conflated, and every
 // stage the officer asked for must be present with an honest label.
 import { describe, expect, it } from "vitest";
-import { isDeepAnalyzed, PROCESSING_STAGE_LABELS, PROCESSING_STAGE_ORDER, PROCESSING_STAGE_SHORT_LABELS } from "@/lib/processingStages";
+import {
+  isDeepAnalyzed,
+  isDeepAnalyzedWithFindings,
+  PROCESSING_STAGE_LABELS,
+  PROCESSING_STAGE_ORDER,
+  PROCESSING_STAGE_SHORT_LABELS,
+} from "@/lib/processingStages";
 import type { ProcessingStage } from "@/types/domain";
 
 const EXPECTED_STAGES: ProcessingStage[] = [
@@ -71,5 +77,31 @@ describe("isDeepAnalyzed", () => {
     for (const stage of earlierStages) {
       expect(isDeepAnalyzed(stage)).toBe(false);
     }
+  });
+});
+
+// Pre-demo remediation finding (P0): the Admin Dashboard and "Orders
+// Awaiting Analysis" register both asserted "92 of 92 indexed orders have
+// been turned into full scenario findings" purely from processing_stage
+// (every order in the corpus carries citations_checked or legally_reviewed),
+// while a live audit found only 82 of 92 orders actually have a linked
+// scenario_findings row -- 10 orders are structured-finding coverage gaps
+// despite their pipeline stage reading as complete. isDeepAnalyzedWithFindings
+// requires BOTH conditions so this claim can never again be asserted from
+// the stage label alone.
+describe("isDeepAnalyzedWithFindings", () => {
+  it("is true only when the stage is deep-analyzed AND a linked finding actually exists", () => {
+    expect(isDeepAnalyzedWithFindings("citations_checked", true)).toBe(true);
+    expect(isDeepAnalyzedWithFindings("legally_reviewed", true)).toBe(true);
+  });
+
+  it("is false when the stage is deep-analyzed but no finding is linked -- the specific reported defect", () => {
+    expect(isDeepAnalyzedWithFindings("citations_checked", false)).toBe(false);
+    expect(isDeepAnalyzedWithFindings("legally_reviewed", false)).toBe(false);
+  });
+
+  it("is false for an earlier stage regardless of hasLinkedFinding (a finding row should not exist yet, but even if flagged true, the stage itself is not complete)", () => {
+    expect(isDeepAnalyzedWithFindings("indexed", true)).toBe(false);
+    expect(isDeepAnalyzedWithFindings("text_extracted", true)).toBe(false);
   });
 });
