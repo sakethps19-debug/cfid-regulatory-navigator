@@ -1,11 +1,13 @@
 // Validation-suite extension for the Aug-2026 Debock/Trafiksol/Varanium
-// integration pass. This EXTENDS the existing validation philosophy (see
+// integration pass AND its subsequent correction pass (ICDR re-verification,
+// LODR-32 granularity fix, Max Financial negative-precedent preservation,
+// capital-raising Product/Sub-product restructuring, Law<->Analyze two-way
+// concept mapping). This EXTENDS the existing validation philosophy (see
 // tests/fixed-scenario-analyzer.test.ts, tests/broad-scenario-match.test.ts,
-// tests/exact-provision-citation.test.ts) rather than replacing it — those
-// files are untouched except for the minimal fixture/count updates the new
-// 9th scenario required. Expected outcomes below were reasoned independently
-// from the official order text (see this pass's final report for paragraph
-// citations), not generated from the engine and then asserted as correct.
+// tests/exact-provision-citation.test.ts) rather than replacing it. Expected
+// outcomes below were reasoned independently from the official order text
+// (see the correction pass's final report for paragraph citations), not
+// generated from the engine and then asserted as correct.
 import { describe, expect, it } from "vitest";
 import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 import { broadScenariosForFinding, matchScenariosForQuery } from "@/lib/broadScenarioMatch";
@@ -69,90 +71,170 @@ describe("Debock: diversion of rights-issue proceeds is an EXISTING MATCH (Categ
   });
 });
 
-describe("New scenario: IPO / Prospectus / Offer Document Disclosure Irregularities (Category C, genuinely new)", () => {
-  it("exists, with exactly the four independently-justified provisions", () => {
-    const s = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    expect(s.provisionIds.sort()).toEqual(["ICDR-24-1", "ICDR-245-1", "LODR-32", "PFUTP-4-2-s"].sort());
+describe("Item 6 (correction pass): Debock PFUTP-3(a) and PFUTP-4(2)(c) remain excluded from every master mapping", () => {
+  it("PFUTP-3-a is not in the diversion or financial-statement-misrepresentation scenarios — a bare diversion fact pattern (which the diversion scenario also covers for non-securities contexts, e.g. a Cash Credit facility, with no 'dealing in securities' nexus at all) does not universally satisfy 3(a)'s 'dealing in securities in a fraudulent manner' prerequisite; correctly modelling the narrower IPO/rights-issue-proceeds-specific sub-case would require splitting the diversion scenario itself, which is out of scope for this pass", () => {
+    expect(scenario("diversion-siphoning-misutilisation").provisionIds).not.toContain("PFUTP-3-a");
+    expect(scenario("financial-statement-misrepresentation").provisionIds).not.toContain("PFUTP-3-a");
   });
 
-  it("does NOT include PFUTP-4-2-r — that provision was expressly found NOT established on the Trafiksol facts (an unsuccessfully alleged provision must not become positive template support merely because it was discussed)", () => {
-    const s = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    expect(s.provisionIds).not.toContain("PFUTP-4-2-r");
-  });
-
-  it("does NOT duplicate the core PFUTP/12A fraud provisions already an existing match under financial-statement-misrepresentation — repeating them here would blur the two scenarios' distinct identities", () => {
-    const s = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    for (const id of ["SEBI-ACT-12A-a", "SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-a", "PFUTP-3-b", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-1"]) {
-      expect(s.provisionIds).not.toContain(id);
+  it("PFUTP-4-2-c is not in any master scenario — the current official PFUTP text of 4(2)(c) requires inducing subscription to fraudulently secure an issue's minimum subscription by advancing money to a third party, a narrower prerequisite Debock's diversion-of-already-raised-proceeds fact pattern does not itself establish", () => {
+    for (const s of FIXED_SCENARIOS) {
+      expect(s.provisionIds).not.toContain("PFUTP-4-2-c");
     }
-  });
-
-  it("ICDR-24-1 and ICDR-245-1 are kept as distinct canonical ids (exact-legal-identity rule) even though their operative text is nearly identical — different regulation numbers for different issue segments are different legal identities", () => {
-    const s = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    expect(s.provisionIds).toContain("ICDR-24-1");
-    expect(s.provisionIds).toContain("ICDR-245-1");
-    expect(s.provisionIds.filter((id) => id === "ICDR-24-1" || id === "ICDR-245-1")).toHaveLength(2);
   });
 });
 
-describe("Exact-instrument-numbering trap: a shared numeral ('4', '24', '32') across instruments/regulations must never imply a legal-hierarchy relationship", () => {
-  it("ICDR-24-1 is never treated as related to LODR-4-1 or PFUTP-4-1 merely by sharing a leading digit or sub-clause '(1)'", () => {
-    // No scenario should list ICDR-24-1 alongside an assumption that it
-    // is the "same" provision as LODR-4-1/PFUTP-4-1 -- this is checked by
-    // construction: the new scenario's provisionIds are exactly the four
-    // asserted above, and financial-statement-misrepresentation (which
-    // DOES use LODR-4-1-* and PFUTP-4-1) does not gain ICDR-24-1.
-    const financialMisrep = scenario("financial-statement-misrepresentation");
-    expect(financialMisrep.provisionIds).not.toContain("ICDR-24-1");
-    expect(financialMisrep.provisionIds).not.toContain("ICDR-245-1");
+describe("Capital Raising / Issue of Securities: three legally distinct sub-products (correction pass restructuring)", () => {
+  it("replaces the single over-compressed scenario with three sub-products sharing one product label", () => {
+    const subProducts = FIXED_SCENARIOS.filter((s) => s.product === "Capital Raising / Issue of Securities");
+    expect(subProducts.map((s) => s.id).sort()).toEqual(
+      ["capital-raising-fraudulent-mis-selling", "capital-raising-issue-proceeds-deviation-reporting", "capital-raising-offer-document-misstatement"].sort()
+    );
+    expect(FIXED_SCENARIOS.find((s) => s.id === "ipo-prospectus-offer-document-disclosure-irregularities")).toBeUndefined();
   });
 
-  it("LODR-32 (issue-proceeds monitoring, kept ungranulated) is never conflated with LODR-4-1's lettered sub-clause split -- LODR-4-1 remains split, LODR-32 remains a single id, and neither corpus modelling choice is retroactively applied to the other", () => {
-    const s = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    expect(s.provisionIds).toContain("LODR-32");
-    expect(s.provisionIds).not.toContain("LODR-32-1");
-    expect(s.provisionIds).not.toContain("LODR-32-4");
-    expect(s.provisionIds).not.toContain("LODR-32-5");
+  it("Sub-product A (offer document/prospectus) holds only ICDR 24(1)/245(1) — never LODR-32 or PFUTP-4-2-s", () => {
+    const s = scenario("capital-raising-offer-document-misstatement");
+    expect(s.provisionIds.sort()).toEqual(["ICDR-24-1", "ICDR-245-1"].sort());
+  });
+
+  it("Sub-product B (issue-proceeds deviation reporting) holds only the three exact LODR-32 sub-regulations Varanium's order actually cites — never bare LODR-32, never ICDR provisions", () => {
+    const s = scenario("capital-raising-issue-proceeds-deviation-reporting");
+    expect(s.provisionIds.sort()).toEqual(["LODR-32-1", "LODR-32-4", "LODR-32-5"].sort());
+    expect(s.provisionIds).not.toContain("LODR-32");
+    expect(s.provisionIds).not.toContain("ICDR-24-1");
+    expect(s.provisionIds).not.toContain("ICDR-245-1");
+  });
+
+  it("Sub-product C (fraudulent mis-selling) holds only PFUTP-4-2-s, standing alone — never inherited merely because a scenario is offer-document-adjacent", () => {
+    const s = scenario("capital-raising-fraudulent-mis-selling");
+    expect(s.provisionIds).toEqual(["PFUTP-4-2-s"]);
+  });
+
+  it("no sub-product duplicates PFUTP-4-2-r (Trafiksol, expressly NOT established) or the core PFUTP/12A fraud provisions already an existing match under financial-statement-misrepresentation", () => {
+    for (const s of FIXED_SCENARIOS.filter((x) => x.product === "Capital Raising / Issue of Securities")) {
+      expect(s.provisionIds).not.toContain("PFUTP-4-2-r");
+      for (const id of ["SEBI-ACT-12A-a", "SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-a", "PFUTP-3-b", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-1"]) {
+        expect(s.provisionIds).not.toContain(id);
+      }
+    }
   });
 });
 
-describe("Max Financial Services: full exoneration must never surface as template support for any provision (contradictory/negative case)", () => {
-  it("none of this pass's four newly-added provisions (ICDR-24-1, ICDR-245-1, LODR-32, PFUTP-4-2-s) were sourced from Max Financial Services -- all trace only to Trafiksol/Varanium, whose facts independently satisfy them; Max Financial Services' own SCN allegations (Sections 12A(b),(c) / PFUTP 3(c),(d), 4(2)(k),(r)) were ALL found not established and contributed zero provisions to the master taxonomy", () => {
-    const newIpoScenario = scenario("ipo-prospectus-offer-document-disclosure-irregularities");
-    for (const id of ["ICDR-24-1", "ICDR-245-1", "LODR-32", "PFUTP-4-2-s"]) {
-      expect(newIpoScenario.provisionIds).toContain(id);
+describe("Item 7A: exact LODR-32 sub-regulation identity", () => {
+  it("LODR-32-1/32-4/32-5 are distinct ids from the legacy LODR-32 umbrella id and from each other", () => {
+    const ids = ["LODR-32", "LODR-32-1", "LODR-32-4", "LODR-32-5"];
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("the legacy LODR-32 id is not used by the new capital-raising sub-products (kept only for pre-existing legacy findings, never for this new exact mapping)", () => {
+    for (const s of FIXED_SCENARIOS) {
+      expect(s.provisionIds).not.toContain("LODR-32");
     }
-    // The SCN provisions alleged against Max Financial Services but found
-    // NOT established (Section 12A(b)/(c), PFUTP 3(c)/(d), 4(2)(k)/(r))
-    // were already present in other scenarios BEFORE this pass (sourced
-    // from Seacoast/Rajesh Exports/Debock/Trafiksol, all matters where
-    // those provisions WERE independently established) -- this pass did
-    // not add or remove any of them because of Max Financial Services.
-    expect(newIpoScenario.provisionIds).not.toContain("SEBI-ACT-12A-b");
-    expect(newIpoScenario.provisionIds).not.toContain("PFUTP-3-c");
-    expect(newIpoScenario.provisionIds).not.toContain("PFUTP-4-2-k");
-    expect(newIpoScenario.provisionIds).not.toContain("PFUTP-4-2-r");
+  });
+});
+
+describe("Item 7D: offer-document disclosure vs. issue-proceeds reporting are legally distinct sub-products, not one bundled obligation", () => {
+  it("a finding tagged only with the offer-document/prospectus conduct matches Sub-product A but not Sub-product B", () => {
+    const finding = makeFinding({ recordId: "TEST-A", transactionTypes: ["offer_document_prospectus"] });
+    const scenarios = broadScenariosForFinding(finding);
+    expect(scenarios.map((s) => s.id)).toContain("capital-raising-offer-document-misstatement");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+  });
+
+  it("a finding tagged only with the issue-proceeds-deviation-reporting conduct matches Sub-product B but not Sub-product A", () => {
+    const finding = makeFinding({ recordId: "TEST-B", allegedConduct: ["issue_proceeds_deviation_reporting"] });
+    const scenarios = broadScenariosForFinding(finding);
+    expect(scenarios.map((s) => s.id)).toContain("capital-raising-issue-proceeds-deviation-reporting");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+  });
+});
+
+describe("Item 7E: PFUTP-4-2-s (mis-selling) requires its own independent prerequisites — never a generic consequence of an offer-document inaccuracy", () => {
+  it("a finding tagged only with the offer-document/prospectus conduct (no independent mis-selling signal) does not match Sub-product C", () => {
+    const finding = makeFinding({ recordId: "TEST-C", transactionTypes: ["offer_document_prospectus"] });
+    const scenarios = broadScenariosForFinding(finding);
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
+  });
+
+  it("Sub-product C is unreachable via Law Library free-text search for a generic prospectus/offer-document query (keyConceptIds: []) — it never surfaces merely because the query mentions the offer document", () => {
+    const matched = matchScenariosForQuery("prospectus misstatement");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
+  });
+});
+
+describe("Item 7G: Law <-> Analyze two-way taxonomy for the new capital-raising product", () => {
+  it("'prospectus misstatement' retrieves the offer-document sub-product", () => {
+    const matched = matchScenariosForQuery("prospectus misstatement");
+    expect(matched.map((s) => s.id)).toContain("capital-raising-offer-document-misstatement");
+  });
+
+  it("'DRHP non-disclosure' also retrieves the offer-document sub-product (paraphrase coverage)", () => {
+    const matched = matchScenariosForQuery("DRHP non-disclosure");
+    expect(matched.map((s) => s.id)).toContain("capital-raising-offer-document-misstatement");
+  });
+
+  it("'statement of deviation' retrieves the issue-proceeds-deviation-reporting sub-product", () => {
+    const matched = matchScenariosForQuery("statement of deviation");
+    expect(matched.map((s) => s.id)).toContain("capital-raising-issue-proceeds-deviation-reporting");
+  });
+
+  it("'annual report disclosure' does NOT retrieve either capital-raising sub-product — ongoing post-listing disclosure is a separate legal question from the issue/offer-document process", () => {
+    const matched = matchScenariosForQuery("annual report disclosure");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+  });
+
+  it("'related party transactions' does not retrieve any capital-raising sub-product merely because Trafiksol's facts also involved related-party billing", () => {
+    const matched = matchScenariosForQuery("related party transactions");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+    expect(matched.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
+  });
+
+  it("a provision page's 'broad CFID scenarios' summary surfaces Sub-product B for a finding whose own structured tags are issue-proceeds-deviation-specific, never diversion (the two-way relationship uses the finding's own tags, never free text)", () => {
+    const findings = [makeFinding({ recordId: "TEST-D", allegedConduct: ["issue_proceeds_deviation_reporting"] })];
+    const scenarios = broadScenariosForFinding(findings[0]);
+    expect(scenarios.map((s) => s.id)).toEqual(["capital-raising-issue-proceeds-deviation-reporting"]);
+  });
+});
+
+describe("Item 7B/C: Max Financial Services preserved as a negative precedent, never as positive template support", () => {
+  it("none of this pass's newly-added provisions (ICDR-24-1, ICDR-245-1, LODR-32-1/4/5, PFUTP-4-2-s) were sourced from Max Financial Services — all trace only to Trafiksol/Varanium, whose facts independently satisfy them", () => {
+    const capitalRaisingProvisionIds = FIXED_SCENARIOS.filter((s) => s.product === "Capital Raising / Issue of Securities").flatMap((s) => s.provisionIds);
+    // Max Financial Services' own SCN allegations (Section 12A(b)/(c),
+    // PFUTP 3(c)/(d)/4(2)(k)/(r), LODR 30) were ALL found not established
+    // (recorded in scenario_findings/finding_provisions with
+    // relationship='not_upheld' -- see migration 0022) and contributed
+    // zero provisions to the master taxonomy.
+    for (const id of ["SEBI-ACT-12A-b", "SEBI-ACT-12A-c", "PFUTP-3-c", "PFUTP-3-d", "PFUTP-4-2-k", "PFUTP-4-2-r", "LODR-30"]) {
+      expect(capitalRaisingProvisionIds).not.toContain(id);
+    }
+  });
+
+  it("no fixed scenario anywhere in the master taxonomy contains LODR-30 (Max Financial Services' only order-specific, not-established citation) — a not_upheld case-level citation never becomes template support", () => {
+    for (const s of FIXED_SCENARIOS) {
+      expect(s.provisionIds).not.toContain("LODR-30");
+    }
   });
 });
 
 describe("Near-miss: false/misleading offer-document disclosure vs. 'planting' false news are legally distinct, not interchangeable labels for the same conduct", () => {
-  it("a finding tagged only with the generic 'false or fictitious corporate announcement' conduct tag still does not, by itself, prove which specific PFUTP 4(2) sub-clause applies -- broadScenariosForFinding only surfaces the SCENARIO, never a specific sub-clause conclusion", () => {
+  it("a finding tagged only with the generic 'false or fictitious corporate announcement' conduct tag maps to the existing false-misleading-incomplete-disclosures scenario, not the new capital-raising sub-products (which require their own specific offer-document/deviation-reporting/mis-selling signals)", () => {
     const finding = makeFinding({
       recordId: "TRF-01",
       allegedConduct: ["false_business_or_corporate_announcement", "non_disclosure_of_information"],
     });
     const scenarios = broadScenariosForFinding(finding);
-    // false-misleading-incomplete-disclosures is the existing scenario
-    // this conduct tag combination maps to; the new IPO scenario is
-    // deliberately NOT reachable via this mechanism (keyConceptIds: []),
-    // so it must not spuriously appear here either.
     expect(scenarios.map((s) => s.id)).toContain("false-misleading-incomplete-disclosures");
-    expect(scenarios.map((s) => s.id)).not.toContain("ipo-prospectus-offer-document-disclosure-irregularities");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
   });
 });
 
-describe("Clean control: an unrelated finding matches neither the diversion scenario nor the new IPO-disclosure scenario", () => {
-  it("a finding with no diversion/disclosure-adjacent tags at all matches zero of the two scenarios this pass touched", () => {
+describe("Item 7H: clean controls", () => {
+  it("a finding with no diversion/disclosure/capital-raising-adjacent tags at all matches none of the scenarios this pass touched", () => {
     const finding = makeFinding({
       recordId: "CLEAN-01",
       transactionTypes: ["derivative_transaction"],
@@ -160,12 +242,17 @@ describe("Clean control: an unrelated finding matches neither the diversion scen
     });
     const scenarios = broadScenariosForFinding(finding);
     expect(scenarios.map((s) => s.id)).not.toContain("diversion-siphoning-misutilisation");
-    expect(scenarios.map((s) => s.id)).not.toContain("ipo-prospectus-offer-document-disclosure-irregularities");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+    expect(scenarios.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
   });
 
-  it("Law Library free-text search for an unrelated query never matches the new IPO scenario (it has no keyConceptIds, so it can never be a false-positive free-text hit)", () => {
-    const matched = matchScenariosForQuery("audit committee composition");
-    expect(matched.map((s) => s.id)).not.toContain("ipo-prospectus-offer-document-disclosure-irregularities");
+  it("an empty or unrelated Law Library query matches none of the three new sub-products", () => {
+    expect(matchScenariosForQuery("").map((s) => s.id)).toEqual([]);
+    const unrelated = matchScenariosForQuery("audit committee composition");
+    expect(unrelated.map((s) => s.id)).not.toContain("capital-raising-offer-document-misstatement");
+    expect(unrelated.map((s) => s.id)).not.toContain("capital-raising-issue-proceeds-deviation-reporting");
+    expect(unrelated.map((s) => s.id)).not.toContain("capital-raising-fraudulent-mis-selling");
   });
 });
 

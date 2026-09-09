@@ -769,6 +769,23 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // commonly use.
   { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "no genuine payment", "circularly funded"] },
   { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
+  // Added for the Aug-2026 capital-raising taxonomy restructuring
+  // (Debock/Trafiksol/Varanium correction pass): TWO brand-new tags, no
+  // existing tag's synonym list touched (every synonym below is a string
+  // that appears nowhere else in this file), so this carries none of the
+  // regression risk an edit to an EXISTING tag's synonyms would (see the
+  // "diversion of issue proceeds" lesson recorded in this pass's own
+  // history: that edit modified an existing tag and broke an existing
+  // Part B negation-adversarial test; adding a new tag object cannot do
+  // that). Deliberately narrow and NOT a synonym of "rights_issue" (which
+  // already covers "public issue"/"ipo proceeds"/"issue proceeds" for the
+  // separate diversion scenario) or of "annual_report_disclosure" (ongoing
+  // post-listing disclosure) or of "related_party_transaction" — a query
+  // about the offer document/prospectus itself, or about deviation
+  // reporting, must not spuriously pull in diversion, annual-report, or
+  // RPT scenarios, and vice versa.
+  { id: "offer_document_prospectus", kind: "transaction", label: "Offer document / prospectus", synonyms: ["prospectus", "drhp", "rhp", "red herring prospectus", "draft red herring prospectus", "offer document", "letter of offer", "draft offer document"] },
+  { id: "issue_proceeds_deviation_reporting", kind: "conduct", label: "Issue-proceeds utilisation / deviation reporting", synonyms: ["statement of deviation", "deviation in use of proceeds", "utilisation of issue proceeds", "utilization of issue proceeds", "variation in utilisation of proceeds", "issue proceeds monitoring report"] },
   { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee not properly constituted / meetings not held", synonyms: ["audit committee not constituted", "not properly constituted", "audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "improperly constituted audit committee", "ac meetings not conducted", "audit committee did not meet", "no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "existed only on paper", "audit committee only on paper"] },
   // "position remained vacant" added (Question-A polarity acceptance pass,
   // governance/Compliance Officer paired test): the mandated adverse text

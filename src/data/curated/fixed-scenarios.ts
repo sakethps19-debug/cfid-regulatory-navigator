@@ -85,6 +85,18 @@ export interface FixedScenario {
    * populated for scenario 8 (the intentionally broad catch-all) so that
    * scenario never dominates a concept match merely by being broad. */
   keyConceptIds: string[];
+  /** Optional PRODUCT grouping label (e.g. "Capital Raising / Issue of
+   * Securities"). Purely a data-model grouping tag, not consumed by
+   * resolveFixedScenario or any UI component — added (smallest safe
+   * data-model change, per the Aug-2026 correction pass) so a broad
+   * commercial "product" area can be represented WITHOUT collapsing its
+   * legally distinct sub-products (each still its own top-level
+   * FixedScenario, its own independently-justified provisionIds, its own
+   * keyConceptIds) into one over-compressed scenario. Undefined/omitted for
+   * every scenario that predates this field — retrofitting a product label
+   * onto the other 8 scenarios is out of scope for this pass. See the three
+   * "capital-raising-*" scenarios below for the only current usage. */
+  product?: string;
 }
 
 export const FIXED_SCENARIOS: FixedScenario[] = [
@@ -215,65 +227,68 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     // more specific scenario that actually fits the query.
     keyConceptIds: [],
   },
+  // ---------------------------------------------------------------------
+  // PRODUCT: Capital Raising / Issue of Securities. Added following the
+  // Aug-2026 Debock/Trafiksol/Varanium validation pass, then RESTRUCTURED
+  // (correction pass) from a single over-compressed scenario into three
+  // legally distinct sub-products sharing this product label. The original
+  // single-scenario version bundled ICDR 24(1)/245(1) (prospectus/offer-
+  // document content), LODR 32 (a post-issue proceeds-monitoring/reporting
+  // duty that is NOT itself a prospectus obligation), and PFUTP 4(2)(s)
+  // (mis-selling, which has its own independent fraud/deception
+  // prerequisites and must not read as "any offer-document inaccuracy").
+  // Splitting them keeps each sub-product's provisionIds independently
+  // justified by its own facts (the same strict provision-mapping rule
+  // applied throughout this taxonomy), while `product` lets an interested
+  // caller still group them for display if it ever needs to -- no such
+  // grouping is wired into the UI by this pass (see the `product` field's
+  // own doc comment above).
+  //
+  // Genuinely new (Category C) as a set, not a rewording of an existing
+  // scenario: the ICDR Regulations govern the PRE-LISTING issue/offer-
+  // document process itself, distinct from "false-misleading-incomplete-
+  // disclosures" (an ALREADY-LISTED entity's ongoing LODR/stock-exchange
+  // disclosures). Independently evidenced by TWO separate final orders:
+  // Trafiksol (ICDR 245(1), para 105 -- undisclosed conflict-of-interest
+  // financial relationship with the sole Merchant Banker's controlling
+  // shareholder's father, omitted from the DRHP; PFUTP-4-2-s, para 97) and
+  // Varanium Cloud (ICDR 24(1), para 111(v) -- misleading Objects-of-Issue
+  // quotation and non-disclosure of pending litigation in the Prospectus/
+  // Letter of Offer; LODR 32(1)/(4)/(5), para 111(ii) -- an incorrect
+  // Statement of Deviation on utilisation of issue proceeds).
   {
-    // Added following the Aug-2026 Debock/Trafiksol/Varanium validation
-    // pass (see the pass's Master Reconciliation table). Genuinely new
-    // (Category C), not a rewording of an existing scenario: the ICDR
-    // Regulations govern the PRE-LISTING issue/offer-document process
-    // itself (the DRHP/RHP/Prospectus or Letter of Offer filed to raise
-    // capital) -- a distinct instrument, a distinct regulatory moment (at
-    // the time of the issue, before or independent of an ongoing listing),
-    // and distinct provisions from "false-misleading-incomplete-
-    // disclosures" (which is about an ALREADY-LISTED entity's ongoing
-    // LODR/stock-exchange disclosures -- Annual Reports, corporate
-    // announcements). A materially false or misleading offer document is
-    // not automatically the same legal question as a materially false
-    // post-listing disclosure, even though both are "disclosure" in a lay
-    // sense.
-    //
-    // Independently evidenced by TWO separate final orders, not derived
-    // from one historical co-occurrence: Trafiksol (ICDR Regulation 245(1)
-    // established, para 105 -- undisclosed conflict-of-interest financial
-    // relationship with the sole Merchant Banker's controlling
-    // shareholder's father, omitted from the DRHP) and Varanium Cloud
-    // (ICDR Regulation 24(1) established, para 111(v) -- misleading
-    // Objects-of-Issue quotation and non-disclosure of pending litigation
-    // in the Prospectus/Letter of Offer; LODR Regulation 32 also
-    // established, para 111(ii) -- an incorrect Statement of Deviation on
-    // utilisation of issue proceeds, itself an issue-proceeds monitoring/
-    // disclosure obligation, not proof of diversion). PFUTP-4-2-s ("mis-
-    // selling of securities... by knowingly making a false or misleading
-    // statement") independently fits an IPO-offer fact pattern on its own
-    // terms (an IPO is itself a sale of securities to the public) --
-    // established against Trafiksol, para 97.
-    //
-    // Deliberately NOT included: PFUTP-3/4(1)/12A(a)-(c) core fraud
-    // provisions -- both Trafiksol's and Varanium's core financial-
-    // statement-misrepresentation PFUTP/12A citations are Category A
-    // (already an existing match under financial-statement-
-    // misrepresentation above); repeating them here would blur this
-    // scenario's distinct identity rather than sharpen it. Also
-    // deliberately NOT included: PFUTP-4-2-r (Trafiksol, para 98,
-    // expressly found NOT established -- the order distinguishes false/
-    // misleading offer-document disclosure from "planting" false news,
-    // which is a materially different act; an unsuccessfully alleged
-    // provision must not become positive template support merely because
-    // it was discussed).
-    id: "ipo-prospectus-offer-document-disclosure-irregularities",
-    name: "IPO / Prospectus / Offer Document Disclosure Irregularities",
+    id: "capital-raising-offer-document-misstatement",
+    product: "Capital Raising / Issue of Securities",
+    name: "Offer Document / Prospectus Misstatement or Omission",
     explanation:
-      "Material misstatements or omissions in a Draft Red Herring Prospectus, Red Herring Prospectus, Prospectus, or Letter of Offer filed for an IPO, rights issue, or other public issue of securities — overstated pre-issue revenue or financial position; misrepresented customer/supplier concentration; a misleading Objects-of-Issue quotation; non-disclosure of pending litigation; non-disclosure of a material financial relationship or conflict of interest concerning an issue intermediary (e.g. the Merchant Banker); or an incorrect Statement of Deviation regarding utilisation of issue proceeds. Distinct from ongoing post-listing LODR disclosure lapses (a separate scenario): this scenario concerns the issue/offer-document process itself, governed by the ICDR Regulations. Not every offer-document inaccuracy is fraud — applicability remains fact-dependent, and a finding that a specific PFUTP sub-clause (e.g. 'planting of false news') was NOT established on similar facts in one order does not mean no PFUTP clause can ever apply on different facts.",
-    provisionIds: ["ICDR-24-1", "ICDR-245-1", "LODR-32", "PFUTP-4-2-s"],
-    // Deliberately empty: no existing concept-tags.ts id specifically
-    // distinguishes "IPO/offer document" disclosure from ongoing
-    // post-listing disclosure, and adding one carries real regression risk
-    // to Part B's negation/polarity logic (see this pass's final report) --
-    // out of scope for this validation pass. This scenario is reachable
-    // through Part A's direct Fixed Scenario Analysis selection, the same
-    // way scenario 8 (the broad catch-all, also keyConceptIds: []) is;
-    // it will not yet surface via Law Library free-text concept search or
-    // a provision page's "broad CFID scenarios" summary. Flagged in the
-    // final report as a follow-up item, not silently worked around here.
+      "Material misstatements or omissions in a Draft Red Herring Prospectus, Red Herring Prospectus, Prospectus, or Letter of Offer filed for an IPO, rights issue, or other public issue of securities — overstated pre-issue revenue or financial position; misrepresented customer/supplier concentration; a misleading Objects-of-Issue quotation; non-disclosure of pending litigation; or non-disclosure of a material financial relationship or conflict of interest concerning an issue intermediary (e.g. the Merchant Banker). Distinct from ongoing post-listing LODR disclosure lapses (a separate scenario): this concerns the issue/offer-document process itself, governed by the ICDR Regulations, and is also distinct from issue-proceeds utilisation/deviation reporting and from fraudulent mis-selling of the issue (each its own sub-product below) — an offer-document inaccuracy does not, by itself, establish either of those. Not every offer-document inaccuracy is fraud — applicability remains fact-dependent.",
+    provisionIds: ["ICDR-24-1", "ICDR-245-1"],
+    keyConceptIds: ["offer_document_prospectus"],
+  },
+  {
+    id: "capital-raising-issue-proceeds-deviation-reporting",
+    product: "Capital Raising / Issue of Securities",
+    name: "Issue-Proceeds Utilisation / Deviation Reporting",
+    explanation:
+      "A listed entity's Regulation 32 obligations regarding utilisation of proceeds from a public issue, rights issue, preferential issue or similar: filing an incorrect or false quarterly Statement of Deviation on use of proceeds against the stated objects of the issue (32(1)); failing to furnish an accurate explanation of the variation in the directors' report in the Annual Report (32(4)); or an incorrect annual statement, certified by the statutory auditors, of funds utilised for purposes other than those stated in the offer document (32(5)). This is a periodic MONITORING/REPORTING duty on the already-raised proceeds, not itself a prospectus/offer-document content obligation — it does not automatically import ICDR disclosure provisions merely because both concern the same capital-raise, and it is not, by itself, proof that the underlying funds were diverted (a separate scenario) — an incorrect Statement of Deviation can be filed without any diversion having occurred, and diversion can occur without any deviation-reporting defect.",
+    provisionIds: ["LODR-32-1", "LODR-32-4", "LODR-32-5"],
+    keyConceptIds: ["issue_proceeds_deviation_reporting"],
+  },
+  {
+    id: "capital-raising-fraudulent-mis-selling",
+    product: "Capital Raising / Issue of Securities",
+    name: "Fraudulent / Deceptive Sale or Mis-selling in Connection with an Issue",
+    explanation:
+      "Regulation 4(2)(s) of the PFUTP Regulations: mis-selling of securities or services relating to the securities market in connection with an issue — sale of securities by knowingly making a false or misleading statement, knowingly concealing or omitting material facts, knowingly concealing associated risk, or not taking reasonable care to ensure suitability. This has its OWN independent mis-selling/fraud prerequisites (an affirmative act of selling accompanied by one of those four specified forms of knowing misconduct) and must never be treated as a generic consequence of any offer-document inaccuracy — an offer-document misstatement (the sub-product above) does not, by itself, establish mis-selling.",
+    provisionIds: ["PFUTP-4-2-s"],
+    // Deliberately empty: PFUTP-4-2-s requires its own independent
+    // mis-selling ingredients (see explanation above), and no existing or
+    // newly-added concept-tags.ts id safely isolates "mis-selling" from
+    // the broader "offer document/prospectus" vocabulary without risking
+    // exactly the over-broad match ("any prospectus query also surfaces
+    // mis-selling") this restructuring exists to prevent. Reachable
+    // through Part A's direct Fixed Scenario Analysis selection only, the
+    // same way scenario 8 (the broad catch-all, also keyConceptIds: []) is.
     keyConceptIds: [],
   },
 ];

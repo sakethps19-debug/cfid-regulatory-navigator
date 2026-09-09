@@ -73,7 +73,11 @@ const TEST_PROVISIONS: LegalProvision[] = [
   provision("IND-AS-24", "Indian Accounting Standards", "Ind AS 24", "Related Party Disclosures."),
   provision("ICDR-24-1", "SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018", "Regulation 24(1)", "Draft offer document and offer document (main-board/general issue segment) must contain all material disclosures true and adequate for an informed investment decision."),
   provision("ICDR-245-1", "SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018", "Regulation 245(1)", "Offer document (SME/IGP issue segment) must contain all material disclosures true and adequate for an informed investment decision."),
-  provision("LODR-32", "LODR Regulations, 2015", "Regulation 32 / 32(7A)", "Monitoring/disclosure of issue-proceeds utilisation."),
+  provision("LODR-32", "LODR Regulations, 2015", "Regulation 32 / 32(7A)", "Monitoring/disclosure of issue-proceeds utilisation (legacy ungranulated id, kept for older records; no longer used by any current fixed scenario)."),
+  provision("LODR-32-1", "LODR Regulations, 2015", "Regulation 32(1)", "Quarterly Statement of Deviation to the stock exchange on use of issue proceeds vs. stated objects."),
+  provision("LODR-32-4", "LODR Regulations, 2015", "Regulation 32(4)", "Explanation of the variation in the directors' report in the Annual Report."),
+  provision("LODR-32-5", "LODR Regulations, 2015", "Regulation 32(5)", "Annual auditor-certified statement of funds utilised for purposes other than those stated in the offer document."),
+  provision("LODR-30", "LODR Regulations, 2015", "Regulation 30", "Disclosure of material events/information to stock exchanges."),
   provision("PFUTP-4-2-s", "PFUTP Regulations, 2003", "Regulation 4(2)(s)", "Mis-selling of securities or services relating to the securities market."),
 ];
 
@@ -97,8 +101,8 @@ function scenarioById(id: string) {
 }
 
 describe("Fixed Scenario Analysis — curated data integrity", () => {
-  it("has exactly 9 scenarios", () => {
-    expect(FIXED_SCENARIOS).toHaveLength(9);
+  it("has exactly 11 scenarios (8 original + 3 capital-raising sub-products, replacing the single over-compressed capital-raising scenario)", () => {
+    expect(FIXED_SCENARIOS).toHaveLength(11);
   });
 
   it("every scenario has a non-empty name and explanation", () => {
