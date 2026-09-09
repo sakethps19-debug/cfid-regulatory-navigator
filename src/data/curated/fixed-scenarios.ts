@@ -215,4 +215,65 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     // more specific scenario that actually fits the query.
     keyConceptIds: [],
   },
+  {
+    // Added following the Aug-2026 Debock/Trafiksol/Varanium validation
+    // pass (see the pass's Master Reconciliation table). Genuinely new
+    // (Category C), not a rewording of an existing scenario: the ICDR
+    // Regulations govern the PRE-LISTING issue/offer-document process
+    // itself (the DRHP/RHP/Prospectus or Letter of Offer filed to raise
+    // capital) -- a distinct instrument, a distinct regulatory moment (at
+    // the time of the issue, before or independent of an ongoing listing),
+    // and distinct provisions from "false-misleading-incomplete-
+    // disclosures" (which is about an ALREADY-LISTED entity's ongoing
+    // LODR/stock-exchange disclosures -- Annual Reports, corporate
+    // announcements). A materially false or misleading offer document is
+    // not automatically the same legal question as a materially false
+    // post-listing disclosure, even though both are "disclosure" in a lay
+    // sense.
+    //
+    // Independently evidenced by TWO separate final orders, not derived
+    // from one historical co-occurrence: Trafiksol (ICDR Regulation 245(1)
+    // established, para 105 -- undisclosed conflict-of-interest financial
+    // relationship with the sole Merchant Banker's controlling
+    // shareholder's father, omitted from the DRHP) and Varanium Cloud
+    // (ICDR Regulation 24(1) established, para 111(v) -- misleading
+    // Objects-of-Issue quotation and non-disclosure of pending litigation
+    // in the Prospectus/Letter of Offer; LODR Regulation 32 also
+    // established, para 111(ii) -- an incorrect Statement of Deviation on
+    // utilisation of issue proceeds, itself an issue-proceeds monitoring/
+    // disclosure obligation, not proof of diversion). PFUTP-4-2-s ("mis-
+    // selling of securities... by knowingly making a false or misleading
+    // statement") independently fits an IPO-offer fact pattern on its own
+    // terms (an IPO is itself a sale of securities to the public) --
+    // established against Trafiksol, para 97.
+    //
+    // Deliberately NOT included: PFUTP-3/4(1)/12A(a)-(c) core fraud
+    // provisions -- both Trafiksol's and Varanium's core financial-
+    // statement-misrepresentation PFUTP/12A citations are Category A
+    // (already an existing match under financial-statement-
+    // misrepresentation above); repeating them here would blur this
+    // scenario's distinct identity rather than sharpen it. Also
+    // deliberately NOT included: PFUTP-4-2-r (Trafiksol, para 98,
+    // expressly found NOT established -- the order distinguishes false/
+    // misleading offer-document disclosure from "planting" false news,
+    // which is a materially different act; an unsuccessfully alleged
+    // provision must not become positive template support merely because
+    // it was discussed).
+    id: "ipo-prospectus-offer-document-disclosure-irregularities",
+    name: "IPO / Prospectus / Offer Document Disclosure Irregularities",
+    explanation:
+      "Material misstatements or omissions in a Draft Red Herring Prospectus, Red Herring Prospectus, Prospectus, or Letter of Offer filed for an IPO, rights issue, or other public issue of securities — overstated pre-issue revenue or financial position; misrepresented customer/supplier concentration; a misleading Objects-of-Issue quotation; non-disclosure of pending litigation; non-disclosure of a material financial relationship or conflict of interest concerning an issue intermediary (e.g. the Merchant Banker); or an incorrect Statement of Deviation regarding utilisation of issue proceeds. Distinct from ongoing post-listing LODR disclosure lapses (a separate scenario): this scenario concerns the issue/offer-document process itself, governed by the ICDR Regulations. Not every offer-document inaccuracy is fraud — applicability remains fact-dependent, and a finding that a specific PFUTP sub-clause (e.g. 'planting of false news') was NOT established on similar facts in one order does not mean no PFUTP clause can ever apply on different facts.",
+    provisionIds: ["ICDR-24-1", "ICDR-245-1", "LODR-32", "PFUTP-4-2-s"],
+    // Deliberately empty: no existing concept-tags.ts id specifically
+    // distinguishes "IPO/offer document" disclosure from ongoing
+    // post-listing disclosure, and adding one carries real regression risk
+    // to Part B's negation/polarity logic (see this pass's final report) --
+    // out of scope for this validation pass. This scenario is reachable
+    // through Part A's direct Fixed Scenario Analysis selection, the same
+    // way scenario 8 (the broad catch-all, also keyConceptIds: []) is;
+    // it will not yet surface via Law Library free-text concept search or
+    // a provision page's "broad CFID scenarios" summary. Flagged in the
+    // final report as a follow-up item, not silently worked around here.
+    keyConceptIds: [],
+  },
 ];

@@ -71,6 +71,10 @@ const TEST_PROVISIONS: LegalProvision[] = [
   provision("LODR-6-2-a", "LODR Regulations, 2015", "Regulation 6(2)(a)", "Compliance Officer duty (a)."),
   provision("LODR-6-2-c", "LODR Regulations, 2015", "Regulation 6(2)(c)", "Compliance Officer duty (c)."),
   provision("IND-AS-24", "Indian Accounting Standards", "Ind AS 24", "Related Party Disclosures."),
+  provision("ICDR-24-1", "SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018", "Regulation 24(1)", "Draft offer document and offer document (main-board/general issue segment) must contain all material disclosures true and adequate for an informed investment decision."),
+  provision("ICDR-245-1", "SEBI (Issue of Capital and Disclosure Requirements) Regulations, 2018", "Regulation 245(1)", "Offer document (SME/IGP issue segment) must contain all material disclosures true and adequate for an informed investment decision."),
+  provision("LODR-32", "LODR Regulations, 2015", "Regulation 32 / 32(7A)", "Monitoring/disclosure of issue-proceeds utilisation."),
+  provision("PFUTP-4-2-s", "PFUTP Regulations, 2003", "Regulation 4(2)(s)", "Mis-selling of securities or services relating to the securities market."),
 ];
 
 const MANDATORY_EXCLUDED_IDS = [
@@ -93,8 +97,8 @@ function scenarioById(id: string) {
 }
 
 describe("Fixed Scenario Analysis — curated data integrity", () => {
-  it("has exactly 8 scenarios", () => {
-    expect(FIXED_SCENARIOS).toHaveLength(8);
+  it("has exactly 9 scenarios", () => {
+    expect(FIXED_SCENARIOS).toHaveLength(9);
   });
 
   it("every scenario has a non-empty name and explanation", () => {
