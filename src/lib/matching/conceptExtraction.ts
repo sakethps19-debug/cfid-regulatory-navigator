@@ -231,6 +231,21 @@ const CONTINUATION_CUE_PHRASES = [
   "the transaction",
   "such transaction",
   "the said transaction",
+  // "the consideration" added (P0 recall-hardening sprint): the same
+  // anaphoric-object pattern above, for a preferential-allotment narrative
+  // that states the allotment in one sentence and the fate of its
+  // CONSIDERATION (the payment/value received for it) in the next -- e.g.
+  // "A listed company made a preferential allotment of shares. The
+  // consideration for the allotment was funded through a circular
+  // movement of money...". Scoped to only the two provisions whose own
+  // subject is genuinely the sufficiency of that consideration (ICDR-160,
+  // Companies Act ss.24/67(2) — see provision-retrieval-rules.ts); the
+  // word itself is specific enough (payment/value for an allotment, not a
+  // generic English word) to carry the same closed-class-anaphor design as
+  // every other cue above.
+  "the consideration",
+  "such consideration",
+  "the said consideration",
 ];
 
 /** Cue phrases that affirmatively signal the sentence is introducing a

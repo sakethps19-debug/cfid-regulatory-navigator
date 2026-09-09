@@ -325,11 +325,30 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "transfer by way of gift",
     ],
   },
+  // "announcement to the stock exchange(s)" / "disseminated to investors"
+  // added (P0 recall-hardening sprint): the existing "stock exchange
+  // announcement" synonym requires that exact word order; real officer
+  // phrasing far more often puts "announcement" first ("made ... an
+  // announcement to the stock exchanges"), which the prior list silently
+  // missed entirely -- without this channel fact, PFUTP 4(2)(f)/(k)'s own
+  // investor-communication-channel gate could never connect to a stated
+  // false-announcement conduct fact even when both were plainly present.
   {
     id: "corporate_announcement",
     kind: "transaction",
     label: "Corporate announcement",
-    synonyms: ["corporate announcement", "press release", "stock exchange announcement", "acquisition announcement", "turnover projection", "unsupported announcement"],
+    synonyms: [
+      "corporate announcement",
+      "press release",
+      "stock exchange announcement",
+      "announcement to the stock exchange",
+      "announcement to the stock exchanges",
+      "announcement to investors",
+      "disseminated to investors",
+      "acquisition announcement",
+      "turnover projection",
+      "unsupported announcement",
+    ],
   },
   {
     id: "audit_committee_process",
@@ -472,7 +491,52 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   { id: "deposition_testimony", kind: "evidence", label: "Deposition / recorded testimony", synonyms: ["deposition", "testimony", "recorded statement", "statement on oath", "examination on oath", "admitted in deposition", "under oath"] },
 
   // ----- Alleged conduct -----
-  { id: "financial_statement_misstatement", kind: "conduct", label: "Financial statement misstatement", subjectAgnostic: true, synonyms: ["misstated financial statement", "misstatement", "misrepresentation in accounts", "false financial reporting", "inflated financials", "inflated sales", "inflated profit", "inflated profits", "overstated its sales", "misrepresented its financial statements", "write-off of trade receivables"] },
+  // A financial-content-qualified "misstated"/"materially misstated"
+  // phrase family added (P0 recall-hardening sprint): the bare VERB form
+  // of the existing noun "misstatement" ("published results containing
+  // materially misstated revenue, expenses and profit figures") that
+  // plain substring matching does not derive from the noun form alone.
+  // Deliberately kept QUALIFIED to a financial-content noun (revenue,
+  // expenses, profit, financial results/statements) rather than added as
+  // a bare "misstated"/"materially misstated" — this tag's own gated
+  // provisions include SINGLE-GROUP rules with no separate topic
+  // requirement at all (IND-AS-1, LODR-4-2-e-i), so an unqualified bare
+  // verb was confirmed (live trace) to wrongly satisfy those on an
+  // ENTIRELY different subject ("materially misstated the composition and
+  // independence of its board and committees" — a governance-report
+  // content issue, nothing to do with financial-statement figures).
+  {
+    id: "financial_statement_misstatement",
+    kind: "conduct",
+    label: "Financial statement misstatement",
+    subjectAgnostic: true,
+    synonyms: [
+      "misstated financial statement",
+      "misstatement",
+      "misstated revenue",
+      "misstated expenses",
+      "misstated profit",
+      "misstated the revenue",
+      "misstated the expenses",
+      "misstated the profit",
+      "materially misstated revenue",
+      "materially misstated expenses",
+      "materially misstated profit",
+      "misstated financial results",
+      "misstated the financial results",
+      "materially misstated the financial results",
+      "misstated financial statements",
+      "misrepresentation in accounts",
+      "false financial reporting",
+      "inflated financials",
+      "inflated sales",
+      "inflated profit",
+      "inflated profits",
+      "overstated its sales",
+      "misrepresented its financial statements",
+      "write-off of trade receivables",
+    ],
+  },
   // P0 Demo B result-quality fix: IND-AS-23 (Borrowing Costs) was previously
   // ungated (no retrieval rule at all -- see provision-retrieval-rules.ts),
   // so it surfaced as a primary candidate on ANY financial-results-channel
@@ -527,7 +591,13 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // either fact pattern — the same over-broad-bare-synonym problem found
   // and fixed once already for "related party" (see related_party_misrepresentation).
   { id: "fictitious_sales_or_revenue", kind: "conduct", label: "Fictitious sales or revenue", synonyms: ["fictitious sales", "bogus sales", "non-genuine sales", "fake sales", "sham sales", "fictitious revenue", "bogus revenue", "no genuine revenue", "sales were fictitious", "sale was fictitious", "sales figures were fictitious", "revenue was fictitious", "not genuine sales", "sales that were not genuine", "revenue that was not genuine", "revenue was not genuine", "sales did not actually take place", "sales never took place", "sales never actually occurred", "no genuine underlying transaction", "no genuine sale", "no genuine transaction", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported", "deny having bought", "deny ever having bought", "denied ever buying", "denies ever having transacted", "never actually bought anything", "counterparty denies buying"] },
-  { id: "fictitious_or_nongenuine_assets", kind: "conduct", label: "Fictitious or non-genuine assets", synonyms: ["fictitious assets", "non-genuine assets", "bogus assets", "overstated assets", "inflated assets", "assets were fictitious", "assets that were not genuine", "assets were not genuine", "cannot actually verify exist", "cannot be verified to exist", "nobody can verify exist", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported"] },
+  // "non-genuine receivables" added (P0 recall-hardening sprint): the exact
+  // same fictitious/non-genuine-asset predicate this tag already covers,
+  // stated with "receivables" as the noun instead of the more generic
+  // "assets" -- receivables are themselves an asset class, and officer/order
+  // language routinely says "non-genuine receivables and assets" as a single
+  // phrase rather than two separately-qualified nouns.
+  { id: "fictitious_or_nongenuine_assets", kind: "conduct", label: "Fictitious or non-genuine assets", synonyms: ["fictitious assets", "non-genuine assets", "non-genuine receivables", "bogus assets", "bogus receivables", "fictitious receivables", "overstated assets", "inflated assets", "assets were fictitious", "assets that were not genuine", "assets were not genuine", "receivables that were not genuine", "receivables were not genuine", "cannot actually verify exist", "cannot be verified to exist", "nobody can verify exist", "fictitiously booked", "booked fictitiously", "recorded fictitiously", "fictitiously recorded", "fictitiously reported"] },
   // "undisclosed" added (P0 provision-precision remediation, 2026): a very
   // common, unambiguous way to describe a non-disclosed fact ("an
   // undisclosed related-party transaction") that the prior synonym list
@@ -553,7 +623,13 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // default, RPT financial-statement disclosure, ...), which is exactly
   // why it must never independently promote an ungated provision without
   // an accompanying subject-specific topical fact.
-  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", subjectAgnostic: true, synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
+  // Bare "omitted" added (P0 recall-hardening sprint): a very common way
+  // officers/orders describe a non-disclosure without using the word
+  // "disclose" at all ("omitted promoter-group shareholdings from its
+  // report"). subjectAgnostic (see above) already ensures this can never by
+  // itself promote an ungated provision -- it still requires a connected,
+  // subject-specific topic fact, exactly like every other synonym here.
+  { id: "non_disclosure_of_information", kind: "conduct", label: "Non-disclosure of information", subjectAgnostic: true, synonyms: ["non-disclosure", "undisclosed", "failure to disclose", "failed to disclose", "did not disclose", "not disclosed", "withheld information", "omitted disclosure", "omitted", "failed to identify", "delayed disclosure", "late disclosure", "failed to inform", "did not inform", "disclosure lapse", "disclosure lapses", "concealed", "concealment"] },
   // "summons were ignored"/"ignored the summons" added (Question-A
   // polarity acceptance pass, investigation paired test): a common way to
   // describe non-response to process distinct from the existing
@@ -642,9 +718,35 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "not used for the stated objects",
       "not utilised for the stated objects",
       "not utilized for the stated objects",
+      // P0 recall-hardening sprint: a closely-defined phrase FAMILY for the
+      // same "used other than as represented" diversion predicate above,
+      // generalised past the exact "instead of/not used for" wording to the
+      // equally common "purposes different from/other than the stated or
+      // disclosed [purpose/objects]" construction, plus the specific
+      // "purposes unrelated to the company's business" phrasing (the
+      // functional equivalent of "no genuine business purpose" above, just
+      // describing the ABSENCE of connection to the business rather than
+      // the absence of a genuine purpose). Each variant still requires the
+      // adverse qualifier ("different"/"other than"/"unrelated") to be
+      // present -- a compliant "used for the stated purpose" statement
+      // matches none of them.
+      "purposes different from the stated",
+      "purposes different from the disclosed",
+      "purpose different from the stated",
+      "purpose different from the disclosed",
+      "purposes other than the stated",
+      "purposes other than the disclosed",
+      "purpose other than the stated",
+      "purpose other than the disclosed",
+      "used for purposes unrelated to",
+      "used for a purpose unrelated to",
     ],
   },
-  { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
+  // "circular movement of money" added (P0 recall-hardening sprint): a
+  // legally-equivalent noun-form variant of the existing "circular movement
+  // of funds" synonym -- "money" and "funds" are interchangeable in this
+  // context, and substring matching does not otherwise bridge the two.
+  { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "circular movement of money", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", subjectAgnostic: true, synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
   // "without paying any/genuine consideration" variants added (P0
   // provision-precision remediation, 2026): natural officer phrasing for
@@ -652,7 +754,13 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // consideration"/"no genuine payment" synonyms already cover, just with
   // "paying"/"any" inserted between "without" and "consideration" - a
   // realistic gap the pure substring matcher otherwise misses.
-  { id: "sham_preferential_allotment", kind: "conduct", label: "Fraudulent/sham preferential allotment", synonyms: ["sham allotment", "fraudulent preferential allotment", "fraudulent allotment", "shares without consideration", "allotment without payment", "non-cash allotment", "allotment without acquiring assets", "no genuine payment", "without paying any genuine consideration", "without paying genuine consideration", "without genuine consideration", "fabricated bank statements"] },
+  // "no genuine independent consideration" / "no genuine or independent
+  // consideration" added (P0 recall-hardening sprint): a common real-order
+  // phrasing that inserts "independent" between "genuine" and
+  // "consideration" -- the prior "without genuine consideration"/"no
+  // genuine payment" synonyms require those two words adjacent and so
+  // silently missed this natural variant.
+  { id: "sham_preferential_allotment", kind: "conduct", label: "Fraudulent/sham preferential allotment", synonyms: ["sham allotment", "fraudulent preferential allotment", "fraudulent allotment", "shares without consideration", "allotment without payment", "non-cash allotment", "allotment without acquiring assets", "no genuine payment", "without paying any genuine consideration", "without paying genuine consideration", "without genuine consideration", "no genuine consideration", "no genuine independent consideration", "no genuine or independent consideration", "no independent consideration", "fabricated bank statements"] },
   // "circularly funded" added (Question-A polarity acceptance pass,
   // preferential-allotment paired test): the mandated adverse text
   // ("Allotment consideration was circularly funded by issuer") states the
@@ -685,23 +793,112 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // financial_statement_misstatement/fictitious_sales_or_revenue's own
   // territory, not this family's. Split into four independently-detectable
   // tags, each tracking one statutory predicate:
+  // "entered (into) synchronised/synchronized trades" (plural/verb-noun
+  // variant of the existing "-ing" forms, tied to the affirmative
+  // "entered (into)" verb) and "artificial trading volume"/"artificial
+  // volume" added (P0 recall-hardening sprint): natural officer phrasing
+  // for the same false-appearance-of-trading predicate ("entered
+  // synchronised trades creating artificial volume") this tag's prior
+  // synonyms, keyed only to "trading" (not "trades") and to specific
+  // mechanisms (matched/wash/reversal trades), did not cover. Deliberately
+  // kept tied to the "entered (into)" verb rather than added as a bare
+  // "synchronized/synchronised trades" noun phrase: a live regression
+  // (blind-validation-suite-v2.test.ts #59, "Possible synchronized trades
+  // were flagged ... and referred for further examination") confirmed a
+  // bare noun-plural form wrongly matches hedged, under-investigation
+  // language with no stated fact at all.
   {
     id: "false_appearance_of_trading",
     kind: "conduct",
     label: "False or misleading appearance of trading",
-    synonyms: ["synchronized trading", "synchronised trading", "matched trades", "wash trades", "wash trading", "connected trading accounts", "false appearance of trading", "misleading appearance of trading", "reversal trades"],
+    synonyms: [
+      "synchronized trading",
+      "synchronised trading",
+      "entered synchronized trades",
+      "entered synchronised trades",
+      "entered into synchronized trades",
+      "entered into synchronised trades",
+      "matched trades",
+      "wash trades",
+      "wash trading",
+      "connected trading accounts",
+      "false appearance of trading",
+      "misleading appearance of trading",
+      "reversal trades",
+      "artificial trading volume",
+      "artificial volume",
+      "creating artificial volume",
+      "created artificial volume",
+    ],
   },
+  // "without genuine/real change in beneficial ownership" family added (P0
+  // recall-hardening sprint): the existing synonyms all require "no" as
+  // the leading word ("no genuine change..."); "without" is an equally
+  // common, legally identical way to state the same absence-of-ownership-
+  // change fact ("synchronised trades ... without genuine change in
+  // beneficial ownership").
   {
     id: "non_genuine_dealing_or_ownership",
     kind: "conduct",
     label: "No genuine change in beneficial ownership",
-    synonyms: ["no genuine change in ownership", "no real change in ownership", "no real change in beneficial ownership", "no genuine change in beneficial ownership", "no intended change in beneficial ownership"],
+    synonyms: [
+      "no genuine change in ownership",
+      "no real change in ownership",
+      "no real change in beneficial ownership",
+      "no genuine change in beneficial ownership",
+      "no intended change in beneficial ownership",
+      "without genuine change in beneficial ownership",
+      "without real change in beneficial ownership",
+      "without a genuine change in beneficial ownership",
+      "without any genuine change in beneficial ownership",
+      "without any real change in beneficial ownership",
+      "without genuine change in ownership",
+    ],
   },
+  // Artificial price-movement phrase family added (P0 recall-hardening
+  // sprint): the prior synonyms all named the manipulation in the
+  // abstract ("price manipulation", "artificial price"); real officer/
+  // order language much more often states the DIRECTION and MECHANISM
+  // explicitly ("with the intention of artificially increasing the market
+  // price of the shares"). Each variant keeps the "artificially
+  // increase/decrease/inflate/depress" + price-noun structure so a bare,
+  // unconnected use of "artificial" or "increase" elsewhere is never
+  // matched -- this remains a closely-defined phrase family, not a
+  // semantic/fuzzy match.
   {
     id: "actual_price_manipulation",
     kind: "conduct",
     label: "Actual price manipulation",
-    synonyms: ["price manipulation", "market manipulation", "distorted price discovery", "artificial price rise", "artificially propped up the price", "artificially maintained the price", "manipulation of the security price", "artificial price"],
+    synonyms: [
+      "price manipulation",
+      "market manipulation",
+      "distorted price discovery",
+      "artificial price rise",
+      "artificially propped up the price",
+      "artificially maintained the price",
+      "manipulation of the security price",
+      "artificial price",
+      "artificially increasing the market price",
+      "artificially increase the market price",
+      "artificially increasing the share price",
+      "artificially increase the share price",
+      "artificially increasing the price",
+      "artificially increase the price",
+      "artificially decreasing the market price",
+      "artificially decrease the market price",
+      "artificially decreasing the share price",
+      "artificially decrease the share price",
+      "artificially decreasing the price",
+      "artificially decrease the price",
+      "artificial increase in the market price",
+      "artificial increase in the share price",
+      "artificial decrease in the market price",
+      "artificial decrease in the share price",
+      "artificially inflate the price",
+      "artificially inflating the price",
+      "artificially depress the price",
+      "artificially depressing the price",
+    ],
   },
   {
     id: "investor_inducement_to_trade",
@@ -742,6 +939,56 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "failed statutory independence",
       "independence eligibility requirement",
     ],
+  },
+  // P0 recall-hardening sprint (Ind AS ungated audit): Ind AS 7, Ind AS 21
+  // and Ind AS 28 were all completely ungated (no provision-retrieval-rules.ts
+  // entry at all), so each surfaced as a primary candidate on ANY generic
+  // financial-misstatement fact anywhere, regardless of whether the facts
+  // actually engaged that standard's own specific accounting subject. Each
+  // live-corpus link for these three provisions was reviewed
+  // (finding_provisions, Supabase) and found to cite them only as part of a
+  // broader, generic misstatement bundle with no fact specific to that
+  // standard's own subject stated in the finding itself -- a genuine,
+  // disclosed corpus limitation, not a basis for inventing a narrower
+  // predicate than what these three new tags state. Each new tag/gate
+  // requires the officer's OWN entered facts to state something genuinely
+  // specific to that standard's subject before it can surface at all.
+  {
+    id: "cash_flow_statement_issue",
+    kind: "conduct",
+    label: "Cash-flow statement misstatement/issue",
+    synonyms: [
+      "cash flow statement",
+      "statement of cash flows",
+      "misstated cash flow",
+      "misstated the cash flow statement",
+      "cash flow from operations misstated",
+      "operating cash flow misstated",
+      "cash flow disclosure",
+      "cash flow misclassification",
+    ],
+  },
+  {
+    id: "associate_or_joint_venture_accounting_issue",
+    kind: "conduct",
+    label: "Associate/joint-venture accounting issue",
+    synonyms: [
+      "associate company",
+      "significant influence",
+      "equity method",
+      "joint venture accounting",
+      "structured to avoid associate",
+      "below the associate company threshold",
+      "avoid associate company classification",
+      "circumvent associate company",
+      "circumvented the associate company threshold",
+    ],
+  },
+  {
+    id: "foreign_exchange_rate_issue",
+    kind: "conduct",
+    label: "Foreign-exchange translation/rate issue",
+    synonyms: ["foreign exchange rate", "exchange rate fluctuation", "translation of foreign operations", "functional currency", "foreign currency translation", "exchange rate misstatement", "forex translation"],
   },
 ];
 

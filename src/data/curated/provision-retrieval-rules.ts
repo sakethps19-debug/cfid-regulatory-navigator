@@ -284,14 +284,39 @@ const ISSUE_PROCEEDS_MISUSE = ["fund_diversion", "circular_fund_movement", "fund
  * to a securities transaction). Used ONLY for PFUTP-4-1's Explanation-
  * specific alternate route below, alongside the listed_company topic tag —
  * never to gate PFUTP 3, PFUTP 4(2)'s own lettered sub-clauses, or SEBI Act
- * 12A, each of which keeps its own independent predicate. */
-const PURE_FUND_MOVEMENT_CONDUCT = [
-  "fund_diversion",
-  "circular_fund_movement",
-  "fund_routed_personal_account",
-  "fund_transfer_personal_account",
-  "fund_transfer_promoter_entity",
-];
+ * 12A, each of which keeps its own independent predicate.
+ *
+ * P0 recall-hardening sprint (general classification-defect fix):
+ * fund_transfer_personal_account and fund_transfer_promoter_entity were
+ * REMOVED from this list. Both are "transaction"-kind concept tags (see
+ * concept-tags.ts) — they record WHERE funds went, a neutral occurrence
+ * fact used throughout this corpus as a `transactionTypes` topic anchor,
+ * never itself an adverse/breach-indicating fact (per engine.ts's own
+ * documented invariant: "'transaction'/'actor'/'evidence'-kind tags are
+ * neutral occurrence facts ... never themselves a breach"). Their prior
+ * inclusion here let a scenario stating ONLY "funds were transferred to a
+ * personal/promoter-controlled account" — with no further adverse
+ * characterisation at all — satisfy this route's own adverse-conduct
+ * group. That is not merely imprecise: it silently broke the SAME
+ * invariant everywhere downstream that relies on it (engine.ts's own
+ * adverseConceptIdsForRule filters strictly by kind==="conduct", so a
+ * gate that passed only via one of these two ids produced ZERO adverse
+ * ids for the promotion-eligibility check — the confirmed root cause of a
+ * gate-passing, genuinely adverse fund-diversion scenario ("Funds
+ * belonging to a listed company were transferred to the personal bank
+ * account of its promoter and were used for purposes unrelated to the
+ * company's business.") being demoted to governing/additional_fact_
+ * required instead of promoted to a candidate breach). The three
+ * remaining ids are all genuinely conduct-kind and require no further
+ * adverse characterisation to satisfy this route, which is exactly
+ * correct: "diverted", "circularly moved" and "routed through a personal
+ * account" ARE themselves the adverse act; "transferred to a personal
+ * account" alone is not (it could be a lawful salary/dividend payment) —
+ * see fund_diversion's own widened synonym family below for how a bare
+ * "personal/promoter account" transfer now still reaches this route once
+ * the scenario states the missing adverse characterisation ("used for
+ * purposes unrelated to...", "not used for the stated purpose", ...). */
+const PURE_FUND_MOVEMENT_CONDUCT = ["fund_diversion", "circular_fund_movement", "fund_routed_personal_account"];
 
 export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
@@ -448,12 +473,29 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
     explanation:
       "[Governance/procedural obligation] Regulation 23(2) requires prior Audit Committee approval of related-party transactions. It requires a related-party-transaction fact connected to a stated approval, disclosure or Audit Committee process failure; a related-party transaction that was genuinely approved and disclosed does not, without more, satisfy it.",
+    // P0 recall-hardening sprint: a strict SUPERSET of an already-correct
+    // fact pattern (the same RPT-approval-lapse narrative, plus one more,
+    // fully consistent sentence about the same transaction's disclosure
+    // fate) was found to silently lose this provision entirely, because
+    // that extra sentence shifted which sentence the query's own
+    // related_party_transaction match landed in relative to the approval-
+    // lapse sentence — same-sentence-only connectivity then failed even
+    // though both facts plainly describe the one RPT the scenario is
+    // about. allowSentenceContinuity bridges exactly this, using the same
+    // bounded, closed-class anaphoric-cue mechanism as PFUTP-4-1/LODR-32
+    // (computeContinuitySentenceGroups, conceptExtraction.ts) — it can
+    // never bridge a genuinely separate, unrelated RPT or transaction
+    // stated elsewhere in a longer scenario.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "LODR-23-4",
     requireAllOfGroups: [RPT_FACT, RPT_PROCESS_LAPSE],
     explanation:
       "[Governance/procedural obligation] Regulation 23(4) requires shareholder approval (by ordinary resolution, the related party not voting) for material related-party transactions. It requires a related-party-transaction fact connected to a stated approval or disclosure failure. This corpus's vocabulary does not yet separately distinguish an Audit-Committee-approval lapse from a shareholder-approval lapse; both currently gate on the same underlying facts.",
+    // P0 recall-hardening sprint: same fix, same reasoning as LODR-23-2
+    // immediately above.
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 30 (material events) -----
@@ -487,15 +529,29 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   // OWN report/statement was not submitted/disclosed still can.
   {
     provisionId: "LODR-27-2-a",
-    requireAllOfGroups: [["governance_compliance_report"], ["non_disclosure_of_information"]],
+    // P0 recall-hardening sprint: financial_statement_misstatement added
+    // to the second group — the report was genuinely SUBMITTED but
+    // contained a material misstatement (e.g. of board/committee
+    // composition and independence) is still a Regulation 27(2)(a)
+    // failure (the duty is to submit an ACCURATE report), a distinct fact
+    // pattern from non-submission that non_disclosure_of_information alone
+    // does not capture. Both remain subjectAgnostic conduct tags requiring
+    // same-sentence connectivity to THIS provision's own
+    // governance_compliance_report topic — an unrelated misstatement
+    // elsewhere in the scenario still cannot connect.
+    requireAllOfGroups: [["governance_compliance_report"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
     explanation:
-      "[Disclosure obligation] Regulation 27(2)(a) requires the listed entity to submit a quarterly compliance report on corporate governance to the stock exchange(s). It requires a fact about that specific report connected to a stated non-submission, delay or inaccuracy; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 27(2)(a) failure.",
+      "[Disclosure obligation] Regulation 27(2)(a) requires the listed entity to submit a quarterly compliance report on corporate governance to the stock exchange(s). It requires a fact about that specific report connected to a stated non-submission, delay, inaccuracy or material misstatement; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 27(2)(a) failure.",
   },
   {
     provisionId: "LODR-31-statement",
-    requireAllOfGroups: [["shareholding_pattern_statement"], ["non_disclosure_of_information"]],
+    // P0 recall-hardening sprint: same widening as LODR-27-2-a immediately
+    // above — a submitted-but-materially-incorrect shareholding pattern
+    // statement (e.g. omitting promoter-group holdings) is still a
+    // Regulation 31 failure.
+    requireAllOfGroups: [["shareholding_pattern_statement"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
     explanation:
-      "[Disclosure obligation] Regulation 31(1) requires the listed entity to submit a statement of shareholding pattern to the stock exchange(s). It requires a fact about that specific statement connected to a stated non-submission, delay or inaccuracy; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 31 failure.",
+      "[Disclosure obligation] Regulation 31(1) requires the listed entity to submit a statement of shareholding pattern to the stock exchange(s). It requires a fact about that specific statement connected to a stated non-submission, delay, inaccuracy or material misstatement; an unrelated disclosure lapse elsewhere in the scenario (e.g. an undisclosed related-party transaction) does not, by itself, establish a Regulation 31 failure.",
   },
 
   // ----- LODR Regulation 48 (accounting standards) -----
@@ -805,6 +861,16 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[Substantive prohibition] Regulation 160 requires preferentially-allotted equity shares to be fully paid up at allotment. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration fact; the bare fact that a preferential allotment occurred does not, by itself, establish a non-payment violation.",
+    // P0 recall-hardening sprint: a preferential allotment is very often
+    // stated in one sentence and the fate of its CONSIDERATION (the
+    // payment/value received for it) in the very next ("A listed company
+    // made a preferential allotment of shares... The consideration for the
+    // allotment was funded through a circular movement of money..."), the
+    // same one-factual-object-split-across-sentences pattern already fixed
+    // for PFUTP-4-1/LODR-32/LODR-23-2/23-4/Ind AS 24. "the consideration"
+    // is now a recognised continuation cue (conceptExtraction.ts), scoped
+    // to exactly this provision family.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "ICDR-167",
@@ -863,6 +929,59 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     explanation:
       "[Accounting/reporting requirement] Ind AS 115 (Revenue from Contracts with Customers) requires a revenue-recognition-specific fact; a fictitious ASSET fact does not, by itself, satisfy it merely because the same historical matter also had fictitious sales.",
   },
+  // P0 recall-hardening sprint: IND-AS-24 (Related Party Disclosures) was
+  // previously completely ungated — every one of its 4 live-corpus links
+  // (FRL-01, SSSL-05, REL-02, REL-05) carries the SAME curated
+  // justifyingTags: ["related_party_transaction", "related_party_
+  // misrepresentation"] — a strong, corpus-grounded basis for gating it on
+  // exactly that pairing, widened to also accept the general non_
+  // disclosure_of_information conduct tag (a related-party transaction and
+  // its outstanding balance simply OMITTED from the financial-statement
+  // RPT disclosures — the SSSL-05/REL-05 fact pattern — is a non-
+  // disclosure of that RPT, not necessarily a "misrepresentation" of it).
+  // allowSentenceContinuity: an RPT is very often stated in one sentence
+  // and its accounting-disclosure fate in the very next ("...entered into
+  // transactions with entities controlled by the promoter group. The
+  // transactions and outstanding balances were omitted from the related-
+  // party disclosures..."), the same one-factual-object-split-across-
+  // sentences pattern PFUTP-4-1/LODR-32/LODR-23-2/23-4 were fixed for.
+  {
+    provisionId: "IND-AS-24",
+    requireAllOfGroups: [RPT_FACT, ["related_party_misrepresentation", "non_disclosure_of_information"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 24 (Related Party Disclosures) requires disclosure, in the notes to financial statements, of related-party transactions and outstanding balances. It requires a related-party-transaction fact connected to a stated misrepresentation or non-disclosure of that transaction/balance in the financial statements; a related-party transaction that was genuinely and accurately disclosed does not, without more, satisfy it.",
+    allowSentenceContinuity: true,
+  },
+  // P0 recall-hardening sprint (Ind AS ungated audit): Ind AS 7, Ind AS 21
+  // and Ind AS 28 were all completely ungated. Each live-corpus link for
+  // all three (SSSL-01, SSSL-02, REL-02, BDMCL-01 — see concept-tags.ts's
+  // header comment on the three new tags below) was reviewed and found to
+  // cite each provision only as part of a broader, generic misstatement
+  // bundle with no fact specific to that standard's OWN accounting subject
+  // stated in the finding itself — except BDMCL-01, whose facts genuinely
+  // are about deliberately staying below the Ind AS 28 "Associate Company"
+  // significant-influence threshold. Each gate below requires the
+  // officer's own entered facts to state something specific to that
+  // standard's own subject; none is satisfied by a generic financial-
+  // statement-misstatement fact alone.
+  {
+    provisionId: "IND-AS-7",
+    requireAllOfGroups: [["cash_flow_statement_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 7 (Statement of Cash Flows) governs the presentation and classification of cash-flow information. Requires a stated fact about the cash-flow statement specifically; a generic financial-statement misstatement with no cash-flow-specific fact does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-21",
+    requireAllOfGroups: [["foreign_exchange_rate_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 21 (The Effects of Changes in Foreign Exchange Rates) governs translation of foreign-currency transactions and operations. Requires a stated fact about foreign-exchange rates or translation specifically; a generic financial-statement misstatement with no forex-specific fact does not, by itself, satisfy it.",
+  },
+  {
+    provisionId: "IND-AS-28",
+    requireAllOfGroups: [["associate_or_joint_venture_accounting_issue"]],
+    explanation:
+      "[Accounting/reporting requirement] Ind AS 28 (Investments in Associates and Joint Ventures) governs the equity-method accounting threshold (significant influence, typically 20% or more shareholding). Requires a stated fact about an associate-company/significant-influence/equity-method threshold specifically; a generic related-party or financial-statement misstatement with no such fact does not, by itself, satisfy it.",
+  },
 
   // ----- Companies Act, 2013 -----
   // Deterministic-engine completion pass: the prior non-PFUTP remediation
@@ -909,12 +1028,16 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[SEBI power/remedial provision] Section 24 gives SEBI powers concurrent with the Central Government under Chapter III/IV of the Companies Act (including Section 67) in respect of listed companies' securities issue/transfer matters. In this corpus it is invoked exclusively alongside Section 67(2) (financial assistance for purchase of a company's own shares — see BGL-PREF-01), so it is gated on the same minimum facts: a preferential-allotment fact connected to a stated non-payment/sham-consideration fact. This is a jurisdictional/enabling provision, not itself a substantive prohibition on the company's own conduct, and must never be presented as an independent violation distinct from the underlying Section 67(2)/ICDR breach it lets SEBI act on.",
+    // P0 recall-hardening sprint: same continuity fix as ICDR-160 above.
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "COMPANIES-ACT-67-2",
     requireAllOfGroups: [["preferential_allotment"], ["sham_preferential_allotment", "unsupported_share_allotment_consideration"]],
     explanation:
       "[Substantive prohibition] Section 67(2) prohibits a public company from giving financial assistance (directly or indirectly, by loan, guarantee, security or otherwise) for the purchase of, or subscription to, its own shares or its holding company's shares. Requires a preferential-allotment fact connected to a stated non-payment/sham-consideration/loan-financed-allotment fact; the bare fact that a preferential allotment occurred does not, by itself, establish that the company financed it. This is a company-law obligation distinct from — though it may accompany — a SEBI regulatory (ICDR/PFUTP) violation on the same facts; the two must not be presented as if SEBI's order necessarily adjudicated the Companies Act offence itself unless the source order actually did so.",
+    // P0 recall-hardening sprint: same continuity fix as ICDR-160 above.
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 37A -----
