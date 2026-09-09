@@ -27,6 +27,7 @@ import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
 import { formatDate } from "@/lib/formatDate";
+import { isPresentScenarioRelevant } from "@/lib/matching/historicalTreatment";
 
 /** "SEBI LODR Regulations, 2015" / "Companies Act, 2013" — the instrument
  * name prefixed with its issuing authority only when the name doesn't
@@ -284,6 +285,57 @@ function OrderLinks({ orderIds }: { orderIds: string[] }) {
       ))}
     </>
   );
+}
+
+/** Demo-priority presentation pass (Task 7): Historical Treatment's own
+ * officer-facing applicability wording — deliberately a LOCAL mapping, not
+ * a change to the shared CandidateTierBadge used on the main results grid
+ * above (that badge's wording is out of this sprint's scope; only this
+ * section's own labels are reviewed here). Chosen specifically to avoid
+ * language that could read as "historical frequency" or as SEBI having
+ * reached a finding — see HistoricalTreatmentProvisionEntry.currentCandidateTier. */
+const HISTORICAL_APPLICABILITY_LABELS: Record<HistoricalTreatmentProvisionEntry["currentCandidateTier"], string> = {
+  primary_candidate: "Primary candidate on present facts",
+  related_ancillary: "Related / ancillary",
+  governing_relevant: "Governing provision, no apparent breach",
+  requires_additional_fact: "Additional fact required",
+  historical_precedent_only: "Historical context only",
+  not_currently_a_candidate: "Historical context only",
+};
+
+const HISTORICAL_APPLICABILITY_STYLES: Record<HistoricalTreatmentProvisionEntry["currentCandidateTier"], string> = {
+  primary_candidate: "bg-[var(--color-navy-900)] text-white ring-[var(--color-navy-900)]",
+  related_ancillary: "bg-transparent text-[var(--color-ink-700)] ring-[var(--color-border)]",
+  governing_relevant: "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]",
+  requires_additional_fact: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  historical_precedent_only: "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]",
+  not_currently_a_candidate: "bg-transparent text-[var(--color-ink-500)] ring-[var(--color-border)]",
+};
+
+function HistoricalApplicabilityBadge({ tier }: { tier: HistoricalTreatmentProvisionEntry["currentCandidateTier"] }) {
+  return (
+    <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${HISTORICAL_APPLICABILITY_STYLES[tier]}`}>
+      {HISTORICAL_APPLICABILITY_LABELS[tier]}
+    </span>
+  );
+}
+
+/** Compact one-line historical-outcome summary from the entry's own
+ * (already-computed, unchanged) dispositionBreakdown — surfaced on the
+ * default collapsed card so "important historical outcomes" is visible
+ * without expanding to the full matter list (progressive disclosure).
+ * Never a new computation: purely formats existing counts. */
+function outcomeSummary(e: HistoricalTreatmentProvisionEntry): string | null {
+  const b = e.dispositionBreakdown;
+  const parts: string[] = [];
+  if (b.confirmedFinal > 0) parts.push(`${b.confirmedFinal} confirmed in final order`);
+  if (b.partlyUpheld > 0) parts.push(`${b.partlyUpheld} partly confirmed`);
+  if (b.notUpheld > 0) parts.push(`${b.notUpheld} not confirmed`);
+  if (b.confirmedAtInterim > 0) parts.push(`${b.confirmedAtInterim} confirmed at interim`);
+  if (b.mixedNoticeeOutcome > 0) parts.push(`${b.mixedNoticeeOutcome} mixed outcome across noticees`);
+  if (b.withdrawn > 0) parts.push(`${b.withdrawn} withdrawn`);
+  if (parts.length === 0) return null;
+  return `Historical outcomes: ${parts.join(", ")}.`;
 }
 
 function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
@@ -1954,9 +2006,13 @@ export function ScenarioAnalyzerClient() {
                 A separate question from the results above: how has CFID historically treated comparable facts.
                 Historical frequency here never determines whether a provision applies to your facts; that
                 determination is made only by the results above and the &quot;on the present facts&quot; note on
-                each row below. A provision being <strong>cited</strong> somewhere in a comparable matter is not the
-                same claim as a provision being <strong>attributed</strong> to the specific fact that makes this
-                matter comparable — the two sections below are kept visually separate for exactly that reason.
+                each row below. The section below shows provisions relevant to the present scenario first —
+                ranked by current applicability (primary, then related/ancillary, then a genuinely useful
+                governing provision), never by historical volume alone; a provision cited in dozens of matters
+                but not currently applicable stays out of that first view. A provision being{" "}
+                <strong>cited</strong> somewhere in a comparable matter is also not the same claim as a provision
+                being <strong>attributed</strong> to the specific fact that makes this matter comparable — both
+                are visible, but attribution status is always disclosed per row, never merged.
               </p>
               <p className="mt-2 text-xs text-[var(--color-ink-700)]">
                 Comparable matters this scenario surfaced: {result.historicalTreatment.overallMatterCounts.stronglyComparable} strongly comparable,{" "}
@@ -1973,9 +2029,23 @@ export function ScenarioAnalyzerClient() {
               </p>
 
               {(() => {
-                const attributedEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "fact_attributed");
-                const citedOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "comparable_unverified");
-                const contextualOnlyEntries = result.historicalTreatment.entries.filter((e) => e.presentationTier === "contextually_related");
+                // Demo-priority presentation pass: CURRENT-SCENARIO
+                // applicability (Question A) is the section boundary —
+                // relevantEntries (primary/related/genuinely-useful-
+                // governing) is the officer's first screen; everything
+                // else (gate-blocked, historical-precedent-only, not a
+                // current candidate) is real, traceable material that
+                // stays available but collapsed by default, so historical
+                // volume alone can never dominate the first view. See
+                // isPresentScenarioRelevant in historicalTreatment.ts —
+                // the SAME rule this array already arrives sorted by.
+                const relevantEntries = result.historicalTreatment.entries.filter(isPresentScenarioRelevant);
+                const otherEntries = result.historicalTreatment.entries.filter((e) => !isPresentScenarioRelevant(e));
+                const otherAttributedEntries = otherEntries.filter((e) => e.presentationTier === "fact_attributed");
+                const otherCitedOnlyEntries = otherEntries.filter((e) => e.presentationTier === "comparable_unverified");
+                const otherContextualOnlyEntries = otherEntries.filter((e) => e.presentationTier === "contextually_related");
+                const otherSectionKey = "hist-other-provisions";
+                const otherSectionExpanded = expanded.has(otherSectionKey);
 
                 function renderEntry(e: HistoricalTreatmentProvisionEntry) {
                   const histKey = `hist-${e.provision.id}`;
@@ -2002,17 +2072,12 @@ export function ScenarioAnalyzerClient() {
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {e.currentCandidateTier === "not_currently_a_candidate" ? (
-                            <span className="inline-flex items-center rounded-sm bg-transparent px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink-500)] ring-1 ring-inset ring-[var(--color-border)]">
-                              Not currently a candidate
-                            </span>
-                          ) : (
-                            <CandidateTierBadge tier={e.currentCandidateTier} />
-                          )}
+                          <HistoricalApplicabilityBadge tier={e.currentCandidateTier} />
                           <LegalFunctionTag legalFunction={e.legalFunction} />
                         </div>
                       </div>
                       <p className="mt-1.5 text-xs text-[var(--color-ink-700)]">{e.currentApplicabilityNote}</p>
+                      {outcomeSummary(e) && <p className="mt-1 text-xs text-[var(--color-ink-700)]">{outcomeSummary(e)}</p>}
                       {e.matterOutcomes.length > 0 && (
                         <>
                           <button
@@ -2101,33 +2166,68 @@ export function ScenarioAnalyzerClient() {
 
                 return (
                   <>
-                    {attributedEntries.length > 0 && (
-                      <div className="mt-3">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
-                          Provisions attributed to the matching factual issue
-                        </h4>
-                        <ul className="mt-2 space-y-2">{attributedEntries.map(renderEntry)}</ul>
-                      </div>
-                    )}
-                    {citedOnlyEntries.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
-                          Provisions cited in comparable matters — factual attribution not yet verified
-                        </h4>
+                    <div className="mt-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                        Historical treatment for provisions relevant to the present scenario
+                      </h4>
+                      {relevantEntries.length > 0 ? (
+                        <ul className="mt-2 space-y-2">{relevantEntries.map(renderEntry)}</ul>
+                      ) : (
                         <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                          These provisions were cited somewhere in a matter this scenario is comparable to, but the specific link&apos;s own
-                          curation does not yet confirm it concerns the SAME fact that makes the matter comparable — never read as &quot;historically
-                          invoked for this fact pattern&quot;.
+                          No historically comparable matter was found for a provision that is currently a primary, related/ancillary or
+                          genuinely useful governing candidate on the present facts — see &quot;other provisions seen in comparable matters&quot;
+                          below for the full historical record.
                         </p>
-                        <ul className="mt-2 space-y-2">{citedOnlyEntries.map(renderEntry)}</ul>
-                      </div>
-                    )}
-                    {contextualOnlyEntries.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
-                          Cited only in contextually related matters (generic overlap only)
-                        </h4>
-                        <ul className="mt-2 space-y-2">{contextualOnlyEntries.map(renderEntry)}</ul>
+                      )}
+                    </div>
+
+                    {otherEntries.length > 0 && (
+                      <div className="mt-4 border-t border-[var(--color-border)] pt-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(otherSectionKey)}
+                          className="text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+                        >
+                          {otherSectionExpanded ? "Hide" : "Show"} other provisions seen in comparable matters ({otherEntries.length})
+                        </button>
+                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                          Gate-blocked, historical-precedent-only, and not-currently-a-candidate provisions this scenario&apos;s comparable
+                          matters also cited — useful for research and auditability, but historical volume alone never makes a provision
+                          currently applicable; see each card&apos;s own &quot;on the present facts&quot; note.
+                        </p>
+                        {otherSectionExpanded && (
+                          <>
+                            {otherAttributedEntries.length > 0 && (
+                              <div className="mt-3">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                                  Provisions attributed to the matching factual issue
+                                </h4>
+                                <ul className="mt-2 space-y-2">{otherAttributedEntries.map(renderEntry)}</ul>
+                              </div>
+                            )}
+                            {otherCitedOnlyEntries.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                                  Provisions cited in comparable matters — factual attribution not yet verified
+                                </h4>
+                                <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                                  These provisions were cited somewhere in a matter this scenario is comparable to, but the specific link&apos;s own
+                                  curation does not yet confirm it concerns the SAME fact that makes the matter comparable — never read as &quot;historically
+                                  invoked for this fact pattern&quot;.
+                                </p>
+                                <ul className="mt-2 space-y-2">{otherCitedOnlyEntries.map(renderEntry)}</ul>
+                              </div>
+                            )}
+                            {otherContextualOnlyEntries.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">
+                                  Cited only in contextually related matters (generic overlap only)
+                                </h4>
+                                <ul className="mt-2 space-y-2">{otherContextualOnlyEntries.map(renderEntry)}</ul>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     )}
                   </>
