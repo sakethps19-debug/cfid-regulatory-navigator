@@ -111,9 +111,24 @@ describe("Ind AS 24 narrow-scope fix", () => {
     expect(result.provisionResults.some((p) => p.provision.id === indAs24.id)).toBe(false);
   });
 
+  // Corrected (demo-polish sprint, Ind AS 24 promotion-connectivity fix):
+  // the free text here previously read "Related party transactions were
+  // diverted and misrepresented in the annual report" — which never
+  // actually triggers "related_party_misrepresentation" detection (its own
+  // curated synonyms are "misrepresented related party" / "false rpt
+  // disclosure" / "rpt not genuine"; none appear in that word order). This
+  // test's assertion was passing only because the unrelated "fund_diversion"
+  // tag (triggered by "diverted") rode along and promoted Ind AS 24 anyway —
+  // i.e. this test itself encoded the SAME class of over-broad-promotion
+  // defect this fix closes: a candidate breach on a related-party
+  // disclosure provision promoted by a generic fund-diversion tag, not by
+  // anything actually about the related party disclosure. Corrected to use
+  // the provision's own curated synonym phrase directly, so the test
+  // genuinely exercises "the query actually raises a related-party angle"
+  // as its name says, rather than accidentally passing via an unrelated tag.
   it("still surfaces Ind AS 24 when the query actually raises a related-party angle", () => {
     const result = analyzeScenario(
-      { freeText: "Related party transactions were diverted and misrepresented in the annual report." },
+      { freeText: "The related-party transaction was diverted through a misrepresented related party dealing recorded in the annual report." },
       [bundledFinding],
       [indAs24],
       []
