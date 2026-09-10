@@ -42,7 +42,7 @@ export default async function ComparePage() {
 
       <section>
         <h2 className="font-serif text-xl font-semibold text-[var(--color-ink-900)]">Interim → final reversals</h2>
-        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)]">
+        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
           Every scenario in the register that was actually raised at an earlier stage (a genuine paragraph citation
           from that earlier order is on file, not just a note that no such order exists in this register), and then
           not confirmed in the final disposition, shown side by side with what changed between the two. {reversals.length}{" "}
@@ -57,7 +57,7 @@ export default async function ComparePage() {
 
       <section className="mt-10 border-t border-[var(--color-border)] pt-8">
         <h2 className="font-serif text-xl font-semibold text-[var(--color-ink-900)]">Compare any two findings</h2>
-        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)]">
+        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
           Useful, for example, to see why the 1.50 crore-share promoter allotment (SSSL-02) was confirmed in the final
           order while the 0.52 crore-share non-promoter allotment (SSSL-03) was not.
         </p>

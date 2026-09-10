@@ -24,7 +24,7 @@ export function FixedScenarioAnalyzer({ provisions, onSwitchToFreeForm }: { prov
     <div className="flex flex-col gap-6">
       <Card>
         <h2 className="font-serif text-lg font-semibold text-[var(--color-ink-900)]">What type of scenario are you examining?</h2>
-        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)]">
+        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
           Select the broad CFID investigation theme closest to what you are looking into. Each theme shows an expert-curated set of potentially
           relevant regulatory provisions to examine — a research shortcut, not a finding that a violation occurred and not a search of past cases.
         </p>
