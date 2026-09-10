@@ -51,6 +51,25 @@ describe("P2-1: Home no longer claims this tool itself 'applies' the Supreme Cou
   });
 });
 
+describe("P1-7: Admin's coverage-gap queue discloses that it cannot distinguish missing analysis from a deliberate zero-finding order", () => {
+  const src = read("src/app/(app)/admin/page.tsx");
+
+  it("carries an explicit caveat that not every listed row is necessarily missing analysis", () => {
+    expect(src).toMatch(/Not every row below is necessarily missing analysis/);
+  });
+
+  it("explains why: order_type cannot reliably predict the distinction", () => {
+    expect(src).toMatch(/order_type does not predict it/);
+  });
+
+  it("getStructuredFindingCoverageGaps itself still never filters/excludes rows by order.caseName text -- the checkpoint explicitly ruled out inferring the distinction from case-name string matching", () => {
+    const dataSrc = read("src/lib/data.ts");
+    const fnStart = dataSrc.indexOf("export async function getStructuredFindingCoverageGaps");
+    const fnBody = dataSrc.slice(fnStart, fnStart + 2000);
+    expect(fnBody).not.toMatch(/caseName\.(includes|match|toLowerCase\(\)\.includes)/);
+  });
+});
+
 describe("P2-1: Home's 'About this tool' card no longer certifies corpus completeness it cannot support", () => {
   const src = read("src/app/(app)/dashboard/page.tsx");
 

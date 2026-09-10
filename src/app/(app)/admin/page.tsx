@@ -133,6 +133,32 @@ export default async function AdminDashboardPage() {
             complete, yet none has a linked finding. Ordered by genuine priority tier, not insertion order or a
             mass-generated default; within a tier, most recently dated order first.
           </p>
+          {/* Independent-audit correction (P1-7): a live check found this
+              queue calls every zero-finding order a "gap" with no way to
+              tell a genuinely missing analysis apart from an order where no
+              substantive finding was ever expected (e.g. a pure procedural,
+              corrigendum, or revocation-type order). A cross-tab against
+              order_type was tried and rejected as an exclusion rule:
+              revocation_order (2/3 have findings), confirmatory_order
+              (11/12), and "other" (3/11) all mix genuine gaps with orders
+              that legitimately have none, so order_type alone cannot
+              reliably separate the two categories -- and inferring the
+              distinction from case_name text was explicitly ruled out
+              rather than risk a wrong silent exclusion. Per the checkpoint's
+              own instruction ("if existing schema cannot reliably
+              distinguish ... report that gap, do not infer from case
+              name"), this caveat is the honest fix: every row below still
+              needs a human admin's own judgment on whether an order
+              genuinely lacks analysis or genuinely lacks a finding to
+              capture, rather than being displayed as if the answer were
+              already known. */}
+          <p className="mt-1 text-xs italic text-[var(--color-ink-500)]">
+            Not every row below is necessarily missing analysis: some may be orders (procedural, corrigendum, or
+            revocation-type) for which no substantive scenario finding was ever expected. The current schema cannot
+            reliably distinguish that case from analysis genuinely still outstanding — order_type does not predict it
+            (see the independent-audit correction note in this file) — so each row still requires an admin&apos;s own
+            reading of the order before treating it as actionable work.
+          </p>
           <div className="mt-3 space-y-2">
             {coverageGaps.map((g) => (
               <Card key={g.order.id} className="text-sm">
