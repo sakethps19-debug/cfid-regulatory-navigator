@@ -1189,9 +1189,9 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   },
   {
     provisionId: "LODR-6-1A",
-    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    requireAllOfGroups: [["compliance_officer_vacancy_beyond_period"]],
     explanation:
-      "[Governance/procedural obligation] Regulation 6(1A) requires a Compliance Officer vacancy to be filled within three months, without an improper interim appointment. Same minimum fact as Regulation 6 above.",
+      "[Governance/procedural obligation] Regulation 6(1A) requires a Compliance Officer vacancy to be filled 'at the earliest and in any case not later than three months from the date of such vacancy', without an improper interim appointment. Checkpoint correction 3: requires an EXPLICIT exceedance-of-period fact — a vacancy that has merely arisen, with no stated duration or exceedance, does not by itself satisfy this time-bound duty; a bare 'position vacant' mention (Regulation 6/6(1)'s own predicate) is not sufficient on its own.",
   },
   {
     provisionId: "LODR-6-2-gen",
@@ -1290,52 +1290,83 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   // (main-board vs SME issue), never simultaneously applicable to the same
   // offer document, so no combined-count double-attribution concern.
   {
+    // Checkpoint correction 3, P0-1: ICDR-24-1 (Chapter II — "INITIAL
+    // PUBLIC OFFER ON MAIN BOARD") and ICDR-245-1 (Chapter IX — "INITIAL
+    // PUBLIC OFFER BY SMALL AND MEDIUM ENTERPRISES") are chapter-specific
+    // alternatives, verified directly against the current official ICDR
+    // text's own chapter headings. Checkpoint correction 2 gated both on
+    // the SAME two-group predicate with no chapter distinction at all,
+    // which let both become simultaneous Primary candidates on a bare,
+    // chapter-unspecified offer-document defect — a legal overclaim. Each
+    // now additionally requires its own chapter signal (main_board_issue /
+    // sme_issue); when the entered facts state neither, this third group
+    // is unsatisfied for both ids, so NEITHER clears its gate and both
+    // correctly fall to "requires_additional_fact" (assuming a factually-
+    // overlapping precedent still cites either) rather than either being
+    // shown as an established candidate.
     provisionId: "ICDR-24-1",
-    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
+    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"], ["main_board_issue"]],
     explanation:
-      "[Disclosure obligation] Regulation 24(1) requires the (main-board) draft offer document/offer document to contain all material disclosures that are true and adequate to enable an informed investment decision. Requires an offer-document/prospectus-specific fact connected to a stated non-disclosure or misstatement fact; a bare, compliant mention of an offer document with no stated defect does not satisfy it.",
+      "[Disclosure obligation] Regulation 24(1) (ICDR Chapter II, main-board issues) requires the draft offer document/offer document to contain all material disclosures that are true and adequate to enable an informed investment decision. Requires an offer-document/prospectus-specific fact connected to a stated non-disclosure or misstatement fact, AND a stated main-board-issue fact — a chapter-unspecified offer-document defect does not, on its own, distinguish this provision from its SME-chapter counterpart (ICDR-245-1) and is not sufficient.",
+    allowSentenceContinuity: true,
   },
   {
     provisionId: "ICDR-245-1",
-    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"]],
+    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"], ["sme_issue"]],
     explanation:
-      "[Disclosure obligation] Regulation 245(1) is the SME-chapter counterpart of Regulation 24(1) above (Chapter IX vs Chapter III) — same minimum fact: an offer-document/prospectus-specific fact connected to a stated non-disclosure or misstatement fact.",
+      "[Disclosure obligation] Regulation 245(1) is the SME-chapter counterpart of Regulation 24(1) above (ICDR Chapter IX vs Chapter II) — same minimum fact, but requires a stated SME-issue fact instead of a main-board one; a chapter-unspecified offer-document defect is not sufficient on its own.",
+    allowSentenceContinuity: true,
   },
 
   // ----- LODR Regulation 32(1)/(4)/(5) (issue-proceeds deviation
   // statement) — live-corpus split successors of the legacy bare "LODR-32"
   // id above -----
-  // Checkpoint correction 2, item 1: previously ungated. Independently
-  // verified against the current official LODR text (amended to July 14,
-  // 2026): 32(1) requires quarterly disclosure of deviation between
-  // disclosed issue objects and actual utilisation; 32(4) requires annual
-  // reporting of that deviation to the Audit Committee; 32(5) requires the
-  // annual statement to be certified by the statutory auditor. All three
-  // are CUMULATIVE reporting/monitoring sub-duties of the SAME underlying
-  // fact (issue-proceeds deviation/diversion), not chapter-specific
-  // alternatives — gated identically to their legacy bare-id predecessor
-  // above, including the same sentence-continuity allowance for the same
-  // reason (the issue-proceeds context fact and the diversion/misuse fact
+  // Checkpoint correction 3, P0-2: checkpoint correction 2 gated all three
+  // on the shared ISSUE_PROCEEDS_MISUSE bag (fund_diversion/circular_fund_
+  // movement/fund_routed_personal_account/financial_statement_misstatement)
+  // — an overclaim. The fact that proceeds were diverted/misutilised is NOT
+  // itself proof that any specific Regulation 32 REPORTING duty was
+  // breached: a company can divert funds while still filing a fully
+  // compliant quarterly/annual deviation statement, and conversely can
+  // fail a reporting duty (e.g. never filing the required quarterly "nil
+  // deviation" statement) with no diversion at all — verified directly
+  // against the current official LODR text, whose own Regulation 32(1)
+  // requires the quarterly statement regardless of whether a deviation
+  // exists ("indicating deviations, if any"). Each sub-regulation is also
+  // independently verified to be textually DISTINCT from the others —
+  // correcting a further checkpoint-2 mischaracterization: 32(4) is the
+  // listed entity's own annual-report DIRECTORS' REPORT explanation of the
+  // variation, with no Audit Committee-involvement text of its own (the
+  // real Audit-Committee-review sub-duty is 32(3), not separately indexed
+  // as its own id in this corpus); only 32(5) itself combines auditor
+  // certification with Audit Committee placement, per its own single
+  // sentence. Each of the three now requires its OWN specific reporting-
+  // failure concept (never the shared diversion/misuse bag, and never each
+  // other's concept), so a bare diversion fact alone no longer promotes
+  // any of the three to Primary — it correctly leaves them requiring the
+  // specific missing reporting fact. allowSentenceContinuity retained
+  // (same rationale as the legacy bare-id predecessor above: the
+  // issue-proceeds context fact and the specific reporting-failure fact
   // are routinely stated in adjacent sentences).
   {
     provisionId: "LODR-32-1",
-    requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
+    requireAllOfGroups: [["rights_issue"], ["quarterly_deviation_disclosure_failure"]],
     explanation:
-      "[Accounting/reporting obligation] Regulation 32(1) requires quarterly disclosure of deviation between the disclosed objects of an issue and the actual utilisation of proceeds. Requires an issue-proceeds-specific fact connected to a stated diversion or misstatement fact; a bare, compliant mention of issue proceeds with no stated misuse does not satisfy it.",
+      "[Accounting/reporting obligation] Regulation 32(1) requires the listed entity to submit a quarterly statement to the stock exchange indicating deviations, if any, in proceeds utilisation and category-wise variation — required every quarter regardless of whether a deviation actually exists. Requires an issue-proceeds-specific fact connected to a stated failure to file/disclose that quarterly statement; a bare diversion/misuse fact, without a stated reporting failure, does not satisfy it.",
     allowSentenceContinuity: true,
   },
   {
     provisionId: "LODR-32-4",
-    requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
+    requireAllOfGroups: [["rights_issue"], ["annual_variation_explanation_failure"]],
     explanation:
-      "[Accounting/reporting obligation] Regulation 32(4) requires the annual deviation statement to be placed before the Audit Committee for review. Same minimum fact as Regulation 32(1) above.",
+      "[Accounting/reporting obligation] Regulation 32(4) requires the listed entity to furnish an explanation for the variation specified in sub-regulation (1) in the directors' report in the Annual Report — its own text has no Audit Committee-involvement component. Requires an issue-proceeds-specific fact connected to a stated failure to furnish that explanation; a bare diversion/misuse fact, or a stated failure of a DIFFERENT Regulation 32 sub-duty (the quarterly statement or the auditor-certified annual statement), does not satisfy it.",
     allowSentenceContinuity: true,
   },
   {
     provisionId: "LODR-32-5",
-    requireAllOfGroups: [["rights_issue"], ISSUE_PROCEEDS_MISUSE],
+    requireAllOfGroups: [["rights_issue"], ["deviation_statement_auditor_certification_failure"]],
     explanation:
-      "[Accounting/reporting obligation] Regulation 32(5) requires the annual deviation statement to be certified by the statutory auditor. Same minimum fact as Regulation 32(1) above.",
+      "[Accounting/reporting obligation] Regulation 32(5) requires the listed entity to prepare an annual statement of funds utilised for purposes OTHER than those stated in the offer document, certified by the statutory auditors, and place it before the Audit Committee. Requires an issue-proceeds-specific fact connected to a stated failure of that certification/placement duty; a bare diversion/misuse fact, or a stated failure of a DIFFERENT Regulation 32 sub-duty, does not satisfy it.",
     allowSentenceContinuity: true,
   },
 

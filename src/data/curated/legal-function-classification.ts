@@ -144,16 +144,29 @@ export const LEGAL_FUNCTION_BY_PROVISION: Record<string, LegalFunctionCategory> 
   // verified against the current official SEBI LODR Regulations, 2015 text
   // (amended to July 14, 2026; /tmp/lodr_2026_full.txt, Regulation 32 —
   // "Statement of deviation(s) or variation(s)"), read directly: 32(1)
-  // requires quarterly disclosure of deviation between disclosed issue
-  // objects and actual utilisation of proceeds; 32(4) requires annual
-  // reporting of deviation to the Audit Committee for its review; 32(5)
-  // requires the annual statement to be certified by the statutory
-  // auditor. All three are reporting/monitoring sub-duties of the SAME
-  // underlying obligation (accurate accounting for how issue proceeds were
-  // actually applied) — cumulative sub-clauses of one Regulation, not
-  // chapter-specific alternatives the way ICDR-24-1/245-1 are — so all
-  // three genuinely share accounting_reporting_requirement, consistent with
-  // their own sibling LODR-32 (bare/legacy id) above.
+  // requires a quarterly statement to the stock exchange of deviation
+  // between disclosed issue objects and actual utilisation of proceeds
+  // (required every quarter, "if any" deviation exists); 32(4) requires
+  // the listed entity to furnish an explanation for that variation in the
+  // directors' report in the Annual Report; 32(5) requires an annual
+  // statement of funds used for OTHER purposes, certified by the
+  // statutory auditors, placed before the Audit Committee. Checkpoint
+  // correction 3 corrected a mischaracterization of 32(4) in this
+  // comment's earlier revision (it has no Audit Committee-involvement
+  // text of its own — that is 32(3), not separately indexed in this
+  // corpus; 32(5) is the sub-regulation that combines auditor
+  // certification with Audit Committee placement). All three remain
+  // reporting/monitoring sub-duties of the SAME underlying obligation
+  // (accurate accounting for how issue proceeds were actually applied) —
+  // cumulative sub-clauses of one Regulation, not chapter-specific
+  // alternatives the way ICDR-24-1/245-1 are — so all three genuinely
+  // share accounting_reporting_requirement, consistent with their own
+  // sibling LODR-32 (bare/legacy id) above. Checkpoint correction 3, P0-2:
+  // "cumulative" describes how these three duties relate to EACH OTHER
+  // (none supersedes or subsumes another), never a licence to gate all
+  // three on one shared factual predicate — each still independently
+  // requires its OWN sub-duty-specific retrieval prerequisite; see
+  // provision-retrieval-rules.ts.
   "LODR-32-1": "accounting_reporting_requirement",
   "LODR-32-4": "accounting_reporting_requirement",
   "LODR-32-5": "accounting_reporting_requirement",

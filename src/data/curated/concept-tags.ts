@@ -760,6 +760,70 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // context, and substring matching does not otherwise bridge the two.
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "circular movement of money", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", subjectAgnostic: true, synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
+  // Checkpoint correction 3, P0-2: three new concepts isolating each of
+  // Regulation 32's distinct REPORTING sub-duties — verified directly
+  // against the current official LODR text (Regulation 32, "Statement of
+  // deviation(s) or variation(s)"). Deliberately independent of
+  // fund_diversion/circular_fund_movement/etc. (the underlying
+  // utilisation/deviation FACT): a company can divert or misuse proceeds
+  // while still accurately filing every one of these three statements, and
+  // conversely can fail one of these reporting duties without any
+  // independently-established diversion. Each concept gates exactly one
+  // LODR-32 sub-regulation; none is satisfied by a bare diversion/misuse
+  // fact alone.
+  //   - 32(1): quarterly statement to the stock exchange, indicating
+  //     deviations "if any" in proceeds utilisation and category-wise
+  //     variation — required EVERY quarter regardless of whether a
+  //     deviation actually exists (a "nil" statement is still a filing).
+  {
+    id: "quarterly_deviation_disclosure_failure",
+    kind: "conduct",
+    label: "Quarterly deviation/variation statement not filed (Reg 32(1))",
+    synonyms: [
+      "quarterly statement of deviation was not disclosed",
+      "quarterly deviation statement was not filed",
+      "did not submit the quarterly statement of deviation",
+      "failed to submit the quarterly statement",
+      "quarterly variation statement was not disclosed",
+      "did not disclose the quarterly deviation",
+      "quarterly statement was not submitted to the stock exchange",
+    ],
+  },
+  //   - 32(4): the listed entity's own annual-report DIRECTORS' REPORT
+  //     explanation of the variation specified in sub-regulation (1) — an
+  //     annual-report disclosure duty, verified to have NO Audit
+  //     Committee-involvement component of its own text (unlike 32(3) and
+  //     32(5), neither of which is separately indexed as its own id in
+  //     this corpus).
+  {
+    id: "annual_variation_explanation_failure",
+    kind: "conduct",
+    label: "Annual report did not explain the proceeds variation (Reg 32(4))",
+    synonyms: [
+      "did not furnish an explanation for the variation",
+      "failed to explain the variation in the directors' report",
+      "annual report did not explain the variation",
+      "no explanation for the variation was furnished",
+      "variation was not explained in the directors' report",
+    ],
+  },
+  //   - 32(5): the annual statement of funds utilised for purposes OTHER
+  //     than those stated in the offer document, certified by the
+  //     statutory auditor and placed before the Audit Committee — one
+  //     consolidated duty combining auditor certification and AC
+  //     placement, per the sub-regulation's own single sentence.
+  {
+    id: "deviation_statement_auditor_certification_failure",
+    kind: "conduct",
+    label: "Annual deviation statement not certified/placed before Audit Committee (Reg 32(5))",
+    synonyms: [
+      "annual statement of deviation was not certified by the statutory auditor",
+      "annual deviation statement was not certified",
+      "deviation statement was not certified by the auditor",
+      "failed to obtain auditor certification of the deviation statement",
+      "annual statement was not placed before the audit committee",
+    ],
+  },
   // "without paying any/genuine consideration" variants added (P0
   // provision-precision remediation, 2026): natural officer phrasing for
   // the same no-genuine-consideration fact the existing "shares without
@@ -818,6 +882,27 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // reporting, must not spuriously pull in diversion, annual-report, or
   // RPT scenarios, and vice versa.
   { id: "offer_document_prospectus", kind: "transaction", label: "Offer document / prospectus", synonyms: ["prospectus", "drhp", "rhp", "red herring prospectus", "draft red herring prospectus", "offer document", "letter of offer", "draft offer document"] },
+  // Checkpoint correction 3, P0-1: ICDR-24-1 (Chapter II, main board) and
+  // ICDR-245-1 (Chapter IX, SME) are chapter-specific alternatives —
+  // verified directly against the current official ICDR text's own
+  // chapter headings ("CHAPTER II - INITIAL PUBLIC OFFER ON MAIN BOARD" at
+  // Regulation 24; "CHAPTER IX - INITIAL PUBLIC OFFER BY SMALL AND MEDIUM
+  // ENTERPRISES" at Regulation 245). Neither provision's own retrieval
+  // gate can require the other chapter's own signal; these two concepts
+  // let the gate distinguish which chapter, if either, the entered facts
+  // actually establish, rather than defaulting either way.
+  {
+    id: "main_board_issue",
+    kind: "transaction",
+    label: "Main-board issue (ICDR Chapter II)",
+    synonyms: ["main board", "main-board", "mainboard", "main board ipo", "main-board ipo", "ipo on the main board", "main board initial public offer", "listed on the main board"],
+  },
+  {
+    id: "sme_issue",
+    kind: "transaction",
+    label: "SME issue (ICDR Chapter IX)",
+    synonyms: ["sme ipo", "sme platform", "sme exchange", "small and medium enterprises", "small and medium enterprise", "ipo by small and medium enterprises", "sme segment", "sme initial public offer"],
+  },
   { id: "issue_proceeds_deviation_reporting", kind: "conduct", label: "Issue-proceeds utilisation / deviation reporting", synonyms: ["statement of deviation", "deviation in use of proceeds", "utilisation of issue proceeds", "utilization of issue proceeds", "variation in utilisation of proceeds", "issue proceeds monitoring report"] },
   // Checkpoint correction 2, item 2 (Regulation 18 family-level gate
   // leakage): this concept previously bundled TWO legally distinct
@@ -831,7 +916,32 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // concept below, which gates Regulation 18(1)(b) alone. "Existed only on
   // paper"/"no minutes"/"no agendas" stay here: those describe meetings
   // that were not genuinely held/conducted, not a composition defect.
-  { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee meetings not held/conducted", synonyms: ["audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "ac meetings not conducted", "audit committee did not meet", "no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "existed only on paper", "audit committee only on paper"] },
+  // Checkpoint correction 3, P1: "no meeting minutes"/"minutes could not be
+  // produced"/"no agendas"/"agendas could not be produced" were removed
+  // from this concept's synonym list — verified against the current
+  // official LODR Regulation 18(2)(a) text (meeting-frequency requirement:
+  // at least four meetings a year, no more than 120 days between two
+  // consecutive meetings): an absence of documentary evidence (minutes,
+  // agendas) does not itself establish that a meeting was never held — it
+  // is an evidentiary indicator, not the substantive fact Regulation
+  // 18(2)(a) requires. See the new audit_committee_meeting_documentation_gap
+  // concept below, deliberately wired to no provision's retrieval gate, so
+  // a documentation-only fact correctly lands the provision in
+  // "additional fact required" rather than being treated as an established
+  // breach of the meeting-frequency requirement.
+  { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee meetings not held/conducted", synonyms: ["audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "ac meetings not conducted", "audit committee did not meet", "existed only on paper", "audit committee only on paper"] },
+  // Checkpoint correction 3, P1: deliberately NOT included in any
+  // provision's requireAllOfGroups — an evidentiary indicator (absence of
+  // minutes/agendas), never itself the substantive "meeting not held"
+  // fact Regulation 18(2)(a) requires. Detected and shown to the officer
+  // for transparency, but cannot on its own promote LODR-18-2 to a
+  // candidate breach.
+  {
+    id: "audit_committee_meeting_documentation_gap",
+    kind: "evidence",
+    label: "Audit Committee meeting documentation gap (evidentiary only)",
+    synonyms: ["no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "minutes were not available", "no record of the meeting", "documentary evidence of the meeting could not be produced"],
+  },
   // Checkpoint correction 2, item 2: new concept split out of
   // audit_committee_deficiency above — the composition/constitution
   // predicate (independent-director proportion under Regulation 18(1)(b)),
@@ -936,6 +1046,37 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "compliance officer did not perform his duties",
       "compliance officer did not perform her duties",
       "compliance officer failed to discharge the duties",
+    ],
+  },
+  // Checkpoint correction 3, P0-3: new concept isolating the Regulation
+  // 6(1A) TIME-CONDITION predicate — verified directly against the current
+  // official LODR text: "[a]ny vacancy in the office of the Compliance
+  // Officer shall be filled ... at the earliest and in any case not later
+  // than three months from the date of such vacancy." A vacancy that has
+  // just arisen does not, without more, breach this time-bound duty; only
+  // an EXPLICIT exceedance signal does. Deliberately excludes the bare
+  // "vacant"/"vacancy" phrasing already on compliance_officer_deficiency
+  // (which continues to gate the general appointment duty, Regulation
+  // 6/6(1), unaffected by this addition) — this concept gates ONLY
+  // LODR-6-1A, and only when the facts state the vacancy exceeded the
+  // permitted window, not merely that one exists.
+  {
+    id: "compliance_officer_vacancy_beyond_period",
+    kind: "conduct",
+    label: "Compliance Officer vacancy beyond the permitted period",
+    synonyms: [
+      "beyond the permitted period",
+      "beyond the statutory period",
+      "beyond the prescribed period",
+      "beyond three months",
+      "vacancy remained unfilled beyond",
+      "remained vacant for an extended period",
+      "for an extended period without a proper appointment",
+      "for a prolonged period",
+      "exceeded the permitted period",
+      "did not fill the vacancy within three months",
+      "was not filled within three months",
+      "unfilled beyond the statutory period",
     ],
   },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },

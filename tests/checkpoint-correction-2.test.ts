@@ -287,7 +287,15 @@ describe("Checkpoint correction 2, item 1/6(C): capital-raising provisions (offe
     conductFinding("SYN-MISSELL-FIND", misSelling.id, "mis_selling_of_securities"),
   ];
 
-  it("an offer-document non-disclosure fact retrieves ICDR-24-1/245-1 (this corpus's vocabulary does not distinguish main-board vs SME chapter textually — both fire together, a known, honestly-reported limitation), never the issue-proceeds or PFUTP provisions", () => {
+  // Checkpoint correction 3, P0-1: the two tests below were rewritten —
+  // checkpoint correction 2 had gated ICDR-24-1/245-1 identically with no
+  // chapter distinction, which let this exact chapter-unspecified fact
+  // wrongly mark BOTH as simultaneous Primary candidates (main-board and
+  // SME are chapter-specific alternatives that can never both genuinely
+  // apply to the same offer document). See tests/checkpoint-correction-3.test.ts
+  // for the full chapter-applicability adversarial suite (main-board only,
+  // SME only, unspecified, compliant).
+  it("a chapter-UNSPECIFIED offer-document non-disclosure fact promotes NEITHER ICDR-24-1 nor ICDR-245-1 to Primary — the entered facts do not establish which chapter applies", () => {
     const result = analyzeScenario(
       { freeText: "The prospectus did not disclose material facts about the promoter's litigation history." },
       findings,
@@ -295,10 +303,17 @@ describe("Checkpoint correction 2, item 1/6(C): capital-raising provisions (offe
       []
     );
     const ids = primaryIds(result).sort();
-    expect(ids).toEqual(["ICDR-24-1", "ICDR-245-1"]);
+    expect(ids).toEqual([]);
   });
 
-  it("an issue-proceeds diversion fact retrieves LODR-32-1/4/5 (cumulative sub-duties of the same underlying fact), never the offer-document or PFUTP provisions", () => {
+  // Checkpoint correction 3, P0-2: rewritten — checkpoint correction 2 had
+  // gated all three of LODR-32-1/4/5 on the shared ISSUE_PROCEEDS_MISUSE
+  // bag (fund_diversion et al.), so a bare diversion fact wrongly promoted
+  // all three REPORTING sub-duties to Primary even though nothing in the
+  // entered facts stated any of them was actually breached. See
+  // tests/checkpoint-correction-3.test.ts for the full per-sub-duty
+  // adversarial suite.
+  it("a BARE issue-proceeds diversion fact (no stated reporting failure) promotes NONE of LODR-32-1/4/5 to Primary — diversion alone does not prove any specific Regulation 32 reporting duty was breached", () => {
     const result = analyzeScenario(
       { freeText: "A listed company raised proceeds through a rights issue. The proceeds were diverted to promoter-controlled entities instead of being used for the disclosed objects." },
       findings,
@@ -306,7 +321,7 @@ describe("Checkpoint correction 2, item 1/6(C): capital-raising provisions (offe
       []
     );
     const ids = primaryIds(result).sort();
-    expect(ids).toEqual(["LODR-32-1", "LODR-32-4", "LODR-32-5"]);
+    expect(ids).toEqual([]);
   });
 
   it("a stolen/counterfeit-securities fact retrieves PFUTP-4-2-h only, never mis-selling or the offer-document/issue-proceeds provisions", () => {
