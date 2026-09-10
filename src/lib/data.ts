@@ -317,7 +317,7 @@ export async function getProvisions(): Promise<LegalProvision[]> {
       treatmentInPilotOrders:
         findingsCount > 0
           ? `Cited in ${findingsCount} scenario finding${findingsCount === 1 ? "" : "s"} across ${casesConsidered.length} order${casesConsidered.length === 1 ? "" : "s"}: ${casesConsidered.join(", ")}.`
-          : "Not yet cited in any deep-analyzed scenario finding.",
+          : "Not yet cited in any scenario finding in the structured library.",
       lawLibraryNote: row.law_library_note,
     };
   });

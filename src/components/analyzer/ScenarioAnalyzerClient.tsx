@@ -21,8 +21,6 @@ import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengthDisplay";
-import { legalReviewLabel } from "@/lib/publicationLifecycle";
-import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
 import { formatDate, formatDateTime } from "@/lib/formatDate";
 import { buildIndicativeRegulatoryAssessment } from "@/lib/indicativeAssessment";
@@ -469,7 +467,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(u.finding.findingStatus)} · ${legalReviewLabel(u.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(u.finding)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(u.finding.findingStatus)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
         );
       }
     } else {
@@ -478,7 +476,7 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.effectiveStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.effectiveStatus)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.effectiveStatus !== s.finding.findingStatus) {
         lines.push(
@@ -496,7 +494,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Contrary precedent(s):");
       for (const c of pr.contraryPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
         for (const item of c.finding.ingredientsNotEstablished) {
           lines.push(`      Legal ingredient not established (this precedent's own outcome): ${item}`);
@@ -518,7 +516,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push(`  ${cp.provision.instrument} · ${cp.provision.provisionNumber}: ${cp.note}`);
       for (const c of cp.contraryPrecedents) {
         lines.push(
-          `    - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`
+          `    - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`
         );
         for (const item of c.finding.ingredientsNotEstablished) {
           lines.push(`        Legal ingredient not established (this precedent's own outcome): ${item}`);
@@ -528,12 +526,12 @@ export function resultToText(result: AnalysisResult): string {
   }
   if (result.gateBlockedProvisionResults.length > 0) {
     lines.push("----------------------------------------");
-    lines.push("Provisions NOT shown as potentially relevant (retrieval prerequisite not met on the facts entered):");
+    lines.push("Additional Fact Required (retrieval prerequisite not yet met on the facts entered — not a Primary Candidate, but not ruled out either):");
     for (const gb of result.gateBlockedProvisionResults) {
       lines.push(`  ${gb.provision.instrument} · ${gb.provision.provisionNumber}: ${gb.note}`);
       for (const rp of gb.relatedFactualPrecedents) {
         lines.push(
-          `    - Related CFID factual precedent: [${findingStatusLabel(rp.finding.findingStatus)} · ${legalReviewLabel(rp.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(rp.finding)}] ${rp.finding.recordId} · ${rp.finding.scenarioTitle} · ${rp.finding.officialSourceUrl}`
+          `    - Related CFID factual precedent: [${findingStatusLabel(rp.finding.findingStatus)}] ${rp.finding.recordId} · ${rp.finding.scenarioTitle} · ${rp.finding.officialSourceUrl}`
         );
       }
     }
@@ -555,7 +553,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push(`  ${result.contraryPrecedentSearchNote}`);
     } else {
       for (const c of result.globalContraryPrecedents) {
-        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
         if (c.materialRelevanceNote) lines.push(`      ${c.materialRelevanceNote}`);
       }
     }
@@ -567,28 +565,13 @@ export function resultToText(result: AnalysisResult): string {
     );
     for (const f of result.fullTextSupplementalFindings) {
       lines.push(
-        `  - [${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.recordId} · ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"}) · ${f.officialSourceUrl}`
+        `  - [${findingStatusLabel(f.findingStatus)}] ${f.recordId} · ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"}) · ${f.officialSourceUrl}`
       );
     }
   }
   lines.push("");
-  const allReferencedFindings = [...new Map(
-    [
-      ...[
-        ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
-        ...result.globalContraryPrecedents,
-      ].map((p) => p.finding),
-      ...result.fullTextSupplementalFindings,
-    ].map((f) => [f.recordId, f])
-  ).values()];
-  const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
   lines.push(
-    "This result is based on the currently structured portion of the indexed case register; indexed orders that have not yet been deeply analysed are not represented here."
-  );
-  lines.push(
-    legallyReviewedCount === 0
-      ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-      : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`
+    "This result is based on the currently structured portion of the indexed case register; orders not yet included in that structured library are not represented here."
   );
   lines.push(
     "This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
@@ -658,7 +641,7 @@ export function resultToResearchBrief(result: AnalysisResult): string {
   for (const gb of result.gateBlockedProvisionResults) {
     if (!gb.gateExplanation) continue;
     anyMissing = true;
-    lines.push(`- ${gb.provision.instrument} ${gb.provision.provisionNumber} is not yet shown as potentially relevant: ${gb.gateExplanation}`);
+    lines.push(`- ${gb.provision.instrument} ${gb.provision.provisionNumber} is Additional Fact Required, not yet a Primary Candidate: ${gb.gateExplanation}`);
   }
   if (!anyMissing) lines.push("None recorded for the provisions and precedents cited above.");
   lines.push("");
@@ -754,26 +737,17 @@ function csvRow(values: string[]): string {
  * text export carries (those don't collapse into flat rows cleanly);
  * "Export as text" or "Print" remain the complete record.
  *
- * Carries the same research-only / not-a-finding-of-guilt disclaimer and
- * legal-review status as the text export, as leading single-column rows
- * before the header row — a CSV is routinely forwarded, pasted into a
- * spreadsheet, or viewed on its own, detached from the page it came from,
- * so it must not read as a bare violation table with no caveat attached. */
+ * Carries the same research-only / not-a-finding-of-guilt disclaimer as the
+ * text export, as a leading single-column row before the header row — a
+ * CSV is routinely forwarded, pasted into a spreadsheet, or viewed on its
+ * own, detached from the page it came from, so it must not read as a bare
+ * violation table with no caveat attached. */
 export function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
   rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
   rows.push(csvRow([`Generated: ${formatDateTime(new Date())}`]));
   const sorted = [...result.provisionResults].sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
-  );
-  const referencedFindings = [...new Map(sorted.flatMap((pr) => pr.supportingPrecedents).map((s) => [s.finding.recordId, s.finding])).values()];
-  const legallyReviewedCount = referencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
-  rows.push(
-    csvRow([
-      legallyReviewedCount === 0
-        ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-        : `${legallyReviewedCount} of ${referencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`,
-    ])
   );
   rows.push(
     csvRow(["This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."])
@@ -787,10 +761,8 @@ export function resultToCsv(result: AnalysisResult): string {
       "Subject",
       "Factual overlap (not a legal-confidence rating)",
       "Supporting precedent count",
-      "Supporting precedents human-legally-reviewed",
       "Matched factual ingredients",
       "Supporting precedent record IDs",
-      "Supporting precedents record verification maturity (per precedent)",
       "Supporting precedents support category (per precedent)",
       "Missing facts / evidence (per cited precedent, never a universal requirement)",
       "Row note (set for 'Warranting caution', 'Not shown - prerequisite not met' and 'Full-text match only' rows)",
@@ -798,7 +770,6 @@ export function resultToCsv(result: AnalysisResult): string {
     ])
   );
   for (const pr of sorted) {
-    const reviewedCount = pr.supportingPrecedents.filter((s) => s.finding.humanLegalReviewCompleted).length;
     rows.push(
       csvRow([
         "Potentially relevant",
@@ -807,10 +778,8 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.provision.subject ?? "",
         matchStrengthLabel(pr.confidence),
         String(pr.supportingPrecedents.length),
-        `${reviewedCount} of ${pr.supportingPrecedents.length}`,
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
-        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
         pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${supportCategory(s.effectiveStatus)}`).join("; "),
         pr.missingFacts.map((group) => `${group.recordId}: ${group.gaps.join(" / ")}`).join("; "),
         "",
@@ -827,8 +796,6 @@ export function resultToCsv(result: AnalysisResult): string {
         cp.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -847,8 +814,6 @@ export function resultToCsv(result: AnalysisResult): string {
         gb.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -867,8 +832,6 @@ export function resultToCsv(result: AnalysisResult): string {
         gp.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -887,13 +850,11 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         "",
         "0",
-        "0 of 0",
         "",
         "",
         "",
         "",
-        "",
-        `[${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"})`,
+        `[${findingStatusLabel(f.findingStatus)}] ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"})`,
         f.recordId,
       ])
     );
@@ -1238,16 +1199,6 @@ export function ScenarioAnalyzerClient() {
         const citedProvisionSentences = buildProvisionCitationSentences(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
-        // Every finding referenced anywhere in this result, deduplicated —
-        // used only to check whether ANY of them has actually been legally
-        // reviewed, never to claim the result as a whole "is reviewed".
-        const allReferencedFindings = [...new Map(
-          [
-            ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
-            ...result.globalContraryPrecedents,
-          ].map((p) => [p.finding.recordId, p.finding])
-        ).values()];
-        const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
         // Evidence is no longer collected as Analyzer input (see the
         // Evidence Indicator removal) — a scenario must never read as
         // "incomplete" merely because evidence wasn't stated, so "evidence"
@@ -1276,11 +1227,10 @@ export function ScenarioAnalyzerClient() {
 
           {result.hasResults && (
             <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
-              This result is based on the currently structured portion of the indexed case register; indexed orders
-              that have not yet been deeply analysed are not represented here.{" "}
-              {legallyReviewedCount === 0
-                ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-                : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`}
+              This result is based on the currently structured portion of the indexed case register; orders not yet
+              included in that structured library are not represented here. This tool does not certify that any
+              result has been independently checked against the underlying order — always verify every citation
+              against the official source before relying on it.
             </div>
           )}
 

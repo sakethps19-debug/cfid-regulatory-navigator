@@ -727,13 +727,20 @@ export function analyzeScenario(
       continue;
     }
 
+    // Post-checkpoint-4 UI/terminology hardening: a note attached to a
+    // requires_additional_fact result must never say the provision is "not
+    // potentially relevant" — it IS being shown to the officer, precisely
+    // because it is potentially relevant but not yet a Primary Candidate.
+    // Every branch below states what is engaged, what is missing, and that
+    // the tier is Additional Fact Required — never "violation established",
+    // never "not relevant".
     let note: string;
     if (reason === "factual_prerequisite") {
-      note = `${countPhrase}, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
+      note = `${countPhrase}. The entered facts engage this provision's subject matter, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} An additional factual prerequisite must be established before this provision can be treated as a Primary Candidate; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
     } else if (reason === "actor_incompatibility") {
-      note = `${countPhrase}, but ${actorApplicability.note} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if a compatible actor turns out to be involved.`;
+      note = `${countPhrase}, but ${actorApplicability.note} This provision remains Additional Fact Required, not a Primary Candidate, until a compatible actor is stated — the underlying order(s) should still be examined if a compatible actor turns out to be involved.`;
     } else {
-      note = `${countPhrase}, but neither the facts this provision's own text requires (${rule?.explanation ?? ""}) nor a compatible actor (${actorApplicability.note}) are stated. This provision is not shown as potentially relevant on the present facts.`;
+      note = `${countPhrase}, but neither the facts this provision's own text requires (${rule?.explanation ?? ""}) nor a compatible actor (${actorApplicability.note}) are stated. This provision remains Additional Fact Required, not a Primary Candidate, until both are established.`;
     }
     gateBlockedProvisionResults.push({
       provision,
@@ -784,7 +791,7 @@ export function analyzeScenario(
       provision,
       relatedFactualPrecedents: [],
       gateExplanation: rule.explanation,
-      note: `${missingFactText} No structured finding in the indexed precedent library currently scores as a close enough factual match to cite as a supporting precedent, but the facts entered engage a statutory route ${provision.instrument} ${provision.provisionNumber} itself expressly contemplates — this provision is not shown as potentially relevant on the present facts.`,
+      note: `${missingFactText} No structured finding in the indexed precedent library currently scores as a close enough factual match to cite as a supporting precedent. The entered facts engage a statutory route ${provision.instrument} ${provision.provisionNumber} itself expressly contemplates, but an additional factual prerequisite must be established before this provision can be treated as a Primary Candidate.`,
       legalFunction: legalFunctionForProvision(provision.id),
       candidateTier: "requires_additional_fact",
       blockReason: "factual_prerequisite",

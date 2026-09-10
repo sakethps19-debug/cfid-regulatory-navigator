@@ -18,7 +18,7 @@ export default async function LibraryPage() {
         description="Official sources used in this pilot. Only the official SEBI website (orders, Acts, regulations, circulars), the official MCA website, official sources for notified accounting standards, and sources expressly referred to within the SEBI orders themselves are used, never law-firm articles, blogs, news reports, commercial databases, or unofficial reproductions."
       />
 
-      <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Deep-analyzed orders ({orders.length})</h2>
+      <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Orders in the structured precedent library ({orders.length})</h2>
       <p className="mb-3 text-sm text-[var(--color-ink-700)]">
         These orders have been broken down into individual scenario findings with paragraph references. See{" "}
         <Link href="/awaiting-analysis" className="text-[var(--color-gold-700)] hover:underline">

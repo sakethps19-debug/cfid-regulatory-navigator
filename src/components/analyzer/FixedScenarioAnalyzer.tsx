@@ -12,10 +12,9 @@ import {
   RELEVANT_RECORD_BUCKET_LABELS,
   type RelevantScenarioRecord,
 } from "@/lib/fixedScenarioRelevantRecords";
-import { legalReviewLabel } from "@/lib/publicationLifecycle";
 import type { LegalProvision, Order, ScenarioFinding } from "@/types/domain";
 
-/** Part A of the redesigned Scenario Analyzer — a small, expert-curated set
+/** Part A of the redesigned Scenario Analyzer — a small, curated set
  * of broad CFID investigation themes. An officer picks the theme that
  * matches what they are investigating and sees a research-first result:
  * the scenario, the substantive regulatory provisions potentially relevant
@@ -45,7 +44,7 @@ export function FixedScenarioAnalyzer({
       <Card>
         <h2 className="font-serif text-lg font-semibold text-[var(--color-ink-900)]">What type of scenario are you examining?</h2>
         <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
-          Select the broad CFID investigation theme closest to what you are looking into. Each theme shows an expert-curated set of potentially
+          Select the broad CFID investigation theme closest to what you are looking into. Each theme shows a curated set of potentially
           relevant regulatory provisions to examine — a research shortcut, not a finding that a violation occurred and not a search of past cases.
         </p>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -249,11 +248,12 @@ function RelevantOrdersAndScenarios({ groups }: { groups: { bucket: RelevantScen
                           </p>
                         </div>
                       )}
-                      <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                        {r.finding.interimParagraphReferences && <>Interim paras: {r.finding.interimParagraphReferences}. </>}
-                        {r.finding.finalParagraphReferences && <>Final paras: {r.finding.finalParagraphReferences}. </>}
-                        {legalReviewLabel(r.finding.humanLegalReviewCompleted)}
-                      </p>
+                      {(r.finding.interimParagraphReferences || r.finding.finalParagraphReferences) && (
+                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+                          {r.finding.interimParagraphReferences && <>Interim paras: {r.finding.interimParagraphReferences}. </>}
+                          {r.finding.finalParagraphReferences && <>Final paras: {r.finding.finalParagraphReferences}. </>}
+                        </p>
+                      )}
                       <div className="mt-1 text-xs text-[var(--color-ink-500)]">
                         Source recorded for this finding: <SourceLink href={r.finding.officialSourceUrl} />
                       </div>
