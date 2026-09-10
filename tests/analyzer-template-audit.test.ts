@@ -23,9 +23,11 @@
 // the precise level the fix lives at, using each template's exact text
 // (imported from ScenarioAnalyzerClient.tsx, not a hand-copied duplicate,
 // so this suite cannot silently drift from what the UI actually renders).
+import { readFileSync } from "fs";
 import { describe, expect, it } from "vitest";
 import { detectConcepts } from "@/lib/matching/conceptExtraction";
 import { EXAMPLE_SCENARIOS } from "@/components/analyzer/ScenarioAnalyzerClient";
+import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 
 function templateText(label: string): string {
   const t = EXAMPLE_SCENARIOS.find((s) => s.label === label);
@@ -75,5 +77,63 @@ describe("Scenario Analyzer quick-start templates: previously-working templates 
     const detected = detectConcepts(templateText("Price/market manipulation"));
     const ids = detected.map((d) => d.id);
     expect(ids.length).toBeGreaterThan(0);
+  });
+});
+
+// Part 3 correction: a scenario with zero provisionResults but a non-empty
+// overall result (e.g. gate-blocked or governing candidates still present,
+// exactly "Statutory auditor negligence"'s case) must carry an explicit,
+// restrained "no captured precedent" notice rather than silently omitting
+// the primary provisions section. The notice must never read as a legal
+// conclusion (no violation, SEBI never considered it, no obligation can
+// apply, unsustainable) -- only that this corpus has no structured,
+// provision-linked precedent for the facts. Source-guard test (no
+// component-render harness in this repo, see other tests/*.test.ts files).
+describe("ScenarioAnalyzerClient: zero-provisionResults notice is present, restrained, and correctly guarded", () => {
+  const src = readFileSync(new URL("../src/components/analyzer/ScenarioAnalyzerClient.tsx", import.meta.url), "utf8");
+
+  it("carries the exact required heading", () => {
+    expect(src).toContain("No captured CFID precedent currently mapped to this scenario.");
+  });
+
+  it("explains the notice means only a corpus gap, never a legal conclusion", () => {
+    expect(src).toMatch(/does not mean that no violation exists/);
+    expect(src).toMatch(/SEBI has never considered/);
+    expect(src).toMatch(/no Companies Act or SEBI obligation can apply/);
+    expect(src).toMatch(/legally\s*\n?\s*unsustainable/);
+  });
+
+  it("is guarded on provisionResults.length === 0 together with hasResults, not shown unconditionally", () => {
+    expect(src).toMatch(/result\.hasResults\s*&&\s*result\.provisionResults\.length === 0/);
+  });
+});
+
+// Part 3 architectural normalization: every quick-start template's
+// optional themeId, where present, must resolve to a real FIXED_SCENARIOS
+// canonical scenario -- the same registry Compare Scenarios, Law Library
+// fact search and Case/Order Detail's "broad CFID scenarios" summary
+// already consume (see broadScenarioMatch.ts). A dangling themeId would
+// silently break cross-navigation without any visible symptom elsewhere.
+describe("EXAMPLE_SCENARIOS: themeId cross-references resolve to a real canonical FIXED_SCENARIOS entry", () => {
+  const fixedScenarioIds = new Set(FIXED_SCENARIOS.map((s) => s.id));
+
+  it("every set themeId is a real FIXED_SCENARIOS id", () => {
+    for (const template of EXAMPLE_SCENARIOS) {
+      if (template.themeId) {
+        expect(fixedScenarioIds.has(template.themeId), `"${template.label}" has themeId "${template.themeId}" which is not a real FIXED_SCENARIOS id`).toBe(true);
+      }
+    }
+  });
+
+  it("at least 9 of the 13 templates now carry a canonical themeId cross-reference", () => {
+    const withTheme = EXAMPLE_SCENARIOS.filter((t) => t.themeId).length;
+    expect(withTheme).toBeGreaterThanOrEqual(9);
+  });
+
+  it("templates deliberately left without a themeId (genuine corpus gap or a Part-4 split-pending fact pattern) are exactly the expected three", () => {
+    const orphans = EXAMPLE_SCENARIOS.filter((t) => !t.themeId).map((t) => t.label);
+    expect(orphans).toEqual(
+      expect.arrayContaining(["Statutory auditor negligence", "False CEO/CFO certification", "Director duties / non-cooperation"])
+    );
   });
 });

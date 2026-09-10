@@ -126,74 +126,113 @@ const COMPLETENESS_LABELS: Record<string, string> = {
 
 const TEMPLATE_GROUP_ORDER = ["Financial reporting", "Fund flows", "Governance & disclosure"] as const;
 
-// Exported so the template-audit regression suite (see
-// tests/analyzer-template-audit.test.ts) imports this exact array rather
-// than a hand-copied duplicate that could silently drift from what the UI
-// actually renders.
-export const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number] }[] = [
+// Part 3 architectural normalization: `themeId`, an optional cross-
+// reference to a FIXED_SCENARIOS canonical scenario id (fixed-scenarios.ts
+// — the SAME registry Fixed Scenario Analysis, Compare Scenarios, Law
+// Library fact search, and Case/Order Detail's "broad CFID scenarios"
+// summary already all consume, see broadScenarioMatch.ts). This does NOT
+// merge the two scoring models: a quick-start template's own text still
+// runs through the full deterministic free-text engine exactly as before,
+// and a FixedScenario's own provisionIds remain independently curated —
+// themeId only records "this illustrative example belongs to the same
+// broad investigation theme as [that canonical scenario]" for cross-
+// navigation and so the two taxonomies stop being two unrelated,
+// independently-authored English-language descriptions of what is often
+// the same real-world category. Left undefined where no genuine,
+// non-overbroad correspondence exists — never force-mapped merely to
+// avoid an empty field (see "Statutory auditor negligence", "False
+// CEO/CFO certification" and "Director duties / non-cooperation" below:
+// each is either a genuine corpus gap or a fact pattern Part 4 already
+// flags as needing to stay legally distinct from its nearest broader
+// theme, so mapping it there would misleadingly suggest an equivalence).
+export const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number]; themeId?: string }[] = [
   {
     label: "Fictitious sales/assets",
     group: "Financial reporting",
+    themeId: "financial-statement-misrepresentation",
     text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
   },
   {
     label: "Promoter's personal derivative trades as revenue",
     group: "Financial reporting",
+    themeId: "financial-statement-misrepresentation",
     text: "The promoter's personal derivative transactions were recorded in the company's own standalone financial statements as if they were the company's own sales and purchases, resulting in inflated sales and inflated profit for the company.",
   },
   {
     label: "False corporate announcement",
     group: "Financial reporting",
+    themeId: "false-misleading-incomplete-disclosures",
     text: "The company made a stock exchange announcement about an acquisition and future revenue projections that turned out to be unsubstantiated, with no supporting documentation for the claims made in the announcement.",
   },
   {
     label: "Statutory auditor negligence",
     group: "Financial reporting",
+    // No themeId: the corpus has no finding_provisions link tying an
+    // auditor-eligibility provision to genuine negligence conduct (see
+    // tests/analyzer-template-audit.test.ts) -- a genuine corpus gap, not
+    // a taxonomy omission to be papered over with a loose theme match.
     text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
   },
   {
     label: "Preferential allotment / circular funding",
     group: "Fund flows",
+    themeId: "fraudulent-fictitious-allotment",
     text: "A preferential allotment of shares was allegedly financed through a circular chain of loans and advances. The loans are recorded in the company's audited accounts, but it is unclear whether the third-party lenders were ever examined, and the allottees appear to have kept the sale proceeds from the shares.",
   },
   {
     label: "Funds via personal account",
     group: "Fund flows",
+    themeId: "diversion-siphoning-misutilisation",
     text: "Company funds, including statutory and operating payments, were routed through the promoter's personal bank account without clear board approval or disclosure.",
   },
   {
     label: "Rights issue funds diverted",
     group: "Fund flows",
+    themeId: "diversion-siphoning-misutilisation",
     text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
   },
   {
     label: "Audit Committee lapse",
     group: "Governance & disclosure",
+    themeId: "audit-committee-governance-irregularities",
     text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
   },
   {
     label: "Related-party transaction not disclosed",
     group: "Governance & disclosure",
+    themeId: "related-party-transaction-irregularities",
     text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
   },
   {
     label: "Compliance Officer vacancy",
     group: "Governance & disclosure",
+    themeId: "compliance-officer-irregularities",
     text: "The position of Compliance Officer / Company Secretary remained vacant for an extended period without a proper appointment, and no interim arrangement was disclosed to the stock exchanges.",
   },
   {
     label: "False CEO/CFO certification",
     group: "Governance & disclosure",
+    // No themeId: the nearest theme (audit-committee-governance-
+    // irregularities) is a broader governance-failure family Part 4 has
+    // already flagged for eventual splitting -- mapping this template to
+    // it now would read as exactly the conflation Part 4 exists to avoid,
+    // even though themeId is only a cross-navigation pointer, not a
+    // scoring merge.
     text: "The Chief Executive Officer and Chief Financial Officer signed the quarterly compliance certification despite being aware of misstatements in the financial statements, and the certificate was not duly signed in accordance with the applicable regulation.",
   },
   {
     label: "Director duties / non-cooperation",
     group: "Governance & disclosure",
+    // No themeId, same reasoning as False CEO/CFO certification above --
+    // this is itself one of the templates Part 4 requires splitting into
+    // two legally distinct fact patterns; deferring its themeId until
+    // after that split rather than mapping the combined template now.
     text: "The independent directors failed to raise concerns despite red flags in the related-party transactions placed before the board, and the company did not cooperate with the investigation, failing to produce records called for by summons.",
   },
   {
     label: "Price/market manipulation",
     group: "Governance & disclosure",
+    themeId: "fraudulent-manipulative-conduct-broad",
     text: "A group of connected trading accounts executed synchronized trades in the company's shares with no genuine change in beneficial ownership, creating an artificial appearance of trading volume and inducing other investors to deal in the security.",
   },
 ];
@@ -1349,6 +1388,32 @@ export function ScenarioAnalyzerClient() {
               facts entered. This does not mean no provision applies, it means the pilot&apos;s precedent library
               does not contain a comparable factual pattern. Try adding more detail about the transaction type,
               actors involved, or the nature of the alleged conduct.
+            </div>
+          )}
+
+          {/* Part 3 correction (template-audit remediation): a scenario can
+              have zero provisionResults while still carrying gate-blocked or
+              governing candidates further down the page (e.g. "Statutory
+              auditor negligence" -- the underlying corpus has no
+              finding_provisions link tying an auditor provision to genuine
+              negligence conduct, only to an unrelated independence/aiding-
+              abetting finding, so nothing clears the ADVERSE-concept bar
+              provisionResults requires). Leaving that silently blank read as
+              the tool having failed; this makes the honest state explicit
+              and restrained -- it must never be read as a legal conclusion
+              that no violation exists or that no captured official order
+              ever considered such conduct, only that THIS corpus currently
+              has no structured, provision-linked precedent for it. */}
+          {result.hasResults && result.provisionResults.length === 0 && (
+            <div className="rounded-sm bg-[var(--color-neutral-50)] p-6 text-sm ring-1 border-[var(--color-border)]">
+              <p className="font-semibold text-[var(--color-ink-900)]">No captured CFID precedent currently mapped to this scenario.</p>
+              <p className="mt-2 text-[var(--color-ink-700)]">
+                This means only that the current captured corpus does not provide a structured, provision-linked
+                precedent for these facts. It does not mean that no violation exists, that SEBI has never considered
+                such conduct, that no Companies Act or SEBI obligation can apply, or that the allegation is legally
+                unsustainable — only that this pilot&apos;s corpus does not yet contain a comparable, structurally
+                linked finding to draw on.
+              </p>
             </div>
           )}
 
