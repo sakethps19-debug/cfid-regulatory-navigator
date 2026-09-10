@@ -93,7 +93,33 @@ export interface ProvisionRetrievalRule {
      * other provision's rule — actor connectivity, the disclosure-family
      * gates, and every other rule in this file remain same-sentence-only. */
     allowSentenceContinuity?: boolean;
+    /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+     * architecture) — same shape and meaning as the rule-level topicAnchor
+     * below, scoped to this specific alternate route only. */
+    topicAnchor?: TopicAnchor;
   }[];
+  /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+   * architecture): a curated, provision-specific signal distinguishing "this
+   * provision is unrelated to the entered scenario" from "this provision is
+   * materially implicated by a statutory route it expressly contemplates,
+   * but the entered facts leave one or more of that route's own predicates
+   * unknown". Deliberately opt-in and narrow — conceptIds must be specific
+   * enough on their own (never a single generic word/tag like "company" or
+   * "director") that their presence, by itself, signals genuine engagement
+   * with THIS route, not a coincidental co-citation. When effectiveConcepts
+   * intersects conceptIds but the full gate (this group AND every other
+   * required group/route) is not satisfied, the engine treats the provision
+   * as requires_additional_fact (see GateBlockedProvisionResult.
+   * topicAnchorSatisfied) — surfaced even when the live corpus has no
+   * scoring precedent finding linked to the provision at all, so precision
+   * work from earlier checkpoints never silently destroys legally useful
+   * recall. Applies to the PRIMARY requireAllOfGroups route; each
+   * alternateRoutes entry may separately declare its own. Left undefined on
+   * every rule that has not been individually reviewed for this — it never
+   * changes retrieval-gate PASS/FAIL (passesRetrievalGate is completely
+   * unaffected), only whether a gate-FAILING provision is additionally
+   * flagged this way. */
+  topicAnchor?: TopicAnchor;
   /** Checkpoint correction 2, item 4: explicit structured metadata replacing
    * the former reference-equality detection of "this rule rides on some
    * other substantive provision's own retrieval prerequisite being
@@ -110,6 +136,19 @@ export interface ProvisionRetrievalRule {
    * instead; the engine branches on the field, never on which array object
    * was passed to requireAllOfGroups. */
   dependency?: "requires_independently_retrieved_substantive_candidate";
+}
+
+/** See ProvisionRetrievalRule.topicAnchor. */
+interface TopicAnchor {
+  /** Concept ids whose presence in the entered scenario alone constitutes a
+   * meaningful statutory/topic anchor for this specific route — curated
+   * deliberately narrow (see ProvisionRetrievalRule.topicAnchor). */
+  conceptIds: string[];
+  /** Officer-facing statement of exactly what additional fact this route
+   * still needs, distinct from and more specific than the rule's own
+   * general `explanation` (which describes the full route, not just what's
+   * missing on THESE facts). */
+  missingFactNote: string;
 }
 
 // ----- Reusable concept-tag groups -----
@@ -436,10 +475,25 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     // route) into that bounded, closed-class continuation-phrase bridge; see
     // computeContinuitySentenceGroups (conceptExtraction.ts) for the exact
     // rule and its safeguards against scenario-wide or cross-entity bridging.
+    // Checkpoint correction 4: PURE_FUND_MOVEMENT_CONDUCT is the genuine
+    // statutory-specific anchor for this route — none of fund_diversion/
+    // circular_fund_movement/fund_routed_personal_account is a generic word;
+    // each names a specific act the Explanation itself lists. "listed_company"
+    // is deliberately NOT an anchor here: it is a cross-cutting entity-status
+    // fact common to many unrelated provisions, not specific to the
+    // diversion route, so its bare presence alone must never, by itself,
+    // promote an otherwise-unconnected provision to Additional Fact
+    // Required elsewhere in this file. See ProvisionRetrievalRule.
+    // topicAnchor and GateBlockedProvisionResult.topicAnchorSatisfied.
     alternateRoutes: [
       {
         requireAllOfGroups: [["listed_company"], PURE_FUND_MOVEMENT_CONDUCT],
         allowSentenceContinuity: true,
+        topicAnchor: {
+          conceptIds: PURE_FUND_MOVEMENT_CONDUCT,
+          missingFactNote:
+            "The facts entered describe diversion, misutilisation or siphoning off of assets or earnings, which the Explanation to Regulation 4(1) deems to always have been a manipulative, fraudulent or unfair trade practice under sub-regulation (1) — but only where that conduct concerns \"a company whose securities are listed\" (or proposed to be listed). State whether the company/entity involved is a listed company to determine whether this route is satisfied.",
+        },
       },
     ],
   },
@@ -1478,4 +1532,27 @@ export function passesRetrievalGate(
   return (rule.alternateRoutes ?? []).some((route) =>
     satisfiesGroups(route.requireAllOfGroups, effectiveConcepts, route.allowSentenceContinuity ? continuityMap : undefined)
   );
+}
+
+/** Checkpoint correction 4 — the "Additional Fact Required" signal, kept
+ * completely independent of passesRetrievalGate above (which alone still
+ * decides primary_candidate/related_ancillary; this function is never
+ * consulted there). Returns the missingFactNote of every declared
+ * topicAnchor (the rule's own primary-route anchor and/or any
+ * alternateRoutes[] anchor) whose conceptIds the entered scenario's
+ * effective concepts intersect — a plain presence check, deliberately not a
+ * connectivity/group check, because a topicAnchor's whole purpose is to
+ * flag a provision as MATERIALLY IMPLICATED despite one or more of its
+ * gate's own predicates being unknown; requiring the missing predicate to
+ * already be connected would defeat that purpose. Returns [] for a rule
+ * with no declared topicAnchor anywhere (the overwhelming majority — this
+ * function is a complete no-op for every rule that has not been
+ * individually curated to opt in), and for a rule/route whose anchor
+ * concepts are simply absent from the scenario. Never used to decide
+ * PASS/FAIL of the retrieval gate itself. */
+export function topicAnchorMissingFactNotes(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): string[] {
+  if (!rule) return [];
+  const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+  const anchors = [rule.topicAnchor, ...(rule.alternateRoutes ?? []).map((r) => r.topicAnchor)].filter((a): a is TopicAnchor => !!a);
+  return anchors.filter((a) => a.conceptIds.some((id) => detectedIds.has(id))).map((a) => a.missingFactNote);
 }

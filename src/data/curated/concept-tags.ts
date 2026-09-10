@@ -382,7 +382,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   },
 
   // ----- Actor roles -----
-  { id: "company", kind: "actor", label: "Listed company", synonyms: ["the company", "listed entity", "listed company", "the issuer"] },
+  // Checkpoint correction 4: label was previously "Listed company" —
+  // identical to the DIFFERENT, transaction-kind "listed_company" concept
+  // below (the actual PFUTP-4-1 Explanation topic anchor), even though this
+  // tag's own synonyms include the bare, generic "the company"/"the
+  // issuer" and fire on any mention of the respondent entity, listed or
+  // not. Sharing one label made detectedConceptLabels ambiguous: an officer
+  // typing "The company diverted funds" saw "Listed company" among the
+  // detected concepts and could reasonably read that as the system having
+  // recognized a listed-company fact, when only this generic actor-role tag
+  // had actually fired. Renamed to something that cannot be confused with
+  // an assertion that the entity is listed.
+  { id: "company", kind: "actor", label: "Company (respondent entity)", synonyms: ["the company", "listed entity", "listed company", "the issuer"] },
   {
     id: "conduit_entity",
     kind: "actor",

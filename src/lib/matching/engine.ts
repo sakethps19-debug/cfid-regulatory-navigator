@@ -9,6 +9,7 @@ import {
   passesRetrievalGate,
   retrievalRuleForProvision,
   requiresIndependentlyRetrievedSubstantivePrimary,
+  topicAnchorMissingFactNotes,
   type ProvisionRetrievalRule,
 } from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
@@ -744,9 +745,59 @@ export function analyzeScenario(
       blockReason: reason,
     });
   }
-  gateBlockedProvisionResults.sort((a, b) =>
-    compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0])
-  );
+  // Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+  // architecture): a topic-anchor-driven promotion to Additional Fact
+  // Required, independent of the precedent-driven pass above. That pass
+  // only ever surfaces a provision here when the live corpus happens to
+  // hold a factually-overlapping, sufficiently-scoring finding already
+  // LINKED to it — legally sound, but corpus-dependent: a provision
+  // genuinely implicated by a statutory route the entered facts engage
+  // must not silently disappear purely because no such precedent exists
+  // (or scores highly enough) yet. See ProvisionRetrievalRule.topicAnchor.
+  // Deliberately narrow and opt-in: only a rule individually curated with a
+  // topicAnchor is ever affected by this pass; every other gated
+  // provision's behavior is completely unchanged. A provision's factual
+  // gate outcome does not vary by which specific finding is being
+  // considered (passesRetrievalGate depends only on the rule and the
+  // entered scenario's own effectiveConcepts), so a provision is either
+  // wholly blocked or wholly not — passesRetrievalGate alone is a safe,
+  // sufficient guard for "already a candidate, skip".
+  for (const provision of provisions) {
+    const rule = retrievalRuleForProvision(provision.id);
+    if (!rule) continue;
+    if (passesRetrievalGate(rule, effectiveConcepts, continuityMap)) continue;
+    const missingFactNotes = topicAnchorMissingFactNotes(rule, effectiveConcepts);
+    if (missingFactNotes.length === 0) continue;
+    const missingFactText = [...new Set(missingFactNotes)].join(" ");
+    const existing = gateBlockedProvisionResults.find((gb) => gb.provision.id === provision.id);
+    if (existing) {
+      // A topic anchor is a purely FACTUAL signal — never overrides or
+      // annotates a block that is actor-incompatibility only, which is a
+      // different question entirely (see blockReason).
+      if (existing.blockReason === "actor_incompatibility") continue;
+      existing.topicAnchorSatisfied = true;
+      existing.note = `${missingFactText} ${existing.note}`;
+      continue;
+    }
+    if (getActorApplicability(provision.id).status === "incompatible") continue;
+    gateBlockedProvisionResults.push({
+      provision,
+      relatedFactualPrecedents: [],
+      gateExplanation: rule.explanation,
+      note: `${missingFactText} No structured finding in the indexed precedent library currently scores as a close enough factual match to cite as a supporting precedent, but the facts entered engage a statutory route ${provision.instrument} ${provision.provisionNumber} itself expressly contemplates — this provision is not shown as potentially relevant on the present facts.`,
+      legalFunction: legalFunctionForProvision(provision.id),
+      candidateTier: "requires_additional_fact",
+      blockReason: "factual_prerequisite",
+      topicAnchorSatisfied: true,
+    });
+  }
+  gateBlockedProvisionResults.sort((a, b) => {
+    if (!!a.topicAnchorSatisfied !== !!b.topicAnchorSatisfied) return a.topicAnchorSatisfied ? -1 : 1;
+    if (a.relatedFactualPrecedents.length === 0 || b.relatedFactualPrecedents.length === 0) {
+      return b.relatedFactualPrecedents.length - a.relatedFactualPrecedents.length;
+    }
+    return compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0]);
+  });
   contradictedProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   const provisionResults: ProvisionResult[] = [];

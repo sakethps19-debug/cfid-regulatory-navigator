@@ -360,6 +360,24 @@ export interface GateBlockedProvisionResult {
    * understand the FACTS may otherwise be sufficient, just not against the
    * actor named. */
   blockReason: "factual_prerequisite" | "actor_incompatibility" | "both";
+  /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+   * architecture): true when the entered scenario's facts satisfy a
+   * curated, provision-specific "topic anchor" this provision's own
+   * retrieval rule declares (see ProvisionRetrievalRule.topicAnchor /
+   * alternateRoutes[].topicAnchor in provision-retrieval-rules.ts) — a
+   * narrow concept subset marking genuine statutory engagement with a
+   * route the provision's own text expressly contemplates, as distinct
+   * from a provision that only appears here because it happens to be
+   * co-cited by the same historical finding record as something else. Only
+   * ever true for a rule that opts in with a declared topicAnchor; every
+   * other gated provision leaves this undefined and is completely
+   * unaffected. Never promotes a provision to provisionResults on its own
+   * — it only (a) lets a topically-engaged provision surface here even
+   * when the live corpus has NO scoring precedent finding linked to it at
+   * all, so precision work never destroys legally useful recall, and (b)
+   * lets the UI/report surface it ahead of merely-co-cited entries with a
+   * SPECIFIC missing-fact note rather than generic boilerplate. */
+  topicAnchorSatisfied?: boolean;
 }
 
 /** Question-A polarity correction pass: a provision whose SUBJECT MATTER
