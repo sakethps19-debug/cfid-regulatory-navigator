@@ -88,7 +88,7 @@ export default function MethodologyPage() {
       <Section title="Precedent database">
         <p>
           Every order in the{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
+          <a href="/case-library" className="text-[var(--color-gold-700)] underline">
             Verified CFID Orders
           </a>{" "}
           register has been confirmed to contain &quot;CFID&quot; in its own order number, then opened, read, and
@@ -114,12 +114,13 @@ export default function MethodologyPage() {
           for this pilot: every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
           row is either <strong>broken down into the full scenario-finding analysis</strong> that powers the
           Scenario Analyzer, or still <strong>awaiting that analysis</strong>; a row awaiting analysis is not
-          treated as a source of scenario findings or provision matches until that analysis is done.
-          The{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
-            Orders Awaiting Analysis
-          </a>{" "}
-          page shows the current split.
+          treated as a source of scenario findings or provision matches until that analysis is done. The current
+          split is tracked in the corpus-management queue (administrator access); every order that has been
+          broken down is browsable in{" "}
+          <a href="/case-library" className="text-[var(--color-gold-700)] underline">
+            Case Library
+          </a>
+          .
         </p>
         <p>
           <strong>Residual_Order_Links.xlsx</strong> is an exclusion and pending-link register only. It records cases
@@ -131,11 +132,8 @@ export default function MethodologyPage() {
           that both of these were refined from is no longer used by this application.
         </p>
         <p>
-          Both registers are shown in full on the{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
-            Orders Awaiting Analysis
-          </a>{" "}
-          page. No row is ever deleted from either register.
+          Both registers are tracked in full in the corpus-management queue (administrator access). No row is ever
+          deleted from either register.
         </p>
         <p>
           <strong>Procedure for adding a newly analysed order later:</strong> confirm the order number contains
@@ -297,7 +295,7 @@ export default function MethodologyPage() {
 
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
-          <li>The structured scenario-finding library covers only the orders whose findings have already been broken down, per the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page; any order still awaiting that work contributes no scenario findings yet. Results for facts outside the indexed corpus will correctly show no match rather than a fabricated one.</li>
+          <li>The structured scenario-finding library covers only the orders whose findings have already been broken down; any order still awaiting that work contributes no scenario findings yet, though it remains listed in <a href="/case-library" className="text-[var(--color-gold-700)] underline">Case Library</a>. Results for facts outside the indexed corpus will correctly show no match rather than a fabricated one.</li>
           <li>Always verify the cited provision and order against the official source before relying on the output.</li>
           <li>Keyword/synonym matching cannot capture every phrasing of a scenario, try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
           <li>Provision &quot;current text&quot; is not reproduced or guaranteed current, always verify against the official SEBI/MCA source before relying on it.</li>

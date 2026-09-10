@@ -258,8 +258,14 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
         {sorted.length} of {rows.length} order{rows.length === 1 ? "" : "s"} shown.
       </p>
 
-      {/* Desktop/tablet: full comparison table. */}
-      <div className="mt-2 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
+      {/* Desktop/tablet: full comparison table. Below xl (1280px) the table's
+          min-w-[1200px] exceeds the viewport and the wrapper's
+          overflow-x-auto kicks in correctly, but that's not discoverable
+          from a static view -- add a CSS-only hint in exactly that gap
+          (md..xl), never on mobile (card view instead) or at xl+ (the table
+          already fits). */}
+      <p className="mt-2 hidden text-xs text-[var(--color-ink-500)] md:block xl:hidden">Scroll horizontally to view all comparison columns →</p>
+      <div className="mt-1 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
         <table className="w-full min-w-[1200px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
             <tr className="bg-[var(--color-neutral-50)]">

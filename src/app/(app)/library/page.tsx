@@ -35,10 +35,10 @@ export default async function LibraryPage() {
       <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Orders in the structured precedent library ({orders.length})</h2>
       <p className={`mb-3 text-sm text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
         These orders have been broken down into individual scenario findings with paragraph references. See{" "}
-        <Link href="/awaiting-analysis" className="text-[var(--color-gold-700)] hover:underline">
-          Orders Awaiting Analysis
+        <Link href="/case-library" className="text-[var(--color-gold-700)] hover:underline">
+          the complete indexed order register
         </Link>{" "}
-        for the full authoritative list of {verifiedCfidOrders.length} confirmed CFID orders.
+        for all {verifiedCfidOrders.length} confirmed CFID orders, including those not yet broken down.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((o) => (
