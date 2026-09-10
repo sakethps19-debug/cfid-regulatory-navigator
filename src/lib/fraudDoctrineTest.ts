@@ -19,16 +19,21 @@
 // completes Limb (i) on its own; the inducement-only factors downgrade the
 // read to "borderline", never "satisfied".
 //
-// STATUS (reconciliation pass, Task 4): the para 175 text this logic is
+// STATUS (final pre-merge correction pass): the para 175 text this logic is
 // internally consistent with is quoted verbatim on the parent page, but
-// that quote itself remains BLOCKED pending official-source verification --
-// two attempts to retrieve the primary Supreme Court judgment in this
+// that quote itself remains pending official-source verification -- two
+// attempts to retrieve the primary Supreme Court judgment in this
 // environment failed (sci.gov.in: HTTP 403; a secondary mirror: truncated
 // before paragraph 175 both times), and secondary/commercial sources are
 // not permitted as authority. This fix corrects a genuine internal
 // consistency defect (the checklist's own result contradicted the text
-// already quoted on the same page) but must never be described as
-// "verified" anywhere in this file or its UI.
+// already quoted on the same page), but an officer-facing legal calculator
+// should not compute doctrinal satisfaction from an unverified governing
+// text: evaluateFraudDoctrineTest() below is therefore NOT called from
+// FraudTestChecklist.tsx (the officer-facing UI) until verification
+// completes -- it is retained here, independently tested, ready to be
+// wired back in once verified. Must never be described as "verified"
+// anywhere in this file or its UI.
 export type FactorState = "not-stated" | "present" | "unclear" | "requires-verification" | "additional-evidence-required";
 
 export const LIMB_1_FACTOR_IDS = {

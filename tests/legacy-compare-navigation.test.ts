@@ -1,14 +1,15 @@
 // Pre-demo remediation + reconciliation pass (Section 11, Task 2; Section
-// 15 regression #14): the legacy pairwise "Compare" tool (/compare) was
-// first demoted out of primary navigation, then -- on explicit review --
-// removed from ALL navigation (including the secondary "More" menu), since
-// its two functions (ad hoc pairwise finding comparison, the interim->final
-// reversals list) were deliberately superseded by Case Journey and Compare
-// Scenarios, and leaving it independently discoverable anywhere, even
-// relabeled, would still read as a third competing comparison model.
-// /compare itself is NOT deleted or redirected -- the route and its
-// functionality remain intact for direct/bookmarked access, with its own
-// deprecation notice pointing visitors to the two current tools.
+// 15 regression #14) plus final pre-merge correction: the legacy pairwise
+// "Compare" tool (/compare) was first demoted out of primary navigation,
+// then removed from ALL navigation (including the secondary "More" menu),
+// then -- on final product review -- retired entirely as an officer-facing
+// surface: its two functions (ad hoc pairwise finding comparison, the
+// interim->final reversals list) were deliberately superseded by Case
+// Journey and Compare Scenarios, and the old generic comparison model no
+// longer exists at all, not even as a reachable-only-by-bookmark legacy
+// route. /compare now performs a server-side redirect to
+// /compare-scenarios so an old link still resolves somewhere useful
+// instead of exposing a third, obsolete comparison surface.
 import { readFileSync } from "fs";
 import { describe, expect, it } from "vitest";
 
@@ -53,15 +54,6 @@ describe("legacy Compare is absent from all officer-facing navigation (primary a
     expect(navbar).not.toContain('"/compare"');
   });
 
-  it("the legacy /compare page itself still exists, is functional (not deleted), and carries its own deprecation notice", () => {
-    const comparePage = src("src/app/(app)/compare/page.tsx");
-    expect(comparePage).toContain("PrecedentCompareClient");
-    expect(comparePage).toContain("InterimFinalReversalsClient");
-    expect(comparePage).toMatch(/no longer linked from the app.{0,10}s navigation/);
-    expect(comparePage).toContain('href="/case-journey"');
-    expect(comparePage).toContain('href="/compare-scenarios"');
-  });
-
   it("Home no longer shows a 'Compare Precedents' card linking to /compare", () => {
     expect(dashboard).not.toContain("Compare Precedents");
     expect(dashboard).not.toMatch(/href:\s*"\/compare"/);
@@ -71,5 +63,25 @@ describe("legacy Compare is absent from all officer-facing navigation (primary a
     expect(dashboard).toContain("Analyze a Scenario");
     expect(dashboard).toContain("Search Cases");
     expect(dashboard).toContain("Explore Law");
+  });
+});
+
+describe("legacy /compare route no longer renders the old comparison product -- it redirects to Compare Scenarios", () => {
+  const comparePage = src("src/app/(app)/compare/page.tsx");
+
+  it("the /compare page performs a redirect rather than rendering the legacy pairwise/reversals UI", () => {
+    expect(comparePage).toMatch(/redirect\(\s*"\/compare-scenarios"\s*\)/);
+    expect(comparePage).not.toContain("PrecedentCompareClient");
+    expect(comparePage).not.toContain("InterimFinalReversalsClient");
+  });
+
+  it("the redirect target is Compare Scenarios, not Case Journey or any other page", () => {
+    expect(comparePage).toContain('redirect("/compare-scenarios")');
+  });
+
+  it("the retired legacy comparison components no longer exist in the codebase", () => {
+    expect(() => src("src/components/PrecedentCompareClient.tsx")).toThrow();
+    expect(() => src("src/components/InterimFinalReversalsClient.tsx")).toThrow();
+    expect(() => src("src/lib/precedentShifts.ts")).toThrow();
   });
 });

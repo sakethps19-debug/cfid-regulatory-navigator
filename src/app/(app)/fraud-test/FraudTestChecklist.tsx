@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { attentionCount as computeAttentionCount, evaluateFraudDoctrineTest, type FactorState } from "@/lib/fraudDoctrineTest";
+import { useState } from "react";
+import type { FactorState } from "@/lib/fraudDoctrineTest";
 
 interface Factor {
   id: string;
@@ -11,7 +11,7 @@ interface Factor {
 
 // Limb (i): injury/inducement. Per the quoted text of Reliance v. SEBI
 // para 175(i) (quoted in full on the parent page -- see that page's own
-// BLOCKED official-source-verification notice; this transcription has NOT
+// official-source-verification-pending notice; this transcription has NOT
 // been confirmed against the primary judgment), the test is CONJUNCTIVE,
 // not a menu of independently sufficient factors: "injury due to wrongful
 // act is established, i.e., inducement to deal in securities has caused the
@@ -158,20 +158,6 @@ export function FraudTestChecklist() {
     });
   }
 
-  const result = useMemo(() => evaluateFraudDoctrineTest(states), [states]);
-  const attention = useMemo(() => computeAttentionCount(states), [states]);
-
-  const attentionNote =
-    attention > 0
-      ? `${attention} factor${attention > 1 ? "s are" : " is"} marked Unclear, Requires verification, or Additional evidence required; the read above does not account for those until they are resolved to Present or Not stated.`
-      : null;
-
-  const toneClasses = {
-    satisfied: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
-    borderline: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
-    "not-satisfied": "bg-[var(--status-red-bg)] text-[var(--status-red-text)] ring-[var(--status-red-ring)]",
-  }[result.tone];
-
   return (
     <div>
       <p className="text-xs text-[var(--color-ink-500)]">
@@ -199,13 +185,18 @@ export function FraudTestChecklist() {
         </div>
       </div>
 
-      <div className={`mt-5 rounded-sm p-3 text-sm ring-1 ring-inset ${toneClasses}`}>
-        <p className="font-semibold">{result.text}</p>
-        {attentionNote && <p className="mt-1.5 text-xs font-medium opacity-90">{attentionNote}</p>}
-        <p className="mt-1.5 text-xs opacity-90">
-          This is a prima facie doctrinal read of your own selections only, not a finding, not a match against this
-          pilot&apos;s precedents, and not a substitute for a CFID officer&apos;s own legal judgment. The underlying
-          para 175 text is not yet confirmed against an official source — see the notice above the checklist.
+      {/* Final pre-merge correction: this checklist no longer computes or
+          displays a satisfied/borderline/not-satisfied read from the
+          selections above. That computation (evaluateFraudDoctrineTest, in
+          src/lib/fraudDoctrineTest.ts) is retained in code, independently
+          tested, and ready to be wired back in once the governing para 175
+          text is confirmed against an official source -- it is simply not
+          called from this officer-facing view until then. */}
+      <div className="mt-5 rounded-sm bg-[var(--color-neutral-50)] p-3 text-sm ring-1 ring-inset ring-[var(--color-border)]">
+        <p className="font-semibold text-[var(--color-ink-900)]">Official-source verification pending</p>
+        <p className="mt-1 text-[var(--color-ink-700)]">
+          The governing judicial text used for this doctrinal checklist has not yet been independently verified
+          against the official judgment. Automated doctrinal assessment is therefore temporarily unavailable.
         </p>
       </div>
 

@@ -190,12 +190,6 @@ describe("Application-wide removal of officer-facing corpus-verification/researc
     expect(src).not.toContain("FindingMaturityBadge");
   });
 
-  it("Compare page no longer has a 'Human legal review' comparison row", () => {
-    const src = read("src/components/PrecedentCompareClient.tsx");
-    expect(src).not.toContain("LegalReviewBadge");
-    expect(src).not.toMatch(/label: "Human legal review"/);
-  });
-
   it("Case Library no longer shows a 'Research status' / 'Detailed research available' column", () => {
     const src = read("src/components/CaseLibraryClient.tsx");
     expect(src).not.toMatch(/Research status/);

@@ -6,8 +6,8 @@
 // Industries Ltd. & Ors. v. SEBI, 2026 INSC 585, para 175(i) for that
 // proposition. The quoted text of para 175(i) (quoted in full on
 // src/app/(app)/fraud-test/page.tsx -- NOT confirmed against an official
-// source; see that page's own BLOCKED official-source-verification notice,
-// added during the reconciliation pass) states the test conjunctively:
+// source; see that page's own restrained "Official-source verification
+// pending" notice) states the test conjunctively:
 // "inducement to deal in securities has caused the other person to be
 // adversely affected and allowed the party accused of fraud to gain
 // unlawful profits or avert ordinary losses" -- dealing alone, without
@@ -181,11 +181,12 @@ describe("evaluateFraudDoctrineTest: output never issues a bare legal conclusion
 });
 
 // Reconciliation-pass finding (Task 4): official-source verification of the
-// para 175 text could not be completed in this environment (sci.gov.in:
-// HTTP 403; a secondary mirror: truncated before paragraph 175 on both
-// attempts). Result text and source code must never describe that text as
-// "verified" -- only "quoted". These guard against silently regressing the
-// wording back to an overclaim.
+// para 175 text could not be completed in this environment. Result text and
+// source code must never describe that text as "verified" -- only "quoted".
+// These guard against silently regressing the wording back to an overclaim.
+// evaluateFraudDoctrineTest() itself is retained and still correct/tested
+// here -- see the next describe block for why it is deliberately NOT called
+// from the officer-facing UI anymore.
 describe("evaluateFraudDoctrineTest: never overclaims the para 175 text as officially verified", () => {
   it("no result text anywhere describes the paragraph 175 citation as 'verified'", () => {
     const allCombinations: Map<string, FactorState>[] = [
@@ -205,10 +206,8 @@ describe("evaluateFraudDoctrineTest: never overclaims the para 175 text as offic
     }
   });
 
-  it("the Fraud Doctrine page carries a prominent BLOCKED official-source-verification notice, and no source-code comment describes the para 175 citation as 'verified'", () => {
+  it("no source-code comment describes the para 175 citation as 'verified'", () => {
     const page = readFileSync(new URL("../src/app/(app)/fraud-test/page.tsx", import.meta.url), "utf8");
-    expect(page).toMatch(/BLOCKED/);
-    expect(page).toMatch(/has not been confirmed against the[\s\S]{0,20}official Supreme Court/);
     expect(page.toLowerCase()).not.toMatch(/verified text/);
 
     const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
@@ -216,5 +215,54 @@ describe("evaluateFraudDoctrineTest: never overclaims the para 175 text as offic
 
     const logic = readFileSync(new URL("../src/lib/fraudDoctrineTest.ts", import.meta.url), "utf8");
     expect(logic.toLowerCase()).not.toMatch(/verified text/);
+  });
+});
+
+// Final pre-merge correction: an officer-facing legal calculator must not
+// compute doctrinal satisfaction from a governing paragraph that has not
+// been independently confirmed against an official source. These guard
+// that (a) the officer-facing page and checklist carry a restrained,
+// concise "verification pending" notice, (b) neither renders a computed
+// satisfied/borderline/not-satisfied conclusion (evaluateFraudDoctrineTest
+// and attentionCount are retained in fraudDoctrineTest.ts, tested above,
+// but must not be imported/called from the officer-facing UI), and (c)
+// internal retrieval/debug history (HTTP status codes, named mirrors) never
+// reaches the officer-facing files -- that detail is confined to
+// src/lib/fraudDoctrineTest.ts's own module doc comment, a developer note.
+describe("Fraud Doctrine officer-facing UI: no computed conclusion, restrained verification-pending notice, no debug detail", () => {
+  const page = readFileSync(new URL("../src/app/(app)/fraud-test/page.tsx", import.meta.url), "utf8");
+  const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
+
+  it("the page and the checklist both carry the restrained 'Official-source verification pending' notice", () => {
+    expect(page).toMatch(/Official-source verification pending/);
+    expect(checklist).toMatch(/Official-source verification pending/);
+    expect(page).toMatch(/Automated doctrinal assessment is therefore temporarily unavailable/);
+    expect(checklist).toMatch(/Automated doctrinal assessment is therefore temporarily unavailable/);
+  });
+
+  it("FraudTestChecklist.tsx no longer imports or calls evaluateFraudDoctrineTest or attentionCount -- no computed conclusion is rendered", () => {
+    // A code comment is allowed to name the retained function for context
+    // (see fraudDoctrineTest.ts); what must never reappear is an import of
+    // it or an actual call -- either would mean a computed conclusion is
+    // being rendered again.
+    expect(checklist).not.toMatch(/import\s*\{[^}]*evaluateFraudDoctrineTest/);
+    expect(checklist).not.toMatch(/evaluateFraudDoctrineTest\(/);
+    expect(checklist).not.toMatch(/import\s*\{[^}]*attentionCount/);
+    expect(checklist).not.toMatch(/attentionCount\(/);
+  });
+
+  it("neither officer-facing file exposes internal retrieval/debug history (HTTP status codes, named mirrors, attempt counts)", () => {
+    for (const src of [page, checklist]) {
+      expect(src).not.toMatch(/\b403\b/);
+      expect(src).not.toMatch(/Indian Kanoon/i);
+      expect(src).not.toMatch(/sci\.gov\.in/i);
+      expect(src).not.toMatch(/BLOCKED/);
+    }
+  });
+
+  it("the underlying decision logic (evaluateFraudDoctrineTest) is retained in fraudDoctrineTest.ts, not deleted, for later reactivation", () => {
+    const logic = readFileSync(new URL("../src/lib/fraudDoctrineTest.ts", import.meta.url), "utf8");
+    expect(logic).toMatch(/export function evaluateFraudDoctrineTest/);
+    expect(logic).toMatch(/export function attentionCount/);
   });
 });

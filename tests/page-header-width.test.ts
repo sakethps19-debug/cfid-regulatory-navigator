@@ -5,13 +5,17 @@
 // 2xl:max-w-[100rem] / 3xl:max-w-[130rem]. At xl/2xl breakpoints that left a
 // short page-introduction sentence reading as a narrow, floating column
 // inside a much wider workspace. Fixed by adding a graduated widening
-// (xl:max-w-4xl 2xl:max-w-5xl) to the same three call sites that used the
-// bare pattern (PageHeader.tsx, FixedScenarioAnalyzer.tsx, and the legacy
-// compare/page.tsx's two section intros) -- never full shell width, and
-// never touching the separate, already-correct max-w-prose (character-based
-// reading measure) pattern used for long-form statutory/prose content
-// elsewhere in the app. These guard against silently regressing back to the
-// bare max-w-3xl-only pattern.
+// (xl:max-w-4xl 2xl:max-w-5xl) to the call sites that used the bare pattern
+// -- never full shell width, and never touching the separate, already-
+// correct max-w-prose (character-based reading measure) pattern used for
+// long-form statutory/prose content elsewhere in the app. These guard
+// against silently regressing back to the bare max-w-3xl-only pattern.
+//
+// Final pre-merge correction: the legacy compare/page.tsx (formerly one of
+// the three widened call sites, its own section-intro paragraphs) was
+// retired entirely and now only performs a server-side redirect to
+// /compare-scenarios -- it no longer has any prose to widen. See
+// tests/legacy-compare-navigation.test.ts for that retirement's coverage.
 import { readFileSync } from "fs";
 import { describe, expect, it } from "vitest";
 
@@ -30,18 +34,8 @@ describe("PageHeader: description paragraph widens at large breakpoints instead 
     expect(source).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
   });
 
-  it("the legacy compare page's two section-intro paragraphs both carry the same widening classes", () => {
-    const source = read("src/app/(app)/compare/page.tsx");
-    const matches = source.match(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/g) ?? [];
-    expect(matches.length).toBe(2);
-  });
-
   it("the widening is graduated, not full shell width -- neither xl:max-w-[85rem] nor 2xl:max-w-[100rem] nor 3xl:max-w-[130rem] (the shell's own tiers) appear on these paragraphs", () => {
-    for (const path of [
-      "src/components/PageHeader.tsx",
-      "src/components/analyzer/FixedScenarioAnalyzer.tsx",
-      "src/app/(app)/compare/page.tsx",
-    ]) {
+    for (const path of ["src/components/PageHeader.tsx", "src/components/analyzer/FixedScenarioAnalyzer.tsx"]) {
       const source = read(path);
       expect(source).not.toMatch(/max-w-\[85rem\]/);
       expect(source).not.toMatch(/max-w-\[100rem\]/);

@@ -4,9 +4,9 @@
 // This exercises the actual export path (resultToText / resultToCsv)
 // against a real analyzeScenario() result; the on-screen LegalReviewBadge
 // component itself isn't rendered here (no component-test harness in this
-// repo, see FindingsByStatus.tsx/ScenarioAnalyzerClient.tsx/
-// PrecedentCompareClient.tsx for its 6 call sites), but the underlying
-// per-finding fact it displays is proven correct here at the data layer.
+// repo, see FindingsByStatus.tsx/ScenarioAnalyzerClient.tsx for its call
+// sites), but the underlying per-finding fact it displays is proven
+// correct here at the data layer.
 import { describe, expect, it } from "vitest";
 import { analyzeScenario } from "@/lib/matching/engine";
 import { legalTests, provisions, scenarioFindings } from "./fixtures";
