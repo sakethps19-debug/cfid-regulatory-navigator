@@ -4,7 +4,8 @@
 // vitest fixtures (e.g. tests/case-journey.test.ts) already reference by
 // name and matter_id -- never a raw dump of confidential/unpublished/
 // market-sensitive material, and never written back to Supabase.
-import type { LegalProvision, Order, OrderNoticee, ProvisionVersion, ScenarioFinding } from "@/types/domain";
+import type { LegalProvision, Order, OrderNoticee, ProvisionVersion, ScenarioFinding, DirectionOutcome, Matter } from "@/types/domain";
+import type { ComparisonRow } from "@/lib/scenarioComparison";
 
 function order(overrides: Partial<Order> & { id: string }): Order {
   return {
@@ -354,3 +355,158 @@ export const CASE_LIBRARY_FINDINGS: ScenarioFinding[] = [
     category: "False or misleading disclosures",
   }),
 ];
+
+// ---------------------------------------------------------------------
+// COMPARE SCENARIOS: ComparisonRow[] built directly (this module's own
+// shape is already exactly what the real page needs -- no need to run
+// the matching functions), covering interim+final mix, negative
+// precedent, finding-level-only provenance, long directions, and several
+// provisions across matters. Diversion / Siphoning / Misutilisation of
+// Funds is reused as the compared scenario throughout.
+// ---------------------------------------------------------------------
+function direction(overrides: Partial<DirectionOutcome> & { id: string; orderId: string; caseName: string }): DirectionOutcome {
+  return {
+    stage: "Final order",
+    directionOrOutcome: "Direction text.",
+    paragraphReference: null,
+    officialSourceUrl: "https://www.sebi.gov.in/enforcement/orders/fixture.html",
+    ...overrides,
+  };
+}
+
+const REL_MATTER: Matter = { id: "2dbf409c-8e55-49b8-911c-16a1fda47962", normalizedMatterName: "Rajesh Exports Limited", description: null };
+const SEACOAST_MATTER: Matter = { id: "60bbd426-879c-47e7-bd4d-038c148b416c", normalizedMatterName: "Seacoast Shipping Services Limited", description: null };
+
+const DB_REALTY_ORDER: Order = order({
+  id: "fixture-db-realty",
+  caseName: "DB Realty Limited",
+  orderStage: "Final order",
+  orderDate: "2025-02-04",
+});
+const DB_REALTY_MATTER: Matter = { id: "db-realty-matter", normalizedMatterName: "DB Realty Limited", description: null };
+
+const MAX_FINANCIAL_ORDER: Order = order({
+  id: "fixture-max-financial",
+  caseName: "In the matter of Max Financial Services Limited",
+  orderStage: "Final order",
+  orderDate: "2026-08-24",
+});
+const MAX_FINANCIAL_MATTER: Matter = { id: "faa4a18e-9c62-4d40-b8e8-b2a77f787c9b", normalizedMatterName: "Max Financial Services Limited", description: null };
+
+export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
+  {
+    order: REL_ORDER,
+    matter: REL_MATTER,
+    findings: [REL_FINDINGS[1]],
+    provisionsConsidered: [
+      { provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: false},
+      { provisionId: "LODR-23-2", legalFunction: "governance_procedural_obligation", legalFunctionLabel: "Governance/procedural obligation", notUpheldOnly: false, orderSpecific: true},
+    ],
+    hasFindingLevelOnlyProvisionLinkage: true,
+    directions: [
+      direction({
+        id: "d-rel-1",
+        orderId: REL_ORDER.id,
+        caseName: REL_ORDER.caseName,
+        stage: "Interim order",
+        directionOrOutcome:
+          "Rajesh Mehta (Noticee 2) restrained from dealing in REL securities in any manner, directly or indirectly, until further orders. Rajesh Exports Limited (Noticee 1) directed to cooperate fully with the investigation, appoint a new Forensic Auditor within 15 days, and make true and adequate disclosures under the LODR Regulations. The matter is referred to the National Financial Reporting Authority in respect of the statutory auditors. No monetary penalty is imposed at this ad-interim stage; the investigation shall continue and this order shall be reviewed after the Forensic Audit Report is received.",
+        paragraphReference: "Para 45",
+      }),
+    ],
+    dispositions: ["Prima facie"],
+  },
+  {
+    order: SEACOAST_FINAL,
+    matter: SEACOAST_MATTER,
+    findings: [SEACOAST_FINDINGS[0]],
+    provisionsConsidered: [{ provisionId: "PFUTP-4-2-e", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true}],
+    hasFindingLevelOnlyProvisionLinkage: false,
+    directions: [direction({ id: "d-sea-1", orderId: SEACOAST_FINAL.id, caseName: SEACOAST_FINAL.caseName, directionOrOutcome: "Disgorgement of Rs. 4.2 crore with interest; restrained from the securities market for 2 years.", paragraphReference: "Para 61" })],
+    dispositions: ["Confirmed in Final Order"],
+  },
+  {
+    order: SEACOAST_INTERIM,
+    matter: SEACOAST_MATTER,
+    findings: [SEACOAST_FINDINGS[0]],
+    provisionsConsidered: [{ provisionId: "PFUTP-4-2-e", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true}],
+    hasFindingLevelOnlyProvisionLinkage: false,
+    directions: [],
+    dispositions: ["Confirmed in Final Order"],
+  },
+  {
+    // Negative precedent: a "not established" disposition on a distinct order.
+    order: DB_REALTY_ORDER,
+    matter: DB_REALTY_MATTER,
+    findings: [
+      finding({
+        recordId: "DBRL-01",
+        caseName: DB_REALTY_ORDER.caseName,
+        orderIds: [DB_REALTY_ORDER.id],
+        scenarioTitle: "Alleged diversion of rights-issue proceeds to group entities",
+        findingStatus: "Partly Confirmed in Final Order",
+        provisionIds: ["PFUTP-4-1"],
+        provisionLinks: [{ provisionId: "PFUTP-4-1", justifyingTags: [] }],
+        transactionTypes: ["fund_diversion"],
+      }),
+    ],
+    provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true }],
+    hasFindingLevelOnlyProvisionLinkage: false,
+    directions: [],
+    dispositions: ["Partly Confirmed in Final Order"],
+  },
+  {
+    order: MAX_FINANCIAL_ORDER,
+    matter: MAX_FINANCIAL_MATTER,
+    findings: [
+      finding({
+        recordId: "MAX-02",
+        caseName: MAX_FINANCIAL_ORDER.caseName,
+        orderIds: [MAX_FINANCIAL_ORDER.id],
+        scenarioTitle: "Alleged diversion of policyholder-linked funds through a related entity",
+        findingStatus: "Not Confirmed in Final Order",
+        provisionIds: ["PFUTP-4-1"],
+        provisionLinks: [{ provisionId: "PFUTP-4-1", justifyingTags: [], relationship: "not_upheld" }],
+        transactionTypes: ["fund_diversion"],
+      }),
+    ],
+    provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: true, orderSpecific: true }],
+    hasFindingLevelOnlyProvisionLinkage: false,
+    directions: [],
+    dispositions: ["Not Confirmed in Final Order"],
+  },
+  ...MANY_DIVERSION_ORDERS.slice(0, 3).map((o, i): ComparisonRow => ({
+    order: o,
+    matter: { id: `matter-div-${i + 1}`, normalizedMatterName: o.caseName, description: null },
+    findings: [MANY_DIVERSION_FINDINGS[i]],
+    provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true }],
+    hasFindingLevelOnlyProvisionLinkage: false,
+    directions: [],
+    dispositions: [MANY_DIVERSION_FINDINGS[i].findingStatus],
+  })),
+];
+
+export const COMPARE_SCENARIOS_PROVISIONS: LegalProvision[] = [...REL_PROVISIONS, ...DIVERSION_SCENARIO_PROVISIONS];
+
+// ---------------------------------------------------------------------
+// LAW LIBRARY / SOURCE LIBRARY / FRAUD DOCTRINE fixtures
+// ---------------------------------------------------------------------
+import type { LegalInstrument, LegalTest } from "@/types/domain";
+
+export const LAW_LIBRARY_INSTRUMENTS: LegalInstrument[] = [
+  { id: "pfutp-2003", name: "PFUTP Regulations, 2003", issuingAuthority: "SEBI", officialSourceUrl: "https://www.sebi.gov.in/legal/regulations/pfutp.html" },
+  { id: "sebi-act-1992", name: "SEBI Act, 1992", issuingAuthority: "SEBI", officialSourceUrl: "https://www.sebi.gov.in/legal/acts/sebi-act.html" },
+  { id: "lodr-2015", name: "SEBI (LODR) Regulations, 2015", issuingAuthority: "SEBI", officialSourceUrl: "https://www.sebi.gov.in/legal/regulations/lodr.html" },
+];
+
+export const LAW_LIBRARY_PROVISIONS: LegalProvision[] = [...REL_PROVISIONS, ...DIVERSION_SCENARIO_PROVISIONS];
+export const LAW_LIBRARY_FINDINGS: ScenarioFinding[] = [...REL_FINDINGS, ...SEACOAST_FINDINGS];
+
+export const FRAUD_DOCTRINE_LEGAL_TEST: LegalTest = {
+  id: "pfutp-2-1-c-fraud-test",
+  provisionOrIssue: "PFUTP 2(1)(c): fraud (inducement/intent test)",
+  workingPrinciple:
+    "The Supreme Court's two-limb test for \"fraud\" under Regulation 2(1)(c): either (i) established injury/wrongful gain/avoided loss from inducement to deal in securities, or (ii) deceitful/mala fide intent clear from blatant misconduct or attending circumstances.",
+  paragraphAnchors: "Reliance Industries Ltd. v. SEBI, 2026 INSC 585, para 175; applied in REL interim paras 219-222 (both limbs found satisfied).",
+  implementationGuardrail: "Never treat bare dealing/inducement alone as satisfying Limb (i) without established injury, wrongful gain, or avoided loss.",
+};

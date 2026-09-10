@@ -94,18 +94,33 @@ function DispositionBadges({ dispositions }: { dispositions: FindingStatus[] }) 
   );
 }
 
-function DirectionsSummary({ row }: { row: ComparisonRow }) {
+function DirectionsSummary({ row, clamp }: { row: ComparisonRow; clamp?: boolean }) {
   if (row.directions.length === 0) {
     return <p className="text-xs italic text-[var(--color-ink-300)]">No structured directions/outcome captured yet for this order.</p>;
   }
   return (
     <ul className="space-y-1">
       {row.directions.map((d) => (
-        <li key={d.id} className={`text-xs text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
+        <li key={d.id} className={`text-xs text-[var(--color-ink-700)] ${clamp ? "line-clamp-4" : NARRATIVE_JUSTIFY_ONLY}`}>
           {d.directionOrOutcome}
           {d.paragraphReference && <span className="text-[var(--color-ink-500)]"> ({d.paragraphReference})</span>}
         </li>
       ))}
+      {/* A long direction text (a full ad-interim order can run to several
+          hundred words) was found, via visual QA screenshot review, to
+          make a single comparison-table row several times taller than its
+          neighbours -- the max-w-xs cell constrains width, never height.
+          Clamped here to 4 lines with a link to the order's own full
+          detail, where the complete text already lives; the mobile card
+          view below (clamp not set) keeps the full text, since a card's
+          own height varying by content is normal there. */}
+      {clamp && (
+        <li>
+          <Link href={`/orders/${row.order.id}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
+            View full case detail →
+          </Link>
+        </li>
+      )}
     </ul>
   );
 }
@@ -285,7 +300,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
                     <ProvisionsSection row={row} provisionById={provisionById} />
                   </td>
                   <td className="max-w-xs px-3 py-2 align-top">
-                    <DirectionsSummary row={row} />
+                    <DirectionsSummary row={row} clamp />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
                     <SourceLink href={row.order.officialUrl} />

@@ -18,6 +18,15 @@ const VIEWPORTS = [
   { name: "wide-1920", width: 1920, height: 1080 },
 ];
 
+const FULL_VIEWPORTS = [
+  { name: "mobile-390", width: 390, height: 844 },
+  { name: "ipad-portrait-820", width: 820, height: 1180 },
+  { name: "ipad-landscape-1180", width: 1180, height: 820 },
+  { name: "laptop-1366", width: 1366, height: 768 },
+  { name: "desktop-1440", width: 1440, height: 900 },
+  { name: "wide-1920", width: 1920, height: 1080 },
+];
+
 const CRITICAL_SCREENS = new Set([
   "home",
   "fixed-analyzer-grid",
@@ -26,7 +35,15 @@ const CRITICAL_SCREENS = new Set([
   "case-detail-rajesh",
   "provision-detail",
   "case-journey-seacoast",
+  "law-library",
+  "fraud-doctrine",
+  "source-library",
+  "methodology",
 ]);
+
+// Compare Scenarios gets the full 6-viewport matrix per the explicit
+// checkpoint requirement (density/usability at every named breakpoint).
+const FULL_MATRIX_SCREENS = new Set(["compare-scenarios"]);
 
 const files = readdirSync(OUT_DIR).filter((f) => f.endsWith(".html"));
 
@@ -35,7 +52,7 @@ const page = await browser.newPage();
 
 for (const file of files) {
   const name = file.replace(/\.html$/, "");
-  const viewports = CRITICAL_SCREENS.has(name) ? VIEWPORTS : [VIEWPORTS[1]]; // non-critical screens: laptop only
+  const viewports = FULL_MATRIX_SCREENS.has(name) ? FULL_VIEWPORTS : CRITICAL_SCREENS.has(name) ? VIEWPORTS : [VIEWPORTS[1]]; // non-critical screens: laptop only
   for (const vp of viewports) {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await page.goto(`file://${path.join(OUT_DIR, file)}`);
