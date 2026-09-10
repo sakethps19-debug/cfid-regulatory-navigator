@@ -9,6 +9,8 @@
 // itself calls. Counts are never hard-coded; they are computed fresh here.
 import { readFileSync } from "fs";
 import { analyzeScenario } from "../src/lib/matching/engine";
+import { detectConcepts } from "../src/lib/matching/conceptExtraction";
+import { retrievalRuleForProvision } from "../src/data/curated/provision-retrieval-rules";
 import type { LegalProvision, LegalTest, ScenarioFinding, FindingStatus, PublicationStatus } from "../src/types/domain";
 
 const SCRATCH = "/tmp/claude-0/-home-user-cfid-regulatory-navigator/3f0534b9-4b60-5afe-bd07-443935964238/scratchpad";
@@ -271,5 +273,19 @@ for (const t of TEMPLATES.filter((t) => ZERO_LABELS.includes(t.label))) {
   console.log(`contradictedProvisionResults: ${result.contradictedProvisionResults?.length ?? "(field absent)"}`);
   for (const g of result.gateBlockedProvisionResults ?? []) {
     console.log(`  BLOCKED: ${g.provision.id} reason=${g.blockReason} note=${g.note.slice(0, 160)}`);
+  }
+}
+
+console.log("\n--- GATE DIAGNOSTIC: does each primary/ancillary result independently satisfy its own retrieval prerequisite, rather than merely sharing a concept with a historical finding? ---\n");
+const REVIEW_LABELS = ["Preferential allotment / circular funding", "False corporate announcement", "Rights issue funds diverted", "Related-party transaction not disclosed"];
+for (const t of TEMPLATES.filter((t) => REVIEW_LABELS.includes(t.label))) {
+  const result = analyzeScenario({ freeText: t.text }, findings, provisions, legalTests);
+  console.log(`\n## ${t.label}`);
+  console.log(`Detected concepts: ${result.detectedConceptLabels.join(", ")}`);
+  const detectedIds = new Set(detectConcepts(t.text).map((c) => c.id));
+  console.log(`Detected concept IDs: ${[...detectedIds].join(", ")}`);
+  for (const p of result.provisionResults) {
+    const rule = retrievalRuleForProvision(p.provision.id);
+    console.log(`  [${p.candidateTier}] ${p.provision.id} legalFunction=${p.legalFunction} GATED=${!!rule} ${rule ? `gateExplanation="${rule.explanation}"` : "(ungated -- relies on precedent's own conduct-tag overlap)"}`);
   }
 }
