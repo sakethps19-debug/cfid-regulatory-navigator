@@ -93,7 +93,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {siblingOrders.length > 0 && (
         <Card className="mb-6">
           <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Other orders in the same matter</h2>
-          <p className="mb-4 max-w-prose text-left text-sm text-[var(--color-ink-700)]">
+          <p className="mb-4 max-w-3xl text-left text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
             One matter/investigation can span several individual orders (interim, confirmatory, final, adjudication,
             or otherwise). Each stays independently visible with its own order type; a later order is never treated
             as silently overwriting an earlier one.
@@ -210,7 +210,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             is historical-order research, not a claim that each is a violation.
           </p>
           {hasFindingLevelOnlyProvisionLinkage && (
-            <p className="mb-3 max-w-prose text-left text-xs italic text-[var(--color-ink-500)]">
+            <p className="mb-3 max-w-3xl text-left text-xs italic text-[var(--color-ink-500)] xl:max-w-4xl 2xl:max-w-5xl">
               Provision linkage is recorded at finding level in the current corpus and may span more than one
               captured order — a &quot;Finding-level&quot; provision below is not proven specific to this order alone.
             </p>

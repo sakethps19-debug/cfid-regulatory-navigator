@@ -77,6 +77,17 @@ describe("readable prose measure separated from workspace width (Part 13)", () =
     // font.
     expect(page).toMatch(/max-w-prose text-left text-sm/);
   });
+
+  it("Order Detail's static explanatory paragraphs (matter-siblings intro, finding-level-linkage caveat) widen on wide displays instead of the old flat max-w-prose cap (live-officer-review wide-screen fix, item 6) -- these are standalone-Card prose, not the data-derived narrative fields pinned above", () => {
+    const page = src("src/app/(app)/orders/[id]/page.tsx");
+    expect(page).toMatch(/Other orders in the same matter[\s\S]{0,300}max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(page).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl[^"]*">\s*\n\s*Provision linkage is recorded at finding level/);
+  });
+
+  it("Compare Scenarios detail's corpus-counts caveat paragraph widens on wide displays instead of the old flat max-w-prose cap", () => {
+    const page = src("src/app/(app)/compare-scenarios/[scenarioId]/page.tsx");
+    expect(page).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl[^"]*">\s*\n\s*Descriptive corpus counts only/);
+  });
 });
 
 describe("grids gain columns on wide displays without excluding narrower ones (Part 2/3/5/9/12)", () => {

@@ -145,9 +145,10 @@ describe("responsive layout: reuses the wide app shell, no forced desktop-only w
     }
   });
 
-  it("long text fields use the app's shared prose-measure utility (max-w-prose) rather than stretching full-width on large displays", () => {
+  it("the corpus-counts caveat paragraph widens on large displays via the app's tiered prose pattern (live-officer-review wide-screen fix) rather than staying flat-capped or stretching full-width", () => {
     const page = src("src/app/(app)/compare-scenarios/[scenarioId]/page.tsx");
-    expect(page).toContain("max-w-prose");
+    expect(page).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(page).not.toContain("max-w-prose");
   });
 });
 

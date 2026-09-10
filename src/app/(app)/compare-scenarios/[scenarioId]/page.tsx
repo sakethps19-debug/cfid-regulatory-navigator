@@ -64,7 +64,7 @@ export default async function CompareScenariosResultPage({ params }: { params: P
             <dd className="text-lg font-semibold text-[var(--color-ink-900)]">{summary.notEstablishedFindings}</dd>
           </div>
         </dl>
-        <p className="mt-3 max-w-prose text-xs text-[var(--color-ink-500)]">
+        <p className="mt-3 max-w-3xl text-xs text-[var(--color-ink-500)] xl:max-w-4xl 2xl:max-w-5xl">
           Descriptive corpus counts only, not a rate or a legal probability. Historical treatment is context-specific: inclusion of a matter in
           this comparison does not mean the same provision or outcome applies to another factual scenario.
         </p>
