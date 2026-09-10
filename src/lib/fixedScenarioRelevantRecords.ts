@@ -22,17 +22,42 @@
 // and the mis-selling sub-product — see fixed-scenarios.ts) never matches
 // anything here, exactly as broadScenarioMatch.ts already treats them
 // everywhere else — never force-fitting a weak match for those two.
+//
+// Order-level provenance (checkpoint correction A): finding_provisions
+// establishes a link at the FINDING level, never per-order. A finding
+// spanning more than one captured order (finding.orderIds.length > 1 —
+// e.g. Seacoast Shipping Services Limited's findings, each carrying both
+// an interim and a final order id; Par Drugs and Chemicals Limited's
+// PDCL-01, interim + confirmatory) does NOT prove the linked provision was
+// itself considered in every one of those orders individually — only that
+// the finding (which may synthesize facts across the matter's stages) is
+// linked to it. Displaying such orders as if each had independently
+// considered the provision would overclaim exactly the same way Compare
+// Scenarios and Case Detail's provision lists previously did, before both
+// were corrected to flag this with `orderSpecific` (see
+// orderProvisionsConsidered.ts / scenarioComparison.ts's
+// ComparisonProvisionEntry.orderSpecific — the same pattern is reused here
+// rather than inventing a third rule). orderSpecific is true only when the
+// finding is linked to exactly one captured order, i.e. unambiguous
+// order-level provenance already exists; false for any multi-order
+// finding, regardless of how many of its orders are on file.
 import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 import { effectiveLinkStatus } from "@/lib/matching/scoring";
 import type { FindingStatus, LegalProvision, Order, ScenarioFinding } from "@/types/domain";
 
 export type RelevantRecordBucket = "confirmed_final" | "partly_confirmed" | "not_confirmed_contrary" | "interim_alleged_unresolved";
 
+// Checkpoint correction A: bucket labels now describe the FINDING's
+// disposition ("Findings ...") rather than a bare disposition label that
+// could be misread as a claim about every order listed underneath it — a
+// multi-order finding confirmed at final stage may still list an interim
+// order alongside the final one, and the label must not imply that
+// interim order was itself a final confirmation.
 export const RELEVANT_RECORD_BUCKET_LABELS: Record<RelevantRecordBucket, string> = {
-  confirmed_final: "Confirmed in final orders",
-  partly_confirmed: "Partly confirmed",
-  not_confirmed_contrary: "Not confirmed / contrary treatment",
-  interim_alleged_unresolved: "Interim, alleged or otherwise unresolved",
+  confirmed_final: "Findings confirmed at final stage",
+  partly_confirmed: "Findings partly confirmed at final stage",
+  not_confirmed_contrary: "Findings not confirmed / contrary treatment",
+  interim_alleged_unresolved: "Findings interim, alleged or otherwise unresolved",
 };
 
 export interface RelevantScenarioRecord {
@@ -48,8 +73,20 @@ export interface RelevantScenarioRecord {
   effectiveStatus: FindingStatus;
   bucket: RelevantRecordBucket;
   /** Every order on file for this finding (interim/final can both exist);
-   * never assumes which one is "the" relevant order. */
+   * never assumes which one is "the" relevant order. Whether this
+   * provision-link's provenance is proven order-specific for each of them
+   * is `orderSpecific` below — these orders are shown either way (they
+   * genuinely belong to the finding), just labelled accordingly. */
   orders: Order[];
+  /** True only when the finding is linked to exactly one captured order —
+   * unambiguous order-level provenance for this provision link already
+   * exists. False for any multi-order finding: the corpus then establishes
+   * only finding-level linkage, and the orders above must be presented as
+   * "captured orders linked to this finding", never as orders individually
+   * proven to have considered the provision. Same conservative pattern as
+   * scenarioComparison.ts / orderProvisionsConsidered.ts's own
+   * `orderSpecific`. */
+  orderSpecific: boolean;
 }
 
 function bucketFor(effectiveStatus: FindingStatus): RelevantRecordBucket {
@@ -96,6 +133,7 @@ export function relevantScenarioRecords(
         effectiveStatus,
         bucket: bucketFor(effectiveStatus),
         orders: finding.orderIds.map((id) => orderById.get(id)).filter((o): o is Order => !!o),
+        orderSpecific: finding.orderIds.length === 1,
       });
     }
   }

@@ -220,3 +220,139 @@ describe("relevantScenarioRecords: order resolution", () => {
     expect(record.orders).toEqual([]);
   });
 });
+
+// Checkpoint correction A: a finding_provisions link is established at
+// finding level, never per-order. A multi-order finding (finding.orderIds
+// with more than one entry) must never be presented as if the linked
+// provision were independently proven considered in each listed order --
+// only that the finding (which may synthesize facts across the matter's
+// stages) is linked to it and those orders genuinely belong to it. Same
+// conservative `orderSpecific` pattern already used by
+// scenarioComparison.ts / orderProvisionsConsidered.ts (Compare Scenarios
+// and Case Detail), reused here rather than a third rule.
+function makeOrder(overrides: Partial<Order> & { id: string }): Order {
+  return {
+    caseName: "Mock Case Limited",
+    orderStage: "Final order",
+    orderDate: "2025-01-01",
+    orderNumber: "WTM/AB/1/2025",
+    authority: "SEBI",
+    noticeesCount: 1,
+    officialUrl: "https://www.sebi.gov.in/enforcement/orders/mock",
+    cfidVerified: true,
+    cfidVerificationBasis: "confirmed_by_authorised_cfid_officer",
+    proceduralStatus: "Deep analyzed",
+    processingStage: "citations_checked",
+    retrievalStatus: "retrieved",
+    retrievalFailureReason: null,
+    scopeNote: null,
+    matterId: null,
+    officialOrderTitle: null,
+    normalizedMatterName: null,
+    ...overrides,
+  };
+}
+
+describe("relevantScenarioRecords: order-specific provenance (checkpoint correction A)", () => {
+  const provisions = [makeProvision({ id: RPT_PROVISION_ID })];
+
+  it("a finding linked to exactly one captured order is orderSpecific=true", () => {
+    const finding = makeFinding({
+      recordId: "MOCK-SINGLE-ORDER",
+      transactionTypes: [RPT_CONCEPT],
+      provisionIds: [RPT_PROVISION_ID],
+      orderIds: ["order-1"],
+    });
+    const [record] = relevantScenarioRecords(RPT_SCENARIO.id, [finding], provisions, [makeOrder({ id: "order-1" })]);
+    expect(record.orderSpecific).toBe(true);
+  });
+
+  it("a finding linked to two captured orders is orderSpecific=false, even though both orders are still shown", () => {
+    const finding = makeFinding({
+      recordId: "MOCK-MULTI-ORDER",
+      transactionTypes: [RPT_CONCEPT],
+      provisionIds: [RPT_PROVISION_ID],
+      orderIds: ["order-interim", "order-final"],
+    });
+    const orders = [
+      makeOrder({ id: "order-interim", orderStage: "Interim order", orderDate: "2024-01-01" }),
+      makeOrder({ id: "order-final", orderStage: "Final order", orderDate: "2025-01-01" }),
+    ];
+    const [record] = relevantScenarioRecords(RPT_SCENARIO.id, [finding], provisions, orders);
+    expect(record.orderSpecific).toBe(false);
+    expect(record.orders).toHaveLength(2);
+  });
+
+  // Real corpus pattern (Seacoast Shipping Services Limited): every one of
+  // its scenario findings (SSSL-01..05) is linked to BOTH an interim and a
+  // final order (finding.order_id and finding.final_order_id both set) --
+  // a genuine multi-order finding, not a synthetic edge case.
+  it("Seacoast-pattern regression: a finding spanning an interim and a final order is never presented as order-specific provenance", () => {
+    const finding = makeFinding({
+      recordId: "SSSL-02",
+      caseName: "Seacoast Shipping Services Limited",
+      transactionTypes: [RPT_CONCEPT],
+      provisionIds: [RPT_PROVISION_ID],
+      findingStatus: "Confirmed in Final Order",
+      orderIds: ["sssl-interim-order", "sssl-final-order"],
+    });
+    const orders = [
+      makeOrder({ id: "sssl-interim-order", caseName: "Seacoast Shipping Services Limited", orderStage: "Interim order", orderDate: "2024-06-01" }),
+      makeOrder({ id: "sssl-final-order", caseName: "Seacoast Shipping Services Limited", orderStage: "Final order", orderDate: "2025-09-24" }),
+    ];
+    const [record] = relevantScenarioRecords(RPT_SCENARIO.id, [finding], provisions, orders);
+    expect(record.orderSpecific).toBe(false);
+    expect(record.bucket).toBe("confirmed_final");
+    expect(record.orders.map((o) => o.orderStage)).toEqual(["Interim order", "Final order"]);
+  });
+
+  // Real corpus pattern (Par Drugs and Chemicals Limited, PDCL-01): linked
+  // to both an interim order and a later confirmatory order, disposition
+  // "confirmed_at_interim" -- an Interim-to-Confirmatory matter, another
+  // genuine multi-order finding.
+  it("Par Drugs-pattern regression: an interim finding spanning an interim and a confirmatory order is never presented as order-specific provenance", () => {
+    const finding = makeFinding({
+      recordId: "PDCL-01",
+      caseName: "Par Drugs and Chemicals Limited",
+      transactionTypes: [RPT_CONCEPT],
+      provisionIds: [RPT_PROVISION_ID],
+      findingStatus: "Confirmed at interim",
+      orderIds: ["pdcl-interim-order", "pdcl-confirmatory-order"],
+    });
+    const orders = [
+      makeOrder({ id: "pdcl-interim-order", caseName: "Par Drugs and Chemicals Limited", orderStage: "Interim order", orderDate: "2023-03-01" }),
+      makeOrder({ id: "pdcl-confirmatory-order", caseName: "Par Drugs and Chemicals Limited", orderStage: "Confirmatory order", orderDate: "2023-11-01" }),
+    ];
+    const [record] = relevantScenarioRecords(RPT_SCENARIO.id, [finding], provisions, orders);
+    expect(record.orderSpecific).toBe(false);
+    expect(record.bucket).toBe("interim_alleged_unresolved");
+    expect(record.orders.map((o) => o.orderStage)).toEqual(["Interim order", "Confirmatory order"]);
+  });
+});
+
+describe("RELEVANT_RECORD_BUCKET_LABELS: bucket wording describes the finding's disposition, never implies every listed order shares it", () => {
+  it("every label is phrased as a claim about the finding, not about the order(s) shown beneath it", async () => {
+    const { RELEVANT_RECORD_BUCKET_LABELS } = await import("@/lib/fixedScenarioRelevantRecords");
+    expect(RELEVANT_RECORD_BUCKET_LABELS.confirmed_final).toBe("Findings confirmed at final stage");
+    expect(RELEVANT_RECORD_BUCKET_LABELS.partly_confirmed).toBe("Findings partly confirmed at final stage");
+    expect(RELEVANT_RECORD_BUCKET_LABELS.not_confirmed_contrary).toBe("Findings not confirmed / contrary treatment");
+    expect(RELEVANT_RECORD_BUCKET_LABELS.interim_alleged_unresolved).toBe("Findings interim, alleged or otherwise unresolved");
+    // None of the labels may read as "orders confirmed" / "final orders" in
+    // a way that could imply every order listed under the bucket was
+    // itself a final confirmation (a multi-order finding confirmed at
+    // final stage may still list an interim order alongside the final one).
+    for (const label of Object.values(RELEVANT_RECORD_BUCKET_LABELS)) {
+      expect(label).not.toMatch(/^Confirmed in final orders?$/i);
+    }
+  });
+});
+
+describe("FixedScenarioAnalyzer.tsx: renders the finding-level provenance qualifier and attributable source label", () => {
+  it("carries the exact required finding-level qualifier text, reused verbatim from Compare Scenarios / Case Detail", async () => {
+    const { readFileSync } = await import("fs");
+    const src = readFileSync(new URL("../src/components/analyzer/FixedScenarioAnalyzer.tsx", import.meta.url), "utf8");
+    expect(src).toContain("Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.");
+    expect(src).toMatch(/orderSpecific\s*\?\s*"Order:\s*"\s*:\s*"Captured orders linked to this finding:\s*"/);
+    expect(src).toContain("Source recorded for this finding:");
+  });
+});

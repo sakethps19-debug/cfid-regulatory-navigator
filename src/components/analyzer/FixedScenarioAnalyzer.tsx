@@ -229,25 +229,33 @@ function RelevantOrdersAndScenarios({ groups }: { groups: { bucket: RelevantScen
                         — {r.provision.subject}
                       </p>
                       {r.orders.length > 0 && (
-                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                          {r.orders.map((o, i) => (
-                            <span key={o.id}>
-                              {i > 0 && "; "}
-                              {o.orderStage} · {o.orderDate ?? "date not on file"} · {o.orderNumber ?? "order number not on file"}{" "}
-                              <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
-                                View order detail →
-                              </Link>
-                            </span>
-                          ))}
-                        </p>
+                        <div className="mt-1 text-xs text-[var(--color-ink-500)]">
+                          {!r.orderSpecific && (
+                            <p className="italic">
+                              Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.
+                            </p>
+                          )}
+                          <p>
+                            {r.orderSpecific ? "Order: " : "Captured orders linked to this finding: "}
+                            {r.orders.map((o, i) => (
+                              <span key={o.id}>
+                                {i > 0 && "; "}
+                                {o.orderStage} · {o.orderDate ?? "date not on file"} · {o.orderNumber ?? "order number not on file"}{" "}
+                                <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
+                                  View order detail →
+                                </Link>
+                              </span>
+                            ))}
+                          </p>
+                        </div>
                       )}
                       <p className="mt-1 text-xs text-[var(--color-ink-500)]">
                         {r.finding.interimParagraphReferences && <>Interim paras: {r.finding.interimParagraphReferences}. </>}
                         {r.finding.finalParagraphReferences && <>Final paras: {r.finding.finalParagraphReferences}. </>}
                         {legalReviewLabel(r.finding.humanLegalReviewCompleted)}
                       </p>
-                      <div className="mt-1">
-                        <SourceLink href={r.finding.officialSourceUrl} />
+                      <div className="mt-1 text-xs text-[var(--color-ink-500)]">
+                        Source recorded for this finding: <SourceLink href={r.finding.officialSourceUrl} />
                       </div>
                     </li>
                   ))}
