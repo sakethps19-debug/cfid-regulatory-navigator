@@ -372,31 +372,27 @@ describe("Question-A polarity: mandatory adverse/compliant paired tests (permane
   });
 
   it("Auditor: failed independence/eligibility is a candidate breach; satisfied independence is not", () => {
-    // Deliberately NOT COMPANIES-ACT-139/141-3-d/e: those are gated on the
-    // statutory_auditor ACTOR tag, which this corpus's vocabulary only
-    // recognizes via "statutory auditor" (see concept-tags.ts) — a bare
-    // "auditor" synonym was tried and reverted because it collided with
-    // the actor-incompatibility precision tests elsewhere. The mandated
-    // text here ("Auditor failed...") never says "statutory auditor", so
-    // an ungated synthetic provision is used instead — the polarity flip
-    // this test exists to prove runs entirely through the conduct tag
-    // (auditor_tenure_or_independence_issue), independent of that gap.
-    const provision = makeProvision("COMPANIES-ACT-141-3-i", "Section 141(3)", "Auditor independence/eligibility (ungated, synthetic).", "Companies Act, 2013");
+    // Checkpoint correction B retired the ungated synthetic-provision
+    // vehicle this test previously used (COMPANIES-ACT-141-3-i, "ungated,
+    // synthetic") — an ungated provision can no longer reach breachIds
+    // purely through a linked precedent's conduct-tag overlap. Retargeted
+    // to the real, independently gated COMPANIES-ACT-141-3-d
+    // (requireAllOfGroups: [["statutory_auditor"], ["auditor_tenure_or_
+    // independence_issue"]], actor-restricted to statutory_auditor) — both
+    // freeText variants now name "statutory auditor" so the real gate's
+    // own topic group is satisfied, exercising the exact same
+    // adverse/compliant polarity flip this test exists to prove, on a
+    // genuine provision rather than a fabricated one.
+    const provision = makeProvision("COMPANIES-ACT-141-3-d", "Section 141(3)(d)", "Statutory auditor financial-position disqualification.", "Companies Act, 2013");
     const finding = makeFinding({
       recordId: "QA-PAIR-AUDITOR",
       provisionLinks: [link(provision.id)],
       allegedConduct: ["auditor_tenure_or_independence_issue"],
     });
-    const adverse = analyzeScenario({ freeText: "Auditor failed statutory independence eligibility requirement." }, [finding], [provision], []);
-    const compliant = analyzeScenario({ freeText: "Auditor satisfied independence requirements." }, [finding], [provision], []);
+    const adverse = analyzeScenario({ freeText: "The statutory auditor failed the independence eligibility requirement." }, [finding], [provision], []);
+    const compliant = analyzeScenario({ freeText: "The statutory auditor satisfied independence requirements." }, [finding], [provision], []);
 
-    expect(breachIds(adverse)).toContain("COMPANIES-ACT-141-3-i");
-    expect(breachIds(compliant)).not.toContain("COMPANIES-ACT-141-3-i");
-    // The compliant text carries no transaction/actor-category signal at
-    // all (only the negated conduct tag), below MIN_FINDING_SCORE (3), so
-    // the synthetic precedent legitimately does not score on that call and
-    // is not expected to surface in governingProvisionResults either; the
-    // polarity-flip itself (the point of this test) is still fully
-    // exercised via breachIds above.
+    expect(breachIds(adverse)).toContain("COMPANIES-ACT-141-3-d");
+    expect(breachIds(compliant)).not.toContain("COMPANIES-ACT-141-3-d");
   });
 });

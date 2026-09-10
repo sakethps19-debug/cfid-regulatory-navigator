@@ -53,9 +53,17 @@ describe("Mandatory scenario 9: false corporate announcements", () => {
 
 describe("Mandatory scenario 10: false CEO/CFO certification", () => {
   it("retrieves the SSSL-16 precedent", () => {
+    // Checkpoint correction B: the query must itself state the adverse
+    // fact (a false certification), not merely the surrounding topic/actor
+    // facts — "signed the compliance certificate ... despite being aware"
+    // detects no conduct-kind concept at all (see detectConcepts), so
+    // SSSL-16 previously surfaced only via LODR-17-8's own ungated
+    // precedent-conduct-overlap fallback, exactly the leakage that
+    // correction removes. "signed a false compliance certificate" is the
+    // curated vocabulary's own phrase for the same allegation.
     const result = run(
       scenarioFindings,
-      "The Managing Director signed the compliance certificate to the board despite being aware that the financial statements did not present a true and fair view."
+      "The Managing Director signed a false compliance certificate to the board despite being aware that the financial statements did not present a true and fair view."
     );
     expect(result.hasResults).toBe(true);
     expect(allRecordIds(result)).toContain("SSSL-16");

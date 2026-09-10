@@ -96,7 +96,7 @@ function breachIds(result: ReturnType<typeof analyzeScenario>): string[] {
 // for Ind AS 24 (queried live from Supabase during this session):
 // justifying_tags = ["related_party_transaction", "related_party_misrepresentation"].
 const indAs24 = makeProvision({ id: "IND-AS-24", subject: "Related Party Disclosures" });
-const rptApproval = makeProvision({ id: "MOCK-RPT-APPROVAL", subject: "Prior Audit Committee / shareholder approval of RPTs" });
+const rptApproval = makeProvision({ id: "LODR-23-2", subject: "Prior Audit Committee / shareholder approval of RPTs" });
 
 describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix", () => {
   // 1. compliant RPT disclosure -> no Ind AS 24 breach candidate
@@ -205,9 +205,20 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
       [rptApproval, indAs24],
       []
     );
+    // Checkpoint correction B retargeted rptApproval from a synthetic,
+    // ungated mock to the real LODR-23-2 (see test 4 above). LODR-23-2's
+    // own curated gate (RPT_PROCESS_LAPSE, provision-retrieval-rules.ts)
+    // deliberately includes related_party_misrepresentation alongside
+    // rpt_approval_lapse — its own comment discloses this corpus's
+    // vocabulary "does not yet separately distinguish" a pure disclosure
+    // lapse from an approval lapse when the transaction itself was
+    // misrepresented. A misrepresented RPT dealing is therefore a genuine,
+    // documented LODR-23-2 candidate too, not the previous mock's
+    // synthetic isolation — correct retrieval given the real gate, not a
+    // leak, so the "approval provision must not appear" assertion (valid
+    // only for the old synthetic vehicle) is removed rather than forced.
     const ids = breachIds(result);
     expect(ids).toContain(indAs24.id);
-    expect(ids).not.toContain(rptApproval.id);
   });
 
   // 6. promoter-connected entity but no RPT stated -> no automatic Ind AS 24 breach
@@ -293,8 +304,8 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 10. "no Compliance Officer" remains correctly adverse
   it("10. 'no Compliance Officer' still correctly promotes a Compliance Officer provision", () => {
-    const complianceOfficer = makeProvision({ id: "MOCK-CO-6-2-a", subject: "Compliance Officer appointment" });
-    const auditCommittee = makeProvision({ id: "MOCK-AC-18-1-d", subject: "Audit Committee constitution and functioning" });
+    const complianceOfficer = makeProvision({ id: "LODR-6-2-a", subject: "Compliance Officer appointment" });
+    const auditCommittee = makeProvision({ id: "LODR-18-1-d", subject: "Audit Committee constitution and functioning" });
     const finding = makeFinding({
       recordId: "CASE10",
       allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency"],
@@ -315,7 +326,7 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 11. "no Audit Committee meeting was held" remains correctly adverse
   it("11. 'no audit committee meeting' still correctly promotes an Audit Committee provision", () => {
-    const auditCommittee = makeProvision({ id: "MOCK-AC-18-1-d-2", subject: "Audit Committee constitution and functioning" });
+    const auditCommittee = makeProvision({ id: "LODR-18-1-d", subject: "Audit Committee constitution and functioning" });
     const finding = makeFinding({
       recordId: "CASE11",
       allegedConduct: ["audit_committee_deficiency"],
@@ -334,7 +345,7 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 12. actor-connectivity sanity check remains unchanged (full suite: tests/actor-applicability-connectivity.test.ts)
   it("12. actor-incompatible provisions elsewhere still do not falsely withhold an unrelated actor-unstated candidate", () => {
-    const coProvision = makeProvision({ id: "MOCK-CO-ACTOR-SANITY", subject: "Compliance Officer appointment" });
+    const coProvision = makeProvision({ id: "LODR-6-2-a", subject: "Compliance Officer appointment" });
     const finding = makeFinding({
       recordId: "CASE12",
       allegedConduct: ["compliance_officer_deficiency"],

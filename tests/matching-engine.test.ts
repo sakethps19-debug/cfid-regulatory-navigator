@@ -107,7 +107,24 @@ describe("Mandatory scenario 5: company funds routed through a promoter's person
   it("retrieves the REL-10 precedent, labelled Prima facie", () => {
     const result = run("Company funds routed through a promoter's personal bank account.");
     expect(result.hasResults).toBe(true);
-    const rel10 = result.provisionResults.flatMap((pr) => pr.supportingPrecedents).find((p) => p.finding.recordId === "REL-10");
+    // Checkpoint correction B: REL-10's own cited provisions on this bare
+    // fund-diversion-only text (SEBI-ACT-12A/PFUTP family, LODR-23-2) each
+    // require their own independent securities-dealing/RPT-approval-lapse
+    // fact this scenario does not state, so none passes its own gate here
+    // — genuinely correct, not a regression. REL-10 previously additionally
+    // surfaced as a provisionResults supportingPrecedent for "LODR-34" and
+    // "IND-AS-various" (both pilot-era generic/legacy fixture ids with no
+    // curated retrieval rule of their own) purely through the ungated
+    // precedent-conduct-overlap fallback that correction removes; REL-10 is
+    // still genuinely surfaced for those two, now correctly under
+    // governingProvisionResults ("no independent retrieval rule") rather
+    // than masquerading as an applicability candidate — allRecordIds
+    // (used by the sibling scenarios in this file) already covers both.
+    const ids = allRecordIds(result);
+    expect(ids).toContain("REL-10");
+    const rel10 = result.governingProvisionResults
+      .flatMap((gp) => gp.relatedPrecedents)
+      .find((p) => p.finding.recordId === "REL-10");
     expect(rel10).toBeDefined();
     expect(rel10?.finding.findingStatus).toBe("Prima facie");
   });

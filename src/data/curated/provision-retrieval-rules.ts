@@ -221,6 +221,29 @@ const ANY_SUBSTANTIVE_VIOLATION_CONDUCT = [
   ...TRADING_CONDUCT_ANY,
 ];
 
+/** Checkpoint correction C: every one of the 15 rules below that gates on
+ * `requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT]` carries its own
+ * curated explanation text stating it is "shown once some OTHER
+ * substantive violation is ESTABLISHED by the entered facts; not itself an
+ * independent trigger" — but passesRetrievalGate only ever checks whether
+ * the query's own text merely MENTIONS one of these conduct concepts, not
+ * whether any such violation was actually established (i.e. resolved to a
+ * primary_candidate) elsewhere in the SAME result. That gap let this
+ * provision family appear as a "related_ancillary" candidate purely
+ * because the query names an adverse concept in passing, even where the
+ * corpus has NO independently-gated primary substantive candidate to
+ * anchor it — contradicting the rule's own stated legal basis. engine.ts
+ * uses this to detect exactly that class of rule and additionally require
+ * a real primary_candidate to exist in the result before showing it —
+ * reference equality against the shared ANY_SUBSTANTIVE_VIOLATION_CONDUCT
+ * array is deliberate and precise: only a rule that opts into this EXACT
+ * umbrella gate is affected, never a rule with its own narrower,
+ * provision-specific requireAllOfGroups. */
+export function ridesOnEstablishedSubstantiveViolation(rule: ProvisionRetrievalRule | undefined): boolean {
+  if (!rule) return false;
+  return rule.requireAllOfGroups.some((group) => group === ANY_SUBSTANTIVE_VIOLATION_CONDUCT);
+}
+
 /** Actor tags identifying a natural person potentially "in charge of and
  * responsible to the company for the conduct of its business" — the
  * category SEBI Act Section 27's company-attribution mechanism actually
@@ -1051,6 +1074,117 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     requireAllOfGroups: [["asset_or_undertaking_disposal"]],
     explanation:
       "[Governance/procedural obligation] Regulation 37A prohibits a public shareholder who is directly or indirectly a party to a sale/lease/disposal of the whole or substantially the whole undertaking from voting on the resolution approving it. Requires an asset/undertaking-disposal fact — the same materiality/procedural-threshold predicate Companies Act Section 180(1)(a) requires (see above); whether the specific voting shareholder was actually interested is a further question the entered facts should separately address.",
+  },
+
+  // ----- LODR Regulation 6 (Compliance Officer) and Regulation 18
+  // (Audit Committee) sub-clause families, plus Regulation 17(8) -----
+  // Checkpoint correction B/C: these were previously left ungated,
+  // relying on the ungated-fallback path (a specific linked precedent's
+  // own conduct-tag overlap with the query, not an independently-curated
+  // prerequisite) to reach provisionResults — exactly the leakage
+  // checkpoint correction B removes. Each of these clauses is a narrow,
+  // single-topic obligation; the single adverse (conduct-kind) concept id
+  // gating each one already IS the topic (its own curated synonym list —
+  // see concept-tags.ts — states the specific deficiency in that exact
+  // subject: "compliance officer vacancy", "audit committee not
+  // constituted", "false compliance certification" — never a generic
+  // mention of the role/committee/certificate alone), so a single-group
+  // gate is the correct, precise minimum fact — the SAME established
+  // pattern already used for e.g. false_appearance_of_trading and
+  // actual_price_manipulation above, not a two-group topic+adverse
+  // connectivity requirement that would wrongly demand a SEPARATE, more
+  // generic topic phrase alongside a self-contained adverse sentence.
+  // Never a broad "any substantive violation" umbrella gate.
+  {
+    provisionId: "LODR-6-gen",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6 is the umbrella clause requiring every listed entity to appoint a company secretary as Compliance Officer. Requires a stated Compliance Officer appointment/vacancy deficiency; a Compliance Officer mentioned only in an unrelated context does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-6-1",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(1) requires the Compliance Officer to be a whole-time KMP employee not more than one level below the board. Same minimum fact as Regulation 6 above: a stated Compliance Officer appointment/vacancy deficiency.",
+  },
+  {
+    provisionId: "LODR-6-1A",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(1A) requires a Compliance Officer vacancy to be filled within three months, without an improper interim appointment. Same minimum fact as Regulation 6 above.",
+  },
+  {
+    provisionId: "LODR-6-2-gen",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2) is the umbrella clause under which the lettered Compliance Officer duties sit. Same minimum fact as Regulation 6 above.",
+  },
+  {
+    provisionId: "LODR-6-2-a",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(a) is one of the Compliance Officer's specific duties under the Regulation 6(2) umbrella. Same minimum fact as Regulation 6 above.",
+  },
+  {
+    provisionId: "LODR-6-2-b",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(b) is one of the Compliance Officer's specific duties under the Regulation 6(2) umbrella. Same minimum fact as Regulation 6 above.",
+  },
+  {
+    provisionId: "LODR-6-2-c",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(c) is one of the Compliance Officer's specific duties under the Regulation 6(2) umbrella. Same minimum fact as Regulation 6 above.",
+  },
+  {
+    provisionId: "LODR-18-1-b",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(1)(b) requires at least two-thirds of the Audit Committee to be independent directors. Requires a stated Audit Committee constitution/process deficiency; an Audit Committee mentioned only in an unrelated context does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-18-1-d",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(1)(d) requires the Audit Committee chairperson to be an independent director present at the AGM. Same minimum fact as Regulation 18(1)(b) above.",
+  },
+  {
+    provisionId: "LODR-18-2",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(2) sets the Audit Committee's meeting-frequency, quorum and power requirements. Same minimum fact as Regulation 18(1)(b) above; a bare 'failure to convene Audit Committee meetings' finding invokes sub-clause (a)'s frequency requirement (see the Seacoast Shipping Services Limited final order).",
+  },
+  {
+    provisionId: "LODR-18-3-schedule-II",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(3) read with Part C of Schedule II sets the Audit Committee's role and responsibilities, including reviewing financial statements for accuracy. Same minimum fact as Regulation 18(1)(b) above.",
+  },
+  {
+    provisionId: "LODR-17-8",
+    requireAllOfGroups: [["false_compliance_certification"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 17(8) requires the CEO/CFO to certify the financial statements and internal controls to the board. Requires a stated false/improperly-signed compliance certification fact; a CEO or CFO mentioned only in an unrelated context does not, without more, satisfy it.",
+  },
+
+  // ----- Pilot-era fixture legacy bundle ids (tests/fixtures.ts, sourced
+  // from src/data/generated/*.json — predates the live-corpus split into
+  // the LODR-6-*/LODR-18-* sub-clauses above, see tasks #38/#39) — the SAME
+  // real regulatory content under the fixture's pre-split naming, gated
+  // identically so the golden-scenario fixture suite is not left relying
+  // on the precedent-only leakage checkpoint correction B removes. -----
+  {
+    provisionId: "LODR-6-compliance-officer",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6 (pilot-era pre-split fixture bundle — see LODR-6-gen above for the live-corpus split id) requires every listed entity to appoint a company secretary as Compliance Officer. Requires a stated Compliance Officer appointment/vacancy deficiency.",
+  },
+  {
+    provisionId: "LODR-audit-committee",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18 (pilot-era pre-split fixture bundle — see LODR-18-3-schedule-II above for the live-corpus split id) sets the Audit Committee's composition, meeting and role requirements. Requires a stated Audit Committee constitution/process deficiency.",
   },
 ];
 

@@ -60,16 +60,16 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 
 describe("missingFacts provenance", () => {
   it("keeps two supporting precedents' distinct evidentiary gaps in separate, per-precedent groups", () => {
-    const provision = makeProvision({ id: "TEST-PROV-PROVENANCE" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const findingA = makeFinding({
       recordId: "SYN-A",
-      provisionIds: ["TEST-PROV-PROVENANCE"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Bank statement trail for the specific transaction."],
     });
     const findingB = makeFinding({
       recordId: "SYN-B",
-      provisionIds: ["TEST-PROV-PROVENANCE"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Board resolution authorizing the transaction."],
     });
@@ -79,7 +79,7 @@ describe("missingFacts provenance", () => {
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-PROVENANCE");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     expect(pr!.missingFacts).toHaveLength(2);
     const byRecordId = new Map(pr!.missingFacts.map((g) => [g.recordId, g.gaps]));
@@ -93,16 +93,16 @@ describe("missingFacts provenance", () => {
   });
 
   it("omits a precedent entirely from missingFacts when it has no genuine gaps, rather than including an empty group", () => {
-    const provision = makeProvision({ id: "TEST-PROV-EMPTY-GROUP" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const findingWithGap = makeFinding({
       recordId: "SYN-WITH-GAP",
-      provisionIds: ["TEST-PROV-EMPTY-GROUP"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: ["Independent verification of the transaction."],
     });
     const findingNoGap = makeFinding({
       recordId: "SYN-NO-GAP",
-      provisionIds: ["TEST-PROV-EMPTY-GROUP"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidentiaryGaps: [],
     });
@@ -112,7 +112,7 @@ describe("missingFacts provenance", () => {
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-EMPTY-GROUP");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr!.missingFacts).toEqual([
       { recordId: "SYN-WITH-GAP", scenarioTitle: "Synthetic finding", gaps: ["Independent verification of the transaction."] },
     ]);

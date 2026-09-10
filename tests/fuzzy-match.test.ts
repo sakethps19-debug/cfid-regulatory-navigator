@@ -241,7 +241,7 @@ describe("applySemanticAssist: never strips or reverses a negating prefix", () =
 });
 
 describe("semantic assist integration with analyzeScenario", () => {
-  const provision = makeProvision({ id: "MOCK-PREF", subject: "Preferential allotment safeguards." });
+  const provision = makeProvision({ id: "COMPANIES-ACT-67-2", subject: "Preferential allotment safeguards." });
   // allegedConduct here must be a real concept-tag id ("preferential_allotment"
   // in concept-tags.ts) so detectConcepts's output actually overlaps with it.
   const findingWithRealTag = makeFinding({
@@ -252,7 +252,7 @@ describe("semantic assist integration with analyzeScenario", () => {
 
   it("still detects and surfaces a provision when the free text has a typo the engine can correct", () => {
     const result = analyzeScenario(
-      { freeText: "There was a prefrential allotment of shares to a related party without proper disclosur." },
+      { freeText: "There was a prefrential allotment of shares to a related party without proper disclosur, and consideration not received for the shares." },
       [findingWithRealTag],
       [provision],
       []

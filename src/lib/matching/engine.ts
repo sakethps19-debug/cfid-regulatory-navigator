@@ -4,7 +4,13 @@ import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/
 import { computeContinuitySentenceGroups, detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
-import { isConnected, passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
+import {
+  isConnected,
+  passesRetrievalGate,
+  retrievalRuleForProvision,
+  ridesOnEstablishedSubstantiveViolation,
+  type ProvisionRetrievalRule,
+} from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
 import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
 import { buildHistoricalTreatment } from "./historicalTreatment";
@@ -351,7 +357,10 @@ function checkActorApplicability(
  * "primary_candidate" (its own legal function can anchor a charge) or a
  * "related_ancillary" one (a general principle, penalty, attribution
  * mechanism, SEBI power or bare definition riding on some other
- * established violation) — never presented as equivalent. */
+ * established violation) — never presented as equivalent. Checkpoint
+ * correction B: only ever called for a GATED provision (one with its own
+ * curated retrieval rule) — an ungated provision never reaches this point
+ * at all, see the `if (!rule)` branch above. */
 function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForProvision>): "primary_candidate" | "related_ancillary" {
   return isPrimaryCapable(legalFunction) ? "primary_candidate" : "related_ancillary";
 }
@@ -943,6 +952,41 @@ export function analyzeScenario(
       continue;
     }
 
+    // Checkpoint correction B (precedent-only applicability leakage): an
+    // UNGATED provision (no curated retrieval rule of its own) reaching
+    // this point has conductIdsMatched.length > 0 — i.e. the ONLY reason
+    // it looks like a candidate breach is that a SPECIFIC linked
+    // precedent's own conduct tags happen to overlap the entered facts.
+    // That is applicability determined by which historical finding the
+    // corpus happens to link this provision to, never by an
+    // independently-curated legal prerequisite for the provision itself —
+    // exactly the leakage this correction removes: "a provision must
+    // never appear in the 'potentially relevant to my scenario' side
+    // merely because it was linked to a historical finding that happens
+    // to share a fact/conduct tag with the entered scenario." This is
+    // NEVER pushed to provisionResults regardless of legal function —
+    // including a primary-capable one (e.g. LODR-6-gen, governance
+    // procedural obligation) that previously surfaced as a
+    // "primary_candidate" through this exact path. Nothing is lost for
+    // genuine historical awareness: buildHistoricalTreatment
+    // (historicalTreatment.ts) walks the corpus and cross-references the
+    // (now-absent) provisionResults entry independently, correctly
+    // falling back to currentCandidateTier: "not_currently_a_candidate"
+    // and still surfacing the provision under Historical Treatment where
+    // a comparable matter genuinely invoked it.
+    if (!rule) {
+      const countPhrase = `${supporting.length} structured finding${supporting.length > 1 ? "s" : ""} factually overlapping this scenario also cite${supporting.length > 1 ? "" : "s"} ${provision.provisionNumber}`;
+      governingProvisionResults.push({
+        provision,
+        relatedPrecedents: supporting.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+        polarityClass: "no_independent_retrieval_rule",
+        note: `${countPhrase}, and the entered facts state an adverse fact overlapping that precedent's own record. This provision has no independently curated legal-retrieval rule in this corpus, so it is not shown here as a candidate applicable to the entered facts — only a historical linkage to a factually comparable precedent is established. See how CFID has treated this provision in comparable matters under Historical Treatment.`,
+        legalFunction: legalFunctionForProvision(provisionId),
+        candidateTier: "governing_relevant",
+      });
+      continue;
+    }
+
     // Prefer the highest-scoring RESOLVED finding (anything other than
     // Alleged/Inconclusive/Procedural observation) as the anchor for
     // confidence — a genuinely upheld precedent should not be shadowed by a
@@ -984,6 +1028,43 @@ export function analyzeScenario(
       candidateTier: deriveCandidateTier(legalFunction),
       actorApplicability: getActorApplicability(provisionId),
     });
+  }
+
+  // Checkpoint correction C: a provisionResults entry whose own curated
+  // retrieval rule rides on the shared ANY_SUBSTANTIVE_VIOLATION_CONDUCT
+  // umbrella gate (LODR Regulation 4(1)/4(2)(f) family, SEBI Act Section
+  // 15HB — see ridesOnEstablishedSubstantiveViolation) carries an
+  // explanation stating it is shown "once some OTHER substantive
+  // violation is established by the entered facts; not itself an
+  // independent trigger". passesRetrievalGate only checks that the
+  // query's text MENTIONS a qualifying adverse concept, never that such a
+  // violation was actually established elsewhere in this same result —
+  // when NO primary_candidate exists anywhere in provisionResults, that
+  // premise is simply false, and this provision must not be presented as
+  // a current-scenario applicability candidate on the strength of the
+  // umbrella gate alone. Demoted to governingProvisionResults with an
+  // honest explanation rather than silently dropped, and — like every
+  // other governing entry — still independently, correctly surfaced by
+  // buildHistoricalTreatment if a comparable matter genuinely invoked it.
+  // Deliberately scoped to this ONE curated rule family (detected by
+  // reference equality, not by legalFunction) so a genuinely independent
+  // general-principle/penalty provision with its own narrower rule is
+  // never affected.
+  if (!provisionResults.some((pr) => pr.candidateTier === "primary_candidate")) {
+    for (let i = provisionResults.length - 1; i >= 0; i--) {
+      const pr = provisionResults[i];
+      if (!ridesOnEstablishedSubstantiveViolation(retrievalRuleForProvision(pr.provision.id))) continue;
+      provisionResults.splice(i, 1);
+      const n = pr.supportingPrecedents.length;
+      governingProvisionResults.push({
+        provision: pr.provision,
+        relatedPrecedents: pr.supportingPrecedents,
+        polarityClass: "rides_on_unestablished_violation",
+        note: `${n} structured finding${n === 1 ? "" : "s"} factually overlapping this scenario also cite${n === 1 ? "s" : ""} ${pr.provision.provisionNumber}. This provision's own retrieval rule rides on some OTHER substantive violation being established by the entered facts — it is not an independent trigger of its own. No such violation is independently established elsewhere in this result, so this provision is not shown here as a current-scenario applicability candidate.`,
+        legalFunction: pr.legalFunction,
+        candidateTier: "governing_relevant",
+      });
+    }
   }
 
   provisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.supportingPrecedents[0], b.supportingPrecedents[0]));

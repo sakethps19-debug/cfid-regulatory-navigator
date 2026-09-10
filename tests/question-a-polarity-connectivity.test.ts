@@ -141,8 +141,26 @@ describe("Question-A connectivity: mandatory Cases 1-10", () => {
       transactionTypes: ["financial_statement_disclosure"],
       allegedConduct: ["financial_statement_misstatement", "fictitious_sales_or_revenue"],
     });
+    // Checkpoint correction C: SEBI-ACT-15HB's own curated rule rides on
+    // ANY_SUBSTANTIVE_VIOLATION_CONDUCT — its own explanation states it is
+    // shown once some OTHER substantive violation is ESTABLISHED, not
+    // merely mentioned. The original freeText detected only
+    // fictitious_sales_or_revenue, not financial_statement_misstatement,
+    // so IND-AS-1 (gated on financial_statement_misstatement alone) itself
+    // gate-blocked and no primary_candidate was actually established here
+    // — SEBI-ACT-15HB then correctly demotes to governingProvisionResults
+    // rather than reading as an independent breach on the strength of a
+    // merely-mentioned adverse concept. Explicitly stating the financial
+    // statement misstatement fact (this test's actual point: a genuine,
+    // separately established financial-misstatement fact, not cured by
+    // the compliant issue-proceeds sentence) makes IND-AS-1 a genuine
+    // primary_candidate, restoring the scenario this test is meant to
+    // exercise.
     const result = analyzeScenario(
-      { freeText: "Rights issue proceeds were used exactly for the stated objects. Quarterly revenue was nevertheless overstated through fictitious sales." },
+      {
+        freeText:
+          "Rights issue proceeds were used exactly for the stated objects. Quarterly revenue was nevertheless overstated through fictitious sales, a financial statement misstatement.",
+      },
       [issueFinding, finFinding],
       provisions,
       []
@@ -225,22 +243,35 @@ describe("Question-A connectivity: mandatory Cases 1-10", () => {
   });
 
   it("Case 8: a bare denial is not affirmative proof of compliance against contrary evidence", () => {
-    const provision = makeProvision("SEBI-ACT-15HB", "Section 15HB", "Residual penalty.", "SEBI Act, 1992");
+    // Checkpoint correction C retargeted this case's provision/facts:
+    // SEBI-ACT-15HB's own rule rides on ANY_SUBSTANTIVE_VIOLATION_CONDUCT
+    // (shown only once some OTHER substantive violation is established),
+    // and with no other provision in play here that requirement can never
+    // be met — exactly the leakage that correction removes, unrelated to
+    // what this case actually tests (a bare denial must not read as
+    // affirmative proof of compliance against contrary evidence). LODR-17-8
+    // is gated singly and directly on false_compliance_certification, so
+    // it isolates the fact-polarity mechanism this test exists to exercise
+    // without depending on an unrelated established-violation precondition.
+    const provision = makeProvision("LODR-17-8", "Regulation 17(8)", "CEO/CFO compliance certification.", "LODR Regulations, 2015");
     const finding = makeFinding({
       recordId: "CASE8",
-      provisionLinks: [link("SEBI-ACT-15HB")],
-      transactionTypes: ["fund_transfer_promoter_entity"],
-      allegedConduct: ["fund_diversion"],
-      actorRoles: ["promoter"],
+      provisionLinks: [link("LODR-17-8")],
+      transactionTypes: ["certification_process"],
+      allegedConduct: ["false_compliance_certification"],
+      actorRoles: ["managing_director"],
       evidenceTypes: ["bank_statements_flow"],
     });
     const result = analyzeScenario(
-      { freeText: "The promoter denied diversion. Bank records nevertheless showed company funds being transferred to promoter-controlled entities without business purpose." },
+      {
+        freeText:
+          "The Managing Director denied any false certification. Internal records nevertheless showed the compliance certificate was signed despite known non-compliance.",
+      },
       [finding],
       [provision],
       []
     );
-    expect(breachIds(result)).toContain("SEBI-ACT-15HB");
+    expect(breachIds(result)).toContain("LODR-17-8");
   });
 
   it("Case 9: an investigated-but-not-established allegation, supported by contrary records, is never a candidate breach", () => {
@@ -350,7 +381,18 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
   const AC_COMPLIANT = "The Audit Committee was properly constituted and met as required.";
   const AUDITOR_ADVERSE = "The statutory auditor continued as auditor beyond the permitted tenure.";
   const AUDITOR_COMPLIANT = "The statutory auditor satisfied independence requirements.";
-  const FUND_DIVERSION_ADVERSE = "Company funds were diverted to promoter-controlled entities.";
+  // Checkpoint correction C: SEBI-ACT-15HB's own rule rides on
+  // ANY_SUBSTANTIVE_VIOLATION_CONDUCT (shown only once some OTHER
+  // substantive violation is independently established, not merely
+  // mentioned) — a bare fund-diversion mention alone no longer suffices.
+  // The trailing Compliance Officer sentence is a genuinely unrelated
+  // fact that independently gates LODR-6-2-a (real, primary-capable), so
+  // scenarios using this macro that expect SEBI-ACT-15HB to ride along
+  // now have a genuine established violation to ride on, exactly the
+  // "one compliant fact + one unrelated violation" pattern several of
+  // these scenarios are already named for.
+  const FUND_DIVERSION_ADVERSE =
+    "Company funds were diverted to promoter-controlled entities. Separately, the Compliance Officer position remained vacant.";
   const PFUTP_ADVERSE = "There was manipulation of the security price.";
   const PFUTP_COMPLIANT = "The share price increased following genuine earnings improvement.";
 
@@ -392,7 +434,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 19, group: "allegation not established", freeText: "There was no evidence of non-cooperation by the company during the investigation.", mustNot: ["SEBI-ACT-11C-3"] },
     { n: 20, group: "allegation not established", freeText: "There was no evidence of price manipulation; the share price increased following genuine earnings improvement.", mustNot: ["PFUTP-3-a"] },
     // 9. allegation denied but evidence supports it
-    { n: 21, group: "allegation denied but evidence supports it", freeText: "The promoter denied diversion. Bank records nevertheless showed company funds being transferred to promoter-controlled entities without business purpose.", must: ["SEBI-ACT-15HB"] },
+    { n: 21, group: "allegation denied but evidence supports it", freeText: "The promoter denied diversion. Bank records nevertheless showed company funds being transferred to promoter-controlled entities without business purpose. Separately, the Compliance Officer position remained vacant.", must: ["SEBI-ACT-15HB"] },
     { n: 22, group: "allegation denied but evidence supports it", freeText: "The company denied any related-party approval lapse. The audit committee's own minutes confirmed the related-party transaction was not placed before the Audit Committee.", must: ["LODR-23-2"] },
     // 10. corrected/cured conduct
     { n: 23, group: "corrected/cured conduct", freeText: "The company initially failed to disclose the event, but disclosed it three days later.", mustNot: ["LODR-30"] },

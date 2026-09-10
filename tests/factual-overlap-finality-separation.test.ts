@@ -39,18 +39,24 @@ describe("Factual overlap score is never adjusted for procedural stage", () => {
     // pilot-era generated fixture's own STALE, pre-split allegedConduct tag
     // id "fictitious_sales_or_assets", which no longer exists in
     // concept-tags.ts (see the fictitious_sales_or_assets tag split, task
-    // #43) and so no longer positively matches anything — meaning this
-    // scenario now states no genuinely-detected adverse conduct at all,
-    // and LODR-33 (ungated) correctly demotes to governingProvisionResults
-    // under the new "candidate breach requires a positively-matched
-    // adverse concept" rule. Both REL-04 and SSSL-01 ALSO independently
-    // carry "actual_price_manipulation" in their own allegedConduct (a
-    // still-current tag id) — using that fact instead exercises the exact
-    // same finality-must-not-affect-score guarantee this test exists for,
-    // while remaining a genuine candidate breach under the new rule.
+    // #43) and so no longer positively matches anything. Both REL-04 and
+    // SSSL-01 ALSO independently carry "actual_price_manipulation" in
+    // their own allegedConduct (a still-current tag id) — using that fact
+    // instead exercises the exact same finality-must-not-affect-score
+    // guarantee this test exists for.
+    //
+    // Retargeted the provision id too (checkpoint correction B): LODR-33
+    // (this pilot-era fixture's pre-split legacy id, no longer gated at
+    // all) previously reached provisionResults only via the ungated
+    // precedent-conduct-overlap fallback checkpoint correction B removes —
+    // exactly the leakage that correction targets, not a legitimate
+    // candidate this test should rely on. Both REL-04 and SSSL-01 ALSO
+    // independently cite PFUTP-4-2-e, which is independently, genuinely
+    // gated on actual_price_manipulation alone — the identical fact
+    // pattern, on a provision unaffected by that correction.
     const freeText = "There was manipulation of the security price.";
     const result = analyzeScenario({ freeText }, scenarioFindings, provisions, legalTests);
-    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-33");
+    const pr = result.provisionResults.find((p) => p.provision.id === "PFUTP-4-2-e");
     expect(pr).toBeDefined();
     // REL-04 (Prima facie, interim) and SSSL-01 (Confirmed in Final Order)
     // both cite this provision and both independently carry

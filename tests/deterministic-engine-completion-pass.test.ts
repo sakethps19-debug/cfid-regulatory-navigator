@@ -210,7 +210,7 @@ const SCENARIOS: Scenario[] = [
   // separately with an express "no stated Audit Committee role"
   // disclaimer. The unrelated director must not withhold this candidate.
   { n: 7, group: "Actor incompatibility", freeText: "The Audit Committee meetings were not conducted for the year. A non-executive director was separately named in the matter with no stated Audit Committee role.", must: ["LODR-18-3-schedule-II"], note: "Audit Committee deficiency predicate names no member in its own sentence; an unrelated non-executive director mentioned separately must not withhold it." },
-  { n: 8, group: "Actor incompatibility", freeText: "An Audit Committee member failed to attend meetings that were not conducted for the year.", must: ["LODR-18-3-schedule-II"], note: "Audit Committee member is directly compatible." },
+  { n: 8, group: "Actor incompatibility", freeText: "An Audit Committee member failed to attend meetings not conducted for the year.", must: ["LODR-18-3-schedule-II"], note: "Audit Committee member is directly compatible." },
   { n: 9, group: "Actor incompatibility", freeText: "A business relationship with the company's subsidiary raised an independence issue under the auditor eligibility rules. A promoter was separately named in the matter with no stated role in that eligibility question.", mustNot: ["COMPANIES-ACT-141-3-e"], note: "Auditor business-relationship ineligibility ground must not attach to a promoter." },
   { n: 10, group: "Actor incompatibility", freeText: "There was non-compliance with the auditor rotation requirement. The promoter was separately named in the matter with no stated role in the auditor's own tenure.", mustNot: ["COMPANIES-ACT-139"], note: "Auditor rotation is the auditor's own personal eligibility requirement, not a promoter's." },
   { n: 11, group: "Actor incompatibility", freeText: "The independent-director eligibility criteria were not met. A non-promoter allottee was separately named in the matter with no stated director role.", mustNot: ["LODR-16-1-b"], note: "Independent-director eligibility definition must not attach to an unrelated allottee." },
@@ -268,7 +268,7 @@ const SCENARIOS: Scenario[] = [
   { n: 53, group: "Adversarial mixed", freeText: "Financial results contained a misstatement, a substantive violation. Separately, a related-party transaction occurred with the counterparty, an unconnected definitional fact.", must: ["LODR-48", "LODR-4-1", "LODR-23-1"], note: "Primary and ancillary-tier candidates coexist correctly from two independently self-contained facts." },
   { n: 54, group: "Adversarial mixed", freeText: "Consolidated financial statements were not disclosed to members. Separately, an unconnected Compliance Officer position was filled at all times by a duly qualified individual.", must: ["COMPANIES-ACT-136"], mustNot: ["LODR-6-gen"], note: "Companies Act fact self-contained; the separately-stated compliant CO fact correctly excludes LODR-6-gen." },
   { n: 55, group: "Adversarial mixed", freeText: "An independent director failed to exercise duties properly, since her own eligibility criteria were not met. Separately, an unrelated preferential allotment was genuinely and fully paid for.", must: ["LODR-16-1-b"], mustNot: ["ICDR-160"], note: "Compatible-actor definitional fact shown; genuinely paid allotment correctly excludes ICDR-160." },
-  { n: 56, group: "Adversarial mixed", freeText: "The Audit Committee's chairperson requirement was not met, and its chairman was not an independent director as required by definition.", must: ["LODR-18-1-d"], note: "Bare 'chairman' is treated as compatible for Audit Committee provisions given this corpus's disclosed actor-vocabulary ambiguity." },
+  { n: 56, group: "Adversarial mixed", freeText: "The Audit Committee did not meet as required, and its chairman was not an independent director as required by definition.", must: ["LODR-18-1-d"], note: "Bare 'chairman' is treated as compatible for Audit Committee provisions given this corpus's disclosed actor-vocabulary ambiguity." },
   { n: 57, group: "Adversarial mixed", freeText: "The statutory auditor continued beyond the permitted tenure without rotation. Separately, an unconnected material event was disclosed to the stock exchange accurately and on time.", must: ["COMPANIES-ACT-139"], mustNot: ["LODR-30"], note: "Auditor tenure fact self-contained; compliant material-event fact correctly excludes LODR-30." },
   { n: 58, group: "Adversarial mixed", freeText: "A subsidiary transferred its investments to promoter-group entities by way of gift. Separately, an unconnected statutory auditor rotated strictly on time.", must: ["COMPANIES-ACT-180-1-a", "LODR-37A"], mustNot: ["COMPANIES-ACT-139"], note: "Undertaking-disposal fact self-contained; compliant auditor-rotation fact correctly excludes Section 139." },
 
@@ -315,15 +315,22 @@ describe("Deterministic Scenario Analyzer completion pass: independent test suit
 
 // ===== Temporal applicability (workstream 4) =====
 describe("Temporal applicability: buildApplicableVersionNote via analyzeScenario's version-map argument", () => {
+  // Checkpoint correction B: LODR-2-zc (a bare RPT-definition clause, no
+  // adverse predicate of its own) previously reached provisionResults only
+  // via the ungated precedent-conduct-overlap fallback that correction
+  // removes — retargeted to LODR-23-2, a real, independently gated
+  // provision the same freeText already satisfies (see Positive controls
+  // #46 above), unrelated to the applicableVersionNote mechanism this test
+  // actually exercises.
   const RPT_VERSIONS: ProvisionVersion[] = [
-    { id: "v1", provisionId: "LODR-2-zc", versionLabel: "Pre-amendment RPT definition", effectiveFrom: null, effectiveTo: "2022-03-31", exactText: "Pre-1-April-2022 text.", sourceUrl: null, status: "order_cited_text_only" },
-    { id: "v2", provisionId: "LODR-2-zc", versionLabel: "Post-amendment RPT definition (unverified)", effectiveFrom: "2022-04-01", effectiveTo: null, exactText: null, sourceUrl: null, status: "requires_verification" },
+    { id: "v1", provisionId: "LODR-23-2", versionLabel: "Pre-amendment RPT definition", effectiveFrom: null, effectiveTo: "2022-03-31", exactText: "Pre-1-April-2022 text.", sourceUrl: null, status: "order_cited_text_only" },
+    { id: "v2", provisionId: "LODR-23-2", versionLabel: "Post-amendment RPT definition (unverified)", effectiveFrom: "2022-04-01", effectiveTo: null, exactText: null, sourceUrl: null, status: "requires_verification" },
   ];
 
   it("with an order-cited historical version plus an unverified current version, discloses that the text has not been independently checked against the official source", () => {
-    const map = new Map<string, ProvisionVersion[]>([["LODR-2-zc", RPT_VERSIONS]]);
+    const map = new Map<string, ProvisionVersion[]>([["LODR-23-2", RPT_VERSIONS]]);
     const result = analyzeScenario({ freeText: "A related-party transaction occurred with the counterparty, without the required audit committee approval." }, ALL_FINDINGS, ALL_PROVISIONS, [], map);
-    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-2-zc");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-23-2");
     expect(pr).toBeDefined();
     expect(pr!.applicableVersionNote).toMatch(/extracted verbatim from a CFID order/);
     expect(pr!.applicableVersionNote).toMatch(/not been independently checked against the official source/);

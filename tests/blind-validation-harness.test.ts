@@ -74,19 +74,19 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 }
 
 describe("runBlindValidation: metrics arithmetic on synthetic scenarios", () => {
-  const provisionA = makeProvision({ id: "TEST-PROV-A" });
+  const provisionA = makeProvision({ id: "IND-AS-1" });
   const provisionB = makeProvision({ id: "TEST-PROV-B" });
   const finding = makeFinding({
     recordId: "SYN-01",
     provisionIds: [provisionA.id],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["financial_statement_misstatement"],
     transactionTypes: ["purchase_transaction"],
   });
 
   it("scores a perfect scenario (expected provision returned, nothing extra) with precision and recall both 1", () => {
     const scenario: BlindValidationScenario = {
       id: "BV-TEST-1",
-      freeText: "In connection with a purchase transaction, company funds were diverted.",
+      freeText: "In connection with a purchase transaction, there was a financial statement misstatement.",
       mustAppearProvisionIds: [provisionA.id],
       mustNotAppearProvisionIds: [provisionB.id],
       reviewedBy: "Test Reviewer",
@@ -125,7 +125,7 @@ describe("runBlindValidation: metrics arithmetic on synthetic scenarios", () => 
   it("computes micro-averaging correctly across scenarios of different sizes rather than a naive per-scenario mean", () => {
     const bigScenario: BlindValidationScenario = {
       id: "BV-TEST-3",
-      freeText: "In connection with a purchase transaction, company funds were diverted.",
+      freeText: "In connection with a purchase transaction, there was a financial statement misstatement.",
       mustAppearProvisionIds: [provisionA.id, "TEST-PROV-NONEXISTENT-1", "TEST-PROV-NONEXISTENT-2"],
       mustNotAppearProvisionIds: [],
       reviewedBy: "Test Reviewer",
@@ -134,7 +134,7 @@ describe("runBlindValidation: metrics arithmetic on synthetic scenarios", () => 
     };
     const smallScenario: BlindValidationScenario = {
       id: "BV-TEST-4",
-      freeText: "In connection with a purchase transaction, company funds were diverted.",
+      freeText: "In connection with a purchase transaction, there was a financial statement misstatement.",
       mustAppearProvisionIds: [provisionA.id],
       mustNotAppearProvisionIds: [],
       reviewedBy: "Test Reviewer",

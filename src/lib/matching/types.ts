@@ -9,9 +9,14 @@ import type { WordCorrection } from "./fuzzyMatch";
  * liability-attribution mechanism and a substantive prohibition are never
  * presented as equivalent candidate violations.
  *   - "primary_candidate": the entered facts independently satisfy this
- *     provision's own retrieval prerequisite (or it is ungated), AND its
- *     legal function is one that can itself anchor a charge (see
- *     PRIMARY_CAPABLE_LEGAL_FUNCTIONS).
+ *     provision's own curated retrieval prerequisite, AND its legal
+ *     function is one that can itself anchor a charge (see
+ *     PRIMARY_CAPABLE_LEGAL_FUNCTIONS). Checkpoint correction B: an
+ *     UNGATED provision (no curated retrieval rule at all) can no longer
+ *     reach primary_candidate or related_ancillary purely through a
+ *     linked precedent's own conduct-tag overlap with the entered facts —
+ *     that produced a "no_independent_retrieval_rule" GoverningProvisionResult
+ *     instead (see QuestionAPolarityClass), never a ProvisionResult.
  *   - "related_ancillary": the entered facts satisfy the prerequisite, but
  *     the provision's own legal function (general principle, penalty,
  *     liability-attribution, SEBI power, definition) means it rides on
@@ -61,13 +66,45 @@ export type CandidateTier = "primary_candidate" | "related_ancillary" | "require
  *     independently carries, even though the provision's own gate/topic
  *     match did not itself require that fact (e.g. PFUTP on a scenario
  *     that names no securities dealing at all, but explicitly rules out
- *     "securities trading, price manipulation... "). */
-export type QuestionAPolarityClass = "governing_no_breach" | "additional_fact_required" | "not_triggered_contradicted";
+ *     "securities trading, price manipulation... ").
+ *   - "no_independent_retrieval_rule" (checkpoint correction B): this
+ *     provision has NO curated retrieval rule of its own (see
+ *     retrievalRuleForProvision) — whatever overlap exists between the
+ *     entered facts and a linked precedent's own conduct tags is real,
+ *     but is not an independently-curated legal prerequisite for THIS
+ *     provision, so it is never presented as a current-scenario
+ *     applicability candidate (ProvisionResult). The provision may still
+ *     be genuinely relevant to comparable historical matters — see
+ *     Historical Treatment (historicalTreatment.ts), which surfaces it
+ *     there independently of this classification.
+ *   - "rides_on_unestablished_violation" (checkpoint correction C): this
+ *     provision's own curated retrieval rule opts into the shared
+ *     ANY_SUBSTANTIVE_VIOLATION_CONDUCT umbrella gate (see
+ *     ridesOnEstablishedSubstantiveViolation, provision-retrieval-rules.ts)
+ *     — a rule whose OWN explanation text states it is "shown once some
+ *     OTHER substantive violation is established", never an independent
+ *     trigger. The gate itself only checks that the query's text MENTIONS
+ *     a qualifying adverse concept, not that any such violation was
+ *     actually ESTABLISHED (a real primary_candidate) elsewhere in the
+ *     same result. When no primary_candidate exists in the result at all,
+ *     the rule's own stated legal basis is unmet, so this provision is
+ *     never presented as a current-scenario applicability candidate here
+ *     — do not confuse with "additional_fact_required" (topic present,
+ *     breach genuinely unknown): here the provision's entire premise is
+ *     that it rides on ANOTHER violation, and none was established. */
+export type QuestionAPolarityClass =
+  | "governing_no_breach"
+  | "additional_fact_required"
+  | "not_triggered_contradicted"
+  | "no_independent_retrieval_rule"
+  | "rides_on_unestablished_violation";
 
 export const QUESTION_A_POLARITY_LABELS: Record<QuestionAPolarityClass, string> = {
   governing_no_breach: "Governing / relevant — no apparent breach on stated facts",
   additional_fact_required: "Additional fact required — breach status unknown",
   not_triggered_contradicted: "Not triggered — contradicted by stated facts",
+  no_independent_retrieval_rule: "No independent legal-retrieval rule — not a current-scenario applicability candidate",
+  rides_on_unestablished_violation: "Rides on another violation — none established in this result",
 };
 
 /** Result of checking a provision's own actor-applicability rule (see

@@ -58,13 +58,13 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 }
 
 describe("matchedByCategory", () => {
-  const provision = makeProvision({ id: "TEST-PROV-CAT" });
+  const provision = makeProvision({ id: "IND-AS-1" });
   const finding = makeFinding({
     recordId: "SYN-CAT-01",
-    provisionIds: ["TEST-PROV-CAT"],
+    provisionIds: ["IND-AS-1"],
     transactionTypes: ["preferential_allotment"],
     actorRoles: ["promoter"],
-    allegedConduct: ["fund_diversion"],
+    allegedConduct: ["financial_statement_misstatement"],
     evidenceTypes: ["bank_statements_flow"],
   });
 
@@ -72,13 +72,13 @@ describe("matchedByCategory", () => {
     const result = analyzeScenario(
       {
         freeText:
-          "A preferential allotment was made to the promoter, and company funds were diverted, traced through bank statements showing the flow.",
+          "A preferential allotment was made to the promoter, and there was a financial statement misstatement, traced through bank statements showing the flow.",
       },
       [finding],
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-CAT");
+    const pr = result.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(pr).toBeDefined();
 
     for (const bucket of [pr!.matchedByCategory, pr!.supportingPrecedents[0].matchedByCategory]) {
@@ -95,10 +95,10 @@ describe("matchedByCategory", () => {
   it("leaves every category empty when nothing in that category matched", () => {
     const noMatchFinding = makeFinding({
       recordId: "SYN-CAT-02",
-      provisionIds: ["TEST-PROV-CAT"],
+      provisionIds: ["IND-AS-1"],
       transactionTypes: ["preferential_allotment"],
       actorRoles: ["promoter"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["financial_statement_misstatement"],
       evidenceTypes: ["bank_statements_flow"],
     });
     // Question-A polarity correction pass: a provision now requires at
@@ -113,12 +113,12 @@ describe("matchedByCategory", () => {
     // unmentioned, preserving this test's own purpose (an unmatched
     // category is left empty, never spuriously populated).
     const result = analyzeScenario(
-      { freeText: "A preferential allotment was made to the promoter, and company funds were diverted." },
+      { freeText: "A preferential allotment was made to the promoter, and there was a financial statement misstatement." },
       [noMatchFinding],
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-CAT");
+    const pr = result.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(pr).toBeDefined();
     expect(pr!.matchedByCategory.allegedConduct.length).toBeGreaterThan(0);
     expect(pr!.matchedByCategory.evidenceTypes).toEqual([]);
