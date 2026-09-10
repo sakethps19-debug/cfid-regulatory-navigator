@@ -194,12 +194,12 @@ describe("Question-A connectivity: mandatory Cases 1-10", () => {
 
   it("Case 5: Audit Committee compliance does not cure a Compliance Officer vacancy (cross-organ)", () => {
     const provisions = [
-      makeProvision("LODR-18-1-d", "Regulation 18(1)(d)", "Audit Committee constitution and functioning.", "LODR Regulations, 2015"),
-      makeProvision("LODR-6-2-a", "Regulation 6(2)(a)", "Compliance Officer appointment.", "LODR Regulations, 2015"),
+      makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency and quorum.", "LODR Regulations, 2015"),
+      makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015"),
     ];
     const finding = makeFinding({
       recordId: "CASE5",
-      provisionLinks: [link("LODR-18-1-d", ["audit_committee_deficiency"]), link("LODR-6-2-a", ["compliance_officer_deficiency"])],
+      provisionLinks: [link("LODR-18-2", ["audit_committee_deficiency"]), link("LODR-6-gen", ["compliance_officer_deficiency"])],
       transactionTypes: ["audit_committee_process", "compliance_officer_appointment"],
       allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency"],
     });
@@ -209,8 +209,8 @@ describe("Question-A connectivity: mandatory Cases 1-10", () => {
       provisions,
       []
     );
-    notBreach(result, "LODR-18-1-d");
-    expect(breachIds(result)).toContain("LODR-6-2-a");
+    notBreach(result, "LODR-18-2");
+    expect(breachIds(result)).toContain("LODR-6-gen");
   });
 
   it("Case 6: an on-time disclosure does not cure a separately-stated later non-disclosure", () => {
@@ -329,8 +329,8 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
   const SEBI_11C_3 = makeProvision("SEBI-ACT-11C-3", "Section 11C(3)", "Power to require production of records.", "SEBI Act, 1992");
   const ICDR_160 = makeProvision("ICDR-160", "Regulation 160", "Full payment at allotment.", "ICDR Regulations, 2018");
   const LODR_32 = makeProvision("LODR-32", "Regulation 32", "Issue-proceeds monitoring and disclosure.", "LODR Regulations, 2015");
-  const LODR_6_CO = makeProvision("LODR-6-2-a", "Regulation 6(2)(a)", "Compliance Officer appointment.", "LODR Regulations, 2015");
-  const LODR_18_AC = makeProvision("LODR-18-1-d", "Regulation 18(1)(d)", "Audit Committee constitution and functioning.", "LODR Regulations, 2015");
+  const LODR_6_CO = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
+  const LODR_18_AC = makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency and quorum.", "LODR Regulations, 2015");
   const AUDITOR = makeProvision("COMPANIES-ACT-139", "Section 139", "Auditor rotation.", "Companies Act, 2013");
   const FIN_15HB = makeProvision("SEBI-ACT-15HB", "Section 15HB", "Residual penalty.", "SEBI Act, 1992");
   const PFUTP_3A = makeProvision("PFUTP-3-a", "Regulation 3(a)", "Fraudulent dealing in securities.", "PFUTP Regulations, 2003");
@@ -343,8 +343,8 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
   const INVEST_F = makeFinding({ recordId: "CX-INVEST", provisionLinks: [link("SEBI-ACT-11C-3")], transactionTypes: ["investigation_process"], allegedConduct: ["non_cooperation_with_investigation"] });
   const PREF_F = makeFinding({ recordId: "CX-PREF", provisionLinks: [link("ICDR-160")], transactionTypes: ["preferential_allotment"], allegedConduct: ["unsupported_share_allotment_consideration", "sham_preferential_allotment"] });
   const ISSUE_F = makeFinding({ recordId: "CX-ISSUE", provisionLinks: [link("LODR-32")], transactionTypes: ["rights_issue"], allegedConduct: ["fund_diversion"] });
-  const CO_F = makeFinding({ recordId: "CX-CO", provisionLinks: [link("LODR-6-2-a")], transactionTypes: ["compliance_officer_appointment"], allegedConduct: ["compliance_officer_deficiency"] });
-  const AC_F = makeFinding({ recordId: "CX-AC", provisionLinks: [link("LODR-18-1-d")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
+  const CO_F = makeFinding({ recordId: "CX-CO", provisionLinks: [link("LODR-6-gen")], transactionTypes: ["compliance_officer_appointment"], allegedConduct: ["compliance_officer_deficiency"] });
+  const AC_F = makeFinding({ recordId: "CX-AC", provisionLinks: [link("LODR-18-2")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
   const AUDITOR_F = makeFinding({ recordId: "CX-AUDITOR", provisionLinks: [link("COMPANIES-ACT-139")], actorRoles: ["statutory_auditor"], allegedConduct: ["auditor_tenure_or_independence_issue"] });
   const FIN15HB_F = makeFinding({ recordId: "CX-15HB", provisionLinks: [link("SEBI-ACT-15HB")], allegedConduct: ["fund_diversion"] });
   const PFUTP_F = makeFinding({ recordId: "CX-PFUTP", provisionLinks: [link("PFUTP-3-a")], allegedConduct: ["actual_price_manipulation"] });
@@ -353,7 +353,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
   // linkScopedAllegedConduct in engine.ts).
   const CO_AC_F = makeFinding({
     recordId: "CX-CO-AC",
-    provisionLinks: [link("LODR-6-2-a", ["compliance_officer_deficiency"]), link("LODR-18-1-d", ["audit_committee_deficiency"])],
+    provisionLinks: [link("LODR-6-gen", ["compliance_officer_deficiency"]), link("LODR-18-2", ["audit_committee_deficiency"])],
     transactionTypes: ["compliance_officer_appointment", "audit_committee_process"],
     allegedConduct: ["compliance_officer_deficiency", "audit_committee_deficiency"],
   });
@@ -386,7 +386,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
   // substantive violation is independently established, not merely
   // mentioned) — a bare fund-diversion mention alone no longer suffices.
   // The trailing Compliance Officer sentence is a genuinely unrelated
-  // fact that independently gates LODR-6-2-a (real, primary-capable), so
+  // fact that independently gates LODR-6-gen (real, primary-capable), so
   // scenarios using this macro that expect SEBI-ACT-15HB to ride along
   // now have a genuine established violation to ride on, exactly the
   // "one compliant fact + one unrelated violation" pattern several of
@@ -410,13 +410,13 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 2, group: "same topic, different transaction", freeText: `${ISSUE_COMPLIANT} A separate rights issue's proceeds were diverted to promoter-controlled entities.`, must: ["LODR-32"] },
     // 2. same topic, different actor
     { n: 3, group: "same topic, different actor", freeText: `${INVEST_COMPLIANT} ${INVEST_ADVERSE_PROMOTER}`, must: ["SEBI-ACT-11C-3"] },
-    { n: 4, group: "same topic, different actor", freeText: `${AC_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["LODR-18-1-d"], must: ["LODR-6-2-a"] },
+    { n: 4, group: "same topic, different actor", freeText: `${AC_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["LODR-18-2"], must: ["LODR-6-gen"] },
     // 3. same actor, different obligation
     { n: 5, group: "same actor, different obligation", freeText: `${AUDITOR_COMPLIANT} Separately, ${INVEST_ADVERSE_PROMOTER.toLowerCase()}`, mustNot: ["COMPANIES-ACT-139"], must: ["SEBI-ACT-11C-3"] },
     { n: 6, group: "same actor, different obligation", freeText: `${INVEST_COMPLIANT} ${AUDITOR_ADVERSE}`, mustNot: ["SEBI-ACT-11C-3"], must: ["COMPANIES-ACT-139"] },
     // 4. same sentence adverse + compliant clauses
     { n: 7, group: "same sentence, mixed clauses", freeText: "The related-party transaction was not approved by the audit committee, though it was fully disclosed.", must: ["LODR-23-2"] },
-    { n: 8, group: "same sentence, mixed clauses", freeText: "The Audit Committee properly constituted and functioning, but there was no audit committee meeting held during the year.", must: ["LODR-18-1-d"] },
+    { n: 8, group: "same sentence, mixed clauses", freeText: "The Audit Committee properly constituted and functioning, but there was no audit committee meeting held during the year.", must: ["LODR-18-2"] },
     // 5. separate sentences, same event
     { n: 9, group: "separate sentences, same event", freeText: "The related-party transaction was not approved by the audit committee. It was, however, fully disclosed to the market.", must: ["LODR-23-2"] },
     { n: 10, group: "separate sentences, same event", freeText: `${REG30_ADVERSE} It was later fully and accurately explained to the exchange.`, must: ["LODR-30"] },
@@ -424,11 +424,11 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 11, group: "separate sentences, unrelated events", freeText: `${RPT_COMPLIANT} ${REG30_ADVERSE}`, mustNot: ["LODR-23-2"], must: ["LODR-30"] },
     { n: 12, group: "separate sentences, unrelated events", freeText: `${ISSUE_COMPLIANT} ${REG33_ADVERSE}`, mustNot: ["LODR-32"], must: ["LODR-33-1-gen"] },
     { n: 13, group: "separate sentences, unrelated events", freeText: `${INVEST_COMPLIANT} ${PREF_ADVERSE}`, mustNot: ["SEBI-ACT-11C-3"], must: ["ICDR-160"] },
-    { n: 14, group: "separate sentences, unrelated events", freeText: `${AUDITOR_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-6-2-a"] },
+    { n: 14, group: "separate sentences, unrelated events", freeText: `${AUDITOR_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-6-gen"] },
     { n: 15, group: "separate sentences, unrelated events", freeText: `${PFUTP_COMPLIANT} ${ISSUE_ADVERSE}`, mustNot: ["PFUTP-3-a"], must: ["LODR-32"] },
     // 7. explicit negation
     { n: 16, group: "explicit negation", freeText: "No diversion of issue proceeds occurred.", mustNot: ["LODR-32"] },
-    { n: 17, group: "explicit negation", freeText: "There was no audit committee deficiency of any kind.", mustNot: ["LODR-18-1-d"] },
+    { n: 17, group: "explicit negation", freeText: "There was no audit committee deficiency of any kind.", mustNot: ["LODR-18-2"] },
     { n: 18, group: "explicit negation", freeText: "No manipulative conduct occurred; genuine earnings improvement drove the price.", mustNot: ["PFUTP-3-a"] },
     // 8. allegation not established
     { n: 19, group: "allegation not established", freeText: "There was no evidence of non-cooperation by the company during the investigation.", mustNot: ["SEBI-ACT-11C-3"] },
@@ -438,7 +438,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 22, group: "allegation denied but evidence supports it", freeText: "The company denied any related-party approval lapse. The audit committee's own minutes confirmed the related-party transaction was not placed before the Audit Committee.", must: ["LODR-23-2"] },
     // 10. corrected/cured conduct
     { n: 23, group: "corrected/cured conduct", freeText: "The company initially failed to disclose the event, but disclosed it three days later.", mustNot: ["LODR-30"] },
-    { n: 24, group: "corrected/cured conduct", freeText: "A vacancy in the Compliance Officer role was promptly filled; a qualified Compliance Officer remained continuously appointed thereafter.", mustNot: ["LODR-6-2-a"] },
+    { n: 24, group: "corrected/cured conduct", freeText: "A vacancy in the Compliance Officer role was promptly filled; a qualified Compliance Officer remained continuously appointed thereafter.", mustNot: ["LODR-6-gen"] },
     // 11. late compliance
     { n: 25, group: "late compliance", freeText: "The material litigation disclosure to the stock exchange was a late disclosure, made after the prescribed timeline.", must: ["LODR-30"] },
     { n: 26, group: "late compliance", freeText: "The quarterly results were filed after the prescribed deadline, with material fictitious revenue also identified in the same results.", must: ["LODR-33-1-gen"] },
@@ -448,9 +448,9 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 29, group: "unknown/unstated fact", freeText: "The company made a preferential allotment of shares.", mustNot: ["ICDR-160"] },
     // 13. multiple simultaneous violations
     { n: 30, group: "multiple simultaneous violations", freeText: `${RPT_ADVERSE} ${REG30_ADVERSE}`, must: ["LODR-23-2", "LODR-30"] },
-    { n: 31, group: "multiple simultaneous violations", freeText: `${ISSUE_ADVERSE} ${CO_ADVERSE}`, must: ["LODR-32", "LODR-6-2-a"] },
+    { n: 31, group: "multiple simultaneous violations", freeText: `${ISSUE_ADVERSE} ${CO_ADVERSE}`, must: ["LODR-32", "LODR-6-gen"] },
     // 14. one compliant fact + one unrelated violation
-    { n: 32, group: "one compliant fact + one unrelated violation", freeText: `${AC_COMPLIANT} ${ISSUE_ADVERSE}`, mustNot: ["LODR-18-1-d"], must: ["LODR-32"] },
+    { n: 32, group: "one compliant fact + one unrelated violation", freeText: `${AC_COMPLIANT} ${ISSUE_ADVERSE}`, mustNot: ["LODR-18-2"], must: ["LODR-32"] },
     { n: 33, group: "one compliant fact + one unrelated violation", freeText: `${PREF_COMPLIANT} ${REG33_ADVERSE}`, mustNot: ["ICDR-160"], must: ["LODR-33-1-gen"] },
     // 15. one violation + several clean facts
     {
@@ -458,7 +458,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
       group: "one violation + several clean facts",
       freeText: `${ISSUE_ADVERSE} ${AUDITOR_COMPLIANT} ${CO_COMPLIANT} ${AC_COMPLIANT}`,
       must: ["LODR-32"],
-      mustNot: ["COMPANIES-ACT-139", "LODR-6-2-a", "LODR-18-1-d"],
+      mustNot: ["COMPANIES-ACT-139", "LODR-6-gen", "LODR-18-2"],
     },
     // 16. RPT + Reg 30 combinations
     { n: 35, group: "RPT + Reg 30", freeText: `${RPT_COMPLIANT} ${REG30_ADVERSE}`, mustNot: ["LODR-23-2"], must: ["LODR-30"] },
@@ -473,8 +473,8 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 41, group: "investigation cooperation by actor", freeText: `${INVEST_COMPLIANT} ${INVEST_ADVERSE_PROMOTER}`, must: ["SEBI-ACT-11C-3"] },
     { n: 42, group: "investigation cooperation by actor", freeText: "The director fully cooperated with the investigation and furnished all requested records.", mustNot: ["SEBI-ACT-11C-3"] },
     // 20. Audit Committee + Compliance Officer
-    { n: 43, group: "Audit Committee + Compliance Officer", freeText: `${AC_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["LODR-18-1-d"], must: ["LODR-6-2-a"] },
-    { n: 44, group: "Audit Committee + Compliance Officer", freeText: `${AC_ADVERSE} ${CO_COMPLIANT}`, must: ["LODR-18-1-d"], mustNot: ["LODR-6-2-a"] },
+    { n: 43, group: "Audit Committee + Compliance Officer", freeText: `${AC_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["LODR-18-2"], must: ["LODR-6-gen"] },
+    { n: 44, group: "Audit Committee + Compliance Officer", freeText: `${AC_ADVERSE} ${CO_COMPLIANT}`, must: ["LODR-18-2"], mustNot: ["LODR-6-gen"] },
     // 21. auditor + issuer obligations
     { n: 45, group: "auditor + issuer obligations", freeText: `${AUDITOR_COMPLIANT} ${RPT_ADVERSE}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-23-2"] },
     { n: 46, group: "auditor + issuer obligations", freeText: `${AUDITOR_ADVERSE} ${RPT_COMPLIANT}`, must: ["COMPANIES-ACT-139"], mustNot: ["LODR-23-2"] },
@@ -483,8 +483,8 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     // 23. false disclosure + genuine trading
     { n: 48, group: "false disclosure + genuine trading", freeText: `${PFUTP_COMPLIANT} ${REG30_ADVERSE}`, mustNot: ["PFUTP-3-a"], must: ["LODR-30"] },
     // 24. preferential allotment + unrelated governance
-    { n: 49, group: "preferential allotment + unrelated governance", freeText: `${PREF_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["ICDR-160"], must: ["LODR-6-2-a"] },
-    { n: 50, group: "preferential allotment + unrelated governance", freeText: `${PREF_ADVERSE} ${CO_COMPLIANT}`, must: ["ICDR-160"], mustNot: ["LODR-6-2-a"] },
+    { n: 49, group: "preferential allotment + unrelated governance", freeText: `${PREF_COMPLIANT} ${CO_ADVERSE}`, mustNot: ["ICDR-160"], must: ["LODR-6-gen"] },
+    { n: 50, group: "preferential allotment + unrelated governance", freeText: `${PREF_ADVERSE} ${CO_COMPLIANT}`, must: ["ICDR-160"], mustNot: ["LODR-6-gen"] },
 
     // ---- Holdout / adversarial subset (item 11) — #51 onward ----
     // 25. temporally separated events
@@ -492,33 +492,33 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     { n: 52, group: "temporally separated events", freeText: `${ISSUE_COMPLIANT} A later, separate tranche of issue proceeds was diverted to promoter-controlled entities.`, must: ["LODR-32"] },
     // 26. "all other requirements complied with" language
     { n: 53, group: "all other requirements complied with", freeText: "All other requirements were complied with; however, the related-party transaction was not placed before the Audit Committee.", must: ["LODR-23-2"] },
-    { n: 54, group: "all other requirements complied with", freeText: "All other disclosure obligations were complied with, save that the Compliance Officer position remained vacant beyond permitted period.", must: ["LODR-6-2-a"] },
+    { n: 54, group: "all other requirements complied with", freeText: "All other disclosure obligations were complied with, save that the Compliance Officer position remained vacant beyond permitted period.", must: ["LODR-6-gen"] },
     // 27. "except for" constructions
-    { n: 55, group: "except for constructions", freeText: "The company met every governance requirement except for the Audit Committee, where there was no audit committee meeting held during the year.", must: ["LODR-18-1-d"] },
+    { n: 55, group: "except for constructions", freeText: "The company met every governance requirement except for the Audit Committee, where there was no audit committee meeting held during the year.", must: ["LODR-18-2"] },
     { n: 56, group: "except for constructions", freeText: "Every summons was answered except that the promoter ignored repeated summons and withheld his bank statements.", must: ["SEBI-ACT-11C-3"] },
     // 28. "although / however / but / nevertheless" constructions
     { n: 57, group: "although/however/but/nevertheless", freeText: `Although ${RPT_COMPLIANT.toLowerCase()}, ${REG30_ADVERSE.toLowerCase()}`, must: ["LODR-30"], mustNot: ["LODR-23-2"] },
     { n: 58, group: "although/however/but/nevertheless", freeText: `${INVEST_COMPLIANT} however, ${AUDITOR_ADVERSE.toLowerCase()}`, must: ["COMPANIES-ACT-139"], mustNot: ["SEBI-ACT-11C-3"] },
-    { n: 59, group: "although/however/but/nevertheless", freeText: `${AC_COMPLIANT} nevertheless, ${CO_ADVERSE.toLowerCase()}`, must: ["LODR-6-2-a"], mustNot: ["LODR-18-1-d"] },
+    { n: 59, group: "although/however/but/nevertheless", freeText: `${AC_COMPLIANT} nevertheless, ${CO_ADVERSE.toLowerCase()}`, must: ["LODR-6-gen"], mustNot: ["LODR-18-2"] },
     // 29. adversarial wording designed to create tag collisions
     { n: 60, group: "adversarial tag-collision wording", freeText: `${RPT_COMPLIANT} ${ISSUE_ADVERSE}`, mustNot: ["LODR-23-2"], must: ["LODR-32"] },
     { n: 61, group: "adversarial tag-collision wording", freeText: `${ISSUE_COMPLIANT} ${RPT_ADVERSE}`, mustNot: ["LODR-32"], must: ["LODR-23-2"] },
     { n: 62, group: "adversarial tag-collision wording", freeText: `${REG33_COMPLIANT} ${ISSUE_ADVERSE}`, mustNot: ["LODR-33-1-gen"], must: ["LODR-32"] },
     { n: 63, group: "adversarial tag-collision wording", freeText: `${FUND_DIVERSION_ADVERSE} ${ISSUE_COMPLIANT}`, must: ["SEBI-ACT-15HB"], mustNot: ["LODR-32"] },
-    { n: 64, group: "adversarial tag-collision wording", freeText: `${AUDITOR_COMPLIANT} ${AC_ADVERSE}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-18-1-d"] },
-    { n: 65, group: "adversarial tag-collision wording", freeText: `${AC_COMPLIANT} ${AUDITOR_ADVERSE}`, mustNot: ["LODR-18-1-d"], must: ["COMPANIES-ACT-139"] },
+    { n: 64, group: "adversarial tag-collision wording", freeText: `${AUDITOR_COMPLIANT} ${AC_ADVERSE}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-18-2"] },
+    { n: 65, group: "adversarial tag-collision wording", freeText: `${AC_COMPLIANT} ${AUDITOR_ADVERSE}`, mustNot: ["LODR-18-2"], must: ["COMPANIES-ACT-139"] },
     { n: 66, group: "adversarial tag-collision wording", freeText: `${PFUTP_COMPLIANT} ${REG33_ADVERSE}`, mustNot: ["PFUTP-3-a"], must: ["LODR-33-1-gen"] },
     { n: 67, group: "adversarial tag-collision wording", freeText: `${REG33_COMPLIANT} ${PFUTP_ADVERSE}`, mustNot: ["LODR-33-1-gen"], must: ["PFUTP-3-a"] },
     // extra coverage across categories 1-24 in the holdout region, distinct
     // wording/pairings from #1-50 above
     { n: 68, group: "same topic, different transaction (holdout)", freeText: `The first preferential allotment's consideration was independently paid and verified. A second, separate preferential allotment's consideration was circularly funded by issuer.`, must: ["ICDR-160"] },
-    { n: 69, group: "same topic, different actor (holdout)", freeText: `${AUDITOR_COMPLIANT} The Compliance Officer position remained vacant beyond permitted period.`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-6-2-a"] },
-    { n: 70, group: "same actor, different obligation (holdout)", freeText: `${CO_COMPLIANT} Separately, quarterly results contained material fictitious revenue.`, mustNot: ["LODR-6-2-a"], must: ["LODR-33-1-gen"] },
+    { n: 69, group: "same topic, different actor (holdout)", freeText: `${AUDITOR_COMPLIANT} The Compliance Officer position remained vacant beyond permitted period.`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-6-gen"] },
+    { n: 70, group: "same actor, different obligation (holdout)", freeText: `${CO_COMPLIANT} Separately, quarterly results contained material fictitious revenue.`, mustNot: ["LODR-6-gen"], must: ["LODR-33-1-gen"] },
     { n: 71, group: "same sentence, mixed clauses (holdout)", freeText: "Issue proceeds were used exactly for stated objects, though the promoter ignored repeated summons and withheld his bank statements.", must: ["SEBI-ACT-11C-3"], mustNot: ["LODR-32"] },
     { n: 72, group: "separate sentences, same event (holdout)", freeText: "The preferential allotment consideration was independently paid and verified. However, part of that same preferential allotment's consideration was in fact circularly funded by the issuer.", must: ["ICDR-160"] },
-    { n: 73, group: "separate sentences, unrelated events (holdout)", freeText: `${CO_COMPLIANT} ${PFUTP_ADVERSE}`, mustNot: ["LODR-6-2-a"], must: ["PFUTP-3-a"] },
-    { n: 74, group: "explicit negation (holdout)", freeText: "There was no compliance officer vacancy at any point during the year.", mustNot: ["LODR-6-2-a"] },
-    { n: 75, group: "allegation not established (holdout)", freeText: "There was no evidence of an audit committee deficiency of any kind during the relevant period.", mustNot: ["LODR-18-1-d"] },
+    { n: 73, group: "separate sentences, unrelated events (holdout)", freeText: `${CO_COMPLIANT} ${PFUTP_ADVERSE}`, mustNot: ["LODR-6-gen"], must: ["PFUTP-3-a"] },
+    { n: 74, group: "explicit negation (holdout)", freeText: "There was no compliance officer vacancy at any point during the year.", mustNot: ["LODR-6-gen"] },
+    { n: 75, group: "allegation not established (holdout)", freeText: "There was no evidence of an audit committee deficiency of any kind during the relevant period.", mustNot: ["LODR-18-2"] },
     // Disclosed limitation (same as mandatory Cases 9-10): for a GATED
     // provision whose adverse concept is positively, connectedly detected,
     // classification takes the breach path directly from detectedIds and
@@ -527,7 +527,7 @@ describe("Question-A connectivity: categorized suite (80+ scenarios, holdout fro
     // genuinely-adverse fact as "no breach") is satisfied by continuing to
     // surface this as a candidate breach rather than suppressing it.
     { n: 76, group: "corrected/cured conduct (holdout)", freeText: "An initially circularly-funded allotment consideration was rectified before allotment; the consideration was independently paid and verified.", must: ["ICDR-160"] },
-    { n: 77, group: "unknown/unstated fact (holdout)", freeText: "The company appointed a Compliance Officer.", mustNot: ["LODR-6-2-a"] },
+    { n: 77, group: "unknown/unstated fact (holdout)", freeText: "The company appointed a Compliance Officer.", mustNot: ["LODR-6-gen"] },
     { n: 78, group: "multiple simultaneous violations (holdout)", freeText: `${AUDITOR_ADVERSE} ${PFUTP_ADVERSE}`, must: ["COMPANIES-ACT-139", "PFUTP-3-a"] },
     { n: 79, group: "one compliant fact + one unrelated violation (holdout)", freeText: `${REG30_COMPLIANT} ${FUND_DIVERSION_ADVERSE}`, mustNot: ["LODR-30"], must: ["SEBI-ACT-15HB"] },
     { n: 80, group: "one violation + several clean facts (holdout)", freeText: `${AUDITOR_ADVERSE} ${RPT_COMPLIANT} ${INVEST_COMPLIANT} ${PFUTP_COMPLIANT}`, must: ["COMPANIES-ACT-139"], mustNot: ["LODR-23-2", "SEBI-ACT-11C-3", "PFUTP-3-a"] },

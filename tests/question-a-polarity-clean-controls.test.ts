@@ -356,7 +356,10 @@ describe("Question-A polarity: mandatory adverse/compliant paired tests (permane
   });
 
   it("Governance (Compliance Officer): vacancy beyond the permitted period is a candidate breach; continuous qualified appointment is not", () => {
-    const provision = makeProvision("LODR-6-2-a", "Regulation 6(2)(a)", "Compliance Officer appointment.", "LODR Regulations, 2015");
+    // Checkpoint correction 2, item 2: a bare vacancy fact is gated on
+    // compliance_officer_deficiency (LODR-6-gen), never on the
+    // duty-performance-specific LODR-6(2)(a) (compliance_officer_duty_failure).
+    const provision = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
     const finding = makeFinding({
       recordId: "QA-PAIR-GOV",
       provisionLinks: [link(provision.id)],
@@ -366,9 +369,9 @@ describe("Question-A polarity: mandatory adverse/compliant paired tests (permane
     const adverse = analyzeScenario({ freeText: "Compliance Officer position remained vacant beyond permitted period." }, [finding], [provision], []);
     const compliant = analyzeScenario({ freeText: "Qualified Compliance Officer remained continuously appointed." }, [finding], [provision], []);
 
-    expect(breachIds(adverse)).toContain("LODR-6-2-a");
-    expect(breachIds(compliant)).not.toContain("LODR-6-2-a");
-    expect(noBreachIds(compliant)).toContain("LODR-6-2-a");
+    expect(breachIds(adverse)).toContain("LODR-6-gen");
+    expect(breachIds(compliant)).not.toContain("LODR-6-gen");
+    expect(noBreachIds(compliant)).toContain("LODR-6-gen");
   });
 
   it("Auditor: failed independence/eligibility is a candidate breach; satisfied independence is not", () => {

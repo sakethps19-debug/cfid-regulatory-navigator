@@ -99,12 +99,16 @@ const SEBI_11C_2 = makeProvision("SEBI-ACT-11C-2", "Section 11C(2)", "Duty to pr
 const ICDR_160 = makeProvision("ICDR-160", "Regulation 160", "Preferential-allotment shares fully paid up at allotment.", "SEBI (ICDR) Regulations, 2018");
 const ICDR_167 = makeProvision("ICDR-167", "Regulation 167", "Lock-in period for preferential allottees.", "SEBI (ICDR) Regulations, 2018");
 const LODR_18_3 = makeProvision("LODR-18-3-schedule-II", "Regulation 18(3) / Schedule II Part C", "Audit Committee role and responsibilities.", "LODR Regulations, 2015");
+// Checkpoint correction 2, item 2: added — a meetings-not-conducted fact
+// is now independently gated to Regulation 18(2), never to 18(3)/Schedule
+// II (which now requires its own distinct role-failure predicate).
+const LODR_18_2 = makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency, quorum and powers.", "LODR Regulations, 2015");
 const LODR_6_GEN = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
 const LODR_17_8 = makeProvision("LODR-17-8", "Regulation 17(8)", "CEO/CFO compliance certification.", "LODR Regulations, 2015");
 
 const ALL_PROVISIONS = [
   PFUTP_3_A, PFUTP_3_B, SEBI_12A_A, PFUTP_4_2_A, PFUTP_4_2_B, PFUTP_4_2_C, PFUTP_4_2_E, PFUTP_4_2_F, PFUTP_4_2_K, PFUTP_4_2_R,
-  LODR_23_2, LODR_23_4, LODR_33, LODR_4_1_A, SEBI_11C_2, ICDR_160, ICDR_167, LODR_18_3, LODR_6_GEN, LODR_17_8,
+  LODR_23_2, LODR_23_4, LODR_33, LODR_4_1_A, SEBI_11C_2, ICDR_160, ICDR_167, LODR_18_3, LODR_18_2, LODR_6_GEN, LODR_17_8,
 ];
 
 // ----- Findings -----
@@ -160,6 +164,7 @@ const V2_GOVERNANCE = makeFinding({
   allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency", "false_compliance_certification", "director_governance_failure"],
   provisionLinks: [
     link(LODR_18_3.id, ["audit_committee_deficiency"]),
+    link(LODR_18_2.id, ["audit_committee_deficiency"]),
     link(LODR_6_GEN.id, ["compliance_officer_deficiency"]),
     link(LODR_17_8.id, ["false_compliance_certification"]),
     link(PFUTP_3_A.id),
@@ -327,7 +332,7 @@ const SCENARIOS: Scenario[] = [
   // ===== 97-106: Investigation / governance / auditor =====
   { n: 97, group: "Governance/auditor", freeText: "The company failed to furnish accounting records sought under a SEBI summons.", mustNotFraudFamily: true, must: ["SEBI-ACT-11C-2"], note: "Pure summons non-cooperation." },
   { n: 98, group: "Governance/auditor", freeText: "The company's initial response to a SEBI summons was late, but a complete and accurate response was subsequently furnished in full.", mustNotFraudFamily: true, note: "Late-then-complete response; substantially cured non-cooperation." },
-  { n: 99, group: "Governance/auditor", freeText: "The Audit Committee was not properly constituted and its meetings were not conducted for two consecutive quarters.", mustNotFraudFamily: true, must: ["LODR-18-3-schedule-II"], note: "Governance-process lapse only." },
+  { n: 99, group: "Governance/auditor", freeText: "The Audit Committee was not properly constituted and its meetings were not conducted for two consecutive quarters.", mustNotFraudFamily: true, must: ["LODR-18-2"], note: "Governance-process lapse only. Checkpoint correction 2: this compound composition+meetings fact independently satisfies Regulation 18(2)'s own (meetings-not-conducted) gate; the composition component would independently satisfy Regulation 18(1)(b), not registered in this suite's fixture set, and no longer satisfies the role/Schedule-II provision this test previously (incorrectly) expected." },
   { n: 100, group: "Governance/auditor", freeText: "The Compliance Officer position was vacant for several months with no qualified replacement appointed.", mustNotFraudFamily: true, must: ["LODR-6-gen"], note: "Governance-process lapse only." },
   { n: 101, group: "Governance/auditor", freeText: "A non-executive director failed to raise concerns despite being aware of irregularities discussed at a board meeting.", mustNotFraudFamily: true, note: "Director negligence, no fraud fact of the director's own." },
   { n: 102, group: "Governance/auditor", freeText: "The statutory auditor certified financial statements despite gross negligence in verifying the underlying figures, with no evidence of collusion.", mustNotFraudFamily: true, note: "Auditor negligence without collusion." },

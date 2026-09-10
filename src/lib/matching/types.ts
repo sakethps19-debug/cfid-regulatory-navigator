@@ -7,7 +7,11 @@ import type { WordCorrection } from "./fuzzyMatch";
  * pass): a provision shown at all is placed in exactly one of these tiers,
  * so a penalty provision, a bare definition, a general principle, a
  * liability-attribution mechanism and a substantive prohibition are never
- * presented as equivalent candidate violations.
+ * presented as equivalent candidate violations. NOTE (checkpoint
+ * correction 2, item 5): this engine never "establishes" a violation — a
+ * primary_candidate means an independently retrieved, potentially
+ * applicable provision whose own retrieval prerequisite is satisfied, not
+ * an adjudicatory conclusion that any contravention has been proven.
  *   - "primary_candidate": the entered facts independently satisfy this
  *     provision's own curated retrieval prerequisite, AND its legal
  *     function is one that can itself anchor a charge (see
@@ -20,7 +24,8 @@ import type { WordCorrection } from "./fuzzyMatch";
  *   - "related_ancillary": the entered facts satisfy the prerequisite, but
  *     the provision's own legal function (general principle, penalty,
  *     liability-attribution, SEBI power, definition) means it rides on
- *     some OTHER substantive violation rather than standing on its own.
+ *     some OTHER independently retrieved substantive provision rather than
+ *     standing on its own.
  *   - "requires_additional_fact": a factually-overlapping historical
  *     finding cites this provision, but either its own factual retrieval
  *     prerequisite or its actor-applicability check is not satisfied by
@@ -77,34 +82,40 @@ export type CandidateTier = "primary_candidate" | "related_ancillary" | "require
  *     be genuinely relevant to comparable historical matters — see
  *     Historical Treatment (historicalTreatment.ts), which surfaces it
  *     there independently of this classification.
- *   - "rides_on_unestablished_violation" (checkpoint correction C): this
- *     provision's own curated retrieval rule opts into the shared
- *     ANY_SUBSTANTIVE_VIOLATION_CONDUCT umbrella gate (see
- *     ridesOnEstablishedSubstantiveViolation, provision-retrieval-rules.ts)
- *     — a rule whose OWN explanation text states it is "shown once some
- *     OTHER substantive violation is established", never an independent
- *     trigger. The gate itself only checks that the query's text MENTIONS
- *     a qualifying adverse concept, not that any such violation was
- *     actually ESTABLISHED (a real primary_candidate) elsewhere in the
- *     same result. When no primary_candidate exists in the result at all,
- *     the rule's own stated legal basis is unmet, so this provision is
- *     never presented as a current-scenario applicability candidate here
- *     — do not confuse with "additional_fact_required" (topic present,
- *     breach genuinely unknown): here the provision's entire premise is
- *     that it rides on ANOTHER violation, and none was established. */
+ *   - "rides_on_unretrieved_primary_dependency" (checkpoint correction C;
+ *     renamed from "rides_on_unestablished_violation" in checkpoint
+ *     correction 2, item 5, to stop implying this engine adjudicates a
+ *     violation as "established"): this provision's own curated retrieval
+ *     rule carries dependency: "requires_independently_retrieved_substantive_candidate"
+ *     (see requiresIndependentlyRetrievedSubstantivePrimary,
+ *     provision-retrieval-rules.ts; checkpoint correction 2, item 4 —
+ *     explicit structured metadata, never JavaScript array reference
+ *     equality) — a rule whose OWN explanation text states it is shown
+ *     once some OTHER substantive provision has independently satisfied
+ *     its own retrieval prerequisite, never an independent trigger. The
+ *     gate itself only checks that the query's text MENTIONS a qualifying
+ *     adverse concept, not that any such OTHER provision actually cleared
+ *     its own gate (a real primary_candidate) elsewhere in the same
+ *     result. When no primary_candidate exists in the result at all, the
+ *     rule's own stated legal basis is unmet, so this provision is never
+ *     presented as a current-scenario applicability candidate here — do
+ *     not confuse with "additional_fact_required" (topic present, breach
+ *     genuinely unknown): here the provision's entire premise is that it
+ *     rides on ANOTHER provision, and none was independently retrieved as
+ *     a candidate. */
 export type QuestionAPolarityClass =
   | "governing_no_breach"
   | "additional_fact_required"
   | "not_triggered_contradicted"
   | "no_independent_retrieval_rule"
-  | "rides_on_unestablished_violation";
+  | "rides_on_unretrieved_primary_dependency";
 
 export const QUESTION_A_POLARITY_LABELS: Record<QuestionAPolarityClass, string> = {
   governing_no_breach: "Governing / relevant — no apparent breach on stated facts",
   additional_fact_required: "Additional fact required — breach status unknown",
   not_triggered_contradicted: "Not triggered — contradicted by stated facts",
   no_independent_retrieval_rule: "No independent legal-retrieval rule — not a current-scenario applicability candidate",
-  rides_on_unestablished_violation: "Rides on another violation — none established in this result",
+  rides_on_unretrieved_primary_dependency: "Rides on another provision — none independently retrieved as a candidate in this result",
 };
 
 /** Result of checking a provision's own actor-applicability rule (see

@@ -304,8 +304,8 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 10. "no Compliance Officer" remains correctly adverse
   it("10. 'no Compliance Officer' still correctly promotes a Compliance Officer provision", () => {
-    const complianceOfficer = makeProvision({ id: "LODR-6-2-a", subject: "Compliance Officer appointment" });
-    const auditCommittee = makeProvision({ id: "LODR-18-1-d", subject: "Audit Committee constitution and functioning" });
+    const complianceOfficer = makeProvision({ id: "LODR-6-gen", subject: "Compliance Officer appointment" });
+    const auditCommittee = makeProvision({ id: "LODR-18-2", subject: "Audit Committee meeting frequency and quorum" });
     const finding = makeFinding({
       recordId: "CASE10",
       allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency"],
@@ -326,7 +326,7 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 11. "no Audit Committee meeting was held" remains correctly adverse
   it("11. 'no audit committee meeting' still correctly promotes an Audit Committee provision", () => {
-    const auditCommittee = makeProvision({ id: "LODR-18-1-d", subject: "Audit Committee constitution and functioning" });
+    const auditCommittee = makeProvision({ id: "LODR-18-2", subject: "Audit Committee meeting frequency and quorum" });
     const finding = makeFinding({
       recordId: "CASE11",
       allegedConduct: ["audit_committee_deficiency"],
@@ -345,7 +345,7 @@ describe("Ind AS 24 promotion-connectivity fix — mandatory regression matrix",
 
   // 12. actor-connectivity sanity check remains unchanged (full suite: tests/actor-applicability-connectivity.test.ts)
   it("12. actor-incompatible provisions elsewhere still do not falsely withhold an unrelated actor-unstated candidate", () => {
-    const coProvision = makeProvision({ id: "LODR-6-2-a", subject: "Compliance Officer appointment" });
+    const coProvision = makeProvision({ id: "LODR-6-gen", subject: "Compliance Officer appointment" });
     const finding = makeFinding({
       recordId: "CASE12",
       allegedConduct: ["compliance_officer_deficiency"],

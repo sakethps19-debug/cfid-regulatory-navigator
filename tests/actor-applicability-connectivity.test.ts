@@ -56,7 +56,14 @@ function notBreach(result: ReturnType<typeof analyzeScenario>, id: string) {
 describe("Actor-applicability connectivity: mandatory Cases 1-12", () => {
   const LODR_6_GEN = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
   const LODR_17_8 = makeProvision("LODR-17-8", "Regulation 17(8)", "CEO/CFO compliance certification.", "LODR Regulations, 2015");
-  const LODR_18_1_D = makeProvision("LODR-18-1-d", "Regulation 18(1)(d)", "Audit Committee chairperson requirement.", "LODR Regulations, 2015");
+  // Checkpoint correction 2, item 2: this fixture used to double as "the"
+  // generic Audit Committee test provision under the old bundled
+  // audit_committee_deficiency concept. "Meetings were not conducted" is
+  // now correctly scoped to Regulation 18(2) only (audit_committee_deficiency,
+  // narrowed) — never Regulation 18(1)(d) (a distinct chairperson-specific
+  // predicate this text does not allege) — so the fixture is renamed and
+  // re-pointed to LODR-18-2, the legally correct provision for these texts.
+  const LODR_18_2 = makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency, quorum and powers.", "LODR Regulations, 2015");
   const COMPANIES_ACT_139 = makeProvision("COMPANIES-ACT-139", "Section 139", "Statutory auditor rotation requirement.", "Companies Act, 2013");
   const COMPANIES_ACT_141_3_E = makeProvision("COMPANIES-ACT-141-3-e", "Section 141(3)(e)", "Auditor ineligibility, business relationship.", "Companies Act, 2013");
 
@@ -94,19 +101,19 @@ describe("Actor-applicability connectivity: mandatory Cases 1-12", () => {
   });
 
   it("Case 5: Audit Committee deficiency not blocked by an unrelated promoter RPT mention", () => {
-    const provisions = [LODR_18_1_D, makeProvision("LODR-23-2", "Regulation 23(2)", "Prior Audit Committee approval of RPTs.", "LODR Regulations, 2015")];
+    const provisions = [LODR_18_2, makeProvision("LODR-23-2", "Regulation 23(2)", "Prior Audit Committee approval of RPTs.", "LODR Regulations, 2015")];
     const findings = [
-      makeFinding({ recordId: "AC5-AC", provisionLinks: [link("LODR-18-1-d")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] }),
+      makeFinding({ recordId: "AC5-AC", provisionLinks: [link("LODR-18-2")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] }),
       makeFinding({ recordId: "AC5-RPT", provisionLinks: [link("LODR-23-2")], transactionTypes: ["related_party_transaction"], allegedConduct: ["rpt_approval_lapse"] }),
     ];
     const result = analyzeScenario({ freeText: "The Audit Committee chairman presided while meetings were not conducted for the year. Separately, the promoter entered into a related-party transaction not approved by the audit committee." }, findings, provisions, []);
-    isBreach(result, "LODR-18-1-d");
+    isBreach(result, "LODR-18-2");
   });
 
-  it("Case 6: Audit Committee chairperson provision available on its own connected proposition despite an unrelated promoter-supervision mention", () => {
-    const finding = makeFinding({ recordId: "AC6", provisionLinks: [link("LODR-18-1-d")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
-    const result = analyzeScenario({ freeText: "The promoter failed to supervise the company. Separately, the Audit Committee chairman presided while meetings were not conducted for the year." }, [finding], [LODR_18_1_D], []);
-    isBreach(result, "LODR-18-1-d");
+  it("Case 6: Audit Committee meetings-not-held provision available on its own connected proposition despite an unrelated promoter-supervision mention", () => {
+    const finding = makeFinding({ recordId: "AC6", provisionLinks: [link("LODR-18-2")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
+    const result = analyzeScenario({ freeText: "The promoter failed to supervise the company. Separately, the Audit Committee chairman presided while meetings were not conducted for the year." }, [finding], [LODR_18_2], []);
+    isBreach(result, "LODR-18-2");
   });
 
   it("Case 7: statutory-auditor tenure provision actor-compatible; unrelated management mention irrelevant", () => {
@@ -151,10 +158,10 @@ describe("Actor-applicability connectivity: mandatory Cases 1-12", () => {
     isBreach(result, "LODR-6-gen");
   });
 
-  it("Case 11: an unrelated compatible independent director elsewhere does not need to, and does not, affect a connected Audit Committee chairperson candidate", () => {
-    const finding = makeFinding({ recordId: "AC11", provisionLinks: [link("LODR-18-1-d")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
-    const result = analyzeScenario({ freeText: "The Audit Committee chairman presided while meetings were not conducted for the year. Separately, a properly independent director served elsewhere on the Board." }, [finding], [LODR_18_1_D], []);
-    isBreach(result, "LODR-18-1-d");
+  it("Case 11: an unrelated compatible independent director elsewhere does not need to, and does not, affect a connected Audit Committee meetings-not-held candidate", () => {
+    const finding = makeFinding({ recordId: "AC11", provisionLinks: [link("LODR-18-2")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
+    const result = analyzeScenario({ freeText: "The Audit Committee chairman presided while meetings were not conducted for the year. Separately, a properly independent director served elsewhere on the Board." }, [finding], [LODR_18_2], []);
+    isBreach(result, "LODR-18-2");
   });
 
   it("Case 12: an unrelated compliant auditor elsewhere does not neutralise a connected adverse auditor proposition", () => {
@@ -170,8 +177,13 @@ describe("Actor-applicability connectivity: mandatory Cases 1-12", () => {
 describe("Actor-applicability connectivity: categorized suite (60+ scenarios, holdout from #41)", () => {
   const LODR_6_GEN = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
   const LODR_17_8 = makeProvision("LODR-17-8", "Regulation 17(8)", "CEO/CFO compliance certification.", "LODR Regulations, 2015");
-  const LODR_18_1_D = makeProvision("LODR-18-1-d", "Regulation 18(1)(d)", "Audit Committee chairperson requirement.", "LODR Regulations, 2015");
-  const LODR_18_3 = makeProvision("LODR-18-3-schedule-II", "Regulation 18(3) / Schedule II Part C", "Audit Committee role and responsibilities.", "LODR Regulations, 2015");
+  // Checkpoint correction 2, item 2: same rename/re-pointing as Part 1 —
+  // "meetings not conducted"-family texts (AC_ADVERSE_UNSTATED/_MEMBER/_CHAIR
+  // below) are now correctly scoped to Regulation 18(2) only, never
+  // Regulation 18(1)(d) or 18(3)/Schedule II (which require their own
+  // distinct composition/chairperson-independence/role-failure facts this
+  // text does not state).
+  const LODR_18_2 = makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency, quorum and powers.", "LODR Regulations, 2015");
   const LODR_16_1_B = makeProvision("LODR-16-1-b", "Regulation 16(1)(b)", "Definition of independent director.", "LODR Regulations, 2015");
   const COMPANIES_ACT_139 = makeProvision("COMPANIES-ACT-139", "Section 139", "Statutory auditor rotation requirement.", "Companies Act, 2013");
   const COMPANIES_ACT_141_3_D = makeProvision("COMPANIES-ACT-141-3-d", "Section 141(3)(d)", "Auditor ineligibility, holding securities.", "Companies Act, 2013");
@@ -179,13 +191,11 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
   const LODR_23_2 = makeProvision("LODR-23-2", "Regulation 23(2)", "Prior Audit Committee approval of RPTs.", "LODR Regulations, 2015");
   const SEBI_15HB = makeProvision("SEBI-ACT-15HB", "Section 15HB", "Residual penalty.", "SEBI Act, 1992");
 
-  const ALL_PROVISIONS = [LODR_6_GEN, LODR_17_8, LODR_18_1_D, LODR_18_3, LODR_16_1_B, COMPANIES_ACT_139, COMPANIES_ACT_141_3_D, COMPANIES_ACT_141_3_E, LODR_23_2, SEBI_15HB];
+  const ALL_PROVISIONS = [LODR_6_GEN, LODR_17_8, LODR_18_2, LODR_16_1_B, COMPANIES_ACT_139, COMPANIES_ACT_141_3_D, COMPANIES_ACT_141_3_E, LODR_23_2, SEBI_15HB];
 
   const CO_F = makeFinding({ recordId: "CX-CO", provisionLinks: [link("LODR-6-gen")], transactionTypes: ["compliance_officer_appointment"], allegedConduct: ["compliance_officer_deficiency"] });
   const CERT_F = makeFinding({ recordId: "CX-CERT", provisionLinks: [link("LODR-17-8")], transactionTypes: ["certification_process"], allegedConduct: ["false_compliance_certification"] });
-  // One finding bundling BOTH Audit Committee provisions (same organ, no
-  // sibling-conduct-bleed concern since both links share the same subject).
-  const AC_F = makeFinding({ recordId: "CX-AC", provisionLinks: [link("LODR-18-1-d"), link("LODR-18-3-schedule-II")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
+  const AC_F = makeFinding({ recordId: "CX-AC", provisionLinks: [link("LODR-18-2")], transactionTypes: ["audit_committee_process"], allegedConduct: ["audit_committee_deficiency"] });
   const ID_F = makeFinding({ recordId: "CX-ID", provisionLinks: [link("LODR-16-1-b")], actorRoles: ["independent_director"], allegedConduct: ["director_governance_failure"] });
   const AUD_F = makeFinding({ recordId: "CX-AUD", provisionLinks: [link("COMPANIES-ACT-139"), link("COMPANIES-ACT-141-3-d"), link("COMPANIES-ACT-141-3-e")], actorRoles: ["statutory_auditor"], allegedConduct: ["auditor_tenure_or_independence_issue"] });
   const RPT_F = makeFinding({ recordId: "CX-RPT", provisionLinks: [link("LODR-23-2")], transactionTypes: ["related_party_transaction"], allegedConduct: ["rpt_approval_lapse"] });
@@ -227,7 +237,7 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
     // 1. unrelated promoter mention
     { n: 1, group: "unrelated promoter mention", freeText: `${CO_ADVERSE_UNSTATED} ${PROMOTER_UNRELATED}`, must: ["LODR-6-gen"] },
     { n: 2, group: "unrelated promoter mention", freeText: `${CERT_ADVERSE_UNSTATED} ${PROMOTER_UNRELATED}`, must: ["LODR-17-8"] },
-    { n: 3, group: "unrelated promoter mention", freeText: `${AC_ADVERSE_UNSTATED} ${PROMOTER_UNRELATED}`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 3, group: "unrelated promoter mention", freeText: `${AC_ADVERSE_UNSTATED} ${PROMOTER_UNRELATED}`, must: ["LODR-18-2"] },
     // 2. unrelated director mention
     { n: 4, group: "unrelated director mention", freeText: `${CO_ADVERSE_UNSTATED} A non-executive director was separately named in the matter with no stated Compliance Officer role.`, must: ["LODR-6-gen"] },
     { n: 5, group: "unrelated director mention", freeText: `${CERT_ADVERSE_UNSTATED} A non-executive director was separately named in the matter with no stated role in signing any certificate.`, must: ["LODR-17-8"] },
@@ -243,13 +253,13 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
     { n: 11, group: "Compliance Officer vs promoter", freeText: `${CO_ADVERSE_CONNECTED} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-6-gen"] },
     { n: 12, group: "Compliance Officer vs promoter", freeText: `${PROMOTER_UNRELATED} Separately, ${CO_ADVERSE_UNSTATED}`, must: ["LODR-6-gen"] },
     // 7. Audit Committee member vs generic director
-    { n: 13, group: "Audit Committee member vs generic director", freeText: AC_ADVERSE_MEMBER, must: ["LODR-18-3-schedule-II"] },
-    { n: 14, group: "Audit Committee member vs generic director", freeText: `${AC_ADVERSE_UNSTATED} A non-executive director was separately named in the matter with no stated Audit Committee role.`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 13, group: "Audit Committee member vs generic director", freeText: AC_ADVERSE_MEMBER, must: ["LODR-18-2"] },
+    { n: 14, group: "Audit Committee member vs generic director", freeText: `${AC_ADVERSE_UNSTATED} A non-executive director was separately named in the matter with no stated Audit Committee role.`, must: ["LODR-18-2"] },
     // 8. Audit Committee chair vs Board chair (bare "chairman" — corpus's
     // own disclosed conservative ambiguity, see provision-actor-applicability.ts)
-    { n: 15, group: "Audit Committee chair vs Board chair", freeText: AC_ADVERSE_CHAIR, must: ["LODR-18-1-d"] },
+    { n: 15, group: "Audit Committee chair vs Board chair", freeText: AC_ADVERSE_CHAIR, must: ["LODR-18-2"] },
     // 9. independent director A vs independent director B
-    { n: 16, group: "independent director A vs B", freeText: `${AC_ADVERSE_CHAIR} Separately, a properly independent director served elsewhere on the Board.`, must: ["LODR-18-1-d"] },
+    { n: 16, group: "independent director A vs B", freeText: `${AC_ADVERSE_CHAIR} Separately, a properly independent director served elsewhere on the Board.`, must: ["LODR-18-2"] },
     // 10. statutory auditor vs management
     { n: 17, group: "statutory auditor vs management", freeText: `${AUDITOR_ADVERSE_TENURE} Separately, management approved an unrelated loan.`, must: ["COMPANIES-ACT-139"] },
     { n: 18, group: "statutory auditor vs management", freeText: `${AUDITOR_ADVERSE_SECURITIES} Separately, management approved an unrelated loan.`, must: ["COMPANIES-ACT-141-3-d"] },
@@ -257,21 +267,21 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
     // 11. two auditors
     { n: 20, group: "two auditors", freeText: `${AUDITOR_ADVERSE_RELATIONSHIP} A different auditor mentioned elsewhere had no such relationship.`, must: ["COMPANIES-ACT-141-3-e"] },
     // 12. two directors
-    { n: 21, group: "two directors", freeText: `${AC_ADVERSE_CHAIR} Director B, a proper independent director, served elsewhere on the Board.`, must: ["LODR-18-1-d"] },
+    { n: 21, group: "two directors", freeText: `${AC_ADVERSE_CHAIR} Director B, a proper independent director, served elsewhere on the Board.`, must: ["LODR-18-2"] },
     // 13. actor unstated
     { n: 22, group: "actor unstated", freeText: CO_ADVERSE_UNSTATED, must: ["LODR-6-gen"] },
     { n: 23, group: "actor unstated", freeText: CERT_ADVERSE_UNSTATED, must: ["LODR-17-8"] },
-    { n: 24, group: "actor unstated", freeText: AC_ADVERSE_UNSTATED, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 24, group: "actor unstated", freeText: AC_ADVERSE_UNSTATED, must: ["LODR-18-2"] },
     // 14. company only
     { n: 25, group: "company only", freeText: `${CO_ADVERSE_UNSTATED} The company was separately named elsewhere in the matter.`, must: ["LODR-6-gen"] },
     // 15. multiple adverse propositions
     { n: 26, group: "multiple adverse propositions", freeText: `${CO_ADVERSE_UNSTATED} ${CERT_ADVERSE_UNSTATED}`, must: ["LODR-6-gen", "LODR-17-8"] },
-    { n: 27, group: "multiple adverse propositions", freeText: `${AUDITOR_ADVERSE_TENURE} ${AC_ADVERSE_UNSTATED}`, must: ["COMPANIES-ACT-139", "LODR-18-3-schedule-II"] },
+    { n: 27, group: "multiple adverse propositions", freeText: `${AUDITOR_ADVERSE_TENURE} ${AC_ADVERSE_UNSTATED}`, must: ["COMPANIES-ACT-139", "LODR-18-2"] },
     // 16. one compliant actor + one adverse actor
     { n: 28, group: "one compliant actor + one adverse actor", freeText: `${CO_COMPLIANT} Separately, ${CERT_ADVERSE_CFO}`, mustNot: ["LODR-6-gen"], must: ["LODR-17-8"] },
     { n: 29, group: "one compliant actor + one adverse actor", freeText: `${CERT_COMPLIANT} Separately, ${CO_ADVERSE_UNSTATED}`, mustNot: ["LODR-17-8"], must: ["LODR-6-gen"] },
-    { n: 30, group: "one compliant actor + one adverse actor", freeText: `${AC_COMPLIANT} Separately, ${AUDITOR_ADVERSE_TENURE}`, mustNot: ["LODR-18-3-schedule-II", "LODR-18-1-d"], must: ["COMPANIES-ACT-139"] },
-    { n: 31, group: "one compliant actor + one adverse actor", freeText: `${AUDITOR_COMPLIANT} Separately, ${AC_ADVERSE_UNSTATED}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 30, group: "one compliant actor + one adverse actor", freeText: `${AC_COMPLIANT} Separately, ${AUDITOR_ADVERSE_TENURE}`, mustNot: ["LODR-18-2"], must: ["COMPANIES-ACT-139"] },
+    { n: 31, group: "one compliant actor + one adverse actor", freeText: `${AUDITOR_COMPLIANT} Separately, ${AC_ADVERSE_UNSTATED}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-18-2"] },
     // 17. one actor with two roles
     { n: 32, group: "one actor with two roles", freeText: `${CERT_ADVERSE_CFO} Separately, the CFO also failed to ensure the Compliance Officer role's own duties were fulfilled.`, must: ["LODR-17-8"] },
     // 18. actor named in previous sentence
@@ -281,7 +291,7 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
     // 20. "respectively" constructions
     { n: 35, group: "respectively constructions", freeText: "The CFO signed the false compliance certificate, and an allottee separately signed an allotment form, respectively.", must: ["LODR-17-8"] },
     // 21. "whereas/however/but" constructions
-    { n: 36, group: "however/but constructions", freeText: "The Audit Committee was properly constituted; however, its meetings were not conducted for the year.", must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 36, group: "however/but constructions", freeText: "The Audit Committee was properly constituted; however, its meetings were not conducted for the year.", must: ["LODR-18-2"] },
     { n: 37, group: "however/but constructions", freeText: `${PROMOTER_UNRELATED} However, ${CO_ADVERSE_UNSTATED}`, must: ["LODR-6-gen"] },
     // 22. unrelated actor in same sentence (must remain blocked — genuine connectivity)
     { n: 38, group: "unrelated actor in same sentence", freeText: "There was a CO vacancy blamed on the promoter, with no stated Compliance Officer role.", mustNot: ["LODR-6-gen"] },
@@ -294,29 +304,29 @@ describe("Actor-applicability connectivity: categorized suite (60+ scenarios, ho
 
     // ---- Holdout / adversarial subset (item 11) — #43 onward ----
     { n: 43, group: "unrelated promoter mention (holdout)", freeText: `${AUDITOR_ADVERSE_TENURE} ${PROMOTER_UNRELATED}`, must: ["COMPANIES-ACT-139"] },
-    { n: 44, group: "unrelated director mention (holdout)", freeText: `${AC_ADVERSE_UNSTATED} A related-party counterparty was separately named in the matter with no stated Audit Committee role.`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 44, group: "unrelated director mention (holdout)", freeText: `${AC_ADVERSE_UNSTATED} A related-party counterparty was separately named in the matter with no stated Audit Committee role.`, must: ["LODR-18-2"] },
     { n: 45, group: "company + promoter mixed (holdout)", freeText: `${CERT_ADVERSE_UNSTATED} Both the company and the promoter were separately named elsewhere in the matter.`, must: ["LODR-17-8"] },
     { n: 46, group: "CEO vs CFO (holdout)", freeText: `${CERT_ADVERSE_CFO} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-17-8"] },
     { n: 47, group: "CEO vs unrelated director (holdout)", freeText: `${CERT_ADVERSE_MD} Separately, a non-executive director was named with no stated certification role.`, must: ["LODR-17-8"] },
     { n: 48, group: "Compliance Officer vs promoter (holdout)", freeText: `${FUND_DIVERSION_ADVERSE} Separately, ${CO_ADVERSE_UNSTATED}`, must: ["SEBI-ACT-15HB", "LODR-6-gen"] },
-    { n: 49, group: "Audit Committee member vs generic director (holdout)", freeText: `${AC_ADVERSE_MEMBER} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-3-schedule-II"] },
-    { n: 50, group: "Audit Committee chair vs Board chair (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-1-d"] },
-    { n: 51, group: "independent director A vs B (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, an unconnected independent director's own eligibility was never in question.`, must: ["LODR-18-1-d"] },
+    { n: 49, group: "Audit Committee member vs generic director (holdout)", freeText: `${AC_ADVERSE_MEMBER} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-2"] },
+    { n: 50, group: "Audit Committee chair vs Board chair (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-2"] },
+    { n: 51, group: "independent director A vs B (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, an unconnected independent director's own eligibility was never in question.`, must: ["LODR-18-2"] },
     { n: 52, group: "statutory auditor vs management (holdout)", freeText: `${AUDITOR_ADVERSE_SECURITIES} Separately, management approved an unrelated loan.`, must: ["COMPANIES-ACT-141-3-d"] },
     { n: 53, group: "two auditors (holdout)", freeText: `${AUDITOR_ADVERSE_TENURE} A different auditor mentioned elsewhere rotated strictly on time.`, must: ["COMPANIES-ACT-139"] },
-    { n: 54, group: "two directors (holdout)", freeText: `${AC_ADVERSE_MEMBER} Separately, a compatible independent director served without incident elsewhere.`, must: ["LODR-18-3-schedule-II"] },
-    { n: 55, group: "actor unstated (holdout)", freeText: `${AC_ADVERSE_UNSTATED}`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 54, group: "two directors (holdout)", freeText: `${AC_ADVERSE_MEMBER} Separately, a compatible independent director served without incident elsewhere.`, must: ["LODR-18-2"] },
+    { n: 55, group: "actor unstated (holdout)", freeText: `${AC_ADVERSE_UNSTATED}`, must: ["LODR-18-2"] },
     { n: 56, group: "company only (holdout)", freeText: `${CERT_ADVERSE_UNSTATED} The company alone was separately named elsewhere in the matter.`, must: ["LODR-17-8"] },
     { n: 57, group: "multiple adverse propositions (holdout)", freeText: `${AUDITOR_ADVERSE_RELATIONSHIP} ${CERT_ADVERSE_UNSTATED}`, must: ["COMPANIES-ACT-141-3-e", "LODR-17-8"] },
-    { n: 58, group: "one compliant actor + one adverse actor (holdout)", freeText: `${AC_COMPLIANT} Separately, ${CO_ADVERSE_UNSTATED}`, mustNot: ["LODR-18-3-schedule-II", "LODR-18-1-d"], must: ["LODR-6-gen"] },
-    { n: 59, group: "one compliant actor + one adverse actor (holdout)", freeText: `${CO_COMPLIANT} Separately, ${AC_ADVERSE_UNSTATED}`, mustNot: ["LODR-6-gen"], must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 58, group: "one compliant actor + one adverse actor (holdout)", freeText: `${AC_COMPLIANT} Separately, ${CO_ADVERSE_UNSTATED}`, mustNot: ["LODR-18-2"], must: ["LODR-6-gen"] },
+    { n: 59, group: "one compliant actor + one adverse actor (holdout)", freeText: `${CO_COMPLIANT} Separately, ${AC_ADVERSE_UNSTATED}`, mustNot: ["LODR-6-gen"], must: ["LODR-18-2"] },
     { n: 60, group: "one actor with two roles (holdout)", freeText: `${AUDITOR_ADVERSE_TENURE} Separately, the same statutory auditor's business relationship with the company's subsidiary also raised an independence issue.`, must: ["COMPANIES-ACT-139", "COMPANIES-ACT-141-3-e"] },
     { n: 61, group: "actor named in previous sentence (holdout)", freeText: `${PROMOTER_UNRELATED} Separately, ${CERT_ADVERSE_UNSTATED}`, must: ["LODR-17-8"] },
-    { n: 62, group: "actor named in following sentence (holdout)", freeText: `${AC_ADVERSE_UNSTATED} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
+    { n: 62, group: "actor named in following sentence (holdout)", freeText: `${AC_ADVERSE_UNSTATED} Separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-2"] },
     { n: 63, group: "however/but constructions (holdout)", freeText: `${AUDITOR_COMPLIANT} However, ${CO_ADVERSE_UNSTATED}`, mustNot: ["COMPANIES-ACT-139"], must: ["LODR-6-gen"] },
     { n: 64, group: "unrelated actor in same sentence (holdout)", freeText: "There was non-compliance with the auditor rotation requirement, blamed on the promoter, with no stated auditor identity.", mustNot: ["COMPANIES-ACT-139"] },
-    { n: 65, group: "semicolon-separated actor references (holdout)", freeText: `${AC_ADVERSE_UNSTATED}; separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-3-schedule-II", "LODR-18-1-d"] },
-    { n: 66, group: "adversarial actor-name collisions (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, ${CERT_ADVERSE_UNSTATED}`, must: ["LODR-18-1-d", "LODR-17-8"] },
+    { n: 65, group: "semicolon-separated actor references (holdout)", freeText: `${AC_ADVERSE_UNSTATED}; separately, ${PROMOTER_UNRELATED}`, must: ["LODR-18-2"] },
+    { n: 66, group: "adversarial actor-name collisions (holdout)", freeText: `${AC_ADVERSE_CHAIR} Separately, ${CERT_ADVERSE_UNSTATED}`, must: ["LODR-18-2", "LODR-17-8"] },
     { n: 67, group: "cross-nexus actor collision (holdout)", freeText: `${RPT_ADVERSE} Separately, ${CO_ADVERSE_UNSTATED}`, must: ["LODR-23-2", "LODR-6-gen"] },
   ];
 

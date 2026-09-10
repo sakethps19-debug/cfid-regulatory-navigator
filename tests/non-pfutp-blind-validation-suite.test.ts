@@ -143,8 +143,14 @@ const F_ISSUE_PROCEEDS = makeFinding({
 const F_GOVERNANCE = makeFinding({
   recordId: "NP-GOV-01",
   transactionTypes: ["audit_committee_process", "compliance_officer_appointment", "certification_process"],
-  allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency", "false_compliance_certification"],
-  provisionLinks: [link(LODR_18_3.id, ["audit_committee_deficiency"]), link(LODR_6_GEN.id, ["compliance_officer_deficiency"]), link(LODR_17_8.id, ["false_compliance_certification"])],
+  // Checkpoint correction 2, item 2: audit_committee_composition_deficiency
+  // added — this finding is used as the shared "generic Audit Committee"
+  // fixture for scenarios stating a composition-only fact (#70), which no
+  // longer overlaps the narrowed audit_committee_deficiency (meetings-only)
+  // concept and would otherwise silently drop this finding's score below
+  // MIN_FINDING_SCORE.
+  allegedConduct: ["audit_committee_deficiency", "audit_committee_composition_deficiency", "compliance_officer_deficiency", "false_compliance_certification"],
+  provisionLinks: [link(LODR_18_3.id, ["audit_committee_deficiency", "audit_committee_composition_deficiency"]), link(LODR_6_GEN.id, ["compliance_officer_deficiency"]), link(LODR_17_8.id, ["false_compliance_certification"])],
 });
 const F_INVESTIGATION = makeFinding({
   recordId: "NP-INV-01",

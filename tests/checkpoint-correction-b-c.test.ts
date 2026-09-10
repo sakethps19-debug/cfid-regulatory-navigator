@@ -136,7 +136,7 @@ describe("Checkpoint correction B: ungated provisions never leak into provisionR
 });
 
 describe("Checkpoint correction C: a provision riding on ANY_SUBSTANTIVE_VIOLATION_CONDUCT requires a real established primary_candidate elsewhere in the result", () => {
-  it("SEBI-ACT-15HB alone, on a bare fund-diversion mention with no other provision in play, demotes to governingProvisionResults ('rides_on_unestablished_violation'), not provisionResults", () => {
+  it("SEBI-ACT-15HB alone, on a bare fund-diversion mention with no other provision in play, demotes to governingProvisionResults ('rides_on_unretrieved_primary_dependency'), not provisionResults", () => {
     const provision = makeProvision({ id: "SEBI-ACT-15HB", subject: "Residual penalty" });
     const finding = makeFinding({
       recordId: "SYN-15HB-ALONE",
@@ -152,7 +152,7 @@ describe("Checkpoint correction C: a provision riding on ANY_SUBSTANTIVE_VIOLATI
     expect(result.provisionResults.some((p) => p.provision.id === "SEBI-ACT-15HB")).toBe(false);
     const gp = result.governingProvisionResults.find((g) => g.provision.id === "SEBI-ACT-15HB");
     expect(gp).toBeDefined();
-    expect(gp?.polarityClass).toBe("rides_on_unestablished_violation");
+    expect(gp?.polarityClass).toBe("rides_on_unretrieved_primary_dependency");
   });
 
   it("SEBI-ACT-15HB DOES appear in provisionResults (related_ancillary) once a genuine, independently gated primary_candidate is also established in the same result", () => {
