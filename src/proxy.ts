@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createMiddlewareClient } from "@/lib/supabase/middleware";
 import { checkRateLimit, clientKeyFromHeaders } from "@/lib/security/rateLimit";
+import { isAdminEmail, isAdminPath } from "@/lib/adminAuth";
 
 const PUBLIC_PATHS = new Set(["/login"]);
 const PUBLIC_API_PATHS = new Set(["/api/auth/callback"]);
@@ -166,6 +167,21 @@ export async function proxy(request: NextRequest) {
     if (isPublicPage) {
       // Already signed in and allowed — no reason to show the login page again.
       return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
+    }
+
+    // Real, server-side admin authorization boundary (independent-audit
+    // correction, P0-1): every allow-listed research user reaches this
+    // point, but /admin and any /api/admin/* route additionally require
+    // isAdminEmail(). This check happens here, in middleware, before any
+    // admin page or route handler runs — never a client-only check the
+    // browser could be tricked into skipping.
+    if (isAdminPath(pathname) && !isAdminEmail(user.email)) {
+      if (pathname.startsWith("/api/")) {
+        return applySecurityHeaders(NextResponse.json({ error: "Not authorised for Admin." }, { status: 403 }));
+      }
+      const deniedUrl = new URL("/dashboard", request.url);
+      deniedUrl.searchParams.set("error", "admin_required");
+      return applySecurityHeaders(NextResponse.redirect(deniedUrl));
     }
 
     return applySecurityHeaders(getResponse());

@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Order } from "@/types/domain";
 import { SourceLink } from "@/components/Card";
 import { formatDate } from "@/lib/formatDate";
-import { isDeepAnalyzed } from "@/lib/processingStages";
 import { stripPipelineLanguage } from "@/lib/orderGist";
 import { CASE_LIBRARY_ORDER_TYPE_FAMILY_ORDER, caseLibraryOrderTypeFamily, type CaseLibraryOrderTypeFamily } from "@/lib/orderTypeDisplayFamily";
 import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
@@ -131,18 +130,13 @@ export function CaseLibraryClient({ orders }: { orders: CaseLibraryOrder[] }) {
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
             {filtered.map((o) => {
-              const deepAnalyzed = isDeepAnalyzed(o.processingStage);
               return (
                 <tr key={o.id}>
                   <td className="px-3 py-2 align-top font-medium text-[var(--color-ink-900)]">
-                    {deepAnalyzed ? (
-                      <Link href={`/orders/${o.id}`} className="text-[var(--color-gold-700)] hover:underline">
-                        {o.caseName}
-                      </Link>
-                    ) : (
-                      o.caseName
-                    )}
-                    {deepAnalyzed && o.scopeNote && (
+                    <Link href={`/orders/${o.id}`} className="text-[var(--color-gold-700)] hover:underline">
+                      {o.caseName}
+                    </Link>
+                    {o.scopeNote && (
                       <p className="mt-0.5 max-w-md text-xs font-normal text-[var(--color-ink-500)]">{stripPipelineLanguage(o.scopeNote)}</p>
                     )}
                   </td>
@@ -172,18 +166,13 @@ export function CaseLibraryClient({ orders }: { orders: CaseLibraryOrder[] }) {
           this list on a phone (identify the case, then check its stage). */}
       <div className="mt-2 space-y-2.5 md:hidden">
         {filtered.map((o) => {
-          const deepAnalyzed = isDeepAnalyzed(o.processingStage);
           return (
             <div key={o.id} className="rounded-sm bg-white p-3 border border-[var(--color-border)]">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  {deepAnalyzed ? (
-                    <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
-                      {o.caseName}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-[var(--color-ink-900)]">{o.caseName}</span>
-                  )}
+                  <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
+                    {o.caseName}
+                  </Link>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--color-ink-700)]">
                     <span className="inline-block rounded-sm bg-[var(--color-gold-100)] px-2 py-0.5 font-semibold text-[var(--color-gold-800)] ring-1 border-[var(--color-gold-600)]/50">
                       {caseLibraryOrderTypeFamily(o.orderStage)}
@@ -192,7 +181,7 @@ export function CaseLibraryClient({ orders }: { orders: CaseLibraryOrder[] }) {
                   </div>
                 </div>
               </div>
-              {deepAnalyzed && o.scopeNote && <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{stripPipelineLanguage(o.scopeNote)}</p>}
+              {o.scopeNote && <p className="mt-1.5 text-xs text-[var(--color-ink-500)]">{stripPipelineLanguage(o.scopeNote)}</p>}
               <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-xs text-[var(--color-ink-700)]">
                 <span>{o.orderNumber ?? "-"}</span>
               </div>

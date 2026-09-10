@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { JourneyStage } from "@/lib/caseJourney";
 import { Card, SourceLink } from "@/components/Card";
 import { OrderStageBadge } from "@/components/OrderStageBadge";
-import { StatusBadge } from "@/components/StatusBadge";
-import { GROUP_INFO, GROUP_ORDER } from "@/components/FindingsByStatus";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 import { formatDate } from "@/lib/formatDate";
 import { stripPipelineLanguage } from "@/lib/orderGist";
+import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses";
 
 /** One order rendered as one independent Case Journey stage — a structured
  * lifecycle SUMMARY, not a duplicate of Case/Order Detail (which stays one
@@ -13,13 +13,23 @@ import { stripPipelineLanguage } from "@/lib/orderGist";
  * straight from this order's own row and its own linked findings/
  * directions; nothing is inferred across stages except the relationship
  * notes already computed by buildCaseJourney from actual order_relationships
- * rows. */
+ * rows.
+ *
+ * Independent-audit correction (P1-10): "This stage's findings" used to
+ * group by raw FindingStatus (GROUP_ORDER/GROUP_INFO) and render a
+ * StatusBadge next to each count -- for Alleged/Prima facie, StatusBadge
+ * renders nothing, leaving an orphan "×N" floating with no visible label.
+ * Order stage (from the real Order, via OrderStageBadge above) and finding
+ * disposition are different dimensions and are never fused into a second
+ * pseudo-stage derived from finding_status. This card now shows only
+ * findings that actually have a disposition (findingDispositionLabel
+ * non-null); an SCN-stage allegation with no disposition simply doesn't
+ * appear here — it is not given a fabricated one. */
 export function CaseJourneyStageCard({ stage, stageNumber, totalStages }: { stage: JourneyStage; stageNumber: number; totalStages: number }) {
   const { order } = stage;
-  const findingsByStatus = GROUP_ORDER.map((status) => ({
-    status,
-    count: stage.findings.filter((f) => f.findingStatus === status).length,
-  })).filter((g) => g.count > 0);
+  const dispositions = stage.findings
+    .map((f) => ({ recordId: f.recordId, label: findingDispositionLabel(f.findingStatus) }))
+    .filter((d): d is { recordId: string; label: string } => d.label !== null);
 
   return (
     <Card className="flex h-full flex-col">
@@ -55,26 +65,25 @@ export function CaseJourneyStageCard({ stage, stageNumber, totalStages }: { stag
         </div>
       )}
 
-      {stage.gist && <p className="mt-3 max-w-prose text-left text-sm text-[var(--color-ink-700)]">{stripPipelineLanguage(stage.gist)}</p>}
+      {stage.gist && <p className={`mt-3 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>{stripPipelineLanguage(stage.gist)}</p>}
 
       {stage.issuesExamined.length > 0 && (
         <div className="mt-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Issues examined</p>
-          <p className="mt-0.5 max-w-prose text-sm text-[var(--color-ink-700)]">{stage.issuesExamined.join("; ")}</p>
+          <p className="mt-0.5 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">{stage.issuesExamined.join("; ")}</p>
         </div>
       )}
 
-      {findingsByStatus.length > 0 && (
+      {dispositions.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">This stage&apos;s findings</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {findingsByStatus.map(({ status, count }) => (
-              <span key={status} className="inline-flex items-center gap-1" title={GROUP_INFO[status].hint}>
-                <StatusBadge status={status} />
-                <span className="text-xs text-[var(--color-ink-500)]">×{count}</span>
-              </span>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Outcome / disposition</p>
+          <ul className="mt-1 flex flex-col gap-0.5">
+            {dispositions.map((d) => (
+              <li key={d.recordId} className="text-sm text-[var(--color-ink-700)]">
+                {d.recordId}: {d.label}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -96,7 +105,7 @@ export function CaseJourneyStageCard({ stage, stageNumber, totalStages }: { stag
         {stage.directions.length > 0 ? (
           <ul className="mt-1 space-y-1.5">
             {stage.directions.map((d) => (
-              <li key={d.id} className="max-w-prose text-sm text-[var(--color-ink-700)]">
+              <li key={d.id} className={`text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>
                 {d.directionOrOutcome}
                 {d.paragraphReference && <span className="text-xs text-[var(--color-ink-500)]"> ({d.paragraphReference})</span>}
               </li>

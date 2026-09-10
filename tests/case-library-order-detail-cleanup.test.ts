@@ -455,6 +455,73 @@ describe("Case Library / Order Detail: no officer-facing research/process clutte
 });
 
 // ---------------------------------------------------------------------
+// Defect fix: Case Library's case-name link is no longer gated on the
+// internal processing_stage pipeline concept (isDeepAnalyzed). Every
+// indexed order (i.e. every row present in the `orders` table/prop) must be
+// openable from Case Library, regardless of whether it has been broken down
+// into structured scenario findings yet — Order Detail itself degrades
+// honestly when a given order has none. Processing-stage information stays
+// available in Admin; it must simply never again be used to withhold
+// navigation to an order's own detail page from a research user.
+// ---------------------------------------------------------------------
+describe("Case Library: case-name link is never gated by processing/pipeline stage", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf-8");
+
+  it("no longer imports or references isDeepAnalyzed/processingStage at all", () => {
+    const src = read("src/components/CaseLibraryClient.tsx");
+    expect(src).not.toContain("isDeepAnalyzed");
+    expect(src).not.toContain("processingStage");
+    expect(src).not.toMatch(/from\s+"@\/lib\/processingStages"/);
+  });
+
+  it("desktop table renders the case-name Link unconditionally (no deepAnalyzed ternary gating it)", () => {
+    const src = read("src/components/CaseLibraryClient.tsx");
+    // Every filtered order's case name renders as a Link to its own order
+    // detail page — never a plain, unlinked span/text fallback keyed off
+    // processing stage.
+    expect(src).toMatch(/<Link href=\{`\/orders\/\$\{o\.id\}`\}/);
+    expect(src).not.toMatch(/deepAnalyzed\s*\?\s*\(/);
+    expect(src).not.toContain("const deepAnalyzed");
+  });
+
+  it("mobile card view also renders the case-name Link unconditionally, never a plain <span> fallback for an order lacking deep analysis", () => {
+    const src = read("src/components/CaseLibraryClient.tsx");
+    // Count Link occurrences for the case-name spot: both the desktop and
+    // mobile renders must use <Link>, never fall back to plain text.
+    const linkOccurrences = src.match(/<Link href=\{`\/orders\/\$\{o\.id\}`\}/g) ?? [];
+    expect(linkOccurrences.length).toBe(2); // one desktop row render, one mobile card render
+    expect(src).not.toMatch(/<span className="font-medium text-\[var\(--color-ink-900\)\]">\{o\.caseName\}<\/span>/);
+  });
+
+  it("Case Library's own page description no longer claims only deep-analyzed cases link through", () => {
+    const src = read("src/app/(app)/case-library/page.tsx");
+    expect(src).not.toMatch(/A case whose findings have been turned into structured research data links through/);
+  });
+});
+
+// ---------------------------------------------------------------------
+// Defect fix: Order Detail shows a clear, honest empty-findings state
+// (rather than silently rendering sparse/empty sections) for an order that
+// is reachable from Case Library but has zero structured scenario findings.
+// ---------------------------------------------------------------------
+describe("Order Detail: honest empty state when an order has zero structured findings", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf-8");
+
+  it("renders 'No structured findings currently captured for this order' when findings.length === 0, instead of only the generic broad-scenario empty state", () => {
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    expect(src).toMatch(/findings\.length === 0/);
+    expect(src).toContain("No structured findings currently captured for this order");
+  });
+
+  it("only renders OrderBroadScenarios (which itself assumes at least an attempt at matching) once findings actually exist", () => {
+    const src = read("src/app/(app)/orders/[id]/page.tsx");
+    const broadScenariosBlockMatch = src.match(/findings\.length === 0[\s\S]*?<\/Card>/);
+    expect(broadScenariosBlockMatch).not.toBeNull();
+    expect(broadScenariosBlockMatch![0]).toContain("<OrderBroadScenarios findings={findings} />");
+  });
+});
+
+// ---------------------------------------------------------------------
 // Part 10/18-13: Directions component never fabricates a fallback
 // direction — it only ever renders this order's own order_id-linked rows
 // ---------------------------------------------------------------------
@@ -486,22 +553,17 @@ describe("Order Detail: directions are order-grounded, never inferred", () => {
 describe("Order Detail: Noticees section source discipline", () => {
   const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf-8");
 
-  it("uses structured order_noticees data first (via resolveOrderNoticees), with a clearly-labelled fallback, never an invented name", () => {
+  it("uses structured order_noticees data only, never an invented name", () => {
     const src = read("src/app/(app)/orders/[id]/page.tsx");
     expect(src).toContain("resolveOrderNoticees");
     expect(src).toContain('resolvedNoticees.source === "structured"');
-    expect(src).toContain("Not yet captured for this order");
   });
 
-  it("CORRECTION Part 5: the noticeeActors fallback is visibly qualified as NOT the structured/verified noticee list — never silently presented as equivalent to structured order_noticees data", () => {
+  it("independent-audit correction P1-5: the finding-actor fallback is removed entirely -- when structured data is unavailable, the page shows an honest not-yet-captured message pointing to the official order, never a name sourced from findings", () => {
     const src = read("src/app/(app)/orders/[id]/page.tsx");
-    expect(src).toMatch(/Structured noticee list not yet captured/i);
-    // The qualifier text must sit inside the fallback branch (rendered only
-    // when resolvedNoticees.source === "fallback"), not merged into the
-    // same branch as the structured-data render.
-    const fallbackBranchMatch = src.match(/resolvedNoticees\.source === "fallback"[\s\S]{0,400}/);
-    expect(fallbackBranchMatch).not.toBeNull();
-    expect(fallbackBranchMatch![0]).toMatch(/Structured noticee list not yet captured/i);
+    expect(src).toContain("Noticee list not yet captured for this order. Refer to the official order.");
+    expect(src).not.toMatch(/resolvedNoticees\.source === "fallback"/);
+    expect(src).not.toContain("Structured noticee list not yet captured");
   });
 });
 

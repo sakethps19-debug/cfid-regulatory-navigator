@@ -1,11 +1,23 @@
 import type { ReactNode } from "react";
 import { NavBar } from "@/components/NavBar";
 import { DisclaimerBanner } from "@/components/DisclaimerBanner";
+import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/adminAuth";
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  // Admin-status lookup for NavBar's own display only (hide the link from a
+  // non-admin so it never reads as a dead/forbidden destination) -- the
+  // actual authorization boundary is enforced server-side in proxy.ts on
+  // every request, independent of what NavBar chooses to render here.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAdmin = isAdminEmail(user?.email);
+
   return (
     <div className="flex min-h-screen flex-col">
-      <NavBar />
+      <NavBar isAdmin={isAdmin} />
       <DisclaimerBanner />
       {/* Tiered workspace width, not a flat cap: 1280px through tablet/laptop
           (unchanged from before), widening at xl/2xl/3xl so a normal desktop

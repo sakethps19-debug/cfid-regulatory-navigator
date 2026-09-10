@@ -233,11 +233,17 @@ describe("Fraud Doctrine officer-facing UI: no computed conclusion, restrained v
   const page = readFileSync(new URL("../src/app/(app)/fraud-test/page.tsx", import.meta.url), "utf8");
   const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
 
-  it("the page and the checklist both carry the restrained 'Official-source verification pending' notice", () => {
-    expect(page).toMatch(/Official-source verification pending/);
-    expect(checklist).toMatch(/Official-source verification pending/);
-    expect(page).toMatch(/Automated doctrinal assessment is therefore temporarily unavailable/);
-    expect(checklist).toMatch(/Automated doctrinal assessment is therefore temporarily unavailable/);
+  it("the page and the checklist both carry the restrained 'Automated doctrinal assessment unavailable' notice", () => {
+    // Independent-audit correction (P1-3): the two-limb test text itself is
+    // now grounded in the official SEBI Rajesh Exports order this pilot
+    // already holds, so the banner no longer claims the governing text is
+    // unverified -- only that AUTOMATED assessment (a computed
+    // satisfied/borderline/not-satisfied read) stays off pending separate
+    // verification of the underlying Supreme Court judgment text.
+    expect(page).toMatch(/Automated doctrinal assessment unavailable/);
+    expect(checklist).toMatch(/Automated doctrinal assessment unavailable/);
+    expect(page).toMatch(/never computes a satisfied\/borderline\/not-satisfied read/);
+    expect(checklist).toMatch(/never computes a satisfied\/borderline\/not-satisfied read/);
   });
 
   it("FraudTestChecklist.tsx no longer imports or calls evaluateFraudDoctrineTest or attentionCount -- no computed conclusion is rendered", () => {

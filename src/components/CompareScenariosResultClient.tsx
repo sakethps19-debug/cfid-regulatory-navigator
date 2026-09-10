@@ -7,6 +7,8 @@ import { Card, SourceLink } from "@/components/Card";
 import { OrderStageBadge } from "@/components/OrderStageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/formatDate";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 import {
   comparisonRowMatterLabel,
   type ComparisonRow,
@@ -39,7 +41,7 @@ function ProvisionsSection({ row, provisionById }: { row: ComparisonRow; provisi
         {row.hasFindingLevelOnlyProvisionLinkage ? "Provisions linked to matched finding(s)" : "Provisions considered in this order"}
       </p>
       {row.hasFindingLevelOnlyProvisionLinkage && (
-        <p className="mt-0.5 max-w-prose text-[11px] italic text-[var(--color-ink-500)]">
+        <p className={`mt-0.5 text-[11px] italic text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.
         </p>
       )}
@@ -99,7 +101,7 @@ function DirectionsSummary({ row }: { row: ComparisonRow }) {
   return (
     <ul className="space-y-1">
       {row.directions.map((d) => (
-        <li key={d.id} className="max-w-prose text-xs text-[var(--color-ink-700)]">
+        <li key={d.id} className={`text-xs text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           {d.directionOrOutcome}
           {d.paragraphReference && <span className="text-[var(--color-ink-500)]"> ({d.paragraphReference})</span>}
         </li>
@@ -126,7 +128,20 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
   const [sortKey, setSortKey] = useState<ComparisonSortKey>("date_desc");
 
   const stageOptions = useMemo(() => [...new Set(rows.map((r) => r.order.orderStage))], [rows]);
-  const dispositionOptions = useMemo(() => [...new Set(rows.flatMap((r) => r.dispositions))], [rows]);
+  // Independent-audit correction (P1-9): the disposition filter must never
+  // render a raw FindingStatus enum value as an option -- "Alleged" and
+  // "Prima facie" carry no actual disposition (findingDispositionLabel
+  // returns null for both) and are excluded here entirely rather than
+  // given a fabricated disposition label just to make the filter list
+  // complete. A row with only those statuses remains findable via every
+  // other filter (stage, provision, matter, date); it simply has no
+  // "by disposition" option of its own.
+  const dispositionOptions = useMemo(() => {
+    const statuses = [...new Set(rows.flatMap((r) => r.dispositions))];
+    return statuses
+      .map((status) => ({ status, label: findingDispositionLabel(status) }))
+      .filter((o): o is { status: FindingStatus; label: string } => o.label !== null);
+  }, [rows]);
   const provisionOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const r of rows) {
@@ -176,9 +191,9 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
           Disposition
           <select className={selectClass} value={dispositionFilter} onChange={(e) => setDispositionFilter(e.target.value)}>
             <option value="all">All dispositions</option>
-            {dispositionOptions.map((d) => (
-              <option key={d} value={d}>
-                {d}
+            {dispositionOptions.map((o) => (
+              <option key={o.status} value={o.status}>
+                {o.label}
               </option>
             ))}
           </select>

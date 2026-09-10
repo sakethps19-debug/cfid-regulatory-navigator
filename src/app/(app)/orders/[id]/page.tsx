@@ -55,9 +55,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   // order_noticees data names them a noticee — never inferred from a
   // finding's free-text actor list, factual discussion, related-party
   // status, bank-account ownership, transaction involvement, or
-  // promoter-family relationship (live-officer-review correction, Rajesh
-  // Exports). See orderNoticees.ts for the full rationale.
-  const resolvedNoticees = resolveOrderNoticees(order.id, allOrderNoticees, findings);
+  // promoter-family relationship. Follow-up independent-audit correction:
+  // the previous version of this function also had a caveated fallback to
+  // finding actors when no structured data existed — that path is now
+  // removed entirely (PERSON MENTIONED IN FINDINGS != NOTICEE, no
+  // exceptions); resolveOrderNoticees no longer takes findings at all. See
+  // orderNoticees.ts for the full rationale.
+  const resolvedNoticees = resolveOrderNoticees(order.id, allOrderNoticees);
 
   return (
     <div>
@@ -164,16 +168,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </li>
                   ))}
                 </ul>
-              ) : resolvedNoticees.source === "fallback" ? (
-                <>
-                  <p className="text-xs italic text-[var(--color-ink-500)]">
-                    Structured noticee list not yet captured for this order — names below are recorded in this
-                    order&apos;s structured findings, not independently verified as the complete noticee list.
-                  </p>
-                  <p className="mt-1">{resolvedNoticees.noticees.map((n) => n.fullName).join(", ")}</p>
-                </>
               ) : (
-                "Not yet captured for this order"
+                <>
+                  <p>Noticee list not yet captured for this order. Refer to the official order.</p>
+                  <div className="mt-1">
+                    <SourceLink href={order.officialUrl} />
+                  </div>
+                </>
               )}
             </dd>
           </div>
@@ -265,10 +266,20 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       <Card>
         <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Broad scenarios arising from this order</h2>
-        <p className="mb-4 text-left text-xs text-[var(--color-ink-500)]">
-          Consolidated CFID fact-pattern categories, not one row per underlying research record.
-        </p>
-        <OrderBroadScenarios findings={findings} />
+        {findings.length === 0 ? (
+          <p className="text-sm text-[var(--color-ink-700)]">
+            No structured findings currently captured for this order. The metadata, order type/stage, noticees (where
+            captured) and official source above are accurate as far as they go; this order has not yet been broken
+            down into scenario findings.
+          </p>
+        ) : (
+          <>
+            <p className="mb-4 text-left text-xs text-[var(--color-ink-500)]">
+              Consolidated CFID fact-pattern categories, not one row per underlying research record.
+            </p>
+            <OrderBroadScenarios findings={findings} />
+          </>
+        )}
       </Card>
     </div>
   );

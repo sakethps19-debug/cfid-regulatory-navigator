@@ -109,27 +109,31 @@ describe("1/2: resolveOrderNoticees — a person/entity appears only where the o
         orderIds: [REL_ORDER_ID],
       }),
     ];
-    const resolved = resolveOrderNoticees(REL_ORDER_ID, correctedNoticees, relFindings);
+    const resolved = resolveOrderNoticees(REL_ORDER_ID, correctedNoticees);
     expect(resolved.source).toBe("structured");
     const names = resolved.noticees.map((n) => n.fullName);
     expect(names).toEqual(["Rajesh Exports Limited", "Rajesh Mehta"]);
     expect(names).not.toContain("Siddharth Mehta");
+    // relFindings is kept only to document the real-corpus pattern this
+    // fixture mirrors (REL-05's own noticeeActors already correctly labels
+    // Siddharth Mehta a non-noticee) -- it is no longer even passed to
+    // resolveOrderNoticees, per the follow-up independent-audit correction
+    // below, which removed the finding-actor fallback entirely.
+    expect(relFindings[0].noticeeActors).toContain("Siddharth Mehta (relative of Rajesh Mehta, non-noticee counterparty to undisclosed transfers)");
   });
 
-  it("HARD RULE: structured order_noticees data is used IN FULL and is NEVER topped up with names from findings.noticeeActors, even when a finding names additional actors", () => {
+  it("HARD RULE: structured order_noticees data is used IN FULL and is NEVER topped up with names from findings.noticeeActors -- resolveOrderNoticees no longer even accepts findings as an argument", () => {
     // Regression guard for exactly the class of defect reported: a
     // counterparty merely discussed in a finding's noticeeActors list (here
     // Siddharth Mehta) must never leak into the noticee list once
-    // structured data exists, no matter how many findings mention him.
+    // structured data exists. Follow-up independent-audit correction
+    // (P1-5): the function signature itself no longer takes findings, so
+    // there is no parameter through which finding actors could leak in.
     const structuredOnly: OrderNoticee[] = [
       { orderId: REL_ORDER_ID, fullName: "Rajesh Exports Limited", entityType: "company", role: "Company" },
       { orderId: REL_ORDER_ID, fullName: "Rajesh Mehta", entityType: "individual", role: "Promoter" },
     ];
-    const findingsNamingExtraActors = [
-      makeFinding({ recordId: "REL-05", noticeeActors: ["Rajesh Exports Limited", "Rajesh Mehta", "Siddharth Mehta"], orderIds: [REL_ORDER_ID] }),
-      makeFinding({ recordId: "REL-06", noticeeActors: ["Rajesh Exports Limited", "Some Auditor Mentioned In Passing"], orderIds: [REL_ORDER_ID] }),
-    ];
-    const resolved = resolveOrderNoticees(REL_ORDER_ID, structuredOnly, findingsNamingExtraActors);
+    const resolved = resolveOrderNoticees(REL_ORDER_ID, structuredOnly);
     expect(resolved.source).toBe("structured");
     expect(resolved.noticees).toHaveLength(2);
     expect(resolved.noticees.map((n) => n.fullName)).toEqual(["Rajesh Exports Limited", "Rajesh Mehta"]);
@@ -138,39 +142,36 @@ describe("1/2: resolveOrderNoticees — a person/entity appears only where the o
   it("never infers noticee status from factual discussion, related-party status, bank-account ownership, transaction involvement, or promoter-family relationship alone -- only an actual order_noticees row counts", () => {
     // A finding can describe Siddharth Mehta extensively (personal account,
     // related-party, promoter-family) without a single order_noticees row
-    // for him -- he must not appear.
+    // for him -- he must not appear, and (post P1-5) there is no code path
+    // by which the finding's own text could reach this function at all.
     const structuredNoSiddharth: OrderNoticee[] = [{ orderId: REL_ORDER_ID, fullName: "Rajesh Exports Limited", entityType: "company", role: "Company" }];
-    const finding = makeFinding({
-      recordId: "REL-05",
-      factualPattern: "Funds were routed through Siddharth Mehta's personal bank account, a relative of the promoter, without Board approval.",
-      noticeeActors: ["Rajesh Exports Limited", "Siddharth Mehta"],
-      orderIds: [REL_ORDER_ID],
-    });
-    const resolved = resolveOrderNoticees(REL_ORDER_ID, structuredNoSiddharth, [finding]);
+    const resolved = resolveOrderNoticees(REL_ORDER_ID, structuredNoSiddharth);
     expect(resolved.noticees.map((n) => n.fullName)).not.toContain("Siddharth Mehta");
   });
 
-  it("falls back to findings.noticeeActors, explicitly labelled unverified, only when NO structured data exists at all for the order", () => {
+  it("P1-5 correction: NEVER falls back to finding actors, even when no structured data exists at all for the order -- returns 'none' with an empty list instead", () => {
     const noStructuredData: OrderNoticee[] = [];
-    const finding = makeFinding({ recordId: "SOME-01", noticeeActors: ["Some Company Limited", "Some Director"], orderIds: ["some-other-order"] });
-    const resolved = resolveOrderNoticees("some-other-order", noStructuredData, [finding]);
-    expect(resolved.source).toBe("fallback");
-    expect(resolved.noticees.map((n) => n.fullName)).toEqual(["Some Company Limited", "Some Director"]);
+    const resolved = resolveOrderNoticees("some-other-order", noStructuredData);
+    expect(resolved.source).toBe("none");
+    expect(resolved.noticees).toEqual([]);
   });
 
-  it("returns 'none' with an empty list when neither structured data nor any finding actor exists, rather than inventing a name", () => {
-    const resolved = resolveOrderNoticees("empty-order", [], []);
+  it("returns 'none' with an empty list when no structured data exists, rather than inventing a name", () => {
+    const resolved = resolveOrderNoticees("empty-order", []);
     expect(resolved.source).toBe("none");
     expect(resolved.noticees).toEqual([]);
   });
 });
 
-describe("2 (continued): Order Detail page wires resolveOrderNoticees and never merges structured + fallback names", () => {
-  it("orders/[id]/page.tsx renders the fallback qualifier only inside the fallback branch, never alongside the structured render", () => {
+describe("2 (continued): Order Detail page wires resolveOrderNoticees, with no fallback branch at all (P1-5)", () => {
+  it("orders/[id]/page.tsx renders an honest 'not yet captured' message with the official-source link when source is not \"structured\" -- never a finding-actor-derived name", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
     expect(page).toMatch(/resolvedNoticees\.source === "structured"[\s\S]{0,50}\?[\s\S]{0,200}<ul/);
-    const structuredBranch = page.match(/resolvedNoticees\.source === "structured"[\s\S]{0,400}/)?.[0] ?? "";
-    expect(structuredBranch).not.toMatch(/Structured noticee list not yet captured/);
+    expect(page).toContain("Noticee list not yet captured for this order. Refer to the official order.");
+    expect(page).not.toContain("Structured noticee list not yet captured");
+    expect(page).not.toMatch(/resolvedNoticees\.source === "fallback"/);
+    // resolveOrderNoticees is called with exactly (order.id, allOrderNoticees) -- no third findings argument.
+    expect(page).toMatch(/resolveOrderNoticees\(order\.id,\s*allOrderNoticees\)/);
   });
 });
 

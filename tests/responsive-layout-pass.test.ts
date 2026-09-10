@@ -35,7 +35,11 @@ describe("app shell: tiered workspace width (Part 1/2/14)", () => {
   });
 
   it("does not touch DisclaimerBanner, footer, or navigation architecture", () => {
-    expect(layout).toContain("<NavBar />");
+    // P0-1 correction: NavBar now takes an isAdmin prop (server-computed in
+    // this layout via isAdminEmail) so it can hide the Admin Dashboard link
+    // from a non-admin -- the literal "<NavBar />" self-closing-with-no-
+    // props tag is gone by design, not a regression.
+    expect(layout).toMatch(/<NavBar isAdmin=\{isAdmin\}\s*\/>/);
     expect(layout).toContain("<DisclaimerBanner />");
     expect(layout).toContain("no-print");
   });
