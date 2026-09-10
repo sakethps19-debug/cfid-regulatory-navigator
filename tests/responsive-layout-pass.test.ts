@@ -124,10 +124,15 @@ describe("grids gain columns on wide displays without excluding narrower ones (P
     expect(page).toMatch(/grid gap-4 sm:grid-cols-2 xl:grid-cols-3/);
   });
 
-  it("Fixed Scenario Analysis's scenario-card grid gains a column at xl, and its provision-groups list becomes two columns at xl", () => {
+  it("Fixed Scenario Analysis's scenario-card grid gains a column at xl, and its provision-groups list becomes two balanced columns at xl", () => {
     const comp = src("src/components/analyzer/FixedScenarioAnalyzer.tsx");
     expect(comp).toMatch(/grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
-    expect(comp).toMatch(/grid grid-cols-1 gap-4 xl:grid-cols-2/);
+    // Pre-presentation visual QA pass: switched from a fixed grid split
+    // (one instrument group per column, which left a large dead gap under
+    // whichever group had fewer items) to CSS multi-column layout, which
+    // balances total content height across columns instead.
+    expect(comp).toMatch(/columns-1 gap-8 xl:columns-2/);
+    expect(comp).toMatch(/break-inside-avoid/);
   });
 
   it("Law Library's regulator/instrument/provision browse grids gain columns at wider tiers", () => {

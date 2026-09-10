@@ -41,6 +41,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# qa-harness: generated static HTML/CSS/screenshots are build artifacts, not
+# source. The harness source itself (fixtures, screens, shims, render/shoot
+# scripts) IS committed -- see qa-harness/README.md.
+/qa-harness/output/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

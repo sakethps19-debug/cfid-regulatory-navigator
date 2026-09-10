@@ -131,15 +131,30 @@ function FixedScenarioResult({ scenario, findings, orders }: { scenario: Resolve
           {scenario.provisionGroups.length === 0 ? (
             <p className="text-sm italic text-[var(--color-ink-300)]">No provisions on file for this scenario.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            // A fixed two-column GRID split one instrument group per column
+            // left a large dead gap under whichever group happened to be
+            // shorter (a real scenario found during the pre-presentation
+            // visual QA pass had SEBI Act 1992's 3 short items in one
+            // column next to PFUTP's 8 longer items in the other, leaving
+            // roughly half the left column empty). CSS multi-column layout
+            // balances total content HEIGHT across columns (browsers'
+            // default column-fill: balance) -- but only if the balancer can
+            // actually split WITHIN a group when there are just two groups
+            // of very different sizes, so break-inside-avoid is applied per
+            // <li>, not per instrument-group: each citation stays visually
+            // whole, but a long group can still spill from one column into
+            // the next after however many of its own items fit, exactly
+            // like flowing newspaper text. Still a real <ul>/<li> list for
+            // screen readers, not a div reimplementation.
+            <div className="columns-1 gap-8 xl:columns-2">
               {scenario.provisionGroups.map((group) => (
-                <div key={group.instrument}>
-                  <div className="text-sm font-semibold text-[var(--color-ink-900)]">{group.instrument}</div>
+                <div key={group.instrument} className="mb-4">
+                  <div className="break-inside-avoid text-sm font-semibold text-[var(--color-ink-900)]">{group.instrument}</div>
                   <ul className="mt-1 flex flex-col gap-1">
                     {group.items.map((p) => {
                       const rule = retrievalRuleForProvision(p.id);
                       return (
-                        <li key={p.id} className="text-sm text-[var(--color-ink-700)]">
+                        <li key={p.id} className="break-inside-avoid text-sm text-[var(--color-ink-700)]">
                           <Link href={`/provisions/${encodeURIComponent(p.id)}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
                             {p.provisionNumber}
                           </Link>
