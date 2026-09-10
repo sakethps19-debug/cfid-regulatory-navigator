@@ -718,6 +718,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "not used for the stated objects",
       "not utilised for the stated objects",
       "not utilized for the stated objects",
+      // "purpose" variants of the identical "objects" family immediately
+      // above (Part 1 template-audit remediation): the "Rights issue funds
+      // diverted" quick-start template's own text -- "moved out to related
+      // entities instead of being used for the disclosed purpose" -- uses
+      // "purpose" where the existing synonyms all used "objects", so the
+      // substring matcher missed it even though it is the exact same
+      // diverted-proceeds fact pattern. Same same-sentence gate, no broader
+      // search introduced -- purely the missing noun variant.
+      "instead of being used for the disclosed purpose",
+      "not used for the disclosed purpose",
+      "not utilised for the disclosed purpose",
+      "not utilized for the disclosed purpose",
       // P0 recall-hardening sprint: a closely-defined phrase FAMILY for the
       // same "used other than as represented" diversion predicate above,
       // generalised past the exact "instead of/not used for" wording to the
@@ -767,8 +779,29 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // same circular-financing fact this tag's own "allotment financed
   // circularly" synonym covers, in the more natural word order officers
   // commonly use.
-  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "no genuine payment", "circularly funded"] },
-  { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
+  // "circular chain of loans" / "kept the sale proceeds" / "retained the
+  // sale proceeds" added (Part 1 template-audit remediation): the
+  // "Preferential allotment / circular funding" quick-start template's own
+  // text -- "financed through a circular chain of loans and advances ...
+  // the allottees appear to have kept the sale proceeds from the shares" --
+  // is the same circularly-funded-allotment fact pattern the existing
+  // "allotment financed through loans"/"allotment financed circularly"
+  // synonyms cover, just with extra words breaking the contiguous match,
+  // plus the front-allottee-retains-proceeds half this tag had no synonym
+  // for at all (see the corpus's own "Ultimate benefit / sale proceeds"
+  // legal_tests entry, which independently confirms "retain sale proceeds"
+  // is genuine SEBI order vocabulary for this pattern, not invented here).
+  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "circular chain of loans", "kept the sale proceeds", "retained the sale proceeds", "retain the sale proceeds", "no genuine payment", "circularly funded"] },
+  // "turned out to be unsubstantiated" / "no supporting documentation"
+  // added (Part 1 template-audit remediation): the "False corporate
+  // announcement" quick-start template's own text -- "future revenue
+  // projections that turned out to be unsubstantiated, with no supporting
+  // documentation for the claims made in the announcement" -- describes
+  // exactly this concept but in a word order the existing "unsubstantiated
+  // projection" synonym (adjective before noun) doesn't reach as a
+  // contiguous substring. Both additions are generic order-language
+  // patterns, not overfit to this one template's exact sentence.
+  { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "turned out to be unsubstantiated", "no supporting documentation", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
   // Added for the Aug-2026 capital-raising taxonomy restructuring
   // (Debock/Trafiksol/Varanium correction pass): TWO brand-new tags, no
   // existing tag's synonym list touched (every synonym below is a string

@@ -126,7 +126,11 @@ const COMPLETENESS_LABELS: Record<string, string> = {
 
 const TEMPLATE_GROUP_ORDER = ["Financial reporting", "Fund flows", "Governance & disclosure"] as const;
 
-const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number] }[] = [
+// Exported so the template-audit regression suite (see
+// tests/analyzer-template-audit.test.ts) imports this exact array rather
+// than a hand-copied duplicate that could silently drift from what the UI
+// actually renders.
+export const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number] }[] = [
   {
     label: "Fictitious sales/assets",
     group: "Financial reporting",
