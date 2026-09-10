@@ -125,15 +125,48 @@ describe("EXAMPLE_SCENARIOS: themeId cross-references resolve to a real canonica
     }
   });
 
-  it("at least 9 of the 13 templates now carry a canonical themeId cross-reference", () => {
+  // Checkpoint correction D: the prior checkpoint report claimed "9/13"
+  // while the code has always carried 10 -- a reporting error in that
+  // report, not a code or audit-harness defect (re-verified directly
+  // against the current file: "Promoter's personal derivative trades as
+  // revenue" also carries financial-statement-misrepresentation, taking
+  // the true count to 10). Asserted as an exact count, not a floor, so a
+  // future drift in either direction is caught rather than silently
+  // tolerated.
+  it("exactly 10 of the 13 templates carry a canonical themeId cross-reference", () => {
     const withTheme = EXAMPLE_SCENARIOS.filter((t) => t.themeId).length;
-    expect(withTheme).toBeGreaterThanOrEqual(9);
+    expect(withTheme).toBe(10);
   });
 
   it("templates deliberately left without a themeId (genuine corpus gap or a Part-4 split-pending fact pattern) are exactly the expected three", () => {
     const orphans = EXAMPLE_SCENARIOS.filter((t) => !t.themeId).map((t) => t.label);
-    expect(orphans).toEqual(
-      expect.arrayContaining(["Statutory auditor negligence", "False CEO/CFO certification", "Director duties / non-cooperation"])
+    expect(orphans.sort()).toEqual(
+      ["Director duties / non-cooperation", "False CEO/CFO certification", "Statutory auditor negligence"].sort()
     );
+  });
+});
+
+// Checkpoint correction D: scripts/audit-templates.ts's own TEMPLATES array
+// was a hand-copied duplicate of EXAMPLE_SCENARIOS that had silently
+// drifted out of sync -- it omitted "Promoter's personal derivative trades
+// as revenue" (the 13th real template), producing an incomplete audit
+// report with no visible symptom (the script's own console table simply
+// printed 12 rows, which read as complete). Fixed by importing
+// EXAMPLE_SCENARIOS directly into the audit script rather than
+// hand-copying its contents, so the two can never again drift -- this is a
+// source-guard test (the audit script is a side-effecting CLI tool that
+// reads a live-corpus snapshot from the scratchpad, not an importable
+// module a normal test can safely execute) confirming that fix is in place
+// and stays in place: TEMPLATES must be assigned directly from the real
+// import, never a separately hand-copied literal array of the same shape.
+describe("scripts/audit-templates.ts: TEMPLATES is derived from the real EXAMPLE_SCENARIOS, never a hand-copied duplicate", () => {
+  const src = readFileSync(new URL("../scripts/audit-templates.ts", import.meta.url), "utf8");
+
+  it("imports EXAMPLE_SCENARIOS from the real ScenarioAnalyzerClient source", () => {
+    expect(src).toMatch(/import\s*\{\s*EXAMPLE_SCENARIOS\s*\}\s*from\s*["']\.\.\/src\/components\/analyzer\/ScenarioAnalyzerClient["']/);
+  });
+
+  it("assigns TEMPLATES directly from EXAMPLE_SCENARIOS rather than a separate literal array", () => {
+    expect(src).toMatch(/const TEMPLATES:.*=\s*EXAMPLE_SCENARIOS\s*;/);
   });
 });

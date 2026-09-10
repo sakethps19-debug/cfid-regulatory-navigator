@@ -11,6 +11,7 @@ import { readFileSync } from "fs";
 import { analyzeScenario } from "../src/lib/matching/engine";
 import { detectConcepts } from "../src/lib/matching/conceptExtraction";
 import { retrievalRuleForProvision } from "../src/data/curated/provision-retrieval-rules";
+import { EXAMPLE_SCENARIOS } from "../src/components/analyzer/ScenarioAnalyzerClient";
 import type { LegalProvision, LegalTest, ScenarioFinding, FindingStatus, PublicationStatus } from "../src/types/domain";
 
 const SCRATCH = "/tmp/claude-0/-home-user-cfid-regulatory-navigator/3f0534b9-4b60-5afe-bd07-443935964238/scratchpad";
@@ -186,66 +187,25 @@ const legalTests: LegalTest[] = rawLegalTests.map((row) => ({
 
 console.log(`Loaded: ${findings.length} findings, ${provisions.length} provisions, ${legalTests.length} legal tests.\n`);
 
-// The 12 audited EXAMPLE_SCENARIOS (Part B quick-start templates), text
-// copied verbatim from ScenarioAnalyzerClient.tsx.
-const TEMPLATES: { label: string; text: string }[] = [
-  {
-    label: "Fictitious sales/assets",
-    text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
-  },
-  {
-    label: "False corporate announcement",
-    text: "The company made a stock exchange announcement about an acquisition and future revenue projections that turned out to be unsubstantiated, with no supporting documentation for the claims made in the announcement.",
-  },
-  {
-    label: "Statutory auditor negligence",
-    text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
-  },
-  {
-    label: "Preferential allotment / circular funding",
-    text: "A preferential allotment of shares was allegedly financed through a circular chain of loans and advances. The loans are recorded in the company's audited accounts, but it is unclear whether the third-party lenders were ever examined, and the allottees appear to have kept the sale proceeds from the shares.",
-  },
-  {
-    label: "Funds via personal account",
-    text: "Company funds, including statutory and operating payments, were routed through the promoter's personal bank account without clear board approval or disclosure.",
-  },
-  {
-    label: "Rights issue funds diverted",
-    text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
-  },
-  {
-    label: "Audit Committee lapse",
-    text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
-  },
-  {
-    label: "Related-party transaction not disclosed",
-    text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
-  },
-  {
-    label: "Compliance Officer vacancy",
-    text: "The position of Compliance Officer / Company Secretary remained vacant for an extended period without a proper appointment, and no interim arrangement was disclosed to the stock exchanges.",
-  },
-  {
-    label: "False CEO/CFO certification",
-    text: "The Chief Executive Officer and Chief Financial Officer signed the quarterly compliance certification despite being aware of misstatements in the financial statements, and the certificate was not duly signed in accordance with the applicable regulation.",
-  },
-  {
-    label: "Director duties / non-cooperation",
-    text: "The independent directors failed to raise concerns despite red flags in the related-party transactions placed before the board, and the company did not cooperate with the investigation, failing to produce records called for by summons.",
-  },
-  {
-    label: "Price/market manipulation",
-    text: "A group of connected trading accounts executed synchronized trades in the company's shares with no genuine change in beneficial ownership, creating an artificial appearance of trading volume and inducing other investors to deal in the security.",
-  },
-];
+// Part D (checkpoint correction): the 12 hand-copied templates above were a
+// duplicate of ScenarioAnalyzerClient.tsx's own EXAMPLE_SCENARIOS array that
+// had silently drifted out of sync -- it omitted "Promoter's personal
+// derivative trades as revenue" (the 13th real quick-start template),
+// producing an incomplete audit with no visible symptom. Imported directly
+// from the real, unmodified source of truth instead, so this script can
+// never again silently audit fewer templates than the UI actually offers.
+const TEMPLATES: { label: string; text: string }[] = EXAMPLE_SCENARIOS;
 
-console.log("| Template | Primary | Related/ancillary | Total provisionResults |");
-console.log("|---|---|---|---|");
+console.log("| Template | themeId | Primary | Related/ancillary | Gate-blocked | Total provisionResults |");
+console.log("|---|---|---|---|---|---|");
 for (const t of TEMPLATES) {
   const result = analyzeScenario({ freeText: t.text }, findings, provisions, legalTests);
   const primary = result.provisionResults.filter((p) => p.candidateTier === "primary_candidate").length;
   const ancillary = result.provisionResults.filter((p) => p.candidateTier === "related_ancillary").length;
-  console.log(`| ${t.label} | ${primary} | ${ancillary} | ${result.provisionResults.length} |`);
+  const themeId = "themeId" in t && t.themeId ? t.themeId : "(unmapped)";
+  console.log(
+    `| ${t.label} | ${themeId} | ${primary} | ${ancillary} | ${result.gateBlockedProvisionResults.length} | ${result.provisionResults.length} |`
+  );
 }
 
 console.log("\n--- Detail per template (provision ids + tier) ---\n");
