@@ -72,7 +72,8 @@ export default function MethodologyPage() {
 
       <Section title="Purpose and scope">
         <p>
-          CFID Regulatory Navigator is an internal legal-research assistant for CFID officers, each signed in with
+          SPARC (Scenario, Provision &amp; Regulatory Case Analysis) is an internal legal-research assistant for CFID
+          officers, each signed in with
           their own allow-listed email. Given a factual scenario, it identifies potentially applicable SEBI Act
           sections, regulations and other provisions; matching factual ingredients; supporting CFID orders with
           paragraph references; contrary or negative precedents; the procedural status of each finding; missing facts

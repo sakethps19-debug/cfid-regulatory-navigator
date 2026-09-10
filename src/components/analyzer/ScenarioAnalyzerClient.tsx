@@ -398,7 +398,7 @@ function downloadTextFile(filename: string, content: string, mimeType = "text/pl
 
 export function resultToText(result: AnalysisResult): string {
   const lines: string[] = [];
-  lines.push("CFID Regulatory Navigator: Scenario Analysis (research assistance only)");
+  lines.push("SPARC: Scenario Analysis (research assistance only)");
   lines.push(`Generated: ${formatDateTime(new Date())}`);
   lines.push("");
   lines.push("Scenario:");
@@ -744,7 +744,7 @@ function csvRow(values: string[]): string {
  * violation table with no caveat attached. */
 export function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
-  rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
+  rows.push(csvRow(["SPARC: Scenario Analysis (research assistance only)"]));
   rows.push(csvRow([`Generated: ${formatDateTime(new Date())}`]));
   const sorted = [...result.provisionResults].sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)

@@ -178,12 +178,6 @@ describe("Application-wide removal of officer-facing corpus-verification/researc
     expect(src).not.toMatch(/human.legal.review/i);
   });
 
-  it("FindingsByStatus (shared by Order Detail and, previously, Provision Detail) no longer renders LegalReviewBadge or a publication-status badge", () => {
-    const src = read("src/components/FindingsByStatus.tsx");
-    expect(src).not.toContain("LegalReviewBadge");
-    expect(src).not.toContain("PublicationStatusBadge");
-  });
-
   it("Scenario Analyzer no longer renders LegalReviewBadge or FindingMaturityBadge on any result card", () => {
     const src = read("src/components/analyzer/ScenarioAnalyzerClient.tsx");
     expect(src).not.toContain("LegalReviewBadge");

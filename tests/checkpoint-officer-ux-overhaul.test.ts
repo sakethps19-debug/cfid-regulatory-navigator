@@ -175,10 +175,13 @@ describe("D/E: 'Alleged' and 'Prima facie' never render as an officer-facing sta
   });
 
   it("no officer-facing route renders 'Alleged'/'Prima facie' as a hardcoded badge/tag outside the shared StatusBadge/findingStatusLabel mechanism", () => {
+    // FindingsByStatus.tsx (previously checked here too) was confirmed
+    // fully dead -- unreferenced by any component -- and deleted in the
+    // SPARC pre-presentation hardening pass; its own dedicated test file
+    // (findings-by-status.test.ts) was removed with it.
     const compareScenarios = src("src/components/CompareScenariosResultClient.tsx");
     const caseJourney = src("src/components/CaseJourneyStageCard.tsx");
-    const findingsByStatus = src("src/components/FindingsByStatus.tsx");
-    for (const fileSrc of [compareScenarios, caseJourney, findingsByStatus]) {
+    for (const fileSrc of [compareScenarios, caseJourney]) {
       expect(fileSrc).not.toMatch(/>Alleged</);
       expect(fileSrc).not.toMatch(/>Prima facie</);
     }

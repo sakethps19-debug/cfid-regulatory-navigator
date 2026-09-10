@@ -54,7 +54,6 @@ const OFFICER_FACING_FILES = [
   "src/components/CompareScenariosLandingClient.tsx",
   "src/components/CaseJourneyLandingClient.tsx",
   "src/components/ProvisionOrderList.tsx",
-  "src/components/FindingsByStatus.tsx",
   "src/app/(app)/analyzer/page.tsx",
   "src/app/(app)/case-library/page.tsx",
   "src/app/(app)/law-library/page.tsx",

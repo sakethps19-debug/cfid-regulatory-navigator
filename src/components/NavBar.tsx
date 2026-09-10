@@ -115,8 +115,14 @@ export function NavBar({ isAdmin }: { isAdmin: boolean }) {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 xl:max-w-[85rem] 2xl:max-w-[100rem] 3xl:max-w-[130rem]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Emblem />
-          <span className="font-serif text-base font-semibold leading-tight text-white">
-            CFID <span className="font-normal text-[var(--color-gold-100)]">Regulatory Navigator</span>
+          {/* SPARC branding (pre-presentation hardening pass): "SPARC" is the
+              product name; the line beneath it names both what the letters
+              stand for and, in the same breath, that this is an internal
+              pilot -- never a bare "SPARC" that could read as an officially
+              approved production system on its own. */}
+          <span className="flex flex-col leading-tight">
+            <span className="font-serif text-base font-semibold tracking-wide text-white">SPARC</span>
+            <span className="text-[10px] font-normal text-[var(--color-gold-100)]">CFID Regulatory Research Platform (Pilot)</span>
           </span>
         </Link>
         <button
