@@ -10,6 +10,8 @@ import { formatDate } from "@/lib/formatDate";
 import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 import { orderGist } from "@/lib/orderGist";
 import { provisionsConsideredForOrder } from "@/lib/orderProvisionsConsidered";
+import { resolveOrderNoticees } from "@/lib/orderNoticees";
+import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,19 +50,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     })
     .sort((a, b) => a.provision.provisionNumber.localeCompare(b.provision.provisionNumber));
 
-  // Noticees: structured order_noticees data first (curated, named party by
-  // named party — "against whom was this proceeding actually directed"),
-  // never inferred/backfilled from a finding's free-text actor list, an
-  // auditor/banker/counterparty merely mentioned in the narrative, or a
-  // subsidiary/director who was not themselves a noticee. Where structured
-  // data isn't yet on file for this order (most of the corpus, as of this
-  // pass — a full reconstruction is a separate, out-of-scope workstream),
-  // fall back to the existing curated noticeeActors on this order's own
-  // findings (already scoped to noticee names, not a generic actor list,
-  // by the field's own curation convention) rather than showing nothing;
-  // if neither exists, say so plainly instead of inventing a name.
-  const structuredNoticees = allOrderNoticees.filter((n) => n.orderId === order.id);
-  const fallbackNoticeeNames = [...new Set(findings.flatMap((f) => f.noticeeActors))];
+  // Noticees: resolveOrderNoticees enforces the hard rule that a
+  // person/entity appears here only where the order's own structured
+  // order_noticees data names them a noticee — never inferred from a
+  // finding's free-text actor list, factual discussion, related-party
+  // status, bank-account ownership, transaction involvement, or
+  // promoter-family relationship (live-officer-review correction, Rajesh
+  // Exports). See orderNoticees.ts for the full rationale.
+  const resolvedNoticees = resolveOrderNoticees(order.id, allOrderNoticees, findings);
 
   return (
     <div>
@@ -93,7 +90,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {siblingOrders.length > 0 && (
         <Card className="mb-6">
           <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">Other orders in the same matter</h2>
-          <p className="mb-4 max-w-3xl text-left text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
+          <p className={`mb-4 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>
             One matter/investigation can span several individual orders (interim, confirmatory, final, adjudication,
             or otherwise). Each stays independently visible with its own order type; a later order is never treated
             as silently overwriting an earlier one.
@@ -158,22 +155,22 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Noticees</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">
-              {structuredNoticees.length > 0 ? (
+              {resolvedNoticees.source === "structured" ? (
                 <ul className="space-y-0.5">
-                  {structuredNoticees.map((n, i) => (
+                  {resolvedNoticees.noticees.map((n, i) => (
                     <li key={`${n.fullName}-${i}`}>
                       {n.fullName}
                       {n.role && <span className="text-[var(--color-ink-500)]"> — {n.role}</span>}
                     </li>
                   ))}
                 </ul>
-              ) : fallbackNoticeeNames.length > 0 ? (
+              ) : resolvedNoticees.source === "fallback" ? (
                 <>
                   <p className="text-xs italic text-[var(--color-ink-500)]">
                     Structured noticee list not yet captured for this order — names below are recorded in this
                     order&apos;s structured findings, not independently verified as the complete noticee list.
                   </p>
-                  <p className="mt-1">{fallbackNoticeeNames.join(", ")}</p>
+                  <p className="mt-1">{resolvedNoticees.noticees.map((n) => n.fullName).join(", ")}</p>
                 </>
               ) : (
                 "Not yet captured for this order"
@@ -182,15 +179,21 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Scope note</dt>
-            {/* Prose measure: metadata fields above may spread across the
-                wide workspace, but a scope-note paragraph must not stretch
-                into an unreadable full-width line on a large display. */}
-            <dd className="mt-1 max-w-prose text-left text-sm text-[var(--color-ink-700)]">{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
+            {/* Substantive narrative prose: widens on large displays via
+                the shared tiered measure instead of staying trapped in a
+                fixed max-w-prose column (live-officer-review correction —
+                Rajesh Exports Case Detail review), and is justified for a
+                professional report-like reading experience. */}
+            <dd className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
           </div>
           {issuesExamined.length > 0 && (
             <div className="sm:col-span-2 lg:col-span-3">
               <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Issues examined</dt>
-              <dd className="mt-1 max-w-prose text-left text-sm text-[var(--color-ink-700)]">{issuesExamined.join("; ")}</dd>
+              {/* A short semicolon-joined label list, not paragraph prose —
+                  widened for the same wide-screen reason as Scope Note
+                  above, but deliberately not justified (justify has no
+                  benefit on compact list-style text; see proseClasses.ts). */}
+              <dd className="mt-1 max-w-3xl text-left text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">{issuesExamined.join("; ")}</dd>
             </div>
           )}
         </dl>
@@ -204,13 +207,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <h2 className="mb-1 text-base font-semibold text-[var(--color-ink-900)]">
             {hasFindingLevelOnlyProvisionLinkage ? "Provisions linked to this order's finding(s)" : "Provisions considered in this order"}
           </h2>
-          <p className="mb-1 text-left text-xs text-[var(--color-ink-500)]">
+          <p className={`mb-1 text-xs text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
             Every provision cited by this order&apos;s linked finding(s) — substantive prohibitions, disclosure and
             governance obligations, and the penalty/power/attribution provisions cited in connection with them. This
             is historical-order research, not a claim that each is a violation.
           </p>
           {hasFindingLevelOnlyProvisionLinkage && (
-            <p className="mb-3 max-w-3xl text-left text-xs italic text-[var(--color-ink-500)] xl:max-w-4xl 2xl:max-w-5xl">
+            <p className={`mb-3 text-xs italic text-[var(--color-ink-500)] ${NARRATIVE_PROSE_CLASSES}`}>
               Provision linkage is recorded at finding level in the current corpus and may span more than one
               captured order — a &quot;Finding-level&quot; provision below is not proven specific to this order alone.
             </p>
@@ -252,7 +255,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <ul className="space-y-2">
             {directions.map((d) => (
               <li key={d.id} className="rounded-lg border border-[var(--color-border)] p-3 text-sm">
-                <p className="max-w-prose text-left text-[var(--color-ink-900)]">{d.directionOrOutcome}</p>
+                <p className={`text-[var(--color-ink-900)] ${NARRATIVE_PROSE_CLASSES}`}>{d.directionOrOutcome}</p>
                 <p className="mt-1 text-xs text-[var(--color-ink-500)]">{d.paragraphReference}</p>
               </li>
             ))}

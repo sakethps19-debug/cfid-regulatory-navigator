@@ -305,10 +305,13 @@ describe("J: Case Library issue filtering works deterministically from the canon
 });
 
 describe("K: wide-screen fixed-scenario description is no longer trapped in the old narrow max-w-prose column", () => {
-  it("FixedScenarioAnalyzer's 'What this covers' paragraph widens on wide displays via the same tiered pattern as PageHeader", () => {
+  it("FixedScenarioAnalyzer's 'What this covers' paragraph widens on wide displays via the shared NARRATIVE_PROSE_CLASSES constant (same tiered pattern as PageHeader)", () => {
     const compSrc = src("src/components/analyzer/FixedScenarioAnalyzer.tsx");
-    expect(compSrc).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(compSrc).toMatch(/\{scenario\.explanation\}/);
     expect(compSrc).not.toMatch(/<p className="max-w-prose text-sm text-\[var\(--color-ink-700\)\]">\{scenario\.explanation\}/);
+    expect(compSrc).not.toMatch(/<p className="[^"]*max-w-prose[^"]*">\{scenario\.explanation\}/);
+    const proseClasses = src("src/lib/proseClasses.ts");
+    expect(proseClasses).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
   });
 });
 

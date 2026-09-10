@@ -486,9 +486,10 @@ describe("Order Detail: directions are order-grounded, never inferred", () => {
 describe("Order Detail: Noticees section source discipline", () => {
   const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf-8");
 
-  it("uses structured order_noticees data first, with a clearly-labelled fallback, never an invented name", () => {
+  it("uses structured order_noticees data first (via resolveOrderNoticees), with a clearly-labelled fallback, never an invented name", () => {
     const src = read("src/app/(app)/orders/[id]/page.tsx");
-    expect(src).toContain("structuredNoticees");
+    expect(src).toContain("resolveOrderNoticees");
+    expect(src).toContain('resolvedNoticees.source === "structured"');
     expect(src).toContain("Not yet captured for this order");
   });
 
@@ -496,13 +497,21 @@ describe("Order Detail: Noticees section source discipline", () => {
     const src = read("src/app/(app)/orders/[id]/page.tsx");
     expect(src).toMatch(/Structured noticee list not yet captured/i);
     // The qualifier text must sit inside the fallback branch (rendered only
-    // when structuredNoticees.length === 0 and fallbackNoticeeNames.length
-    // > 0), not merged into the same branch as the structured-data render.
-    const fallbackBranchMatch = src.match(/fallbackNoticeeNames\.length > 0[\s\S]{0,400}/);
+    // when resolvedNoticees.source === "fallback"), not merged into the
+    // same branch as the structured-data render.
+    const fallbackBranchMatch = src.match(/resolvedNoticees\.source === "fallback"[\s\S]{0,400}/);
     expect(fallbackBranchMatch).not.toBeNull();
     expect(fallbackBranchMatch![0]).toMatch(/Structured noticee list not yet captured/i);
   });
 });
+
+// ---------------------------------------------------------------------
+// Live-officer-review correction: Rajesh Exports noticee-integrity
+// architecture. See tests/order-noticees.test.ts for the resolveOrderNoticees
+// unit tests (structured data always wins in full, never topped up with
+// finding actors) and tests/checkpoint-rajesh-exports-noticees.test.ts for
+// the Rajesh Exports-specific regression fixture.
+// ---------------------------------------------------------------------
 
 // ---------------------------------------------------------------------
 // Part 13/18-15: Official SEBI source links remain functional

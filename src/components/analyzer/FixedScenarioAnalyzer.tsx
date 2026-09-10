@@ -8,6 +8,7 @@ import { resolveAllFixedScenarios, type ResolvedFixedScenario } from "@/lib/fixe
 import { retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
 import { relevantScenarioRecords, groupRelevantRecordsByOrder, type RelevantOrderGroup } from "@/lib/fixedScenarioRelevantRecords";
 import { formatDate } from "@/lib/formatDate";
+import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 import type { LegalProvision, Order, ScenarioFinding } from "@/types/domain";
 
 /** Part A of the redesigned Scenario Analyzer — a small, curated set
@@ -39,7 +40,7 @@ export function FixedScenarioAnalyzer({
     <div className="flex flex-col gap-6">
       <Card>
         <h2 className="font-serif text-lg font-semibold text-[var(--color-ink-900)]">What type of scenario are you examining?</h2>
-        <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">
+        <p className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>
           Select the broad CFID investigation theme closest to what you are looking into. Each theme shows a curated set of potentially
           relevant regulatory provisions to examine — a research shortcut, not a finding that a violation occurred and not a search of past cases.
         </p>
@@ -111,8 +112,10 @@ function FixedScenarioResult({ scenario, findings, orders }: { scenario: Resolve
               the same pattern PageHeader's own description paragraph and
               the theme-picker intro above already use — readable measure on
               a laptop, materially wider on a large desktop, never
-              full-bleed width:100% text. */}
-          <p className="max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">{scenario.explanation}</p>
+              full-bleed width:100% text. Shared with every other officer-
+              facing narrative paragraph via NARRATIVE_PROSE_CLASSES (global
+              text-justify requirement, live-officer-review correction). */}
+          <p className={`text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>{scenario.explanation}</p>
         </div>
 
         {scenario.unresolvedProvisionIds.length > 0 && (
@@ -180,7 +183,7 @@ function RelevantCfidOrders({ groups }: { groups: RelevantOrderGroup[] }) {
     return (
       <Card className="mt-4">
         <h3 className="font-serif text-base font-semibold text-[var(--color-ink-900)]">Relevant CFID Orders</h3>
-        <p className="mt-2 text-sm text-[var(--color-ink-700)]">
+        <p className={`mt-2 text-sm text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           No captured CFID precedent is currently mapped to this fact pattern. This means only that the current captured corpus does not provide a
           structured, provision-linked precedent for this scenario — it does not mean no violation exists, that SEBI has never considered such
           conduct, or that the allegation is legally unsustainable.
@@ -204,10 +207,21 @@ function RelevantCfidOrders({ groups }: { groups: RelevantOrderGroup[] }) {
         </h3>
         <span className="text-sm text-[var(--color-gold-700)]">{collapsed ? "Show →" : "Hide"}</span>
       </button>
-      <p className="mt-1 text-xs text-[var(--color-ink-500)]">
+      <p className={`mt-1 text-xs text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
         One card per captured order whose own structured findings touch this theme AND whose finding-provision link cites one of the provisions
         listed above — never an order shown merely because it cites the same provision elsewhere. A matter&apos;s Interim Order and its later
         Final Order always remain separate cards; order stage is legally material.
+      </p>
+      {/* Quantum-integrity safeguard (live-officer-review correction —
+          Rajesh Exports): this theme's name (e.g. "Diversion / Siphoning /
+          Misutilisation of Funds") sits directly above each order's own
+          finding titles, some of which name an amount. A standing
+          disclaimer, not a per-amount inference — no amount is parsed or
+          classified. */}
+      <p className={`mt-1 text-xs text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
+        Being listed under this theme means an order&apos;s findings examine that subject matter — not that any amount named in a finding&apos;s
+        title is itself an established quantum of diversion, siphoning or misutilisation. Consult the order for the actual amount transferred,
+        returned, outstanding or otherwise characterised.
       </p>
 
       {!collapsed && (
@@ -258,7 +272,7 @@ function RelevantOrderCard({ group }: { group: RelevantOrderGroup }) {
           Provisions considered in these relevant findings
         </span>
         {hasFindingLevelOnlyLinkage && (
-          <p className="text-xs italic text-[var(--color-ink-500)]">
+          <p className={`text-xs italic text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
             Finding-level provision linkage: at least one finding below is linked to more than one captured order, so the provision below is shown
             as linked to that finding, not individually proven to have been considered by this specific order alone.
           </p>

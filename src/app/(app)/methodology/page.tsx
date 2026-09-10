@@ -1,11 +1,16 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 
+// Global text-alignment requirement (live-officer-review correction):
+// Methodology is entirely substantive explanatory prose, so both wrappers
+// justify their content in one shared place rather than scattering
+// text-justify across dozens of individual <p>/<li> tags on this page.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="mb-6">
       <h2 className="text-base font-semibold text-[var(--color-ink-900)]">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
+      <div className={`mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>{children}</div>
     </Card>
   );
 }
@@ -20,7 +25,7 @@ function CollapsibleSection({ title, children }: { title: string; children: Reac
         <summary className="cursor-pointer text-base font-semibold text-[var(--color-ink-900)] marker:text-[var(--color-gold-600)]">
           {title}
         </summary>
-        <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
+        <div className={`mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>{children}</div>
       </details>
     </Card>
   );

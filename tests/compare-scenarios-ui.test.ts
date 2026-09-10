@@ -145,9 +145,10 @@ describe("responsive layout: reuses the wide app shell, no forced desktop-only w
     }
   });
 
-  it("the corpus-counts caveat paragraph widens on large displays via the app's tiered prose pattern (live-officer-review wide-screen fix) rather than staying flat-capped or stretching full-width", () => {
+  it("the corpus-counts caveat paragraph widens and is justified on large displays via the app's shared NARRATIVE_PROSE_CLASSES constant (live-officer-review wide-screen/global-justify fix) rather than staying flat-capped, stretching full-width, or duplicating a literal class list", () => {
     const page = src("src/app/(app)/compare-scenarios/[scenarioId]/page.tsx");
-    expect(page).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(page).toContain('import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses"');
+    expect(page).toMatch(/\$\{NARRATIVE_PROSE_CLASSES\}/);
     expect(page).not.toContain("max-w-prose");
   });
 });
