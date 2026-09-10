@@ -9,8 +9,10 @@ interface Factor {
   source: string;
 }
 
-// Limb (i): injury/inducement. Per the verified text of Reliance v. SEBI
-// para 175(i) (quoted in full on the parent page), the test is CONJUNCTIVE,
+// Limb (i): injury/inducement. Per the quoted text of Reliance v. SEBI
+// para 175(i) (quoted in full on the parent page -- see that page's own
+// BLOCKED official-source-verification notice; this transcription has NOT
+// been confirmed against the primary judgment), the test is CONJUNCTIVE,
 // not a menu of independently sufficient factors: "injury due to wrongful
 // act is established, i.e., inducement to deal in securities has caused the
 // other person to be adversely affected AND allowed the party accused of
@@ -19,12 +21,12 @@ interface Factor {
 // the limb. l1-dealt and l1-manipulation-established each supply only the
 // inducement/dealing half of that conjunction (the latter via Rakhi
 // Trading's presumption of inducement once manipulation is cogently
-// established) -- neither, on its own, has been verified to also supply the
-// injury/gain half, so neither is treated as independently sufficient here.
-// l1-injury's own label already states the complete conjunction (dealing
-// THAT CAUSED injury/gain), so it alone carries the verified citation. The
-// decision logic itself lives in src/lib/fraudDoctrineTest.ts (independently
-// unit-tested); this file only renders it.
+// established) -- neither, on its own, is shown by that quoted text to also
+// supply the injury/gain half, so neither is treated as independently
+// sufficient here. l1-injury's own label already states the complete
+// conjunction (dealing THAT CAUSED injury/gain), so it alone carries the
+// citation. The decision logic itself lives in src/lib/fraudDoctrineTest.ts
+// (independently unit-tested); this file only renders it.
 const LIMB_1_FACTORS: Factor[] = [
   {
     id: "l1-dealt",
@@ -202,7 +204,8 @@ export function FraudTestChecklist() {
         {attentionNote && <p className="mt-1.5 text-xs font-medium opacity-90">{attentionNote}</p>}
         <p className="mt-1.5 text-xs opacity-90">
           This is a prima facie doctrinal read of your own selections only, not a finding, not a match against this
-          pilot&apos;s precedents, and not a substitute for a CFID officer&apos;s own legal judgment.
+          pilot&apos;s precedents, and not a substitute for a CFID officer&apos;s own legal judgment. The underlying
+          para 175 text is not yet confirmed against an official source — see the notice above the checklist.
         </p>
       </div>
 

@@ -18,6 +18,17 @@
 // only the established-injury/wrongful-gain/avoided-loss factor (l1Injury)
 // completes Limb (i) on its own; the inducement-only factors downgrade the
 // read to "borderline", never "satisfied".
+//
+// STATUS (reconciliation pass, Task 4): the para 175 text this logic is
+// internally consistent with is quoted verbatim on the parent page, but
+// that quote itself remains BLOCKED pending official-source verification --
+// two attempts to retrieve the primary Supreme Court judgment in this
+// environment failed (sci.gov.in: HTTP 403; a secondary mirror: truncated
+// before paragraph 175 both times), and secondary/commercial sources are
+// not permitted as authority. This fix corrects a genuine internal
+// consistency defect (the checklist's own result contradicted the text
+// already quoted on the same page) but must never be described as
+// "verified" anywhere in this file or its UI.
 export type FactorState = "not-stated" | "present" | "unclear" | "requires-verification" | "additional-evidence-required";
 
 export const LIMB_1_FACTOR_IDS = {
@@ -67,13 +78,13 @@ export function evaluateFraudDoctrineTest(states: Map<string, FactorState>): Fra
   if (limb1FullySatisfied) {
     return {
       tone: "satisfied",
-      text: "Limb (i) has a selection for established injury, wrongful gain, or avoided loss. Per the verified text of Reliance v. SEBI para 175(i), where that injury is established, deceitful intent does not additionally need to be proved.",
+      text: "Limb (i) has a selection for established injury, wrongful gain, or avoided loss. Per the quoted text of Reliance v. SEBI para 175(i) (not yet confirmed against an official source), where that injury is established, deceitful intent does not additionally need to be proved.",
     };
   }
   if (limb1PartialOnly) {
     return {
       tone: "borderline",
-      text: "Only the dealing/inducement component of Limb (i) is selected. Per the verified text of para 175(i), the limb requires BOTH inducement to deal AND that it caused established injury, wrongful gain, or avoided loss -- dealing alone does not complete it. Mark the injury/gain/avoided-loss factor if it is separately established, or rely on Limb (ii) instead.",
+      text: "Only the dealing/inducement component of Limb (i) is selected. Per the quoted text of para 175(i) (not yet confirmed against an official source), the limb requires BOTH inducement to deal AND that it caused established injury, wrongful gain, or avoided loss -- dealing alone does not complete it. Mark the injury/gain/avoided-loss factor if it is separately established, or rely on Limb (ii) instead.",
     };
   }
   if (limb2Satisfied) {

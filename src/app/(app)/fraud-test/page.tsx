@@ -37,6 +37,34 @@ export default async function FraudTestPage() {
         below the checklist shows only what has been selected, never a computed conclusion.
       </div>
 
+      {/* Reconciliation-pass finding (Task 4): the checklist's own decision
+          logic (fraudDoctrineTest.ts) was corrected to be internally
+          consistent with the para 175 text already quoted below -- but that
+          quoted text itself remains BLOCKED pending official-source
+          verification. Two independent attempts to reach the primary Supreme
+          Court judgment failed in this environment (sci.gov.in returned HTTP
+          403; the Indian Kanoon mirror was truncated well before paragraph
+          175 on both attempts), and secondary summaries/legal-news sources
+          are not permitted as authority under this pilot's official-source
+          rule. This banner intentionally sits above the fold -- not as small
+          italic text at the bottom of a card -- so it cannot be missed. */}
+      <div className="mb-6 rounded-sm bg-[var(--status-red-bg)] p-3.5 text-sm text-[var(--status-red-text)] ring-1 border-[var(--status-red-ring)]">
+        <p className="font-semibold">
+          Official-source verification BLOCKED: the para 175 text quoted below has not been confirmed against the
+          official Supreme Court of India repository.
+        </p>
+        <p className="mt-1 text-xs">
+          Two attempts to retrieve the primary judgment in this environment failed (the official sci.gov.in PDF
+          endpoint returned HTTP 403; a secondary case-law mirror was truncated before paragraph 175 on both
+          attempts). Per this pilot&apos;s official-source rule, secondary summaries, legal-news commentary and
+          commercial case-law databases cannot establish the governing legal proposition, so none were relied on to
+          mark this verified. The checklist&apos;s own decision logic is only internally consistent with the quote
+          below as transcribed — it is not independent confirmation that the transcription itself is accurate. Treat
+          every result from this page as unverified doctrinal research pending a CFID officer&apos;s own confirmation
+          against the official judgment text.
+        </p>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Authority and doctrine</h2>

@@ -4,15 +4,19 @@
 // conduct" (mere inducement) as, on its own, sufficient to satisfy Limb (i)
 // of the fraud test under PFUTP Regulation 2(1)(c), citing Reliance
 // Industries Ltd. & Ors. v. SEBI, 2026 INSC 585, para 175(i) for that
-// proposition. The verified text of para 175(i) (quoted in full on
-// src/app/(app)/fraud-test/page.tsx) states the test conjunctively:
+// proposition. The quoted text of para 175(i) (quoted in full on
+// src/app/(app)/fraud-test/page.tsx -- NOT confirmed against an official
+// source; see that page's own BLOCKED official-source-verification notice,
+// added during the reconciliation pass) states the test conjunctively:
 // "inducement to deal in securities has caused the other person to be
 // adversely affected and allowed the party accused of fraud to gain
 // unlawful profits or avert ordinary losses" -- dealing alone, without
 // established injury/wrongful gain/avoided loss, does not complete the
 // limb. These tests cover every combination of the checklist's states to
 // prove the corrected logic never lets bare dealing/inducement read as a
-// satisfied Limb (i).
+// satisfied Limb (i); they verify internal consistency with the quoted
+// text, not the text's own authenticity against the primary judgment.
+import { readFileSync } from "fs";
 import { describe, expect, it } from "vitest";
 import {
   attentionCount,
@@ -173,5 +177,44 @@ describe("evaluateFraudDoctrineTest: output never issues a bare legal conclusion
       expect(result.text.toLowerCase()).not.toMatch(/fraud (is|was) established/);
       expect(result.text.toLowerCase()).not.toMatch(/violation established/);
     }
+  });
+});
+
+// Reconciliation-pass finding (Task 4): official-source verification of the
+// para 175 text could not be completed in this environment (sci.gov.in:
+// HTTP 403; a secondary mirror: truncated before paragraph 175 on both
+// attempts). Result text and source code must never describe that text as
+// "verified" -- only "quoted". These guard against silently regressing the
+// wording back to an overclaim.
+describe("evaluateFraudDoctrineTest: never overclaims the para 175 text as officially verified", () => {
+  it("no result text anywhere describes the paragraph 175 citation as 'verified'", () => {
+    const allCombinations: Map<string, FactorState>[] = [
+      new Map(),
+      states([[LIMB_1_FACTOR_IDS.dealt, "present"]]),
+      states([[LIMB_1_FACTOR_IDS.injury, "present"]]),
+      states([[LIMB_1_FACTOR_IDS.manipulationEstablished, "present"]]),
+      states([[LIMB_2_FACTOR_IDS[0], "present"]]),
+      states([
+        [LIMB_1_FACTOR_IDS.injury, "present"],
+        [LIMB_2_FACTOR_IDS[0], "present"],
+      ]),
+    ];
+    for (const s of allCombinations) {
+      const result = evaluateFraudDoctrineTest(s);
+      expect(result.text.toLowerCase()).not.toMatch(/verified text/);
+    }
+  });
+
+  it("the Fraud Doctrine page carries a prominent BLOCKED official-source-verification notice, and no source-code comment describes the para 175 citation as 'verified'", () => {
+    const page = readFileSync(new URL("../src/app/(app)/fraud-test/page.tsx", import.meta.url), "utf8");
+    expect(page).toMatch(/BLOCKED/);
+    expect(page).toMatch(/has not been confirmed against the[\s\S]{0,20}official Supreme Court/);
+    expect(page.toLowerCase()).not.toMatch(/verified text/);
+
+    const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
+    expect(checklist.toLowerCase()).not.toMatch(/verified text/);
+
+    const logic = readFileSync(new URL("../src/lib/fraudDoctrineTest.ts", import.meta.url), "utf8");
+    expect(logic.toLowerCase()).not.toMatch(/verified text/);
   });
 });
