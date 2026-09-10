@@ -5,16 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 // Rebalanced around the three primary officer tasks (pre-demo remediation,
-// Section 11): Analyze, Cases, Law. The legacy pairwise "Compare" tool
-// (/compare) previously sat here as a fourth primary item, but now
-// competes conceptually with the two purpose-built comparison views this
-// app has since grown — Case Journey (within one matter) and Compare
-// Scenarios (across matters) — both already in the secondary menu below.
-// /compare itself is NOT removed or redirected (it has real, non-duplicated
-// functionality: ad hoc pairwise finding comparison and the interim→final
-// reversals list, neither available anywhere else), only demoted out of
-// primary nav and given a label that reads as functionally distinct rather
-// than a third competing "compare" concept — see SECONDARY_NAV_ITEMS.
+// Section 11): Analyze, Cases, Law.
 const PRIMARY_NAV_ITEMS = [
   { href: "/dashboard", label: "Home" },
   { href: "/analyzer", label: "Analyze" },
@@ -30,10 +21,24 @@ const PRIMARY_NAV_ITEMS = [
 // separate admin role, so every authenticated user who can reach any page
 // can also reach this one; hiding it from primary nav is an information-
 // architecture choice, not a security boundary.
+//
+// The legacy pairwise "Compare" tool (/compare) is deliberately NOT listed
+// here or anywhere else in navigation (reconciliation pass, Task 2): its
+// functions were intentionally separated into Case Journey (evolution
+// within one matter) and Compare Scenarios (the same issue across
+// matters/orders), both listed below, and leaving /compare independently
+// discoverable — even relabeled, even under "More" — would still read as a
+// third competing comparison model. /compare's route and functionality
+// (ad hoc pairwise finding comparison, the interim→final reversals list)
+// are NOT deleted or redirected — deleting real functionality or breaking
+// an existing bookmark is a bigger, more destructive action than simply not
+// linking to it — it is only made unreachable from navigation, an
+// inaccessible-but-preserved legacy compatibility route; the page itself
+// now carries its own deprecation notice pointing visitors to the two
+// current tools (see src/app/(app)/compare/page.tsx).
 const SECONDARY_NAV_ITEMS = [
   { href: "/case-journey", label: "Case Journey" },
   { href: "/compare-scenarios", label: "Compare Scenarios" },
-  { href: "/compare", label: "Precedent Comparison (pairwise)" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/library", label: "Source Library" },
   { href: "/methodology", label: "Methodology & Limitations" },

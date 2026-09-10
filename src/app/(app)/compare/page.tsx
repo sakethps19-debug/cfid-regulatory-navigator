@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { PrecedentCompareClient } from "@/components/PrecedentCompareClient";
@@ -5,6 +6,16 @@ import { InterimFinalReversalsClient } from "@/components/InterimFinalReversalsC
 import { getOrders, getScenarioFindings } from "@/lib/data";
 import { interimFinalReversals } from "@/lib/precedentShifts";
 
+// Deliberately unreachable from navigation (reconciliation pass, Task 2):
+// this tool's own two functions have been superseded by purpose-built
+// views elsewhere -- Case Journey (evolution within one matter) and
+// Compare Scenarios (the same broad issue across matters/orders) -- so
+// this page is no longer linked from anywhere in the app. It is NOT
+// deleted or redirected: an existing bookmark to this URL, or its own
+// pairwise-comparison URLs, still resolves and still works, since deleting
+// working functionality is a larger, more destructive step than simply
+// not linking to it. The notice below exists so a visitor arriving via an
+// old bookmark understands where the current equivalents live.
 export default async function ComparePage() {
   const [scenarioFindings, orders] = await Promise.all([getScenarioFindings(), getOrders()]);
   const reversals = interimFinalReversals(scenarioFindings);
@@ -15,6 +26,19 @@ export default async function ComparePage() {
         title="Precedent Comparison"
         description="Compare any two scenario findings side by side, or see every scenario that was raised at the interim stage and then not confirmed in the final order. Search by case name, record ID or scenario text; the two selections in the pairwise tool are reflected in the URL so a comparison can be bookmarked or shared."
       />
+
+      <div className="mb-6 rounded-sm bg-[var(--color-neutral-50)] px-4 py-3 text-sm text-[var(--color-ink-700)] ring-1 border-[var(--color-border)]">
+        This page is no longer linked from the app&apos;s navigation. For most research it has been superseded by{" "}
+        <Link href="/case-journey" className="font-medium text-[var(--color-gold-700)] hover:underline">
+          Case Journey
+        </Link>{" "}
+        (how a single matter&apos;s captured orders evolved) and{" "}
+        <Link href="/compare-scenarios" className="font-medium text-[var(--color-gold-700)] hover:underline">
+          Compare Scenarios
+        </Link>{" "}
+        (how the same broad issue has been treated across different matters). The two ad hoc tools below remain
+        functional for the specific case-by-case comparisons neither of those covers.
+      </div>
 
       <section>
         <h2 className="font-serif text-xl font-semibold text-[var(--color-ink-900)]">Interim → final reversals</h2>
