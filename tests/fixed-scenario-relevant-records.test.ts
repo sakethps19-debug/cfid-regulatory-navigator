@@ -347,12 +347,41 @@ describe("RELEVANT_RECORD_BUCKET_LABELS: bucket wording describes the finding's 
   });
 });
 
-describe("FixedScenarioAnalyzer.tsx: renders the finding-level provenance qualifier and attributable source label", () => {
-  it("carries the exact required finding-level qualifier text, reused verbatim from Compare Scenarios / Case Detail", async () => {
+// Live-officer-review overhaul: "Relevant CFID Scenarios" (a flat, per-
+// finding/per-provision-link list, one <li> per link) was replaced by
+// "Relevant CFID Orders" (one card per distinct captured order.id, findings
+// and provisions deduplicated within it -- see groupRelevantRecordsByOrder
+// in fixedScenarioRelevantRecords.ts). The finding-level provenance
+// safeguard is preserved, just re-worded to describe the order-card
+// grouping instead of a single flat list.
+describe("FixedScenarioAnalyzer.tsx: groups relevant results by captured order, not by finding/provision-link", () => {
+  it("renders one card per order (RelevantOrderCard/RelevantCfidOrders), not the old flat per-finding-link list", async () => {
     const { readFileSync } = await import("fs");
     const src = readFileSync(new URL("../src/components/analyzer/FixedScenarioAnalyzer.tsx", import.meta.url), "utf8");
-    expect(src).toContain("Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.");
-    expect(src).toMatch(/orderSpecific\s*\?\s*"Order:\s*"\s*:\s*"Captured orders linked to this finding:\s*"/);
-    expect(src).toContain("Source recorded for this finding:");
+    expect(src).toContain("Relevant CFID Orders");
+    expect(src).toContain("groupRelevantRecordsByOrder");
+    expect(src).toContain("function RelevantOrderCard");
+    expect(src).not.toContain("Relevant CFID Scenarios");
+  });
+
+  it("carries the finding-level provenance safeguard: a multi-order finding's provision linkage is never presented as order-specific", async () => {
+    const { readFileSync } = await import("fs");
+    const src = readFileSync(new URL("../src/components/analyzer/FixedScenarioAnalyzer.tsx", import.meta.url), "utf8");
+    expect(src).toContain("hasFindingLevelOnlyLinkage");
+    expect(src).toMatch(/Finding-level provision linkage:.*linked to more than one captured order/);
+  });
+
+  it("each order card links to its official source and to Case Detail", async () => {
+    const { readFileSync } = await import("fs");
+    const src = readFileSync(new URL("../src/components/analyzer/FixedScenarioAnalyzer.tsx", import.meta.url), "utf8");
+    expect(src).toMatch(/<SourceLink href=\{order\.officialUrl\}\s*\/>/);
+    expect(src).toMatch(/href=\{`\/orders\/\$\{order\.id\}`\}/);
+    expect(src).toContain("View Case");
+  });
+
+  it("order stage is rendered via the shared OrderStageBadge, never fused with finding disposition into one compound label", async () => {
+    const { readFileSync } = await import("fs");
+    const src = readFileSync(new URL("../src/components/analyzer/FixedScenarioAnalyzer.tsx", import.meta.url), "utf8");
+    expect(src).toMatch(/<OrderStageBadge orderStage=\{order\.orderStage\}\s*\/>/);
   });
 });

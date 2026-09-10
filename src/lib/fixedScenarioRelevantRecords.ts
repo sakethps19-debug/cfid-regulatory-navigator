@@ -43,6 +43,7 @@
 // finding, regardless of how many of its orders are on file.
 import { FIXED_SCENARIOS } from "@/data/curated/fixed-scenarios";
 import { effectiveLinkStatus } from "@/lib/matching/scoring";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 import type { FindingStatus, LegalProvision, Order, ScenarioFinding } from "@/types/domain";
 
 export type RelevantRecordBucket = "confirmed_final" | "partly_confirmed" | "not_confirmed_contrary" | "interim_alleged_unresolved";
@@ -154,4 +155,124 @@ export function groupRelevantScenarioRecords(records: RelevantScenarioRecord[]):
         .sort((a, b) => a.provision.provisionNumber.localeCompare(b.provision.provisionNumber) || a.finding.recordId.localeCompare(b.finding.recordId)),
     }))
     .filter((g) => g.records.length > 0);
+}
+
+// ---------------------------------------------------------------------
+// Order-centric presentation (live-officer-review correction): the primary
+// unit an officer scans for should be the CAPTURED ORDER, not the raw
+// finding/provision-link record — the same company otherwise appears
+// repeatedly purely because it has several structured findings (e.g. Royal
+// Orchid Hotels: ROHL-01/02/03 as three separate cards for one order). Every
+// finding-provision record above is grouped into exactly one card per
+// distinct order id it is linked to; a finding linked to more than one
+// order (interim + final) contributes to EACH of those orders' own cards —
+// never merged into one, since order stage is legally material (a matter's
+// Interim Order and Final Order remain two separate cards even though they
+// share a company/matter). Provisions are deduped within an order card;
+// disposition text is drawn per-finding from findingDispositionLabel, never
+// aggregated into one guessed "order outcome" the underlying data doesn't
+// itself support.
+export interface RelevantOrderProvisionEntry {
+  provision: LegalProvision;
+  /** Which of this order's relevant findings actually justify listing this
+   * provision here — never a provision shown merely because some OTHER
+   * order's finding happens to cite it. */
+  findingRecordIds: string[];
+  /** False if ANY contributing finding-provision link's provenance is not
+   * proven order-specific (see RelevantScenarioRecord.orderSpecific) — the
+   * card must then disclose that this provision's linkage may span more
+   * than one captured order, never silently presented as if this order
+   * alone had been shown to consider it. */
+  orderSpecific: boolean;
+}
+
+export interface RelevantOrderFindingEntry {
+  finding: ScenarioFinding;
+  /** This finding's own broad factual issue, as recorded — never invented
+   * summary prose. */
+  scenarioTitle: string;
+  /** This finding's disposition, disposition-only (no guessed order
+   * stage) — null for Alleged/Prima facie, which are not disposition facts
+   * and must never render as a status badge (global officer-facing product
+   * rule); omit the "Outcome" line for those rather than fabricate one. */
+  dispositionLabel: string | null;
+  provisionIds: string[];
+  /** True only if THIS finding is linked to exactly one captured order
+   * (this one) — see RelevantScenarioRecord.orderSpecific. */
+  orderSpecific: boolean;
+}
+
+export interface RelevantOrderGroup {
+  order: Order;
+  findings: RelevantOrderFindingEntry[];
+  provisions: RelevantOrderProvisionEntry[];
+  /** True if any finding under this order carries provision linkage that
+   * is only proven at finding level (may span more than one captured
+   * order) — drives the neutral provenance disclosure on the card. Never
+   * silently dropped; see provision-retrieval-remediation's "Order-level
+   * provenance" invariant, reused here rather than a new rule. */
+  hasFindingLevelOnlyLinkage: boolean;
+}
+
+/** Groups relevantScenarioRecords by the CAPTURED ORDER each contributing
+ * finding is linked to. One captured order = one card; provisions and
+ * findings are deduped within it. A finding linked to several orders
+ * (finding.orderIds.length > 1) contributes to every one of those orders'
+ * own cards — this is NOT the same as merging the orders themselves: two
+ * distinct Order rows for the same matter (e.g. an Interim Order and its
+ * later Final Order) always remain two separate groups/cards here, keyed
+ * by order.id, never combined by matter or company name. Sorted newest
+ * order first (orders with no recorded date last), then by case name for a
+ * stable tie-break — never by finding count or disposition, which would
+ * read as a legal-weight ranking this function has no basis to make. */
+export function groupRelevantRecordsByOrder(records: RelevantScenarioRecord[]): RelevantOrderGroup[] {
+  const byOrderId = new Map<string, RelevantOrderGroup>();
+
+  for (const record of records) {
+    for (const order of record.orders) {
+      let group = byOrderId.get(order.id);
+      if (!group) {
+        group = { order, findings: [], provisions: [], hasFindingLevelOnlyLinkage: false };
+        byOrderId.set(order.id, group);
+      }
+
+      if (!group.findings.some((f) => f.finding.recordId === record.finding.recordId)) {
+        group.findings.push({
+          finding: record.finding,
+          scenarioTitle: record.finding.scenarioTitle,
+          dispositionLabel: findingDispositionLabel(record.effectiveStatus),
+          provisionIds: [],
+          orderSpecific: record.orderSpecific,
+        });
+      }
+      const findingEntry = group.findings.find((f) => f.finding.recordId === record.finding.recordId)!;
+      if (!findingEntry.provisionIds.includes(record.provision.id)) findingEntry.provisionIds.push(record.provision.id);
+
+      const existingProvision = group.provisions.find((p) => p.provision.id === record.provision.id);
+      if (existingProvision) {
+        if (!existingProvision.findingRecordIds.includes(record.finding.recordId)) {
+          existingProvision.findingRecordIds.push(record.finding.recordId);
+        }
+        existingProvision.orderSpecific = existingProvision.orderSpecific && record.orderSpecific;
+      } else {
+        group.provisions.push({ provision: record.provision, findingRecordIds: [record.finding.recordId], orderSpecific: record.orderSpecific });
+      }
+
+      if (!record.orderSpecific) group.hasFindingLevelOnlyLinkage = true;
+    }
+  }
+
+  for (const group of byOrderId.values()) {
+    group.findings.sort((a, b) => a.finding.recordId.localeCompare(b.finding.recordId));
+    group.provisions.sort((a, b) => a.provision.provisionNumber.localeCompare(b.provision.provisionNumber));
+  }
+
+  return [...byOrderId.values()].sort((a, b) => {
+    if (a.order.orderDate && b.order.orderDate && a.order.orderDate !== b.order.orderDate) {
+      return b.order.orderDate.localeCompare(a.order.orderDate);
+    }
+    if (a.order.orderDate && !b.order.orderDate) return -1;
+    if (!a.order.orderDate && b.order.orderDate) return 1;
+    return a.order.caseName.localeCompare(b.order.caseName);
+  });
 }

@@ -64,9 +64,10 @@ describe("readable prose measure separated from workspace width (Part 13)", () =
     expect(page).toMatch(/<blockquote className="[^"]*max-w-prose[^"]*"/);
   });
 
-  it("Fixed Scenario Analysis's 'what this covers' explanation is prose-width constrained", () => {
+  it("Fixed Scenario Analysis's 'what this covers' explanation widens on wide displays instead of the old flat max-w-prose cap (live-officer-review wide-screen fix), matching the same tiered pattern as the theme-picker intro/PageHeader", () => {
     const comp = src("src/components/analyzer/FixedScenarioAnalyzer.tsx");
-    expect(comp).toMatch(/What this covers[\s\S]{0,80}<p className="[^"]*max-w-prose[^"]*">\{scenario\.explanation\}/);
+    expect(comp).toMatch(/What this covers[\s\S]{0,700}<p className="[^"]*max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl[^"]*">\{scenario\.explanation\}/);
+    expect(comp).not.toMatch(/What this covers[\s\S]{0,700}<p className="[^"]*max-w-prose[^"]*">\{scenario\.explanation\}/);
   });
 
   it("legal/research prose measure is never applied by shrinking font size (Part 16: do not solve width via smaller text)", () => {

@@ -142,9 +142,9 @@ export default function MethodologyPage() {
           and is subject to the same validation the pilot library was: a citation without a paragraph reference or
           official URL is recorded as a <code>validation_issues</code> row rather than shown as settled.{" "}
           <strong>This procedure never sets <code>processing_stage</code> to <code>legally_reviewed</code></strong> —
-          that is a separate, later step reserved for an actual CFID officer&apos;s own sign-off, distinct from and
-          not a precondition for this analysis. A newly imported order&apos;s findings appear in the structured
-          library once its citations have been checked, independently of whether that later sign-off has happened.
+          that value is reserved for a separate corpus-maintenance step outside the scope of this import procedure,
+          and is not a precondition for this analysis. A newly imported order&apos;s findings appear in the
+          structured library once its citations have been checked, independently of that separate step.
         </p>
       </CollapsibleSection>
 
@@ -292,7 +292,7 @@ export default function MethodologyPage() {
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
           <li>The structured scenario-finding library covers only the orders whose findings have already been broken down, per the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page; any order still awaiting that work contributes no scenario findings yet. Results for facts outside the indexed corpus will correctly show no match rather than a fabricated one.</li>
-          <li>This tool does not certify that any individual result has been independently checked against the underlying order — a further sign-off step by a CFID officer, separate from this tool, is always required before relying on any output. Always verify every citation against the official source.</li>
+          <li>Always verify the cited provision and order against the official source before relying on the output.</li>
           <li>Keyword/synonym matching cannot capture every phrasing of a scenario, try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
           <li>Provision &quot;current text&quot; is not reproduced or guaranteed current, always verify against the official SEBI/MCA source before relying on it.</li>
           <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>

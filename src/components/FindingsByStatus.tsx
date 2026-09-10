@@ -9,9 +9,11 @@ import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 // error here instead of silently dropping its findings from this section
 // (as previously happened for confirmed_at_interim, alleged, inconclusive,
 // procedural_observation and withdrawn — 18 of 80 findings, invisible with
-// no error and no "not linked" message). Titles reuse findingStatusLabel
-// (order-stage-first, e.g. "Final order · Confirmed") for consistency with
-// the StatusBadge shown on every finding elsewhere in the app.
+// no error and no "not linked" message). Titles reuse findingStatusLabel,
+// which describes disposition only (never a guessed order stage — order
+// stage and finding disposition are different dimensions, see
+// findingStatusDisplay.ts), for consistency with the StatusBadge shown on
+// every finding elsewhere in the app.
 export const GROUP_INFO: Record<FindingStatus, { title: string; hint: string }> = {
   "Confirmed in Final Order": { title: findingStatusLabel("Confirmed in Final Order"), hint: "Confirmed in a final order." },
   "Partly Confirmed in Final Order": {

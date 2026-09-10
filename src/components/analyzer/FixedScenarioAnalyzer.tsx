@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Card, SourceLink } from "@/components/Card";
-import { StatusBadge } from "@/components/StatusBadge";
+import { OrderStageBadge } from "@/components/OrderStageBadge";
 import { resolveAllFixedScenarios, type ResolvedFixedScenario } from "@/lib/fixedScenarioResolver";
 import { retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
-import {
-  relevantScenarioRecords,
-  groupRelevantScenarioRecords,
-  RELEVANT_RECORD_BUCKET_LABELS,
-  type RelevantScenarioRecord,
-} from "@/lib/fixedScenarioRelevantRecords";
+import { relevantScenarioRecords, groupRelevantRecordsByOrder, type RelevantOrderGroup } from "@/lib/fixedScenarioRelevantRecords";
+import { formatDate } from "@/lib/formatDate";
 import type { LegalProvision, Order, ScenarioFinding } from "@/types/domain";
 
 /** Part A of the redesigned Scenario Analyzer — a small, curated set
@@ -93,7 +89,7 @@ function FixedScenarioResult({ scenario, findings, orders }: { scenario: Resolve
   }, [scenario.id]);
 
   const records = relevantScenarioRecords(scenario.id, findings, [...scenario.provisionGroups.flatMap((g) => g.items)], orders);
-  const groups = groupRelevantScenarioRecords(records);
+  const orderGroups = groupRelevantRecordsByOrder(records);
 
   return (
     <div ref={resultRef} tabIndex={-1} className="scroll-mt-20 outline-none">
@@ -108,7 +104,15 @@ function FixedScenarioResult({ scenario, findings, orders }: { scenario: Resolve
 
         <div className="mt-4 flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">What this covers</span>
-          <p className="max-w-prose text-sm text-[var(--color-ink-700)]">{scenario.explanation}</p>
+          {/* Wide-screen content-width fix (live officer review): this used
+              to be hard-capped at max-w-prose (~65ch) regardless of
+              breakpoint, leaving a large dead column next to the provisions
+              grid below, which has no cap at all. Tiered widening matches
+              the same pattern PageHeader's own description paragraph and
+              the theme-picker intro above already use — readable measure on
+              a laptop, materially wider on a large desktop, never
+              full-bleed width:100% text. */}
+          <p className="max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">{scenario.explanation}</p>
         </div>
 
         {scenario.unresolvedProvisionIds.length > 0 && (
@@ -149,29 +153,33 @@ function FixedScenarioResult({ scenario, findings, orders }: { scenario: Resolve
         </div>
       </Card>
 
-      <RelevantOrdersAndScenarios groups={groups} />
+      <RelevantCfidOrders groups={orderGroups} />
     </div>
   );
 }
 
-const INITIAL_VISIBLE = 3;
+const INITIAL_VISIBLE_ORDERS = 5;
 
-/** Part 6 correction: "Relevant CFID orders and scenarios" — four
- * initially-collapsed/compact groups, never dumping every order associated
- * with a provision. A record only appears because relevantScenarioRecords
+/** Live-officer-review correction: "Relevant CFID Orders" — the primary
+ * presentation is now ORDER-centric, never dumping the same company
+ * repeatedly merely because it has several structured findings (the
+ * previous finding/record-centric list showed Royal Orchid Hotels three
+ * times for ROHL-01/02/03). One captured order = one card, provisions
+ * deduped within it. A record only appears because relevantScenarioRecords
  * verified BOTH the scenario-metadata association (keyConceptIds) and an
  * exact finding_provisions link to one of this scenario's own curated
- * provisions. Interim findings stay visibly interim (StatusBadge shows the
- * finding's own status); negative/contrary treatment is its own bucket,
- * never folded into "supporting"; no frequency-based ordering. */
-function RelevantOrdersAndScenarios({ groups }: { groups: { bucket: RelevantScenarioRecord["bucket"]; records: RelevantScenarioRecord[] }[] }) {
-  const [expandedBuckets, setExpandedBuckets] = useState<Set<string>>(new Set());
+ * provisions. Two orders for the same matter (e.g. an Interim Order and its
+ * later Final Order) are NEVER combined into one card — order stage is
+ * legally material, so groupRelevantRecordsByOrder keys strictly by
+ * order.id. */
+function RelevantCfidOrders({ groups }: { groups: RelevantOrderGroup[] }) {
+  const [expanded, setExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   if (groups.length === 0) {
     return (
       <Card className="mt-4">
-        <h3 className="font-serif text-base font-semibold text-[var(--color-ink-900)]">Relevant CFID orders and scenarios</h3>
+        <h3 className="font-serif text-base font-semibold text-[var(--color-ink-900)]">Relevant CFID Orders</h3>
         <p className="mt-2 text-sm text-[var(--color-ink-700)]">
           No captured CFID precedent is currently mapped to this fact pattern. This means only that the current captured corpus does not provide a
           structured, provision-linked precedent for this scenario — it does not mean no violation exists, that SEBI has never considered such
@@ -181,7 +189,7 @@ function RelevantOrdersAndScenarios({ groups }: { groups: { bucket: RelevantScen
     );
   }
 
-  const totalCount = groups.reduce((n, g) => n + g.records.length, 0);
+  const visible = expanded ? groups : groups.slice(0, INITIAL_VISIBLE_ORDERS);
 
   return (
     <Card className="mt-4">
@@ -192,95 +200,105 @@ function RelevantOrdersAndScenarios({ groups }: { groups: { bucket: RelevantScen
         aria-expanded={!collapsed}
       >
         <h3 className="font-serif text-base font-semibold text-[var(--color-ink-900)]">
-          Relevant CFID orders and scenarios <span className="font-sans text-sm font-normal text-[var(--color-ink-500)]">({totalCount})</span>
+          Relevant CFID Orders <span className="font-sans text-sm font-normal text-[var(--color-ink-500)]">({groups.length})</span>
         </h3>
         <span className="text-sm text-[var(--color-gold-700)]">{collapsed ? "Show →" : "Hide"}</span>
       </button>
       <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-        Captured findings whose own structured facts touch this theme AND whose finding-provision link cites one of the provisions listed above —
-        never an order shown merely because it cites the same provision elsewhere.
+        One card per captured order whose own structured findings touch this theme AND whose finding-provision link cites one of the provisions
+        listed above — never an order shown merely because it cites the same provision elsewhere. A matter&apos;s Interim Order and its later
+        Final Order always remain separate cards; order stage is legally material.
       </p>
 
       {!collapsed && (
-        <div className="mt-4 flex flex-col gap-5">
-          {groups.map((g) => {
-            const isExpanded = expandedBuckets.has(g.bucket);
-            const visible = isExpanded ? g.records : g.records.slice(0, INITIAL_VISIBLE);
-            return (
-              <div key={g.bucket}>
-                <h4 className="text-sm font-semibold text-[var(--color-ink-900)]">
-                  {RELEVANT_RECORD_BUCKET_LABELS[g.bucket]} <span className="font-normal text-[var(--color-ink-500)]">({g.records.length})</span>
-                </h4>
-                <ul className="mt-2 flex flex-col gap-2">
-                  {visible.map((r) => (
-                    <li key={`${r.finding.recordId}-${r.provision.id}`} className="rounded-sm border border-[var(--color-border)] p-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-[var(--color-ink-900)]">{r.finding.caseName}</span>
-                        <span className="font-mono text-xs text-[var(--color-ink-500)]">{r.finding.recordId}</span>
-                        <StatusBadge status={r.effectiveStatus} />
-                      </div>
-                      <p className="mt-1 text-sm text-[var(--color-ink-700)]">{r.finding.scenarioTitle}</p>
-                      <p className="mt-1 text-xs text-[var(--color-ink-700)]">
-                        Provision:{" "}
-                        <Link href={`/provisions/${encodeURIComponent(r.provision.id)}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
-                          {r.provision.provisionNumber}
-                        </Link>{" "}
-                        — {r.provision.subject}
-                      </p>
-                      {r.orders.length > 0 && (
-                        <div className="mt-1 text-xs text-[var(--color-ink-500)]">
-                          {!r.orderSpecific && (
-                            <p className="italic">
-                              Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.
-                            </p>
-                          )}
-                          <p>
-                            {r.orderSpecific ? "Order: " : "Captured orders linked to this finding: "}
-                            {r.orders.map((o, i) => (
-                              <span key={o.id}>
-                                {i > 0 && "; "}
-                                {o.orderStage} · {o.orderDate ?? "date not on file"} · {o.orderNumber ?? "order number not on file"}{" "}
-                                <Link href={`/orders/${o.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
-                                  View order detail →
-                                </Link>
-                              </span>
-                            ))}
-                          </p>
-                        </div>
-                      )}
-                      {(r.finding.interimParagraphReferences || r.finding.finalParagraphReferences) && (
-                        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-                          {r.finding.interimParagraphReferences && <>Interim paras: {r.finding.interimParagraphReferences}. </>}
-                          {r.finding.finalParagraphReferences && <>Final paras: {r.finding.finalParagraphReferences}. </>}
-                        </p>
-                      )}
-                      <div className="mt-1 text-xs text-[var(--color-ink-500)]">
-                        Source recorded for this finding: <SourceLink href={r.finding.officialSourceUrl} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {g.records.length > INITIAL_VISIBLE && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedBuckets((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(g.bucket)) next.delete(g.bucket);
-                        else next.add(g.bucket);
-                        return next;
-                      })
-                    }
-                    className="mt-2 text-xs font-medium text-[var(--color-gold-700)] hover:underline"
-                  >
-                    {isExpanded ? "Show fewer" : `Show all ${g.records.length} →`}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+        <div className="mt-4 flex flex-col gap-4">
+          {visible.map((g) => (
+            <RelevantOrderCard key={g.order.id} group={g} />
+          ))}
+          {groups.length > INITIAL_VISIBLE_ORDERS && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="self-start text-xs font-medium text-[var(--color-gold-700)] hover:underline"
+            >
+              {expanded ? "Show fewer" : `Show all ${groups.length} orders →`}
+            </button>
+          )}
         </div>
       )}
     </Card>
+  );
+}
+
+function RelevantOrderCard({ group }: { group: RelevantOrderGroup }) {
+  const { order, findings, provisions, hasFindingLevelOnlyLinkage } = group;
+  const dispositions = findings.filter((f) => f.dispositionLabel);
+
+  return (
+    <div className="rounded-sm border border-[var(--color-border)] p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium text-[var(--color-ink-900)]">{order.caseName}</span>
+        <OrderStageBadge orderStage={order.orderStage} />
+        <span className="text-xs text-[var(--color-ink-500)]">{formatDate(order.orderDate) || "date not on file"}</span>
+      </div>
+
+      <div className="mt-2 flex flex-col gap-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">Relevant findings/scenarios in this order</span>
+        <ul className="flex flex-col gap-1">
+          {findings.map((f) => (
+            <li key={f.finding.recordId} className="text-sm text-[var(--color-ink-700)]">
+              <span className="font-mono text-xs text-[var(--color-ink-500)]">{f.finding.recordId}</span> — {f.scenarioTitle}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-2 flex flex-col gap-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">
+          Provisions considered in these relevant findings
+        </span>
+        {hasFindingLevelOnlyLinkage && (
+          <p className="text-xs italic text-[var(--color-ink-500)]">
+            Finding-level provision linkage: at least one finding below is linked to more than one captured order, so the provision below is shown
+            as linked to that finding, not individually proven to have been considered by this specific order alone.
+          </p>
+        )}
+        <ul className="flex flex-col gap-0.5">
+          {provisions.map((p) => (
+            <li key={p.provision.id} className="text-sm text-[var(--color-ink-700)]">
+              <Link href={`/provisions/${encodeURIComponent(p.provision.id)}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
+                {p.provision.provisionNumber}
+              </Link>{" "}
+              — {p.findingRecordIds.join(", ")}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {dispositions.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-300)]">Outcome / historical treatment</span>
+          <ul className="flex flex-col gap-0.5">
+            {dispositions.map((f) => (
+              <li key={f.finding.recordId} className="text-sm text-[var(--color-ink-700)]">
+                {f.finding.recordId}: {f.dispositionLabel}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="mt-2 text-xs text-[var(--color-ink-500)]">
+        Relevant because {findings.length} finding{findings.length === 1 ? "" : "s"} in this order touch this scenario&apos;s own structured facts
+        and cite a provision listed above.
+      </p>
+
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+        <SourceLink href={order.officialUrl} />
+        <Link href={`/orders/${order.id}`} className="font-medium text-[var(--color-gold-700)] hover:underline">
+          View Case →
+        </Link>
+      </div>
+    </div>
   );
 }
