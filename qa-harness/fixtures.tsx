@@ -93,13 +93,29 @@ export const REL_ORDER: Order = order({
   orderNumber: "WTM/AB/CFID/CFID-SEC-1/12345/2026-27",
   matterId: "2dbf409c-8e55-49b8-911c-16a1fda47962",
   officialOrderTitle: null,
+  // Post-freeze correction pass (Section I): replaced with the ACTUAL
+  // production orders.scope_note for this order (queried read-only during
+  // this pass) rather than the earlier paraphrase -- this is already
+  // public, already-official-source content (see this file's own header
+  // comment on what fixtures may contain), and using the real text,
+  // including its "(1) ...; (2) ..." / "Directions: ..." structure, is
+  // what actually exercises parseScopeNoteSections's bulleted-list
+  // rendering in this harness instead of silently falling back to a
+  // plain paragraph.
   scopeNote:
-    "Ad-interim ex-parte interim order re Rajesh Exports Limited (REL, gold refiner/exporter) and promoter/Executive " +
-    "Chairman Rajesh Mehta. Prima facie findings (investigation ongoing, not yet final): fictitious sale/purchase " +
-    "transactions fabricated against personal gold-derivative trading losses; consolidated financials heavily " +
-    "dependent on unverifiable overseas subsidiary revenue; an untraceable investment; opaque netting of " +
-    "receivables/payables; funds routed through personal accounts undisclosed as related-party transactions; " +
-    "non-cooperation with SEBI and the Forensic Auditor.",
+    "Ad-interim ex-parte interim order re Rajesh Exports Limited (REL, gold refiner/exporter, brand SHUBH Jewellers) " +
+    "and promoter/Executive Chairman Rajesh Mehta. Prima facie findings (investigation ongoing, not yet final): " +
+    "(1) fictitious sale/purchase transactions worth Rs.11,487cr/11,488cr fabricated against Rajesh Mehta's personal " +
+    "gold-derivative trading losses via stockbroker Affluence (which confirmed REL was never its client); " +
+    "(2) consolidated financials ~99% dependent on unverifiable overseas subsidiary revenue via an " +
+    'internally-contradictory consolidation methodology; (3) untraceable Rs.1,035cr "Investment in Gold Mines in ' +
+    "Africa\"; (4) opaque netting of Rs.2,914cr receivables against payables and unreconciled intra-group " +
+    "investments/payables; (5) Rs.338.9cr routed through Rajesh Mehta's/Siddharth Mehta's personal accounts " +
+    "undisclosed as RPTs; (6) non-cooperation/obstruction of SEBI and the Forensic Auditor (withheld ERP/books, " +
+    "contradictory submissions across 3 stages). Directions: Rajesh Mehta (Noticee 2) restrained from dealing in " +
+    "REL securities until further orders; REL (Noticee 1) directed to cooperate and make true LODR disclosures; no " +
+    "penalties yet imposed (investigation to continue with new forensic auditor); matter referred to NFRA re " +
+    "statutory auditors.",
 });
 
 export const REL_NOTICEES: OrderNoticee[] = [
@@ -403,6 +419,7 @@ export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
       { provisionId: "LODR-23-2", legalFunction: "governance_procedural_obligation", legalFunctionLabel: "Governance/procedural obligation", notUpheldOnly: false, orderSpecific: true},
     ],
     hasFindingLevelOnlyProvisionLinkage: true,
+    hasNonAttributableDispositions: false,
     directions: [
       direction({
         id: "d-rel-1",
@@ -422,17 +439,25 @@ export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
     findings: [SEACOAST_FINDINGS[0]],
     provisionsConsidered: [{ provisionId: "PFUTP-4-2-e", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true}],
     hasFindingLevelOnlyProvisionLinkage: false,
+    hasNonAttributableDispositions: false,
     directions: [direction({ id: "d-sea-1", orderId: SEACOAST_FINAL.id, caseName: SEACOAST_FINAL.caseName, directionOrOutcome: "Disgorgement of Rs. 4.2 crore with interest; restrained from the securities market for 2 years.", paragraphReference: "Para 61" })],
     dispositions: ["Confirmed in Final Order"],
   },
   {
+    // Section C correction: SEACOAST_FINDINGS[0] (SSSL-01) is
+    // "Confirmed in Final Order" -- a final-adjudicatory status
+    // attributable only to SEACOAST_FINAL (see attributedOrderIdForDisposition,
+    // caseJourney.ts). Never rendered under the interim row merely because
+    // the same finding also references it -- this fixture previously
+    // (incorrectly) copied that same disposition onto this row too.
     order: SEACOAST_INTERIM,
     matter: SEACOAST_MATTER,
     findings: [SEACOAST_FINDINGS[0]],
     provisionsConsidered: [{ provisionId: "PFUTP-4-2-e", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true}],
     hasFindingLevelOnlyProvisionLinkage: false,
+    hasNonAttributableDispositions: true,
     directions: [],
-    dispositions: ["Confirmed in Final Order"],
+    dispositions: [],
   },
   {
     // Negative precedent: a "not established" disposition on a distinct order.
@@ -452,6 +477,7 @@ export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
     ],
     provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true }],
     hasFindingLevelOnlyProvisionLinkage: false,
+    hasNonAttributableDispositions: false,
     directions: [],
     dispositions: ["Partly Confirmed in Final Order"],
   },
@@ -472,6 +498,7 @@ export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
     ],
     provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: true, orderSpecific: true }],
     hasFindingLevelOnlyProvisionLinkage: false,
+    hasNonAttributableDispositions: false,
     directions: [],
     dispositions: ["Not Confirmed in Final Order"],
   },
@@ -481,6 +508,7 @@ export const COMPARE_SCENARIOS_ROWS: ComparisonRow[] = [
     findings: [MANY_DIVERSION_FINDINGS[i]],
     provisionsConsidered: [{ provisionId: "PFUTP-4-1", legalFunction: "substantive_prohibition", legalFunctionLabel: "Substantive prohibition", notUpheldOnly: false, orderSpecific: true }],
     hasFindingLevelOnlyProvisionLinkage: false,
+    hasNonAttributableDispositions: false,
     directions: [],
     dispositions: [MANY_DIVERSION_FINDINGS[i].findingStatus],
   })),

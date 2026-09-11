@@ -99,15 +99,22 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[var(--color-navy-950)] to-[var(--color-navy-800)] px-4 py-12">
-      <div className="mb-8 max-w-sm text-center text-white">
-        <svg width="40" height="40" viewBox="0 0 30 30" fill="none" className="mx-auto mb-3" aria-hidden>
+      {/* Post-freeze correction pass (Section D): title/expansion/subtitle
+          enlarged and given more vertical room -- on an iPad this block
+          previously read as a small, cramped label above the login form
+          rather than the platform's own identity. Center-alignment was
+          already in place (text-center on this wrapper); the change here
+          is size and spacing, not layout. The login form and security
+          warning below are untouched. */}
+      <div className="mb-10 max-w-md text-center text-white">
+        <svg width="52" height="52" viewBox="0 0 30 30" fill="none" className="mx-auto mb-4" aria-hidden>
           <rect x="1" y="1" width="28" height="28" rx="2" stroke="var(--color-gold-100)" strokeWidth="1.25" />
           <path d="M8 8h14M8 13h14M8 18h9" stroke="var(--color-gold-100)" strokeWidth="1.25" strokeLinecap="round" />
           <path d="M8 23.5 12 27l9-10" stroke="var(--color-gold-100)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <h1 className="font-serif text-2xl font-semibold">SPARC</h1>
-        <p className="mt-1 text-sm text-[var(--color-gold-100)]">Scenario, Provision &amp; Regulatory Case Analysis</p>
-        <p className="mt-2 text-xs text-[var(--color-gold-100)]/80">
+        <h1 className="font-serif text-4xl font-semibold tracking-tight sm:text-5xl">SPARC</h1>
+        <p className="mt-3 text-base font-medium text-[var(--color-gold-100)] sm:text-lg">Scenario, Provision &amp; Regulatory Case Analysis</p>
+        <p className="mt-3 text-sm text-[var(--color-gold-100)]/80 sm:text-base">
           CFID Regulatory Research Platform — internal legal-research pilot, authorised access only.
         </p>
       </div>

@@ -1,6 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
 import { CaseLibraryClient } from "@/components/CaseLibraryClient";
-import { CorpusReviewStatusBanner } from "@/components/CorpusReviewStatusBanner";
 import { getOrders, getProvisions, getScenarioFindings } from "@/lib/data";
 import { sortOrdersNewestFirst } from "@/lib/sortOrdersNewestFirst";
 import { orderBroadScenarios } from "@/lib/orderBroadScenarios";
@@ -58,11 +57,16 @@ export default async function CaseLibraryPage() {
   );
   return (
     <div>
+      {/* Post-freeze correction pass (Section G): the corpus-wide statutory-
+          verification banner (CorpusReviewStatusBanner) is removed from
+          this normal officer view -- misplaced here, and made this read as
+          a case-outcome dashboard. Order-stage filters, issue filters,
+          case search, official-source links, and case metadata (all in
+          CaseLibraryClient below) are untouched. */}
       <PageHeader
         title="Case Library"
         description={'Search the CFID order register by case/company name, order number, order stage, or provision (e.g. "Regulation 23", "23(2)", "Ind AS 24"). Newest order first. Every indexed case links through to its order detail — full structured findings and provisions considered where that analysis has been captured, official metadata and source link regardless.'}
       />
-      <CorpusReviewStatusBanner findings={findings} provisions={provisions} />
       <CaseLibraryClient orders={ordersWithProvisionSearchText} />
     </div>
   );

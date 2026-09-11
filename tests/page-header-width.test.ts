@@ -24,9 +24,9 @@ function read(relativePath: string): string {
 }
 
 describe("PageHeader: description paragraph widens at large breakpoints instead of staying a fixed narrow column", () => {
-  it("PageHeader.tsx's description paragraph carries the graduated xl/2xl widening classes alongside its base max-w-3xl", () => {
+  it("PageHeader.tsx's description paragraph carries the graduated xl/2xl widening classes (widened again in the post-freeze correction pass, Section E, from max-w-3xl/4xl/5xl to max-w-4xl/5xl/6xl after 'Officer Research Home' still left visible dead whitespace)", () => {
     const source = read("src/components/PageHeader.tsx");
-    expect(source).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(source).toMatch(/max-w-4xl[^"]*xl:max-w-5xl[^"]*2xl:max-w-6xl/);
   });
 
   it("FixedScenarioAnalyzer.tsx's intro paragraph carries the same widening classes, now via the shared NARRATIVE_PROSE_CLASSES constant (live-officer-review global-justify pass) rather than a duplicated literal string", () => {

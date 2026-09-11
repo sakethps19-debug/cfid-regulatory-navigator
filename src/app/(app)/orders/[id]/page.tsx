@@ -9,6 +9,7 @@ import { orderRelationshipSentence, siblingOrdersInMatter } from "@/lib/matterRe
 import { formatDate } from "@/lib/formatDate";
 import { cfidVerificationDisplayText } from "@/lib/cfidVerification";
 import { orderGist } from "@/lib/orderGist";
+import { parseScopeNoteSections } from "@/lib/scopeNoteSections";
 import { provisionsConsideredForOrder } from "@/lib/orderProvisionsConsidered";
 import { resolveOrderNoticees } from "@/lib/orderNoticees";
 import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
@@ -184,8 +185,43 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 the shared tiered measure instead of staying trapped in a
                 fixed max-w-prose column (live-officer-review correction —
                 Rajesh Exports Case Detail review), and is justified for a
-                professional report-like reading experience. */}
-            <dd className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
+                professional report-like reading experience.
+                Post-freeze correction pass (Section I): a dense scope note
+                that follows the "intro: (1) ...; (2) ..." / "Directions:
+                ..." convention (Rajesh Exports' own, among others) is now
+                broken into an intro paragraph, a bulleted findings list,
+                and a directions paragraph -- purely a display-layer parse
+                (parseScopeNoteSections, generic, never Rajesh-Exports-
+                specific) of the exact same stored text, never a rewrite of
+                it. An order whose scope note doesn't follow that
+                convention falls back to the identical single-paragraph
+                rendering as before. */}
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {(() => {
+                const gist = orderGist(order, findings);
+                if (!gist) return "Not yet captured for this order";
+                const { intro, listItems, directions } = parseScopeNoteSections(gist);
+                if (listItems.length === 0) {
+                  return <p className={NARRATIVE_PROSE_CLASSES}>{intro}</p>;
+                }
+                return (
+                  <div className="space-y-3">
+                    <p className={NARRATIVE_PROSE_CLASSES}>{intro}</p>
+                    <ul className={`list-disc space-y-1.5 pl-5 ${NARRATIVE_PROSE_CLASSES}`}>
+                      {listItems.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                    {directions && (
+                      <p className={NARRATIVE_PROSE_CLASSES}>
+                        <span className="font-semibold text-[var(--color-ink-900)]">Directions: </span>
+                        {directions}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+            </dd>
           </div>
           {issuesExamined.length > 0 && (
             <div className="sm:col-span-2 lg:col-span-3">

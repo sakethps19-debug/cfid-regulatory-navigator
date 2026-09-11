@@ -10,26 +10,6 @@ import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 import { matchScenariosForQuery } from "@/lib/broadScenarioMatch";
 import { resolveFixedScenario } from "@/lib/fixedScenarioResolver";
 
-// Independent-audit correction (P0-2): this used to include "Alleged" and
-// "Prima facie" as selectable filter/status values, rendered via
-// findingStatusLabel's fuller export-only prose -- but a FILTER OPTION is
-// exactly the "classification badge/filter" surface the product rule
-// prohibits for those two statuses, regardless of how the label is worded.
-// Neither carries an actual disposition (findingDispositionLabel returns
-// null for both), so neither belongs in a "filter/browse by disposition"
-// control -- a finding at that stage remains fully visible everywhere else
-// (Order Detail, Case Journey, etc.), it simply isn't offered as a
-// disposition filter value here.
-const DISPOSITION_STATUS_ORDER: FindingStatus[] = [
-  "Confirmed at interim",
-  "Confirmed in Final Order",
-  "Partly Confirmed in Final Order",
-  "Not Confirmed in Final Order",
-  "Withdrawn",
-  "Inconclusive",
-  "Procedural observation",
-];
-
 export function LawLibraryClient({
   instruments,
   provisions,
@@ -40,7 +20,6 @@ export function LawLibraryClient({
   findings: ScenarioFinding[];
 }) {
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | FindingStatus>("all");
 
   const regulatorSlugByInstrumentName = useMemo(() => {
     const map = new Map<string, RegulatorSlug>();
@@ -56,11 +35,6 @@ export function LawLibraryClient({
       }
     }
     return map;
-  }, [findings]);
-
-  const statusesPresent = useMemo(() => {
-    const set = new Set(findings.map((f) => f.findingStatus));
-    return DISPOSITION_STATUS_ORDER.filter((s) => set.has(s));
   }, [findings]);
 
   const provisionCountByInstrument = useMemo(() => {
@@ -100,7 +74,7 @@ export function LawLibraryClient({
     return map;
   }, [provisions, regulatorSlugByInstrumentName, findingsByProvision]);
 
-  const isFiltering = query.trim().length > 0 || statusFilter !== "all";
+  const isFiltering = query.trim().length > 0;
 
   // Fact/concept matching: a precision-first replacement for the previous
   // free-text search over every finding's flattened case name/evidence/
@@ -124,15 +98,13 @@ export function LawLibraryClient({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    if (!q) return provisions;
     return provisions.filter((p) => {
-      const ownFindings = findingsByProvision.get(p.id) ?? [];
-      if (statusFilter !== "all" && !ownFindings.some((f) => f.findingStatus === statusFilter)) return false;
-      if (!q) return true;
       const provisionText = [p.instrument, p.provisionNumber, p.subject, p.lawLibraryNote].filter(Boolean).join(" ").toLowerCase();
       if (provisionText.includes(q)) return true;
       return scenarioMatchedProvisionIds.has(p.id);
     });
-  }, [provisions, findingsByProvision, query, statusFilter, scenarioMatchedProvisionIds]);
+  }, [provisions, query, scenarioMatchedProvisionIds]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, LegalProvision[]>();
@@ -162,28 +134,6 @@ export function LawLibraryClient({
           . Results below are that scenario&apos;s curated provisions, not every provision that mentions this topic anywhere.
         </p>
       )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          onClick={() => setStatusFilter("all")}
-          className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-            statusFilter === "all" ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
-          }`}
-        >
-          All statuses
-        </button>
-        {statusesPresent.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`rounded-sm px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
-              statusFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
-            }`}
-          >
-            {findingDispositionLabel(s)}
-          </button>
-        ))}
-      </div>
 
       {isFiltering ? (
         <div className="mt-6 space-y-8">

@@ -20,7 +20,7 @@ export default async function CompareScenariosLandingPage() {
     <div>
       <PageHeader
         title="Compare Scenarios"
-        description="How has the same broad legal/factual issue been treated across different matters and orders? Select a scenario to compare its captured historical treatment — this is not a cross-order chronology within one matter (see Case Journey for that) and not a legal-rule inference engine."
+        description="How has the same broad legal/factual issue been treated — across different matters, and across different stages/orders of the same matter? Select a scenario for a side-by-side comparison of every matched order, one row per order (so a matter with both an interim and a final order, e.g. Seacoast, shows both). Complementary to Case Journey, not a substitute for it: Case Journey follows one matter's own procedural chronology in depth; this page compares a chosen scenario across whichever orders and matters matched it, side by side. Not a legal-rule inference engine."
       />
       <CorpusReviewStatusBanner findings={findings} />
       <CompareScenariosLandingClient scenarios={scenarios} />

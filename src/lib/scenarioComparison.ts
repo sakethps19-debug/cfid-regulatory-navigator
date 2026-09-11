@@ -1,6 +1,22 @@
 // Compare Scenarios: "how has the same broad legal/factual issue been
-// treated across different matters/orders?" — a cross-matter comparison,
-// the opposite axis from Case Journey (which stays WITHIN one matter_id).
+// treated — across different matters, AND across different stages/orders
+// of the same matter?" Complementary to Case Journey, not a narrower
+// subset of it: Case Journey follows one matter's own procedural
+// chronology (buildCaseJourney, caseJourney.ts) in depth; this module
+// compares a chosen scenario across whichever orders and matters matched
+// it, side by side, one row per order regardless of whether two matched
+// orders happen to share a matter_id (Seacoast's interim + final orders
+// both legitimately appear as two independent rows here when both match).
+// Post-freeze correction pass (Section C): this module previously
+// described itself as the "opposite axis" from Case Journey and its own
+// landing page told officers this was "not a cross-order chronology
+// within one matter" — technically true (this is a side-by-side
+// comparison, not a chronology) but read, in practice, as "don't use this
+// for same-matter comparison," which narrowed a genuinely useful
+// capability the row-per-order design already supported. Nothing in the
+// underlying grouping logic changed for this correction; only the
+// dispositions per row now correctly avoid the interim/final stage-leak
+// bug below, and the copy stops discouraging same-matter use.
 //
 // V1 is deliberately conservative: the ONLY inclusion mechanism is the
 // existing broadScenariosForFinding (see broadScenarioMatch.ts) — a
@@ -52,6 +68,7 @@
 import type { DirectionOutcome, FindingStatus, Matter, Order, ScenarioFinding } from "@/types/domain";
 import { FIXED_SCENARIOS, type FixedScenario } from "@/data/curated/fixed-scenarios";
 import { broadScenariosForFinding } from "@/lib/broadScenarioMatch";
+import { attributedOrderIdForDisposition } from "@/lib/caseJourney";
 import { orderProvisionsConsidered, type ProvisionConsideredSummary } from "@/lib/orderProvisionsConsidered";
 
 export function getComparableScenario(scenarioId: string): FixedScenario | undefined {
@@ -121,11 +138,29 @@ export interface ComparisonRow {
    * order_directions schema (no finding_id column) and Part 15's "exact
    * order_id, never stage-based lookup" requirement. */
   directions: DirectionOutcome[];
-  /** Every DISTINCT findingStatus among `findings`, in the order they
-   * first appear — never collapsed to one summary value, so a row with
-   * both an established and a not-established matched finding shows
-   * both, rather than losing one. */
+  /** Every DISTINCT findingStatus among `findings` that is genuinely
+   * ATTRIBUTABLE to this row's own order — never collapsed to one summary
+   * value, so a row with both an established and a not-established
+   * matched finding shows both, rather than losing one. Section C
+   * correction: findingStatus is one overall/controlling value per
+   * finding, not one per order-stage. A finding whose orderIds spans an
+   * earlier order (e.g. Seacoast's interim order) and a later, controlling
+   * order (its final order) used to have that later order's own final
+   * disposition rendered under BOTH rows, since this row set previously
+   * used the raw findingStatus unconditionally. Reuses
+   * attributedOrderIdForDisposition (caseJourney.ts, the same function
+   * Case Journey's own stage cards rely on) so a final-adjudicatory
+   * disposition is never copied backward into an earlier order's row
+   * merely because the same finding also references it. See
+   * hasNonAttributableDispositions below. */
   dispositions: FindingStatus[];
+  /** True when at least one of this row's matched findings has a
+   * disposition that is NOT attributable to this row's own order (i.e.
+   * belongs to a different, later order the same finding also
+   * references). The UI shows one neutral note for these — never a
+   * fabricated or duplicated stage-specific outcome — same convention as
+   * Case Journey's own hasNonAttributableDispositions. */
+  hasNonAttributableDispositions: boolean;
 }
 
 /** Builds one comparison row per order that has at least one finding
@@ -158,8 +193,13 @@ export function buildScenarioComparison(
     const order = orderById.get(orderId);
     if (!order) continue; // a referenced order not in the provided set -- skip rather than guess
     const dispositions: FindingStatus[] = [];
+    let hasNonAttributableDispositions = false;
     for (const f of findingsForOrder) {
-      if (!dispositions.includes(f.findingStatus)) dispositions.push(f.findingStatus);
+      if (attributedOrderIdForDisposition(f) === orderId) {
+        if (!dispositions.includes(f.findingStatus)) dispositions.push(f.findingStatus);
+      } else {
+        hasNonAttributableDispositions = true;
+      }
     }
 
     // A finding genuinely linked to only ONE order (orderIds.length === 1)
@@ -183,6 +223,7 @@ export function buildScenarioComparison(
       hasFindingLevelOnlyProvisionLinkage: provisionsConsidered.some((p) => !p.orderSpecific),
       directions: directionsByOrderId.get(orderId) ?? [],
       dispositions,
+      hasNonAttributableDispositions,
     });
   }
   return rows;
