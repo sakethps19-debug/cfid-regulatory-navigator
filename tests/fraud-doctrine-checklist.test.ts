@@ -218,43 +218,54 @@ describe("evaluateFraudDoctrineTest: never overclaims the para 175 text as offic
   });
 });
 
-// Final pre-merge correction: an officer-facing legal calculator must not
-// compute doctrinal satisfaction from a governing paragraph that has not
-// been independently confirmed against an official source. These guard
-// that (a) the officer-facing page and checklist carry a restrained,
-// concise "verification pending" notice, (b) neither renders a computed
-// satisfied/borderline/not-satisfied conclusion (evaluateFraudDoctrineTest
-// and attentionCount are retained in fraudDoctrineTest.ts, tested above,
-// but must not be imported/called from the officer-facing UI), and (c)
-// internal retrieval/debug history (HTTP status codes, named mirrors) never
-// reaches the officer-facing files -- that detail is confined to
+// Post-freeze correction pass (Section A): the computed conclusion is
+// RESTORED. These guard that (a) FraudTestChecklist.tsx genuinely imports
+// and calls evaluateFraudDoctrineTest/attentionCount (a computed read is
+// actually rendered, not just retained in code), (b) the stale "Automated
+// doctrinal assessment unavailable" blocking notice is gone from both
+// files, (c) the checklist's own controls (the <select> factor inputs)
+// were never removed -- restoration means re-wiring the result display,
+// not reinventing the interactive checklist, and (d) internal
+// retrieval/debug history (HTTP status codes, named mirrors) still never
+// reaches the officer-facing files -- that detail stays confined to
 // src/lib/fraudDoctrineTest.ts's own module doc comment, a developer note.
-describe("Fraud Doctrine officer-facing UI: no computed conclusion, restrained verification-pending notice, no debug detail", () => {
+describe("Fraud Doctrine officer-facing UI: computed conclusion restored, controls preserved, no debug detail", () => {
   const page = readFileSync(new URL("../src/app/(app)/fraud-test/page.tsx", import.meta.url), "utf8");
   const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
 
-  it("the page and the checklist both carry the restrained 'Automated doctrinal assessment unavailable' notice", () => {
-    // Independent-audit correction (P1-3): the two-limb test text itself is
-    // now grounded in the official SEBI Rajesh Exports order this pilot
-    // already holds, so the banner no longer claims the governing text is
-    // unverified -- only that AUTOMATED assessment (a computed
-    // satisfied/borderline/not-satisfied read) stays off pending separate
-    // verification of the underlying Supreme Court judgment text.
-    expect(page).toMatch(/Automated doctrinal assessment unavailable/);
-    expect(checklist).toMatch(/Automated doctrinal assessment unavailable/);
-    expect(page).toMatch(/never computes a satisfied\/borderline\/not-satisfied read/);
-    expect(checklist).toMatch(/never computes a satisfied\/borderline\/not-satisfied read/);
+  it("FraudTestChecklist.tsx imports and calls evaluateFraudDoctrineTest and attentionCount -- a computed conclusion is actually rendered", () => {
+    expect(checklist).toMatch(/import\s*\{[^}]*evaluateFraudDoctrineTest/);
+    expect(checklist).toMatch(/evaluateFraudDoctrineTest\(/);
+    expect(checklist).toMatch(/import\s*\{[^}]*attentionCount/);
+    expect(checklist).toMatch(/attentionCount\(/);
   });
 
-  it("FraudTestChecklist.tsx no longer imports or calls evaluateFraudDoctrineTest or attentionCount -- no computed conclusion is rendered", () => {
-    // A code comment is allowed to name the retained function for context
-    // (see fraudDoctrineTest.ts); what must never reappear is an import of
-    // it or an actual call -- either would mean a computed conclusion is
-    // being rendered again.
-    expect(checklist).not.toMatch(/import\s*\{[^}]*evaluateFraudDoctrineTest/);
-    expect(checklist).not.toMatch(/evaluateFraudDoctrineTest\(/);
-    expect(checklist).not.toMatch(/import\s*\{[^}]*attentionCount/);
-    expect(checklist).not.toMatch(/attentionCount\(/);
+  it("neither file still carries the stale 'Automated doctrinal assessment unavailable' blocking notice", () => {
+    expect(page).not.toMatch(/Automated doctrinal assessment unavailable/);
+    expect(checklist).not.toMatch(/Automated doctrinal assessment unavailable/);
+  });
+
+  it("the checklist's interactive factor controls (select inputs, not merely static text) are still present -- restoration never removed them", () => {
+    expect(checklist).toMatch(/<select/);
+    expect(checklist).toMatch(/FACTOR_STATE_OPTIONS/);
+    expect(checklist).toMatch(/onChange=\{.*setFactorState/);
+  });
+
+  it("the checklist still offers a 'Clear selections' control that resets to an empty Map, and it never treats 'Not stated' as a stored/checked state", () => {
+    expect(checklist).toMatch(/Clear selections/);
+    expect(checklist).toMatch(/setStates\(new Map\(\)\)/);
+    // "Not stated" is removed from the map rather than stored as a value --
+    // see setFactorState's `if (state === "not-stated") next.delete(id)` --
+    // so a factor left at its default is indistinguishable from one never
+    // touched, and is never read by evaluateFraudDoctrineTest as "absent".
+    expect(checklist).toMatch(/state === "not-stated"/);
+    expect(checklist).toMatch(/next\.delete\(id\)/);
+  });
+
+  it("the result text always reads as a research-assistance characterisation, never a bare legal conclusion or a claim the underlying judgment is verified", () => {
+    expect(checklist).toMatch(/Research assistance only/);
+    expect(checklist).toMatch(/does not determine whether fraud or any violation occurred/);
+    expect(page.toLowerCase()).not.toMatch(/supreme court judgment (itself )?(is|has been|was) (separately )?verified/);
   });
 
   it("neither officer-facing file exposes internal retrieval/debug history (HTTP status codes, named mirrors, attempt counts)", () => {
@@ -266,7 +277,7 @@ describe("Fraud Doctrine officer-facing UI: no computed conclusion, restrained v
     }
   });
 
-  it("the underlying decision logic (evaluateFraudDoctrineTest) is retained in fraudDoctrineTest.ts, not deleted, for later reactivation", () => {
+  it("the underlying decision logic (evaluateFraudDoctrineTest) still lives in fraudDoctrineTest.ts, independently exported and tested", () => {
     const logic = readFileSync(new URL("../src/lib/fraudDoctrineTest.ts", import.meta.url), "utf8");
     expect(logic).toMatch(/export function evaluateFraudDoctrineTest/);
     expect(logic).toMatch(/export function attentionCount/);

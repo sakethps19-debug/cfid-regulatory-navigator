@@ -21,8 +21,16 @@ describe("P1-4: Provision Detail's remaining narrative paragraphs are justified,
     expect(broadScenariosBlock).toMatch(/NARRATIVE_JUSTIFY_ONLY/);
   });
 
-  it("the statutory-text blockquote itself is deliberately excluded from the width/justify pass (readable quotation measure, not ordinary narrative)", () => {
-    expect(src).toMatch(/<blockquote className="max-w-prose/);
+  // Post-freeze correction pass (Section H): the statutory-text blockquote
+  // was previously confined to max-w-prose (65ch, ~600px) regardless of
+  // how wide its card actually was -- read as a narrow floating column
+  // with dead space beside it, when the statutory text is the whole
+  // reason an officer opens this page. Widened to a graduated, still
+  // bounded measure so it visually dominates the card without ever
+  // reaching edge-to-edge on the widest displays.
+  it("the statutory-text blockquote is widened (max-w-3xl sm:max-w-4xl xl:max-w-5xl), no longer the old flat max-w-prose cap", () => {
+    expect(src).toMatch(/<blockquote className="max-w-3xl whitespace-pre-wrap[^"]*sm:max-w-4xl xl:max-w-5xl"/);
+    expect(src).not.toMatch(/<blockquote className="max-w-prose/);
   });
 });
 

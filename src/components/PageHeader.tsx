@@ -11,11 +11,14 @@ export function PageHeader({ title, description, action }: { title: string; desc
           // -- a single short paragraph stretched that wide would be
           // unreadable) so a brief page-introduction sentence doesn't read as
           // a narrow, floating column inside a much wider workspace at
-          // desktop/large-display sizes (reconciliation pass, Task 3). Long-
-          // form statutory/prose content elsewhere in the app intentionally
-          // keeps the tighter character-based max-w-prose measure instead --
-          // this only widens brief introductory copy.
-          <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-700)] xl:max-w-4xl 2xl:max-w-5xl">{description}</p>
+          // desktop/large-display sizes (reconciliation pass, Task 3;
+          // widened further in the post-freeze correction pass, Section E,
+          // after "Officer Research Home" still left visible dead whitespace
+          // to the right of its intro sentence at common desktop/tablet
+          // widths). Long-form statutory/prose content elsewhere in the app
+          // intentionally keeps the tighter character-based max-w-prose
+          // measure instead -- this only widens brief introductory copy.
+          <p className="mt-1 max-w-4xl text-sm text-[var(--color-ink-700)] xl:max-w-5xl 2xl:max-w-6xl">{description}</p>
         )}
       </div>
       {action}

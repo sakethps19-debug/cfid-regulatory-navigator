@@ -13,7 +13,6 @@ import { CaseJourneyStageCard } from "@/components/CaseJourneyStageCard";
 import { CompareScenariosResultClient } from "@/components/CompareScenariosResultClient";
 import { FixedScenarioAnalyzer } from "@/components/analyzer/FixedScenarioAnalyzer";
 import { LawLibraryClient } from "@/components/LawLibraryClient";
-import { CorpusReviewStatusBanner } from "@/components/CorpusReviewStatusBanner";
 import { FraudTestChecklist } from "@/app/(app)/fraud-test/FraudTestChecklist";
 import MethodologyPage from "@/app/(app)/methodology/page";
 import { DisclaimerBanner } from "@/components/DisclaimerBanner";
@@ -25,6 +24,9 @@ import { relevantScenarioRecords, groupRelevantRecordsByOrder } from "@/lib/fixe
 import { retrievalRuleForProvision } from "@/data/curated/provision-retrieval-rules";
 import { formatDate } from "@/lib/formatDate";
 import { orderGist } from "@/lib/orderGist";
+import { parseScopeNoteSections } from "@/lib/scopeNoteSections";
+import { groupAppliedFindingsByOrder } from "@/lib/fraudDoctrineApplication";
+import { StatusBadge } from "@/components/StatusBadge";
 import { pickRecentOrders } from "@/lib/pickRecentOrders";
 import { orderBroadScenarios } from "@/lib/orderBroadScenarios";
 import { provisionsConsideredForOrder } from "@/lib/orderProvisionsConsidered";
@@ -355,7 +357,36 @@ export function CaseDetailRajeshScreen() {
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
             <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Scope note</dt>
-            <dd className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_PROSE_CLASSES}`}>{orderGist(order, findings) ?? "Not yet captured for this order"}</dd>
+            {/* Post-freeze correction pass (Section I): mirrors the real
+                page's parseScopeNoteSections rendering (see
+                src/app/(app)/orders/[id]/page.tsx) -- harness debt if this
+                drifts from that source, per this file's own header note. */}
+            <dd className="mt-1 text-sm text-[var(--color-ink-700)]">
+              {(() => {
+                const gist = orderGist(order, findings);
+                if (!gist) return "Not yet captured for this order";
+                const { intro, listItems, directions } = parseScopeNoteSections(gist);
+                if (listItems.length === 0) {
+                  return <p className={NARRATIVE_PROSE_CLASSES}>{intro}</p>;
+                }
+                return (
+                  <div className="space-y-3">
+                    <p className={NARRATIVE_PROSE_CLASSES}>{intro}</p>
+                    <ul className={`list-disc space-y-1.5 pl-5 ${NARRATIVE_PROSE_CLASSES}`}>
+                      {listItems.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                    {directions && (
+                      <p className={NARRATIVE_PROSE_CLASSES}>
+                        <span className="font-semibold text-[var(--color-ink-900)]">Directions: </span>
+                        {directions}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+            </dd>
           </div>
           {issuesExamined.length > 0 && (
             <div className="sm:col-span-2 lg:col-span-3">
@@ -454,7 +485,10 @@ export function ProvisionDetailScreen() {
                   <span className="text-xs text-[var(--color-ink-500)]">{provenance.description}</span>
                 </div>
                 {v.exactText ? (
-                  <blockquote className="max-w-prose whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">{v.exactText}</blockquote>
+                  // Post-freeze correction pass (Section H): mirrors the
+                  // real page's widened measure (see
+                  // src/app/(app)/provisions/[id]/page.tsx).
+                  <blockquote className="max-w-3xl whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)] sm:max-w-4xl xl:max-w-5xl">{v.exactText}</blockquote>
                 ) : v.sourceUrl ? (
                   <p className="text-sm text-[var(--color-ink-500)]">No text on file for this version yet — read it directly at the official source link below.</p>
                 ) : (
@@ -563,11 +597,13 @@ export function CompareScenariosEmptyScreen() {
 export function LawLibraryScreen() {
   return (
     <div>
+      {/* Post-freeze correction pass (Section F): mirrors the real page --
+          no CorpusReviewStatusBanner, no "filter by finding status"
+          wording (see src/app/(app)/law-library/page.tsx). */}
       <PageHeader
         title="Law Library"
-        description="Every legal instrument and provision actually cited or applied in the orders analysed for this pilot. Browse by regulator, then instrument, then provision, or search by provision, instrument, or a recognised CFID fact pattern, and filter by finding status to jump straight to the provisions and cases that matter."
+        description="Every legal instrument and provision actually cited or applied in the orders analysed for this pilot. Browse by regulator, then instrument, then provision, or search by provision, instrument, or a recognised CFID fact pattern."
       />
-      <CorpusReviewStatusBanner findings={F.LAW_LIBRARY_FINDINGS} provisions={F.LAW_LIBRARY_PROVISIONS} />
       <LawLibraryClient instruments={F.LAW_LIBRARY_INSTRUMENTS} provisions={F.LAW_LIBRARY_PROVISIONS} findings={F.LAW_LIBRARY_FINDINGS} />
     </div>
   );
@@ -632,9 +668,10 @@ export function SourceLibraryScreen() {
 // ---------------------------------------------------------------------
 export function FraudDoctrineScreen() {
   const doctrine = F.FRAUD_DOCTRINE_LEGAL_TEST;
-  const appliedFindings = F.REL_FINDINGS;
+  const appliedFindings = F.REL_FINDINGS.filter((f) => f.recordId === "REL-01" || f.recordId === "REL-02");
   const relFinding = appliedFindings.find((f) => f.recordId.startsWith("REL-"));
   const relOrderId = relFinding?.orderIds[0];
+  const appliedOrders = groupAppliedFindingsByOrder(appliedFindings);
 
   return (
     <div>
@@ -650,13 +687,12 @@ export function FraudDoctrineScreen() {
         This checklist organises considerations relevant to the cited doctrine. It does not determine whether fraud
         or any violation occurred, and it is entirely independent of the Scenario Analyzer&apos;s precedent matching.
       </div>
-      <div className="mb-6 rounded-sm bg-[var(--color-neutral-50)] p-3.5 text-sm ring-1 border-[var(--color-border)]">
-        <p className="font-semibold text-[var(--color-ink-900)]">Automated doctrinal assessment unavailable</p>
-        <p className="mt-1 text-[var(--color-ink-700)]">
-          This tool never computes a satisfied/borderline/not-satisfied read from your selections — the material
-          below is reference only, to apply yourself.
-        </p>
-      </div>
+      {/* Post-freeze correction pass (Section A): the "Automated doctrinal
+          assessment unavailable" static banner is gone from the real page
+          -- FraudTestChecklist (the real component, imported below) now
+          renders a computed read itself. Removed here to match, rather
+          than let this harness screen show a defect that no longer
+          exists in production. */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Authority and doctrine</h2>
@@ -683,6 +719,35 @@ export function FraudDoctrineScreen() {
           <FraudTestChecklist />
         </Card>
       </div>
+      {/* Post-freeze correction pass (Section B): mirrors the real page's
+          one-card-per-order grouping (see
+          src/app/(app)/fraud-test/page.tsx). */}
+      <Card className="mt-6">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Orders applying this doctrine</h2>
+        <ul className="mt-3 space-y-3">
+          {appliedOrders.map((o) => (
+            <li key={o.orderId} className="rounded-md border border-[var(--color-border)] p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-[var(--color-gold-700)]">{o.caseName}</span>
+              </div>
+              <ul className="mt-2 space-y-2">
+                {o.findings.map((f) => (
+                  <li key={f.recordId} className="border-l-2 border-[var(--color-border)] pl-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={f.findingStatus} />
+                      <span className="text-xs text-[var(--color-ink-500)]">{f.recordId}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-[var(--color-ink-700)]">{f.scenarioTitle}</p>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2">
+                <SourceLink href={o.officialSourceUrl} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }

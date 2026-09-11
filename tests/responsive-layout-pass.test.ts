@@ -66,8 +66,10 @@ describe("readable prose measure separated from workspace width (Part 13, supers
     const page = src("src/app/(app)/orders/[id]/page.tsx");
     expect(page).toContain('import { resolveOrderNoticees } from "@/lib/orderNoticees"');
     expect(page).toContain('import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses"');
-    // Scope note dd
-    expect(page).toMatch(/Scope note[\s\S]{0,500}<dd className=\{`[^`]*\$\{NARRATIVE_PROSE_CLASSES\}`\}>/);
+    // Scope note dd (Section H correction: NARRATIVE_PROSE_CLASSES is now
+    // applied to the intro/list/directions elements parseScopeNoteSections
+    // renders inside the dd, not to the dd's own className directly)
+    expect(page).toMatch(/Scope note[\s\S]{0,1600}NARRATIVE_PROSE_CLASSES/);
     // Directions & outcomes narrative paragraph
     expect(page).toMatch(/directions\.map[\s\S]{0,300}<p className=\{`[^`]*\$\{NARRATIVE_PROSE_CLASSES\}`\}>\{d\.directionOrOutcome\}/);
     // Neither still uses the old flat cap
@@ -81,9 +83,17 @@ describe("readable prose measure separated from workspace width (Part 13, supers
     expect(page).not.toMatch(/Issues examined[\s\S]{0,500}<dd className="[^"]*max-w-prose[^"]*"/);
   });
 
-  it("Provision Detail's verbatim statutory text stays at readable, unjustified measure even though the surrounding Card may be wide -- deliberately the one remaining fixed-measure exception (quoted statute text, not narrative prose)", () => {
+  // Post-freeze correction pass (Section H): the flat max-w-prose cap here
+  // was superseded -- the statutory text is now widened to a graduated,
+  // still-bounded measure (max-w-3xl sm:max-w-4xl xl:max-w-5xl) so it
+  // dominates its card rather than reading as a narrow floating column.
+  // It remains unjustified (quoted statute text keeps its own original
+  // line breaks/formatting, never NARRATIVE_PROSE_CLASSES's justify).
+  it("Provision Detail's verbatim statutory text widens on wide displays (no longer the old flat max-w-prose cap) but stays unjustified -- quoted statute text, not narrative prose", () => {
     const page = src("src/app/(app)/provisions/[id]/page.tsx");
-    expect(page).toMatch(/<blockquote className="[^"]*max-w-prose[^"]*"/);
+    expect(page).toMatch(/<blockquote className="max-w-3xl whitespace-pre-wrap[^"]*sm:max-w-4xl xl:max-w-5xl"/);
+    expect(page).not.toMatch(/<blockquote className="[^"]*max-w-prose[^"]*"/);
+    expect(page).not.toMatch(/<blockquote className="[^"]*NARRATIVE_PROSE_CLASSES[^"]*"/);
   });
 
   it("Fixed Scenario Analysis's 'what this covers' explanation widens on wide displays and is justified via the shared NARRATIVE_PROSE_CLASSES constant, instead of the old flat max-w-prose cap or a duplicated literal class list", () => {
@@ -94,7 +104,7 @@ describe("readable prose measure separated from workspace width (Part 13, supers
 
   it("legal/research prose measure is never applied by shrinking font size (Part 16: do not solve width via smaller text) -- Scope Note keeps its text-sm sizing alongside the new tiered/justified measure", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
-    expect(page).toMatch(/Scope note[\s\S]{0,500}<dd className=\{`mt-1 text-sm text-\[var\(--color-ink-700\)\]/);
+    expect(page).toMatch(/Scope note[\s\S]{0,1200}<dd className="mt-1 text-sm text-\[var\(--color-ink-700\)\]">/);
   });
 
   it("Order Detail's static explanatory paragraphs (matter-siblings intro, finding-level-linkage caveat, provisions-considered intro) widen on wide displays and are justified via the shared prose classes, instead of the old flat max-w-prose cap or one-off literal classes", () => {

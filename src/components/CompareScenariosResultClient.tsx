@@ -84,12 +84,25 @@ function ProvisionsSection({ row, provisionById }: { row: ComparisonRow; provisi
   );
 }
 
-function DispositionBadges({ dispositions }: { dispositions: FindingStatus[] }) {
+/** Section C correction: a row may have matched findings whose disposition
+ * belongs to a different, later order (see ComparisonRow.dispositions'
+ * own doc comment in scenarioComparison.ts) -- rendered here as a neutral
+ * note rather than a fabricated or duplicated stage-specific outcome, the
+ * same convention CaseJourneyStageCard already uses. */
+function DispositionBadges({ row }: { row: ComparisonRow }) {
   return (
-    <div className="flex flex-wrap gap-1">
-      {dispositions.map((d) => (
-        <StatusBadge key={d} status={d} />
-      ))}
+    <div>
+      <div className="flex flex-wrap gap-1">
+        {row.dispositions.map((d) => (
+          <StatusBadge key={d} status={d} />
+        ))}
+      </div>
+      {row.hasNonAttributableDispositions && (
+        <p className="mt-1 text-[11px] italic text-[var(--color-ink-500)]">
+          {row.dispositions.length > 0 ? "Remaining matched finding(s): " : ""}No separately structured stage-specific disposition available — see
+          the controlling order.
+        </p>
+      )}
     </div>
   );
 }
@@ -300,7 +313,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
                     {[...new Set(row.findings.map((f) => f.scenarioTitle))].join("; ")}
                   </td>
                   <td className="px-3 py-2 align-top">
-                    <DispositionBadges dispositions={row.dispositions} />
+                    <DispositionBadges row={row} />
                   </td>
                   <td className="max-w-xs px-3 py-2 align-top">
                     <ProvisionsSection row={row} provisionById={provisionById} />
@@ -337,7 +350,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
               </div>
               <p className="mt-2 text-sm text-[var(--color-ink-700)]">{[...new Set(row.findings.map((f) => f.scenarioTitle))].join("; ")}</p>
               <div className="mt-2">
-                <DispositionBadges dispositions={row.dispositions} />
+                <DispositionBadges row={row} />
               </div>
               <div className="mt-2">
                 <ProvisionsSection row={row} provisionById={provisionById} />

@@ -445,15 +445,29 @@ describe("filterComparisonRows", () => {
 // not established".
 // ---------------------------------------------------------------------
 describe("negative precedents are first-class", () => {
-  it("SSSL-03 (not_upheld in production) is retained under FRAUDULENT_ALLOTMENT with its negative disposition intact", () => {
+  // Section C correction: SSSL-03's findingStatus ("Not Confirmed in Final
+  // Order") is a final-adjudicatory disposition, genuinely attributable
+  // only to the Seacoast FINAL order (attributedOrderIdForDisposition,
+  // caseJourney.ts) -- never to the interim row the same finding also
+  // references. This test previously asserted the disposition on BOTH
+  // rows, which was itself the exact stage-leak defect this pass fixes:
+  // the negative precedent is still retained and never hidden (see the
+  // finding-level assertion, and hasNonAttributableDispositions on the
+  // interim row below), it simply is not fabricated onto a stage that
+  // never decided it.
+  it("SSSL-03 (not_upheld in production) is retained under FRAUDULENT_ALLOTMENT with its negative disposition intact on the order that actually decided it", () => {
     const rows = buildScenarioComparison(FRAUDULENT_ALLOTMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
     const rowsWithSSSL03 = rows.filter((r) => r.findings.some((f) => f.recordId === "SSSL-03"));
     expect(rowsWithSSSL03.length).toBeGreaterThan(0);
     for (const row of rowsWithSSSL03) {
       const finding = row.findings.find((f) => f.recordId === "SSSL-03")!;
       expect(finding.findingStatus).toBe("Not Confirmed in Final Order");
-      expect(row.dispositions).toContain("Not Confirmed in Final Order");
     }
+    const finalRow = rowsWithSSSL03.find((r) => r.order.id === SEACOAST_FINAL.id)!;
+    expect(finalRow.dispositions).toContain("Not Confirmed in Final Order");
+    const interimRow = rowsWithSSSL03.find((r) => r.order.id === SEACOAST_INTERIM.id)!;
+    expect(interimRow.dispositions).not.toContain("Not Confirmed in Final Order");
+    expect(interimRow.hasNonAttributableDispositions).toBe(true);
   });
 
   it("its provisionsConsidered carries notUpheldOnly=true, which the UI renders as 'Contravention not established' -- never a bare 'not upheld' label", () => {
@@ -658,9 +672,9 @@ describe("scenarioComparison.ts: no Analyzer scoring, no LLM/API calls", () => {
 describe("summarizeScenarioComparison: descriptive counts", () => {
   it("computes exact matter/order/stage/disposition counts from a crafted row set", () => {
     const rows: ComparisonRow[] = [
-      { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [SSSL_03], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Not Confirmed in Final Order"] },
-      { order: SEACOAST_FINAL, matter: SEACOAST_MATTER, findings: [SSSL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Confirmed in Final Order"] },
-      { order: RAJESH_INTERIM, matter: RAJESH_MATTER, findings: [REL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: ["Prima facie"] },
+      { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [SSSL_03], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, hasNonAttributableDispositions: false, directions: [], dispositions: ["Not Confirmed in Final Order"] },
+      { order: SEACOAST_FINAL, matter: SEACOAST_MATTER, findings: [SSSL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, hasNonAttributableDispositions: false, directions: [], dispositions: ["Confirmed in Final Order"] },
+      { order: RAJESH_INTERIM, matter: RAJESH_MATTER, findings: [REL_01], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, hasNonAttributableDispositions: false, directions: [], dispositions: ["Prima facie"] },
     ];
     const summary = summarizeScenarioComparison(rows);
     expect(summary.mattersRepresented).toBe(2);
@@ -674,8 +688,8 @@ describe("summarizeScenarioComparison: descriptive counts", () => {
   });
 
   it("comparisonRowMatterLabel falls back to the order's own caseName only when no matter resolved", () => {
-    const rowWithMatter: ComparisonRow = { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: [] };
-    const rowWithoutMatter: ComparisonRow = { order: makeOrder({ id: "orphan", caseName: "Orphan Case" }), matter: null, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, directions: [], dispositions: [] };
+    const rowWithMatter: ComparisonRow = { order: SEACOAST_INTERIM, matter: SEACOAST_MATTER, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, hasNonAttributableDispositions: false, directions: [], dispositions: [] };
+    const rowWithoutMatter: ComparisonRow = { order: makeOrder({ id: "orphan", caseName: "Orphan Case" }), matter: null, findings: [], provisionsConsidered: [], hasFindingLevelOnlyProvisionLinkage: false, hasNonAttributableDispositions: false, directions: [], dispositions: [] };
     expect(comparisonRowMatterLabel(rowWithMatter)).toBe("Seacoast Shipping Services Limited");
     expect(comparisonRowMatterLabel(rowWithoutMatter)).toBe("Orphan Case");
   });
@@ -702,6 +716,7 @@ describe("summarizeScenarioComparison: descriptive counts", () => {
         findings: [TTL_01, { ...TTL_01, recordId: "TTL-01B", findingStatus: "Confirmed in Final Order" }],
         provisionsConsidered: [],
         hasFindingLevelOnlyProvisionLinkage: false,
+        hasNonAttributableDispositions: false,
         directions: [],
         dispositions: ["Confirmed in Final Order"],
       },
@@ -748,5 +763,62 @@ describe("Suzlon and Tarapur: post-migration-0024 order types display correctly"
     const rows = buildScenarioComparison(FUND_DIVERSION, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
     const tarapurRow = rows.find((r) => r.order.id === TARAPUR_ORDER.id)!;
     expect(tarapurRow.order.orderStage).toBe("Final order");
+  });
+});
+
+// ---------------------------------------------------------------------
+// Post-freeze correction pass (Section C) -- Seacoast acceptance test.
+// Compare Scenarios must support within-matter comparison (the same
+// finding/issue across a matter's own interim and final orders) without
+// regressing the cross-matter, order-centric, legal-integrity-audited
+// redesign. This block runs the full acceptance criteria against the
+// Seacoast fixture in one place.
+// ---------------------------------------------------------------------
+describe("Seacoast acceptance test: within-matter comparison, stage separated from outcome", () => {
+  const rows = buildScenarioComparison(FRAUDULENT_ALLOTMENT, ALL_ORDERS, ALL_FINDINGS, NO_DIRECTIONS, ALL_MATTERS);
+  const seacoastRows = rows.filter((r) => r.order.matterId === SEACOAST_MATTER.id);
+  const interimRow = seacoastRows.find((r) => r.order.id === SEACOAST_INTERIM.id);
+  const finalRow = seacoastRows.find((r) => r.order.id === SEACOAST_FINAL.id);
+
+  it("both the interim order and the final order appear (one row per order, not merged into one matter row)", () => {
+    expect(seacoastRows).toHaveLength(2);
+    expect(interimRow).toBeDefined();
+    expect(finalRow).toBeDefined();
+  });
+
+  it("the same matched finding (SSSL-03) is compared side-by-side on both rows -- the shared issue is genuinely visible on each", () => {
+    expect(interimRow!.findings.map((f) => f.recordId)).toContain("SSSL-03");
+    expect(finalRow!.findings.map((f) => f.recordId)).toContain("SSSL-03");
+  });
+
+  it("stage is separated from outcome: each row's own orderStage is independent of its disposition data", () => {
+    expect(interimRow!.order.orderStage).toBe("Interim order cum show cause notice");
+    expect(finalRow!.order.orderStage).toBe("Final order");
+  });
+
+  it("the final order's disposition is not incorrectly copied backward into the interim row", () => {
+    expect(finalRow!.dispositions).toContain("Not Confirmed in Final Order");
+    expect(interimRow!.dispositions).not.toContain("Not Confirmed in Final Order");
+    expect(interimRow!.hasNonAttributableDispositions).toBe(true);
+  });
+
+  it("both rows share the same matter label, proving they are recognisably the same matter while remaining independent rows", () => {
+    expect(comparisonRowMatterLabel(interimRow!)).toBe(comparisonRowMatterLabel(finalRow!));
+  });
+
+  it("filtering by this matter surfaces both rows together, the practical mechanism for within-matter side-by-side comparison", () => {
+    const filtered = filterComparisonRows(rows, { matterLabel: comparisonRowMatterLabel(finalRow!) });
+    const filteredIds = filtered.map((r) => r.order.id).sort();
+    expect(filteredIds).toEqual([SEACOAST_FINAL.id, SEACOAST_INTERIM.id].sort());
+  });
+
+  it("each row carries its own clear source provenance (order.officialUrl) independent of the other row", () => {
+    expect(interimRow!.order.officialUrl).toBeTruthy();
+    expect(finalRow!.order.officialUrl).toBeTruthy();
+  });
+
+  it("grouping is deterministic canonical mapping by matter_id -- never fuzzy text/name similarity", () => {
+    expect(interimRow!.order.matterId).toBe(SEACOAST_MATTER.id);
+    expect(finalRow!.order.matterId).toBe(SEACOAST_MATTER.id);
   });
 });

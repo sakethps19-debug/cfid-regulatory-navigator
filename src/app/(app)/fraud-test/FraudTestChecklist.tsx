@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { FactorState } from "@/lib/fraudDoctrineTest";
+import { attentionCount, evaluateFraudDoctrineTest, type FactorState, type FraudDoctrineTone } from "@/lib/fraudDoctrineTest";
 
 interface Factor {
   id: string;
@@ -115,8 +115,22 @@ function FactorList({
   );
 }
 
+const RESULT_HEADINGS: Record<FraudDoctrineTone, string> = {
+  satisfied: "Appears satisfied on these selections",
+  borderline: "Borderline on these selections",
+  "not-satisfied": "Not satisfied on these selections",
+};
+
+const RESULT_STYLES: Record<FraudDoctrineTone, string> = {
+  satisfied: "bg-[var(--status-green-bg)] ring-[var(--status-green-ring)]",
+  borderline: "bg-[var(--status-amber-bg)] ring-[var(--status-amber-ring)]",
+  "not-satisfied": "bg-[var(--color-neutral-50)] ring-[var(--color-border)]",
+};
+
 export function FraudTestChecklist() {
   const [states, setStates] = useState<Map<string, FactorState>>(new Map());
+  const result = evaluateFraudDoctrineTest(states);
+  const attention = attentionCount(states);
 
   function setFactorState(id: string, state: FactorState) {
     setStates((prev) => {
@@ -155,23 +169,27 @@ export function FraudTestChecklist() {
         </div>
       </div>
 
-      {/* Independent-audit correction (P1-3): the para 175 text itself is
-          now grounded in the official SEBI Rajesh Exports order (see the
-          parent page's "Authority and doctrine" card) rather than presented
-          as unverified. This checklist still never computes or displays a
-          satisfied/borderline/not-satisfied read from the selections above
-          -- that computation (evaluateFraudDoctrineTest, in
-          src/lib/fraudDoctrineTest.ts) is retained in code, independently
-          tested, and ready to be wired back in once the underlying Supreme
-          Court judgment is separately confirmed against an official
-          case-law repository -- it is simply not called from this
-          officer-facing view until then. */}
-      <div className="mt-5 rounded-sm bg-[var(--color-neutral-50)] p-3 text-sm ring-1 ring-inset ring-[var(--color-border)]">
-        <p className="font-semibold text-[var(--color-ink-900)]">Automated doctrinal assessment unavailable</p>
-        <p className="mt-1 text-[var(--color-ink-700)]">
-          This checklist never computes a satisfied/borderline/not-satisfied read from your selections. The
-          underlying Supreme Court judgment text has not separately been verified by this pilot against an official
-          case-law repository.
+      {/* Post-freeze correction pass (Section A): restored. This read is
+          computed purely from the selections above by evaluateFraudDoctrineTest
+          (src/lib/fraudDoctrineTest.ts, independently unit-tested) -- it
+          mirrors exactly the two limbs of the quoted text, never infers a
+          "Not stated" factor as absent, and never converts the checklist
+          into an automated legal conclusion: the wording below always
+          reads as a research-assistance characterisation of the doctrinal
+          test ("appears satisfied" / "borderline" / "not satisfied"), never
+          as a finding that fraud or any violation occurred. */}
+      <div className={`mt-5 rounded-sm p-3 text-sm ring-1 ring-inset ${RESULT_STYLES[result.tone]}`}>
+        <p className="font-semibold text-[var(--color-ink-900)]">{RESULT_HEADINGS[result.tone]}</p>
+        <p className="mt-1 text-[var(--color-ink-700)]">{result.text}</p>
+        {attention > 0 && (
+          <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">
+            {attention} factor{attention === 1 ? "" : "s"} marked unclear, requiring verification, or requiring
+            additional evidence — resolve these before relying on this read.
+          </p>
+        )}
+        <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">
+          Research assistance only. This does not determine whether fraud or any violation occurred, and it does not
+          replace your own legal judgment on the facts.
         </p>
       </div>
 

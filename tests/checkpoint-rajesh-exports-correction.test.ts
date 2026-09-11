@@ -233,7 +233,7 @@ describe("6: global text-justify requirement — applied to narrative prose, nev
 
   it("Scope Note, Directions/Outcomes narrative, matter-siblings intro, and provisions-considered caveats on Case Detail are justified", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
-    expect(page).toMatch(/Scope note[\s\S]{0,500}NARRATIVE_PROSE_CLASSES/);
+    expect(page).toMatch(/Scope note[\s\S]{0,1600}NARRATIVE_PROSE_CLASSES/);
     expect(page).toMatch(/directions\.map[\s\S]{0,300}NARRATIVE_PROSE_CLASSES/);
     expect(page).toMatch(/Other orders in the same matter[\s\S]{0,300}NARRATIVE_PROSE_CLASSES/);
   });
@@ -254,11 +254,16 @@ describe("6: global text-justify requirement — applied to narrative prose, nev
 describe("7/8: Scope Note and Case Detail's other narrative boxes make sensible use of wide-screen width (root cause fixed, not patched)", () => {
   it("Scope Note is no longer trapped in the old max-w-prose narrow column -- it uses the same tiered measure as every other fixed narrative paragraph in the app", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
-    expect(page).toMatch(/Scope note[\s\S]{0,500}NARRATIVE_PROSE_CLASSES/);
-    // The <dd> className itself must not carry a literal max-w-prose class
-    // (a code comment nearby may still legitimately mention the old class
-    // name while explaining the fix, which this checks past).
-    expect(page).toMatch(/Scope note[\s\S]{0,500}<dd className=\{`mt-1 text-sm text-\[var\(--color-ink-700\)\] \$\{NARRATIVE_PROSE_CLASSES\}`\}>/);
+    expect(page).toMatch(/Scope note[\s\S]{0,1600}NARRATIVE_PROSE_CLASSES/);
+    // Post-freeze correction pass (Section I): the dd itself is no longer
+    // a single flat paragraph -- it conditionally renders an intro
+    // paragraph (plus, when the scope note follows the enumerated-
+    // findings convention, a bulleted list and a directions paragraph),
+    // via parseScopeNoteSections. NARRATIVE_PROSE_CLASSES is applied to
+    // each of those rendered elements, not to the <dd> wrapper itself; the
+    // <dd> className string must never carry a literal max-w-prose class.
+    expect(page).toMatch(/Scope note[\s\S]{0,1200}parseScopeNoteSections/);
+    expect(page).not.toMatch(/Scope note[\s\S]{0,1200}<dd className="[^"]*max-w-prose/);
   });
 
   it("the fix lives in the shared proseClasses.ts constant, not a one-off Scope-Note-specific class string -- so every substantive narrative box on Case Detail benefits from the same root-cause fix", () => {

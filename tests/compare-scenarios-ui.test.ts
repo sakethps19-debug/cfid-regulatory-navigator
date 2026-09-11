@@ -30,14 +30,28 @@ describe("navigation: Compare Scenarios under More, primary nav untouched", () =
 });
 
 describe("Compare Scenarios does not modify Case Journey, Analyzer, Cases, Law, or migration 0024", () => {
-  it("Case Journey's own lib/route files are untouched by this pass (still present, unmodified in scope)", () => {
-    // Sanity: these files still exist and Compare Scenarios's own lib does
-    // not import from them (a genuine cross-feature dependency would be a
-    // scope violation per the task's explicit exclusions).
+  it("Case Journey's own lib/route files are untouched, and Compare Scenarios reuses only the shared deterministic attribution helper from them -- never their chronology-building/UI logic", () => {
+    // Post-freeze correction pass (Section C): scenarioComparison.ts now
+    // imports ONE named export, attributedOrderIdForDisposition, from
+    // caseJourney.ts -- the exact deterministic (matter_id/order_id-based,
+    // no fuzzy/LLM matching) function Case Journey's own stage cards use
+    // to decide which order a finding's disposition genuinely belongs to.
+    // Reusing it here fixes a real defect (a final-adjudicatory disposition
+    // was leaking backward into an earlier order's comparison row merely
+    // because the same finding also referenced it -- the identical class
+    // of defect Case Journey itself was corrected for). This is deliberate
+    // DRY reuse of one pure, already-tested function, not the "genuine
+    // cross-feature dependency" this test originally guarded against
+    // (Compare Scenarios pulling in Case Journey's own chronology-building
+    // function, buildCaseJourney, or any UI/route code) -- that remains
+    // excluded below.
     const caseJourneyLib = src("src/lib/caseJourney.ts");
     expect(caseJourneyLib).toContain("export function buildCaseJourney");
+    expect(caseJourneyLib).toContain("export function attributedOrderIdForDisposition");
     const scenarioComparisonLib = src("src/lib/scenarioComparison.ts");
-    expect(scenarioComparisonLib).not.toMatch(/from "@\/lib\/caseJourney"/);
+    expect(scenarioComparisonLib).toMatch(/import \{ attributedOrderIdForDisposition \} from "@\/lib\/caseJourney"/);
+    expect(scenarioComparisonLib).not.toMatch(/buildCaseJourney\(/);
+    expect(scenarioComparisonLib).not.toMatch(/CaseJourneyStageCard/);
   });
 
   it("migration 0024 file is untouched (byte-identical marker: still contains its own safety-assertion DO block)", () => {

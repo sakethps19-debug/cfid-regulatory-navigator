@@ -135,11 +135,19 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
                     <span className="text-xs text-[var(--color-ink-500)]">{provenance.description}</span>
                   </div>
                   {v.exactText ? (
-                    // Prose measure: the workspace around this card may be wide
-                    // on a large display, but the regulation text itself must
-                    // stay at a readable line length rather than stretching
-                    // edge-to-edge.
-                    <blockquote className="max-w-prose whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">
+                    // Post-freeze correction pass (Section H): this was
+                    // confined to max-w-prose (65ch, ~600px) inside a card
+                    // that can run much wider than that on tablet/desktop --
+                    // the statutory text itself, the actual reason an
+                    // officer opens this page, read as a narrow floating
+                    // column with dead space beside it. Widened
+                    // substantially (still bounded, never edge-to-edge, so
+                    // very long lines never appear on the widest displays)
+                    // so the text visually dominates the card, while
+                    // staying comfortably readable on an iPad. The
+                    // verification badge, effective-date info, and
+                    // official-source link above/below are unchanged.
+                    <blockquote className="max-w-3xl whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)] sm:max-w-4xl xl:max-w-5xl">
                       {v.exactText}
                     </blockquote>
                   ) : v.sourceUrl ? (
