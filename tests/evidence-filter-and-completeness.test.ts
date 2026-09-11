@@ -61,16 +61,16 @@ function makeProvision(overrides: Partial<LegalProvision> & { id: string }): Leg
 
 describe("evidenceSignal", () => {
   it("boosts a finding whose evidenceTypes includes the selected signal, even with no free-text evidence mention", () => {
-    const provision = makeProvision({ id: "TEST-PROV-EVID" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const withEvidence = makeFinding({
       recordId: "SYN-EVID-01",
-      provisionIds: ["TEST-PROV-EVID"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidenceTypes: ["bank_statements_flow"],
     });
     const withoutEvidence = makeFinding({
       recordId: "SYN-EVID-02",
-      provisionIds: ["TEST-PROV-EVID"],
+      provisionIds: ["LODR-17-8"],
       allegedConduct: ["false_compliance_certification"],
       evidenceTypes: [],
     });
@@ -81,7 +81,7 @@ describe("evidenceSignal", () => {
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-EVID");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     // The finding carrying the selected evidence tag should score higher and
     // therefore be listed first among supporting precedents.

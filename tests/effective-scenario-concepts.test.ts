@@ -68,7 +68,7 @@ describe("buildEffectiveScenarioConcepts", () => {
   });
 
   it("does not duplicate a signal id already present from free-text detection", () => {
-    const detected = detectConcepts("There was a false certification by the promoter.");
+    const detected = detectConcepts("There was a financial statement misstatement by the promoter.");
     expect(detected.some((c) => c.id === "promoter")).toBe(true);
     const merged = buildEffectiveScenarioConcepts(detected, "promoter", null, null);
     expect(merged.filter((c) => c.id === "promoter")).toHaveLength(1);
@@ -87,99 +87,99 @@ describe("buildEffectiveScenarioConcepts", () => {
 
 describe("dropdown-selected concepts are visible in matched-ingredient output, not just the score", () => {
   it("shows an actor selected only via the dropdown (never mentioned in free text) inside matchedFactualIngredients and matchedByCategory", () => {
-    const provision = makeProvision({ id: "TEST-PROV-SIGNAL-VISIBILITY" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const finding = makeFinding({
       recordId: "SYN-SIGNAL-01",
-      provisionIds: ["TEST-PROV-SIGNAL-VISIBILITY"],
-      allegedConduct: ["false_compliance_certification"],
+      provisionIds: ["IND-AS-1"],
+      allegedConduct: ["financial_statement_misstatement"],
       actorRoles: ["promoter"],
     });
     // Free text mentions the conduct but deliberately never says "promoter"
     // or any actor-role synonym - only the dropdown selection asserts it.
     const result = analyzeScenario(
-      { freeText: "There was a false certification.", actorSignal: "promoter" },
+      { freeText: "There was a financial statement misstatement.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-SIGNAL-VISIBILITY");
+    const pr = result.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(pr).toBeDefined();
     expect(pr!.matchedFactualIngredients).toContain("Promoter");
     expect(pr!.matchedByCategory.actorRoles).toContain("Promoter");
   });
 
   it("produces the identical score whether an actor fact is stated in free text or selected via the equivalent dropdown", () => {
-    const provision = makeProvision({ id: "TEST-PROV-SIGNAL-PARITY" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const finding = makeFinding({
       recordId: "SYN-PARITY-01",
-      provisionIds: ["TEST-PROV-SIGNAL-PARITY"],
-      allegedConduct: ["false_compliance_certification"],
+      provisionIds: ["IND-AS-1"],
+      allegedConduct: ["financial_statement_misstatement"],
       actorRoles: ["promoter"],
     });
     const viaFreeText = analyzeScenario(
-      { freeText: "There was a false certification by the promoter." },
+      { freeText: "There was a financial statement misstatement by the promoter." },
       [finding],
       [provision],
       []
     );
     const viaSignal = analyzeScenario(
-      { freeText: "There was a false certification.", actorSignal: "promoter" },
+      { freeText: "There was a financial statement misstatement.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
     );
-    const prText = viaFreeText.provisionResults.find((p) => p.provision.id === "TEST-PROV-SIGNAL-PARITY");
-    const prSignal = viaSignal.provisionResults.find((p) => p.provision.id === "TEST-PROV-SIGNAL-PARITY");
+    const prText = viaFreeText.provisionResults.find((p) => p.provision.id === "IND-AS-1");
+    const prSignal = viaSignal.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(prText).toBeDefined();
     expect(prSignal).toBeDefined();
     expect(prSignal!.supportingPrecedents[0].score).toBe(prText!.supportingPrecedents[0].score);
   });
 
   it("does not double-count when the same fact is both free-text-detected and separately selected via the dropdown", () => {
-    const provision = makeProvision({ id: "TEST-PROV-NO-DOUBLE-COUNT" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const finding = makeFinding({
       recordId: "SYN-NO-DOUBLE-01",
-      provisionIds: ["TEST-PROV-NO-DOUBLE-COUNT"],
-      allegedConduct: ["false_compliance_certification"],
+      provisionIds: ["IND-AS-1"],
+      allegedConduct: ["financial_statement_misstatement"],
       actorRoles: ["promoter"],
     });
     const redundant = analyzeScenario(
-      { freeText: "There was a false certification by the promoter.", actorSignal: "promoter" },
+      { freeText: "There was a financial statement misstatement by the promoter.", actorSignal: "promoter" },
       [finding],
       [provision],
       []
     );
     const freeTextOnly = analyzeScenario(
-      { freeText: "There was a false certification by the promoter." },
+      { freeText: "There was a financial statement misstatement by the promoter." },
       [finding],
       [provision],
       []
     );
-    const prRedundant = redundant.provisionResults.find((p) => p.provision.id === "TEST-PROV-NO-DOUBLE-COUNT");
-    const prFreeTextOnly = freeTextOnly.provisionResults.find((p) => p.provision.id === "TEST-PROV-NO-DOUBLE-COUNT");
+    const prRedundant = redundant.provisionResults.find((p) => p.provision.id === "IND-AS-1");
+    const prFreeTextOnly = freeTextOnly.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(prRedundant!.supportingPrecedents[0].score).toBe(prFreeTextOnly!.supportingPrecedents[0].score);
   });
 
   it("folds a dropdown-selected fact into justifyingTags gating on a per-provision link, same as a free-text one would", () => {
-    const provision = makeProvision({ id: "TEST-PROV-NARROW" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const finding = makeFinding({
       recordId: "SYN-NARROW-01",
-      provisionIds: ["TEST-PROV-NARROW"],
-      allegedConduct: ["false_compliance_certification"],
+      provisionIds: ["IND-AS-1"],
+      allegedConduct: ["financial_statement_misstatement"],
       evidenceTypes: ["bank_statements_flow"],
-      provisionLinks: [{ provisionId: "TEST-PROV-NARROW", justifyingTags: ["bank_statements_flow"] }],
+      provisionLinks: [{ provisionId: "IND-AS-1", justifyingTags: ["bank_statements_flow"] }],
     });
     // Free text alone never mentions the evidence type, so the narrowed
     // link should not surface without the dropdown selection.
-    const withoutSignal = analyzeScenario({ freeText: "There was a false certification." }, [finding], [provision], []);
-    expect(withoutSignal.provisionResults.find((p) => p.provision.id === "TEST-PROV-NARROW")).toBeUndefined();
+    const withoutSignal = analyzeScenario({ freeText: "There was a financial statement misstatement." }, [finding], [provision], []);
+    expect(withoutSignal.provisionResults.find((p) => p.provision.id === "IND-AS-1")).toBeUndefined();
 
     const withSignal = analyzeScenario(
-      { freeText: "There was a false certification.", evidenceSignal: "bank_statements_flow" },
+      { freeText: "There was a financial statement misstatement.", evidenceSignal: "bank_statements_flow" },
       [finding],
       [provision],
       []
     );
-    expect(withSignal.provisionResults.find((p) => p.provision.id === "TEST-PROV-NARROW")).toBeDefined();
+    expect(withSignal.provisionResults.find((p) => p.provision.id === "IND-AS-1")).toBeDefined();
   });
 });

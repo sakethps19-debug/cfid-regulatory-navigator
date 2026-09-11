@@ -182,11 +182,19 @@ describe("detectConcepts — synonym-list precision", () => {
     expect(detected.map((d) => d.id)).toContain("non_cooperation_with_investigation");
   });
 
-  it("detects an Audit Committee deficiency described as existing only on paper", () => {
+  // Checkpoint correction 3, P1: this text states only that documentary
+  // evidence (minutes/agendas) could not be produced — the current
+  // official LODR Regulation 18(2)(a) predicate is that a meeting was not
+  // held, which an absence of paperwork does not itself establish. Now
+  // detected as the dedicated evidentiary concept, not the substantive
+  // audit_committee_deficiency breach predicate — see
+  // audit_committee_meeting_documentation_gap in concept-tags.ts.
+  it("detects an Audit Committee meeting documentation gap as evidentiary, not a substantive meeting-not-held breach", () => {
     const text =
       "Although the company's annual report listed an Audit Committee with the required composition, no meeting minutes, agendas or attendance records could be produced for any financial year under review.";
     const detected = detectConcepts(text);
-    expect(detected.map((d) => d.id)).toContain("audit_committee_deficiency");
+    expect(detected.map((d) => d.id)).toContain("audit_committee_meeting_documentation_gap");
+    expect(detected.map((d) => d.id)).not.toContain("audit_committee_deficiency");
   });
 
   it("detects false compliance certification phrased with 'compliance' between the two key words", () => {

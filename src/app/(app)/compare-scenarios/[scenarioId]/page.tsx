@@ -5,6 +5,7 @@ import { Card } from "@/components/Card";
 import { CompareScenariosResultClient } from "@/components/CompareScenariosResultClient";
 import { directionsForOrderIds, getMatters, getOrders, getProvisions, getScenarioFindings } from "@/lib/data";
 import { buildScenarioComparison, findingsForScenario, getComparableScenario, summarizeScenarioComparison } from "@/lib/scenarioComparison";
+import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses";
 
 export default async function CompareScenariosResultPage({ params }: { params: Promise<{ scenarioId: string }> }) {
   const { scenarioId } = await params;
@@ -64,7 +65,7 @@ export default async function CompareScenariosResultPage({ params }: { params: P
             <dd className="text-lg font-semibold text-[var(--color-ink-900)]">{summary.notEstablishedFindings}</dd>
           </div>
         </dl>
-        <p className="mt-3 max-w-prose text-xs text-[var(--color-ink-500)]">
+        <p className={`mt-3 text-xs text-[var(--color-ink-500)] ${NARRATIVE_PROSE_CLASSES}`}>
           Descriptive corpus counts only, not a rate or a legal probability. Historical treatment is context-specific: inclusion of a matter in
           this comparison does not mean the same provision or outcome applies to another factual scenario.
         </p>

@@ -35,7 +35,11 @@ describe("app shell: tiered workspace width (Part 1/2/14)", () => {
   });
 
   it("does not touch DisclaimerBanner, footer, or navigation architecture", () => {
-    expect(layout).toContain("<NavBar />");
+    // P0-1 correction: NavBar now takes an isAdmin prop (server-computed in
+    // this layout via isAdminEmail) so it can hide the Admin Dashboard link
+    // from a non-admin -- the literal "<NavBar />" self-closing-with-no-
+    // props tag is gone by design, not a regression.
+    expect(layout).toMatch(/<NavBar isAdmin=\{isAdmin\}\s*\/>/);
     expect(layout).toContain("<DisclaimerBanner />");
     expect(layout).toContain("no-print");
   });
@@ -48,33 +52,69 @@ describe("custom 3xl breakpoint for large/meeting-room displays (Part 2/15)", ()
   });
 });
 
-describe("readable prose measure separated from workspace width (Part 13)", () => {
-  it("Order Detail's Scope Note, Issues Examined and Directions/Outcomes narrative are capped at max-w-prose, not left to stretch full-width", () => {
+describe("readable prose measure separated from workspace width (Part 13, superseded in part by the live-officer-review global-width/justify correction)", () => {
+  // Second-checkpoint correction: the Rajesh Exports Case Detail review
+  // established that "data-derived narrative field" was NOT a valid excuse
+  // to keep Scope Note (and similar substantive prose) trapped at
+  // max-w-prose -- only genuinely long-form/verbatim content (the statutory
+  // blockquote below) keeps that narrower, unjustified measure. Scope Note,
+  // Directions/Outcomes narrative, and every other substantive explanatory
+  // paragraph on Case Detail now use the shared NARRATIVE_PROSE_CLASSES
+  // constant (tiered widening + text-justify, live-officer-review global
+  // text-alignment requirement) instead of a literal max-w-prose cap.
+  it("Order Detail's Scope Note and Directions/Outcomes narrative use the shared NARRATIVE_PROSE_CLASSES (tiered width + justify), no longer a flat max-w-prose cap", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
+    expect(page).toContain('import { resolveOrderNoticees } from "@/lib/orderNoticees"');
+    expect(page).toContain('import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses"');
     // Scope note dd
-    expect(page).toMatch(/Scope note[\s\S]{0,400}<dd className="[^"]*max-w-prose[^"]*"/);
-    // Issues examined dd
-    expect(page).toMatch(/Issues examined[\s\S]{0,150}<dd className="[^"]*max-w-prose[^"]*"/);
+    expect(page).toMatch(/Scope note[\s\S]{0,500}<dd className=\{`[^`]*\$\{NARRATIVE_PROSE_CLASSES\}`\}>/);
     // Directions & outcomes narrative paragraph
-    expect(page).toMatch(/directions\.map[\s\S]{0,200}<p className="[^"]*max-w-prose[^"]*">\{d\.directionOrOutcome\}/);
+    expect(page).toMatch(/directions\.map[\s\S]{0,300}<p className=\{`[^`]*\$\{NARRATIVE_PROSE_CLASSES\}`\}>\{d\.directionOrOutcome\}/);
+    // Neither still uses the old flat cap
+    expect(page).not.toMatch(/Scope note[\s\S]{0,400}<dd className="[^"]*max-w-prose[^"]*"/);
+    expect(page).not.toMatch(/directions\.map[\s\S]{0,200}<p className="[^"]*max-w-prose[^"]*">\{d\.directionOrOutcome\}/);
   });
 
-  it("Provision Detail's verbatim statutory text stays at readable measure even though the surrounding Card may be wide", () => {
+  it("Issues Examined widens on wide displays (tiered) but is deliberately NOT justified -- a short label list, not paragraph prose", () => {
+    const page = src("src/app/(app)/orders/[id]/page.tsx");
+    expect(page).toMatch(/Issues examined[\s\S]{0,500}<dd className="[^"]*max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl[^"]*">\{issuesExamined\.join/);
+    expect(page).not.toMatch(/Issues examined[\s\S]{0,500}<dd className="[^"]*max-w-prose[^"]*"/);
+  });
+
+  it("Provision Detail's verbatim statutory text stays at readable, unjustified measure even though the surrounding Card may be wide -- deliberately the one remaining fixed-measure exception (quoted statute text, not narrative prose)", () => {
     const page = src("src/app/(app)/provisions/[id]/page.tsx");
     expect(page).toMatch(/<blockquote className="[^"]*max-w-prose[^"]*"/);
   });
 
-  it("Fixed Scenario Analysis's 'what this covers' explanation is prose-width constrained", () => {
+  it("Fixed Scenario Analysis's 'what this covers' explanation widens on wide displays and is justified via the shared NARRATIVE_PROSE_CLASSES constant, instead of the old flat max-w-prose cap or a duplicated literal class list", () => {
     const comp = src("src/components/analyzer/FixedScenarioAnalyzer.tsx");
-    expect(comp).toMatch(/What this covers[\s\S]{0,80}<p className="[^"]*max-w-prose[^"]*">\{scenario\.explanation\}/);
+    expect(comp).toMatch(/What this covers[\s\S]{0,1000}<p className=\{`[^`]*\$\{NARRATIVE_PROSE_CLASSES\}`\}>\{scenario\.explanation\}/);
+    expect(comp).not.toMatch(/What this covers[\s\S]{0,1000}<p className="[^"]*max-w-prose[^"]*">\{scenario\.explanation\}/);
   });
 
-  it("legal/research prose measure is never applied by shrinking font size (Part 16: do not solve width via smaller text)", () => {
+  it("legal/research prose measure is never applied by shrinking font size (Part 16: do not solve width via smaller text) -- Scope Note keeps its text-sm sizing alongside the new tiered/justified measure", () => {
     const page = src("src/app/(app)/orders/[id]/page.tsx");
-    // The prose-measure dd/p tags introduced by this pass keep their
-    // existing text-sm sizing; max-w-prose narrows the line length, not the
-    // font.
-    expect(page).toMatch(/max-w-prose text-left text-sm/);
+    expect(page).toMatch(/Scope note[\s\S]{0,500}<dd className=\{`mt-1 text-sm text-\[var\(--color-ink-700\)\]/);
+  });
+
+  it("Order Detail's static explanatory paragraphs (matter-siblings intro, finding-level-linkage caveat, provisions-considered intro) widen on wide displays and are justified via the shared prose classes, instead of the old flat max-w-prose cap or one-off literal classes", () => {
+    const page = src("src/app/(app)/orders/[id]/page.tsx");
+    expect(page).toMatch(/Other orders in the same matter[\s\S]{0,300}<p className=\{`mb-4 text-sm text-\[var\(--color-ink-700\)\] \$\{NARRATIVE_PROSE_CLASSES\}`\}>/);
+    expect(page).toMatch(/<p className=\{`mb-3 text-xs italic text-\[var\(--color-ink-500\)\] \$\{NARRATIVE_PROSE_CLASSES\}`\}>\s*\n\s*Provision linkage is recorded at finding level/);
+    expect(page).toMatch(/<p className=\{`mb-1 text-xs text-\[var\(--color-ink-500\)\] \$\{NARRATIVE_JUSTIFY_ONLY\}`\}>\s*\n\s*Every provision cited by this order/);
+  });
+
+  it("Compare Scenarios detail's corpus-counts caveat paragraph widens on wide displays and is justified via the shared prose classes, instead of the old flat max-w-prose cap or a one-off literal class list", () => {
+    const page = src("src/app/(app)/compare-scenarios/[scenarioId]/page.tsx");
+    expect(page).toContain('import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses"');
+    expect(page).toMatch(/<p className=\{`mt-3 text-xs text-\[var\(--color-ink-500\)\] \$\{NARRATIVE_PROSE_CLASSES\}`\}>\s*\n\s*Descriptive corpus counts only/);
+  });
+
+  it("Order Detail's 'Broad scenarios arising from this order' section (OrderBroadScenarios.tsx) carries the quantum-integrity disclaimer and justifies its finding-derived descriptions, without introducing a new amount-parsing/inference engine", () => {
+    const comp = src("src/components/OrderBroadScenarios.tsx");
+    expect(comp).toContain('import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses"');
+    expect(comp).toMatch(/is itself an established quantum of diversion, siphoning or misutilisation/);
+    expect(comp).not.toMatch(/parseFloat|parseInt|Number\(|\/crore\/|\/₹|matchAll/);
   });
 });
 
@@ -84,10 +124,15 @@ describe("grids gain columns on wide displays without excluding narrower ones (P
     expect(page).toMatch(/grid gap-4 sm:grid-cols-2 xl:grid-cols-3/);
   });
 
-  it("Fixed Scenario Analysis's scenario-card grid gains a column at xl, and its provision-groups list becomes two columns at xl", () => {
+  it("Fixed Scenario Analysis's scenario-card grid gains a column at xl, and its provision-groups list becomes two balanced columns at xl", () => {
     const comp = src("src/components/analyzer/FixedScenarioAnalyzer.tsx");
     expect(comp).toMatch(/grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
-    expect(comp).toMatch(/grid grid-cols-1 gap-4 xl:grid-cols-2/);
+    // Pre-presentation visual QA pass: switched from a fixed grid split
+    // (one instrument group per column, which left a large dead gap under
+    // whichever group had fewer items) to CSS multi-column layout, which
+    // balances total content height across columns instead.
+    expect(comp).toMatch(/columns-1 gap-8 xl:columns-2/);
+    expect(comp).toMatch(/break-inside-avoid/);
   });
 
   it("Law Library's regulator/instrument/provision browse grids gain columns at wider tiers", () => {

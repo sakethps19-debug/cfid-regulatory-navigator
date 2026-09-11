@@ -80,10 +80,10 @@ describe("publication_status exclusion", () => {
   }
 
   it('still surfaces a finding with publicationStatus "Published with warning"', () => {
-    const provision = makeProvision({ id: "TEST-PROV-PUB-WARN" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const finding = makeFinding({
       recordId: "SYN-PUB-WARN",
-      provisionIds: ["TEST-PROV-PUB-WARN"],
+      provisionIds: ["LODR-17-8"],
       publicationStatus: "Published with warning",
     });
     const result = analyzeScenario(
@@ -92,16 +92,16 @@ describe("publication_status exclusion", () => {
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-PUB-WARN");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     expect(pr!.supportingPrecedents[0].finding.publicationStatus).toBe("Published with warning");
   });
 
   it("excludes a Withdrawn (publicationStatus) finding from the full-text supplemental search too", () => {
-    const provision = makeProvision({ id: "TEST-PROV-PUB-FTS" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const quarantined = makeFinding({
       recordId: "SYN-PUB-FTS-01",
-      provisionIds: ["TEST-PROV-PUB-FTS"],
+      provisionIds: ["LODR-17-8"],
       publicationStatus: "Quarantined",
     });
     const result = analyzeScenario(

@@ -1,9 +1,14 @@
 import type { FindingStatus } from "@/types/domain";
-import { findingStatusLabel } from "@/lib/findingStatusDisplay";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 
-// Drawn from the consolidated semantic-status tokens in globals.css — never
-// the sole signal (the status text itself is always shown alongside the
-// colour).
+// Post-checkpoint-5 officer-UX overhaul: this badge now shows the finding's
+// DISPOSITION only — never a guessed order stage (see OrderStageBadge for
+// the actual Order.orderStage badge, which callers should render alongside
+// this one wherever an Order is available) and never the bare word
+// "Alleged"/"Prima facie" (global officer-facing product rule — neither may
+// function as a status badge). For those two statuses findingDispositionLabel
+// returns null and this component renders nothing at all, rather than a
+// stage guess or a bare allegation-stage word dressed up as a disposition.
 const STYLES: Record<FindingStatus, string> = {
   Alleged: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] ring-[var(--status-neutral-ring)]",
   "Prima facie": "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
@@ -17,9 +22,9 @@ const STYLES: Record<FindingStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: FindingStatus }) {
+  const label = findingDispositionLabel(status);
+  if (!label) return null;
   return (
-    <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${STYLES[status]}`}>
-      {findingStatusLabel(status)}
-    </span>
+    <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${STYLES[status]}`}>{label}</span>
   );
 }

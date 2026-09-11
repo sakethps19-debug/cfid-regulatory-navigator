@@ -6,13 +6,21 @@ import type { FindingStatus, LegalInstrument, LegalProvision, ScenarioFinding } 
 import { Card } from "@/components/Card";
 import { sortByProvisionNumber } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority, type RegulatorSlug } from "@/lib/regulators";
-import { findingStatusLabel } from "@/lib/findingStatusDisplay";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 import { matchScenariosForQuery } from "@/lib/broadScenarioMatch";
 import { resolveFixedScenario } from "@/lib/fixedScenarioResolver";
 
-const STATUS_ORDER: FindingStatus[] = [
-  "Alleged",
-  "Prima facie",
+// Independent-audit correction (P0-2): this used to include "Alleged" and
+// "Prima facie" as selectable filter/status values, rendered via
+// findingStatusLabel's fuller export-only prose -- but a FILTER OPTION is
+// exactly the "classification badge/filter" surface the product rule
+// prohibits for those two statuses, regardless of how the label is worded.
+// Neither carries an actual disposition (findingDispositionLabel returns
+// null for both), so neither belongs in a "filter/browse by disposition"
+// control -- a finding at that stage remains fully visible everywhere else
+// (Order Detail, Case Journey, etc.), it simply isn't offered as a
+// disposition filter value here.
+const DISPOSITION_STATUS_ORDER: FindingStatus[] = [
   "Confirmed at interim",
   "Confirmed in Final Order",
   "Partly Confirmed in Final Order",
@@ -52,7 +60,7 @@ export function LawLibraryClient({
 
   const statusesPresent = useMemo(() => {
     const set = new Set(findings.map((f) => f.findingStatus));
-    return STATUS_ORDER.filter((s) => set.has(s));
+    return DISPOSITION_STATUS_ORDER.filter((s) => set.has(s));
   }, [findings]);
 
   const provisionCountByInstrument = useMemo(() => {
@@ -172,7 +180,7 @@ export function LawLibraryClient({
               statusFilter === s ? "bg-[var(--color-gold-700)] text-white ring-[var(--color-gold-700)]" : "bg-white text-[var(--color-ink-700)] border-[var(--color-border)] hover:bg-[var(--color-neutral-50)]"
             }`}
           >
-            {findingStatusLabel(s)}
+            {findingDispositionLabel(s)}
           </button>
         ))}
       </div>
@@ -199,11 +207,20 @@ export function LawLibraryClient({
                           <div className="font-medium text-[var(--color-ink-900)]">{p.provisionNumber}</div>
                           <div className="text-sm text-[var(--color-ink-700)]">{p.subject}</div>
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            {[...counts.entries()].map(([status, n]) => (
-                              <span key={status} className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
-                                {n} {findingStatusLabel(status).toLowerCase()}
-                              </span>
-                            ))}
+                            {[...counts.entries()].flatMap(([status, n]) => {
+                              // Independent-audit correction (P0-2): a
+                              // finding with no actual disposition
+                              // (Alleged/Prima facie) is never given a
+                              // fabricated one here -- it simply
+                              // contributes nothing to this chip row rather
+                              // than rendering "N alleged" as a status tag.
+                              const label = findingDispositionLabel(status);
+                              return label ? (
+                                <span key={status} className="rounded-sm bg-[var(--color-neutral-100)] px-2 py-0.5 text-xs text-[var(--color-ink-700)]">
+                                  {n} {label.toLowerCase()}
+                                </span>
+                              ) : [];
+                            })}
                             {relatedOrderCount > 0 && (
                               <span className="text-xs text-[var(--color-ink-500)]">
                                 {relatedOrderCount} related order{relatedOrderCount === 1 ? "" : "s"}

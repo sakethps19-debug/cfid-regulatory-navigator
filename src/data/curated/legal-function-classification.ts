@@ -90,6 +90,22 @@ export const LEGAL_FUNCTION_BY_PROVISION: Record<string, LegalFunctionCategory> 
   "PFUTP-4-2-f": "substantive_prohibition",
   "PFUTP-4-2-k": "substantive_prohibition",
   "PFUTP-4-2-r": "substantive_prohibition",
+  // Checkpoint correction 2, item 1: PFUTP-4-2-h and PFUTP-4-2-s previously
+  // had no entry here. Independently verified against the current official
+  // SEBI PFUTP Regulations, 2003 text (consolidated to June 28, 2024,
+  // confirmed current against the corpus's own official_source_url dates):
+  // 4(2)(h) prohibits "selling, dealing or pledging of stolen, counterfeit
+  // or fraudulently issued securities"; 4(2)(s) prohibits "mis-selling of
+  // securities or services relating to securities market" (defined via a
+  // false/misleading statement, concealment of material facts, concealment
+  // of risk, or failure to ensure suitability). Both sit in the same
+  // Regulation 4(2) deeming-clause family as the already-classified
+  // siblings immediately above (each an independent, self-contained
+  // prohibited-conduct clause an officer could investigate on its own),
+  // genuinely substantive_prohibition — no basis to treat them differently
+  // from 4(2)(a)/(b)/(c)/(e)/(f)/(k)/(r).
+  "PFUTP-4-2-h": "substantive_prohibition",
+  "PFUTP-4-2-s": "substantive_prohibition",
 
   // ----- SEBI Act, 1992 -----
   "SEBI-ACT-12A-a": "substantive_prohibition",
@@ -123,6 +139,37 @@ export const LEGAL_FUNCTION_BY_PROVISION: Record<string, LegalFunctionCategory> 
   "LODR-30": "disclosure_obligation",
   "LODR-31-statement": "disclosure_obligation",
   "LODR-32": "disclosure_obligation",
+  // Checkpoint correction 2, item 1: LODR-32-1/4/5 previously had no entry
+  // here — added to the corpus after this map was built. Independently
+  // verified against the current official SEBI LODR Regulations, 2015 text
+  // (amended to July 14, 2026; /tmp/lodr_2026_full.txt, Regulation 32 —
+  // "Statement of deviation(s) or variation(s)"), read directly: 32(1)
+  // requires a quarterly statement to the stock exchange of deviation
+  // between disclosed issue objects and actual utilisation of proceeds
+  // (required every quarter, "if any" deviation exists); 32(4) requires
+  // the listed entity to furnish an explanation for that variation in the
+  // directors' report in the Annual Report; 32(5) requires an annual
+  // statement of funds used for OTHER purposes, certified by the
+  // statutory auditors, placed before the Audit Committee. Checkpoint
+  // correction 3 corrected a mischaracterization of 32(4) in this
+  // comment's earlier revision (it has no Audit Committee-involvement
+  // text of its own — that is 32(3), not separately indexed in this
+  // corpus; 32(5) is the sub-regulation that combines auditor
+  // certification with Audit Committee placement). All three remain
+  // reporting/monitoring sub-duties of the SAME underlying obligation
+  // (accurate accounting for how issue proceeds were actually applied) —
+  // cumulative sub-clauses of one Regulation, not chapter-specific
+  // alternatives the way ICDR-24-1/245-1 are — so all three genuinely
+  // share accounting_reporting_requirement, consistent with their own
+  // sibling LODR-32 (bare/legacy id) above. Checkpoint correction 3, P0-2:
+  // "cumulative" describes how these three duties relate to EACH OTHER
+  // (none supersedes or subsumes another), never a licence to gate all
+  // three on one shared factual predicate — each still independently
+  // requires its OWN sub-duty-specific retrieval prerequisite; see
+  // provision-retrieval-rules.ts.
+  "LODR-32-1": "accounting_reporting_requirement",
+  "LODR-32-4": "accounting_reporting_requirement",
+  "LODR-32-5": "accounting_reporting_requirement",
   "LODR-33-1-a": "accounting_reporting_requirement",
   "LODR-33-1-c": "accounting_reporting_requirement",
   "LODR-33-1-d": "accounting_reporting_requirement",
@@ -168,6 +215,24 @@ export const LEGAL_FUNCTION_BY_PROVISION: Record<string, LegalFunctionCategory> 
   "ICDR-158-CH-V": "substantive_prohibition",
   "ICDR-160": "substantive_prohibition",
   "ICDR-167": "substantive_prohibition",
+  // Checkpoint correction 2, item 1: ICDR-24-1 and ICDR-245-1 previously had
+  // no entry here (silently "other") — LEGAL_FUNCTION_BY_PROVISION predated
+  // their addition to the corpus. Independently verified against the
+  // current official SEBI ICDR Regulations, 2018 text (consolidated to
+  // March 21, 2026; /tmp/icdr_2026_full.txt lines 1663-1665 and
+  // 9123-9125), read directly, not via this map, prior app labels, or any
+  // secondary source: Regulation 24(1) ("Disclosures in the draft offer
+  // document and offer document", Part VI Chapter III, main-board issues)
+  // and Regulation 245(1) (the textually identical SME-chapter counterpart,
+  // Chapter IX) both state "[the draft] offer document shall contain all
+  // material disclosures which are true and adequate ... to enable the
+  // applicants to take an informed investment decision" — an affirmative
+  // disclosure duty an officer could independently investigate as the
+  // substance of a charge, genuinely disclosure_obligation, not "other".
+  // The two ids are chapter-specific alternatives (main-board vs SME issue),
+  // never simultaneously applicable to the same offer document.
+  "ICDR-24-1": "disclosure_obligation",
+  "ICDR-245-1": "disclosure_obligation",
 
   // ----- Indian Accounting Standards -----
   "IND-AS-1": "accounting_reporting_requirement",
@@ -190,7 +255,14 @@ export const LEGAL_FUNCTION_BY_PROVISION: Record<string, LegalFunctionCategory> 
   "LODR-4-1-general": "general_principle",
   "LODR-33": "accounting_reporting_requirement",
   "LODR-34": "disclosure_obligation",
-  "LODR-18-audit-committee-bundle": "governance_procedural_obligation",
+  // Checkpoint correction 2, item 1's new structural regression caught a
+  // pre-existing key-name mismatch here: this fixture id is actually
+  // "LODR-audit-committee" (see provision-retrieval-rules.ts and
+  // src/data/generated/provisions.json/scenarioFindings.json), not
+  // "LODR-18-audit-committee-bundle" — the latter was never a real id
+  // anywhere in the codebase, so it silently satisfied nothing while the
+  // real id silently fell back to "other". Fixed to the real id.
+  "LODR-audit-committee": "governance_procedural_obligation",
 
   // ----- Companies Act, 2013 -----
   "COMPANIES-ACT-136": "disclosure_obligation",

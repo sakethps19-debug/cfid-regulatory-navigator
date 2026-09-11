@@ -21,8 +21,6 @@ import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { buildProvisionCitationSentences } from "@/lib/provisionCitationParagraph";
 import { findingStatusLabel } from "@/lib/findingStatusDisplay";
 import { matchStrengthLabel, MATCH_STRENGTH_EXPLAINER } from "@/lib/matchStrengthDisplay";
-import { legalReviewLabel } from "@/lib/publicationLifecycle";
-import { findingMaturityTier } from "@/lib/findingMaturity";
 import { supportCategory } from "@/lib/matching/engine";
 import { formatDate, formatDateTime } from "@/lib/formatDate";
 import { buildIndicativeRegulatoryAssessment } from "@/lib/indicativeAssessment";
@@ -126,70 +124,113 @@ const COMPLETENESS_LABELS: Record<string, string> = {
 
 const TEMPLATE_GROUP_ORDER = ["Financial reporting", "Fund flows", "Governance & disclosure"] as const;
 
-const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number] }[] = [
+// Part 3 architectural normalization: `themeId`, an optional cross-
+// reference to a FIXED_SCENARIOS canonical scenario id (fixed-scenarios.ts
+// — the SAME registry Fixed Scenario Analysis, Compare Scenarios, Law
+// Library fact search, and Case/Order Detail's "broad CFID scenarios"
+// summary already all consume, see broadScenarioMatch.ts). This does NOT
+// merge the two scoring models: a quick-start template's own text still
+// runs through the full deterministic free-text engine exactly as before,
+// and a FixedScenario's own provisionIds remain independently curated —
+// themeId only records "this illustrative example belongs to the same
+// broad investigation theme as [that canonical scenario]" for cross-
+// navigation and so the two taxonomies stop being two unrelated,
+// independently-authored English-language descriptions of what is often
+// the same real-world category. Left undefined where no genuine,
+// non-overbroad correspondence exists — never force-mapped merely to
+// avoid an empty field (see "Statutory auditor negligence", "False
+// CEO/CFO certification" and "Director duties / non-cooperation" below:
+// each is either a genuine corpus gap or a fact pattern Part 4 already
+// flags as needing to stay legally distinct from its nearest broader
+// theme, so mapping it there would misleadingly suggest an equivalence).
+export const EXAMPLE_SCENARIOS: { label: string; text: string; group: (typeof TEMPLATE_GROUP_ORDER)[number]; themeId?: string }[] = [
   {
     label: "Fictitious sales/assets",
     group: "Financial reporting",
+    themeId: "financial-statement-misrepresentation",
     text: "For the last three years, the company recorded fictitious sales with counterparties that deny ever transacting with it, and its financial statements show assets that are not genuine and cannot be verified against any underlying delivery, inventory or bank records.",
   },
   {
     label: "Promoter's personal derivative trades as revenue",
     group: "Financial reporting",
+    themeId: "financial-statement-misrepresentation",
     text: "The promoter's personal derivative transactions were recorded in the company's own standalone financial statements as if they were the company's own sales and purchases, resulting in inflated sales and inflated profit for the company.",
   },
   {
     label: "False corporate announcement",
     group: "Financial reporting",
+    themeId: "false-misleading-incomplete-disclosures",
     text: "The company made a stock exchange announcement about an acquisition and future revenue projections that turned out to be unsubstantiated, with no supporting documentation for the claims made in the announcement.",
   },
   {
     label: "Statutory auditor negligence",
     group: "Financial reporting",
+    // No themeId: the corpus has no finding_provisions link tying an
+    // auditor-eligibility provision to genuine negligence conduct (see
+    // tests/analyzer-template-audit.test.ts) -- a genuine corpus gap, not
+    // a taxonomy omission to be papered over with a loose theme match.
     text: "The statutory auditor certified the company's financial statements for several years without detecting circular transactions between connected entities, despite the volume and repetitive nature of those transactions.",
   },
   {
     label: "Preferential allotment / circular funding",
     group: "Fund flows",
+    themeId: "fraudulent-fictitious-allotment",
     text: "A preferential allotment of shares was allegedly financed through a circular chain of loans and advances. The loans are recorded in the company's audited accounts, but it is unclear whether the third-party lenders were ever examined, and the allottees appear to have kept the sale proceeds from the shares.",
   },
   {
     label: "Funds via personal account",
     group: "Fund flows",
+    themeId: "diversion-siphoning-misutilisation",
     text: "Company funds, including statutory and operating payments, were routed through the promoter's personal bank account without clear board approval or disclosure.",
   },
   {
     label: "Rights issue funds diverted",
     group: "Fund flows",
+    themeId: "diversion-siphoning-misutilisation",
     text: "The company raised funds through a rights issue and represented to shareholders that the proceeds would be used for stated objects, but a large portion of the money was moved out to related entities instead of being used for the disclosed purpose.",
   },
   {
     label: "Audit Committee lapse",
     group: "Governance & disclosure",
+    themeId: "audit-committee-governance-irregularities",
     text: "The Audit Committee does not appear to have been properly constituted, and annual reports claim meetings were held for which no agendas or minutes can be produced.",
   },
   {
     label: "Related-party transaction not disclosed",
     group: "Governance & disclosure",
+    themeId: "related-party-transaction-irregularities",
     text: "The company entered into a related-party transaction with a counterparty connected to the promoter, but the transaction was not disclosed in the related-party register and appears to have been misrepresented as an arm's-length dealing with an unconnected vendor.",
   },
   {
     label: "Compliance Officer vacancy",
     group: "Governance & disclosure",
+    themeId: "compliance-officer-irregularities",
     text: "The position of Compliance Officer / Company Secretary remained vacant for an extended period without a proper appointment, and no interim arrangement was disclosed to the stock exchanges.",
   },
   {
     label: "False CEO/CFO certification",
     group: "Governance & disclosure",
+    // No themeId: the nearest theme (audit-committee-governance-
+    // irregularities) is a broader governance-failure family Part 4 has
+    // already flagged for eventual splitting -- mapping this template to
+    // it now would read as exactly the conflation Part 4 exists to avoid,
+    // even though themeId is only a cross-navigation pointer, not a
+    // scoring merge.
     text: "The Chief Executive Officer and Chief Financial Officer signed the quarterly compliance certification despite being aware of misstatements in the financial statements, and the certificate was not duly signed in accordance with the applicable regulation.",
   },
   {
     label: "Director duties / non-cooperation",
     group: "Governance & disclosure",
+    // No themeId, same reasoning as False CEO/CFO certification above --
+    // this is itself one of the templates Part 4 requires splitting into
+    // two legally distinct fact patterns; deferring its themeId until
+    // after that split rather than mapping the combined template now.
     text: "The independent directors failed to raise concerns despite red flags in the related-party transactions placed before the board, and the company did not cooperate with the investigation, failing to produce records called for by summons.",
   },
   {
     label: "Price/market manipulation",
     group: "Governance & disclosure",
+    themeId: "fraudulent-manipulative-conduct-broad",
     text: "A group of connected trading accounts executed synchronized trades in the company's shares with no genuine change in beneficial ownership, creating an artificial appearance of trading volume and inducing other investors to deal in the security.",
   },
 ];
@@ -357,7 +398,7 @@ function downloadTextFile(filename: string, content: string, mimeType = "text/pl
 
 export function resultToText(result: AnalysisResult): string {
   const lines: string[] = [];
-  lines.push("CFID Regulatory Navigator: Scenario Analysis (research assistance only)");
+  lines.push("SPARC: Scenario Analysis (research assistance only)");
   lines.push(`Generated: ${formatDateTime(new Date())}`);
   lines.push("");
   lines.push("Scenario:");
@@ -426,7 +467,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Confirmed in Final Order in prior case(s):");
       for (const u of pr.upheldPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(u.finding.findingStatus)} · ${legalReviewLabel(u.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(u.finding)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(u.finding.findingStatus)}] ${u.finding.recordId} · ${u.finding.scenarioTitle} (${u.finding.finalParagraphReferences ?? u.finding.interimParagraphReferences}) · ${u.finding.officialSourceUrl}`
         );
       }
     } else {
@@ -435,7 +476,7 @@ export function resultToText(result: AnalysisResult): string {
     lines.push("Supporting precedent(s):");
     for (const s of pr.supportingPrecedents) {
       lines.push(
-        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.effectiveStatus)} · ${legalReviewLabel(s.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(s.finding)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
+        `  - [${findingStatusLabel(s.finding.findingStatus)} · ${supportCategory(s.effectiveStatus)}] ${s.finding.recordId} · ${s.finding.scenarioTitle} (${s.finding.finalParagraphReferences ?? s.finding.interimParagraphReferences}) · ${s.finding.officialSourceUrl}`
       );
       if (s.effectiveStatus !== s.finding.findingStatus) {
         lines.push(
@@ -453,7 +494,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push("Contrary precedent(s):");
       for (const c of pr.contraryPrecedents) {
         lines.push(
-          `  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
+          `  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} (${c.finding.finalParagraphReferences ?? c.finding.interimParagraphReferences}) · ${c.finding.officialSourceUrl}`
         );
         for (const item of c.finding.ingredientsNotEstablished) {
           lines.push(`      Legal ingredient not established (this precedent's own outcome): ${item}`);
@@ -475,7 +516,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push(`  ${cp.provision.instrument} · ${cp.provision.provisionNumber}: ${cp.note}`);
       for (const c of cp.contraryPrecedents) {
         lines.push(
-          `    - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`
+          `    - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`
         );
         for (const item of c.finding.ingredientsNotEstablished) {
           lines.push(`        Legal ingredient not established (this precedent's own outcome): ${item}`);
@@ -485,12 +526,12 @@ export function resultToText(result: AnalysisResult): string {
   }
   if (result.gateBlockedProvisionResults.length > 0) {
     lines.push("----------------------------------------");
-    lines.push("Provisions NOT shown as potentially relevant (retrieval prerequisite not met on the facts entered):");
+    lines.push("Additional Fact Required (retrieval prerequisite not yet met on the facts entered — not a Primary Candidate, but not ruled out either):");
     for (const gb of result.gateBlockedProvisionResults) {
       lines.push(`  ${gb.provision.instrument} · ${gb.provision.provisionNumber}: ${gb.note}`);
       for (const rp of gb.relatedFactualPrecedents) {
         lines.push(
-          `    - Related CFID factual precedent: [${findingStatusLabel(rp.finding.findingStatus)} · ${legalReviewLabel(rp.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(rp.finding)}] ${rp.finding.recordId} · ${rp.finding.scenarioTitle} · ${rp.finding.officialSourceUrl}`
+          `    - Related CFID factual precedent: [${findingStatusLabel(rp.finding.findingStatus)}] ${rp.finding.recordId} · ${rp.finding.scenarioTitle} · ${rp.finding.officialSourceUrl}`
         );
       }
     }
@@ -512,7 +553,7 @@ export function resultToText(result: AnalysisResult): string {
       lines.push(`  ${result.contraryPrecedentSearchNote}`);
     } else {
       for (const c of result.globalContraryPrecedents) {
-        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)} · ${legalReviewLabel(c.finding.humanLegalReviewCompleted)} · ${findingMaturityTier(c.finding)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
+        lines.push(`  - [${findingStatusLabel(c.finding.findingStatus)}] ${c.finding.recordId} · ${c.finding.scenarioTitle} · ${c.finding.officialSourceUrl}`);
         if (c.materialRelevanceNote) lines.push(`      ${c.materialRelevanceNote}`);
       }
     }
@@ -524,28 +565,13 @@ export function resultToText(result: AnalysisResult): string {
     );
     for (const f of result.fullTextSupplementalFindings) {
       lines.push(
-        `  - [${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.recordId} · ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"}) · ${f.officialSourceUrl}`
+        `  - [${findingStatusLabel(f.findingStatus)}] ${f.recordId} · ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"}) · ${f.officialSourceUrl}`
       );
     }
   }
   lines.push("");
-  const allReferencedFindings = [...new Map(
-    [
-      ...[
-        ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
-        ...result.globalContraryPrecedents,
-      ].map((p) => p.finding),
-      ...result.fullTextSupplementalFindings,
-    ].map((f) => [f.recordId, f])
-  ).values()];
-  const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
   lines.push(
-    "This result is based on the currently structured portion of the indexed case register; indexed orders that have not yet been deeply analysed are not represented here."
-  );
-  lines.push(
-    legallyReviewedCount === 0
-      ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-      : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`
+    "This result is based on the currently structured portion of the indexed case register; orders not yet included in that structured library are not represented here."
   );
   lines.push(
     "This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."
@@ -615,7 +641,7 @@ export function resultToResearchBrief(result: AnalysisResult): string {
   for (const gb of result.gateBlockedProvisionResults) {
     if (!gb.gateExplanation) continue;
     anyMissing = true;
-    lines.push(`- ${gb.provision.instrument} ${gb.provision.provisionNumber} is not yet shown as potentially relevant: ${gb.gateExplanation}`);
+    lines.push(`- ${gb.provision.instrument} ${gb.provision.provisionNumber} is Additional Fact Required, not yet a Primary Candidate: ${gb.gateExplanation}`);
   }
   if (!anyMissing) lines.push("None recorded for the provisions and precedents cited above.");
   lines.push("");
@@ -711,26 +737,17 @@ function csvRow(values: string[]): string {
  * text export carries (those don't collapse into flat rows cleanly);
  * "Export as text" or "Print" remain the complete record.
  *
- * Carries the same research-only / not-a-finding-of-guilt disclaimer and
- * legal-review status as the text export, as leading single-column rows
- * before the header row — a CSV is routinely forwarded, pasted into a
- * spreadsheet, or viewed on its own, detached from the page it came from,
- * so it must not read as a bare violation table with no caveat attached. */
+ * Carries the same research-only / not-a-finding-of-guilt disclaimer as the
+ * text export, as a leading single-column row before the header row — a
+ * CSV is routinely forwarded, pasted into a spreadsheet, or viewed on its
+ * own, detached from the page it came from, so it must not read as a bare
+ * violation table with no caveat attached. */
 export function resultToCsv(result: AnalysisResult): string {
   const rows: string[] = [];
-  rows.push(csvRow(["CFID Regulatory Navigator: Scenario Analysis (research assistance only)"]));
+  rows.push(csvRow(["SPARC: Scenario Analysis (research assistance only)"]));
   rows.push(csvRow([`Generated: ${formatDateTime(new Date())}`]));
   const sorted = [...result.provisionResults].sort((a, b) =>
     compareProvisionNumbers(a.provision.provisionNumber, b.provision.provisionNumber)
-  );
-  const referencedFindings = [...new Map(sorted.flatMap((pr) => pr.supportingPrecedents).map((s) => [s.finding.recordId, s.finding])).values()];
-  const legallyReviewedCount = referencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
-  rows.push(
-    csvRow([
-      legallyReviewedCount === 0
-        ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-        : `${legallyReviewedCount} of ${referencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`,
-    ])
   );
   rows.push(
     csvRow(["This is research assistance only. It does not conclude that any violation has occurred and must not be treated as a finding of guilt."])
@@ -744,10 +761,8 @@ export function resultToCsv(result: AnalysisResult): string {
       "Subject",
       "Factual overlap (not a legal-confidence rating)",
       "Supporting precedent count",
-      "Supporting precedents human-legally-reviewed",
       "Matched factual ingredients",
       "Supporting precedent record IDs",
-      "Supporting precedents record verification maturity (per precedent)",
       "Supporting precedents support category (per precedent)",
       "Missing facts / evidence (per cited precedent, never a universal requirement)",
       "Row note (set for 'Warranting caution', 'Not shown - prerequisite not met' and 'Full-text match only' rows)",
@@ -755,7 +770,6 @@ export function resultToCsv(result: AnalysisResult): string {
     ])
   );
   for (const pr of sorted) {
-    const reviewedCount = pr.supportingPrecedents.filter((s) => s.finding.humanLegalReviewCompleted).length;
     rows.push(
       csvRow([
         "Potentially relevant",
@@ -764,10 +778,8 @@ export function resultToCsv(result: AnalysisResult): string {
         pr.provision.subject ?? "",
         matchStrengthLabel(pr.confidence),
         String(pr.supportingPrecedents.length),
-        `${reviewedCount} of ${pr.supportingPrecedents.length}`,
         pr.matchedFactualIngredients.join("; "),
         pr.supportingPrecedents.map((s) => s.finding.recordId).join("; "),
-        pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${findingMaturityTier(s.finding)}`).join("; "),
         pr.supportingPrecedents.map((s) => `${s.finding.recordId}=${supportCategory(s.effectiveStatus)}`).join("; "),
         pr.missingFacts.map((group) => `${group.recordId}: ${group.gaps.join(" / ")}`).join("; "),
         "",
@@ -784,8 +796,6 @@ export function resultToCsv(result: AnalysisResult): string {
         cp.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -804,8 +814,6 @@ export function resultToCsv(result: AnalysisResult): string {
         gb.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -824,8 +832,6 @@ export function resultToCsv(result: AnalysisResult): string {
         gp.provision.subject ?? "",
         "",
         "0",
-        "0 of 0",
-        "",
         "",
         "",
         "",
@@ -844,13 +850,11 @@ export function resultToCsv(result: AnalysisResult): string {
         "",
         "",
         "0",
-        "0 of 0",
         "",
         "",
         "",
         "",
-        "",
-        `[${findingStatusLabel(f.findingStatus)} · ${legalReviewLabel(f.humanLegalReviewCompleted)} · ${findingMaturityTier(f)}] ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"})`,
+        `[${findingStatusLabel(f.findingStatus)}] ${f.scenarioTitle} (${f.finalParagraphReferences ?? f.interimParagraphReferences ?? "no paragraph reference on file"})`,
         f.recordId,
       ])
     );
@@ -1195,16 +1199,6 @@ export function ScenarioAnalyzerClient() {
         const citedProvisionSentences = buildProvisionCitationSentences(
           result.provisionResults.map((pr) => ({ instrument: pr.provision.instrument, provisionNumber: pr.provision.provisionNumber })),
         );
-        // Every finding referenced anywhere in this result, deduplicated —
-        // used only to check whether ANY of them has actually been legally
-        // reviewed, never to claim the result as a whole "is reviewed".
-        const allReferencedFindings = [...new Map(
-          [
-            ...result.provisionResults.flatMap((pr) => [...pr.supportingPrecedents, ...pr.contraryPrecedents, ...pr.upheldPrecedents]),
-            ...result.globalContraryPrecedents,
-          ].map((p) => [p.finding.recordId, p.finding])
-        ).values()];
-        const legallyReviewedCount = allReferencedFindings.filter((f) => f.humanLegalReviewCompleted).length;
         // Evidence is no longer collected as Analyzer input (see the
         // Evidence Indicator removal) — a scenario must never read as
         // "incomplete" merely because evidence wasn't stated, so "evidence"
@@ -1233,11 +1227,10 @@ export function ScenarioAnalyzerClient() {
 
           {result.hasResults && (
             <div className="rounded-sm bg-[var(--color-neutral-50)] px-4 py-2.5 text-xs text-[var(--color-ink-500)] ring-1 border-[var(--color-border)]">
-              This result is based on the currently structured portion of the indexed case register; indexed orders
-              that have not yet been deeply analysed are not represented here.{" "}
-              {legallyReviewedCount === 0
-                ? "No findings in this result have yet been legally reviewed or signed off by a CFID officer."
-                : `${legallyReviewedCount} of ${allReferencedFindings.length} referenced finding(s) in this result have been legally reviewed; the rest have not.`}
+              This result is based on the currently structured portion of the indexed case register; orders not yet
+              included in that structured library are not represented here. This tool does not certify that any
+              result has been independently checked against the underlying order — always verify every citation
+              against the official source before relying on it.
             </div>
           )}
 
@@ -1345,6 +1338,32 @@ export function ScenarioAnalyzerClient() {
               facts entered. This does not mean no provision applies, it means the pilot&apos;s precedent library
               does not contain a comparable factual pattern. Try adding more detail about the transaction type,
               actors involved, or the nature of the alleged conduct.
+            </div>
+          )}
+
+          {/* Part 3 correction (template-audit remediation): a scenario can
+              have zero provisionResults while still carrying gate-blocked or
+              governing candidates further down the page (e.g. "Statutory
+              auditor negligence" -- the underlying corpus has no
+              finding_provisions link tying an auditor provision to genuine
+              negligence conduct, only to an unrelated independence/aiding-
+              abetting finding, so nothing clears the ADVERSE-concept bar
+              provisionResults requires). Leaving that silently blank read as
+              the tool having failed; this makes the honest state explicit
+              and restrained -- it must never be read as a legal conclusion
+              that no violation exists or that no captured official order
+              ever considered such conduct, only that THIS corpus currently
+              has no structured, provision-linked precedent for it. */}
+          {result.hasResults && result.provisionResults.length === 0 && (
+            <div className="rounded-sm bg-[var(--color-neutral-50)] p-6 text-sm ring-1 border-[var(--color-border)]">
+              <p className="font-semibold text-[var(--color-ink-900)]">No captured CFID precedent currently mapped to this scenario.</p>
+              <p className="mt-2 text-[var(--color-ink-700)]">
+                This means only that the current captured corpus does not provide a structured, provision-linked
+                precedent for these facts. It does not mean that no violation exists, that SEBI has never considered
+                such conduct, that no Companies Act or SEBI obligation can apply, or that the allegation is legally
+                unsustainable — only that this pilot&apos;s corpus does not yet contain a comparable, structurally
+                linked finding to draw on.
+              </p>
             </div>
           )}
 

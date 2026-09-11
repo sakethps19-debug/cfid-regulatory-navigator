@@ -145,16 +145,21 @@ describe("Per-link finding_provisions.relationship overrides the finding's overa
     // LODR-31-statement, which the pre-merge legal-verification pass moved
     // to a gated rule — see disclosure-family-connectivity.test.ts) and
     // unrelated to this test's actual subject (per-link relationship/status
-    // classification).
-    const provision = makeProvision({ id: "LODR-2-zc" });
+    // classification). Checkpoint correction B retired the ungated-fallback
+    // path LODR-2-zc's leakage relied on (a bare "definition" provision
+    // reaching provisionResults purely via a linked precedent's conduct-tag
+    // overlap) — IND-AS-1 is a real, independently gated, actor-unrestricted
+    // single-concept provision used here purely as a vehicle, unrelated to
+    // this test's actual subject.
+    const provision = makeProvision({ id: "IND-AS-1" });
     const finding = makeFinding({
       recordId: "MOCK-02",
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["false_compliance_certification"],
+      allegedConduct: ["financial_statement_misstatement"],
       provisionIds: [provision.id],
       provisionLinks: [{ provisionId: provision.id, justifyingTags: [] }],
     });
-    const result = analyzeScenario({ freeText: "There was a false certification by a promoter-controlled entity." }, [finding], [provision], []);
+    const result = analyzeScenario({ freeText: "There was a financial statement misstatement by a promoter-controlled entity." }, [finding], [provision], []);
     const pr = result.provisionResults.find((p) => p.provision.id === provision.id);
     const ref = pr?.supportingPrecedents.find((s) => s.finding.recordId === "MOCK-02");
     expect(ref?.effectiveStatus).toBe("Confirmed in Final Order");

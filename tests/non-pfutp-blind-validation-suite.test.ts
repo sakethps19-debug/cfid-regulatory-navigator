@@ -143,8 +143,14 @@ const F_ISSUE_PROCEEDS = makeFinding({
 const F_GOVERNANCE = makeFinding({
   recordId: "NP-GOV-01",
   transactionTypes: ["audit_committee_process", "compliance_officer_appointment", "certification_process"],
-  allegedConduct: ["audit_committee_deficiency", "compliance_officer_deficiency", "false_compliance_certification"],
-  provisionLinks: [link(LODR_18_3.id, ["audit_committee_deficiency"]), link(LODR_6_GEN.id, ["compliance_officer_deficiency"]), link(LODR_17_8.id, ["false_compliance_certification"])],
+  // Checkpoint correction 2, item 2: audit_committee_composition_deficiency
+  // added — this finding is used as the shared "generic Audit Committee"
+  // fixture for scenarios stating a composition-only fact (#70), which no
+  // longer overlaps the narrowed audit_committee_deficiency (meetings-only)
+  // concept and would otherwise silently drop this finding's score below
+  // MIN_FINDING_SCORE.
+  allegedConduct: ["audit_committee_deficiency", "audit_committee_composition_deficiency", "compliance_officer_deficiency", "false_compliance_certification"],
+  provisionLinks: [link(LODR_18_3.id, ["audit_committee_deficiency", "audit_committee_composition_deficiency"]), link(LODR_6_GEN.id, ["compliance_officer_deficiency"]), link(LODR_17_8.id, ["false_compliance_certification"])],
 });
 const F_INVESTIGATION = makeFinding({
   recordId: "NP-INV-01",
@@ -271,7 +277,13 @@ const SCENARIOS: Scenario[] = [
   { n: 62, group: "Governance", freeText: "A non-executive director failed to raise concerns despite being aware of irregularities discussed at a board meeting.", mustNot: ["LODR-18-3-schedule-II", "LODR-6-gen"], note: "Director's own governance failure does not itself establish an Audit Committee or Compliance Officer deficiency absent a stated connection to those specific roles." },
   { n: 63, group: "Governance", freeText: "The statutory auditor certified financial statements despite gross negligence in verifying the underlying figures, with no evidence of collusion.", mustNot: ["LODR-18-3-schedule-II"], note: "Auditor negligence, not an Audit Committee deficiency." },
   { n: 64, group: "Governance", freeText: "An independent director had no knowledge of, or involvement in, the underlying governance failure and voted against the relevant resolution.", mustNot: ["LODR-6-gen", "LODR-17-8"], note: "Independent director expressly uninvolved, no governance-specific fact of her own stated." },
-  { n: 65, group: "Governance", freeText: "The Audit Committee's minutes could not be produced, and no meeting agendas existed for the relevant period.", must: ["LODR-18-3-schedule-II"], note: "Direct AC-process-deficiency fact." },
+  // Checkpoint correction 3, P1: this text states only a documentation gap
+  // (minutes/agendas unavailable) — evidentiary, not the substantive
+  // "meeting not held" fact Regulation 18(2)(a) requires (see
+  // audit_committee_meeting_documentation_gap in concept-tags.ts).
+  // Corrected from a prior "must" assertion that treated the evidentiary
+  // absence as itself an established breach.
+  { n: 65, group: "Governance", freeText: "The Audit Committee's minutes could not be produced, and no meeting agendas existed for the relevant period.", mustNot: ["LODR-18-3-schedule-II", "LODR-18-2", "LODR-18-1-b", "LODR-18-1-d"], note: "Documentation-gap fact only — evidentiary, never an established meeting-frequency breach on its own." },
   { n: 66, group: "Governance", freeText: "No Audit Committee deficiency, Compliance Officer vacancy, or false certification is alleged; governance functioned as required throughout.", mustNot: ["LODR-18-3-schedule-II", "LODR-6-gen", "LODR-17-8"], note: "Comprehensive negative control." },
   { n: 67, group: "Governance", freeText: "There was an improper appointment of compliance officer, who lacked the qualifications required for the position.", must: ["LODR-6-gen"], note: "Improper appointment fact." },
   { n: 68, group: "Governance", freeText: "A false compliance certificate was signed by the CFO despite known non-compliance.", must: ["LODR-17-8"], note: "Direct false-certification fact." },

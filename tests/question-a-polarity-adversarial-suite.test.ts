@@ -80,8 +80,8 @@ const COMPANIES_67_2 = makeProvision("COMPANIES-ACT-67-2", "Section 67(2)", "Pro
 // through the ungated fallback (precedent's own allegedConduct intersected
 // with the query's own detected concepts), same architecture as the
 // governing/contradicted coverage in the clean-control suite.
-const LODR_6_CO = makeProvision("LODR-6-2-a", "Regulation 6(2)(a)", "Compliance Officer appointment.", "LODR Regulations, 2015");
-const LODR_18_AC = makeProvision("LODR-18-1-d", "Regulation 18(1)(d)", "Audit Committee constitution and functioning.", "LODR Regulations, 2015");
+const LODR_6_CO = makeProvision("LODR-6-gen", "Regulation 6", "Compliance Officer appointment.", "LODR Regulations, 2015");
+const LODR_18_AC = makeProvision("LODR-18-2", "Regulation 18(2)", "Audit Committee meeting frequency and quorum.", "LODR Regulations, 2015");
 const AUDITOR_INDEP = makeProvision("COMPANIES-ACT-141-3-i", "Section 141(3)", "Auditor independence/eligibility.", "Companies Act, 2013");
 
 const ALL_PROVISIONS = [LODR_23_2, LODR_30, LODR_33, LODR_48, SEBI_11C_3, ICDR_160, LODR_32, PFUTP_3_a, COMPANIES_67_2, LODR_6_CO, LODR_18_AC, AUDITOR_INDEP];
@@ -95,8 +95,8 @@ const PREF_FINDING = makeFinding({ recordId: "ADV-PREF", provisionLinks: [link("
 const ISSUE_FINDING = makeFinding({ recordId: "ADV-ISSUE", provisionLinks: [link("LODR-32")], transactionTypes: ["rights_issue"], allegedConduct: ["fund_diversion"] });
 const PFUTP_FINDING = makeFinding({ recordId: "ADV-PFUTP", provisionLinks: [link("PFUTP-3-a")], transactionTypes: ["preferential_allotment"], allegedConduct: ["actual_price_manipulation", "false_appearance_of_trading"] });
 const COMPANIES_672_FINDING = makeFinding({ recordId: "ADV-CO67", provisionLinks: [link("COMPANIES-ACT-67-2")], transactionTypes: ["preferential_allotment"], allegedConduct: ["sham_preferential_allotment"] });
-const CO_FINDING = makeFinding({ recordId: "ADV-CO", provisionLinks: [link("LODR-6-2-a")], transactionTypes: ["compliance_officer_appointment"], allegedConduct: ["compliance_officer_deficiency"] });
-const AC_FINDING = makeFinding({ recordId: "ADV-AC", provisionLinks: [link("LODR-18-1-d")], transactionTypes: ["annual_report_disclosure"], allegedConduct: ["audit_committee_deficiency"] });
+const CO_FINDING = makeFinding({ recordId: "ADV-CO", provisionLinks: [link("LODR-6-gen")], transactionTypes: ["compliance_officer_appointment"], allegedConduct: ["compliance_officer_deficiency"] });
+const AC_FINDING = makeFinding({ recordId: "ADV-AC", provisionLinks: [link("LODR-18-2")], transactionTypes: ["annual_report_disclosure"], allegedConduct: ["audit_committee_deficiency"] });
 const AUDITOR_FINDING = makeFinding({ recordId: "ADV-AUDITOR", provisionLinks: [link("COMPANIES-ACT-141-3-i")], actorRoles: ["statutory_auditor"], allegedConduct: ["auditor_tenure_or_independence_issue"] });
 
 const ALL_FINDINGS = [
@@ -130,15 +130,15 @@ const SCENARIOS: Scenario[] = [
   { n: 4, group: "Fully compliant", freeText: "The company furnished all requested records to the investigating authority in full.", mustNot: ["SEBI-ACT-11C-3"] },
   { n: 5, group: "Fully compliant", freeText: "The preferential allotment consideration was received in genuine consideration and independently verified.", mustNot: ["ICDR-160"] },
   { n: 6, group: "Fully compliant", freeText: "The rights issue proceeds were applied strictly to its stated objects, with no diversion of funds.", mustNot: ["LODR-32"] },
-  { n: 7, group: "Fully compliant", freeText: "The Compliance Officer remained continuously appointed throughout the relevant period.", mustNot: ["LODR-6-2-a"] },
-  { n: 8, group: "Fully compliant", freeText: "The Audit Committee was duly constituted audit committee and discharged all applicable functions.", mustNot: ["LODR-18-1-d"] },
+  { n: 7, group: "Fully compliant", freeText: "The Compliance Officer remained continuously appointed throughout the relevant period.", mustNot: ["LODR-6-gen"] },
+  { n: 8, group: "Fully compliant", freeText: "The Audit Committee was duly constituted audit committee and discharged all applicable functions.", mustNot: ["LODR-18-2"] },
 
   // ----- Mixed compliant/adverse facts (9-14) -----
   { n: 9, group: "Mixed compliant/adverse", freeText: "The related-party transaction was not approved by the audit committee, though it was fully disclosed.", must: ["LODR-23-2"] },
   { n: 10, group: "Mixed compliant/adverse", freeText: "The material event was disclosed to the stock exchange, but quarterly results contained material fictitious revenue.", must: ["LODR-33-1-gen"], mustNot: ["LODR-30"] },
   { n: 11, group: "Mixed compliant/adverse", freeText: "The company furnished all requested records, and separately, funds raised through the rights issue were diverted to promoter-controlled entities.", must: ["LODR-32"], mustNot: ["SEBI-ACT-11C-3"] },
-  { n: 12, group: "Mixed compliant/adverse", freeText: "The preferential allotment consideration was independently paid, but the Compliance Officer position remained vacant beyond permitted period.", must: ["LODR-6-2-a"], mustNot: ["ICDR-160"] },
-  { n: 13, group: "Mixed compliant/adverse", freeText: "The published financial results contained sales that were fictitious and were fictitiously booked, though the Audit Committee was properly constituted and functioning.", must: ["LODR-33-1-gen"], mustNot: ["LODR-18-1-d"] },
+  { n: 12, group: "Mixed compliant/adverse", freeText: "The preferential allotment consideration was independently paid, but the Compliance Officer position remained vacant beyond permitted period.", must: ["LODR-6-gen"], mustNot: ["ICDR-160"] },
+  { n: 13, group: "Mixed compliant/adverse", freeText: "The published financial results contained sales that were fictitious and were fictitiously booked, though the Audit Committee was properly constituted and functioning.", must: ["LODR-33-1-gen"], mustNot: ["LODR-18-2"] },
   { n: 14, group: "Mixed compliant/adverse", freeText: "The auditor satisfied independence and eligibility requirements, but the related-party transaction had no audit committee approval.", must: ["LODR-23-2"], mustNot: ["COMPANIES-ACT-141-3-i"] },
 
   // ----- Negated allegations (15-20) -----
@@ -146,8 +146,8 @@ const SCENARIOS: Scenario[] = [
   { n: 16, group: "Negated allegation", freeText: "There was no non-disclosure of the related-party transaction; it was duly disclosed in the related party register.", mustNot: ["LODR-30"] },
   { n: 17, group: "Negated allegation", freeText: "The company did not fail to furnish records requested during the SEBI investigation.", mustNot: ["SEBI-ACT-11C-3"] },
   { n: 18, group: "Negated allegation", freeText: "There was no sham preferential allotment; the consideration was independently paid and verified.", mustNot: ["ICDR-160"] },
-  { n: 19, group: "Negated allegation", freeText: "There was no audit committee deficiency; the committee met as required.", mustNot: ["LODR-18-1-d"] },
-  { n: 20, group: "Negated allegation", freeText: "There was no compliance officer vacancy; a qualified compliance officer remained continuously appointed.", mustNot: ["LODR-6-2-a"] },
+  { n: 19, group: "Negated allegation", freeText: "There was no audit committee deficiency; the committee met as required.", mustNot: ["LODR-18-2"] },
+  { n: 20, group: "Negated allegation", freeText: "There was no compliance officer vacancy; a qualified compliance officer remained continuously appointed.", mustNot: ["LODR-6-gen"] },
 
   // ----- "Not established" language (21-25) -----
   { n: 21, group: "Not established", freeText: "SEBI's show cause notice alleged fund diversion, but on review the diversion of funds was not established.", mustNot: ["LODR-32"] },
@@ -169,7 +169,7 @@ const SCENARIOS: Scenario[] = [
   { n: 33, group: "Unknown status", freeText: "A material event occurred at the company.", mustNot: ["LODR-30"] },
   { n: 34, group: "Unknown status", freeText: "SEBI initiated an investigation into the company.", mustNot: ["SEBI-ACT-11C-3"] },
   { n: 35, group: "Unknown status", freeText: "The company made a preferential allotment of shares.", mustNot: ["ICDR-160"] },
-  { n: 36, group: "Unknown status", freeText: "The company appointed a Compliance Officer.", mustNot: ["LODR-6-2-a"] },
+  { n: 36, group: "Unknown status", freeText: "The company appointed a Compliance Officer.", mustNot: ["LODR-6-gen"] },
 
   // ----- Immaterial breaches (37-40) -----
   { n: 37, group: "Immaterial breach", freeText: "A minor, immaterial related-party transaction below the prescribed threshold was entered into; audit committee approval was not applicable at that value.", mustNot: ["LODR-23-2"] },
@@ -180,7 +180,7 @@ const SCENARIOS: Scenario[] = [
   // ----- Corrected errors (41-44) -----
   { n: 41, group: "Corrected error", freeText: "There was no financial statement misstatement in the quarterly results as filed; an earlier draft error had been identified internally and corrected before filing, and the results were accurate and timely filed.", mustNot: ["LODR-33-1-gen", "LODR-48"] },
   { n: 42, group: "Corrected error", freeText: "A related-party transaction's approval process began before the scheduled Audit Committee meeting; the transaction was ultimately duly approved by the audit committee before the transaction closed.", mustNot: ["LODR-23-2"] },
-  { n: 43, group: "Corrected error", freeText: "A vacancy in the Compliance Officer role was promptly filled; a qualified Compliance Officer remained continuously appointed thereafter.", mustNot: ["LODR-6-2-a"] },
+  { n: 43, group: "Corrected error", freeText: "A vacancy in the Compliance Officer role was promptly filled; a qualified Compliance Officer remained continuously appointed thereafter.", mustNot: ["LODR-6-gen"] },
   { n: 44, group: "Corrected error", freeText: "An early utilisation certificate contained an error that was corrected, and the rights issue proceeds were used exactly for the stated objects.", mustNot: ["LODR-32"] },
 
   // ----- Timing-only violations (45-47) -----
@@ -190,15 +190,15 @@ const SCENARIOS: Scenario[] = [
 
   // ----- Actor-specific compliance (48-51) -----
   { n: 48, group: "Actor-specific compliance", freeText: "The statutory auditor satisfied independence requirements; a promoter was separately named in the matter with no stated role in that eligibility question.", mustNot: ["COMPANIES-ACT-141-3-i"] },
-  { n: 49, group: "Actor-specific compliance", freeText: "The Compliance Officer remained continuously appointed; the Managing Director was separately named in the matter with no stated role in the compliance officer's own appointment.", mustNot: ["LODR-6-2-a"] },
-  { n: 50, group: "Actor-specific compliance", freeText: "The Audit Committee discharged all applicable functions; the CFO was separately named in the matter with no stated role in the committee's own functioning.", mustNot: ["LODR-18-1-d"] },
+  { n: 49, group: "Actor-specific compliance", freeText: "The Compliance Officer remained continuously appointed; the Managing Director was separately named in the matter with no stated role in the compliance officer's own appointment.", mustNot: ["LODR-6-gen"] },
+  { n: 50, group: "Actor-specific compliance", freeText: "The Audit Committee discharged all applicable functions; the CFO was separately named in the matter with no stated role in the committee's own functioning.", mustNot: ["LODR-18-2"] },
 
   // ----- One violation plus unrelated compliant facts (51-55) -----
-  { n: 51, group: "One violation, unrelated compliant facts", freeText: "Issue proceeds were diverted to promoter-controlled entities. Separately, the statutory auditor satisfied independence requirements and the Compliance Officer remained continuously appointed.", must: ["LODR-32"], mustNot: ["COMPANIES-ACT-141-3-i", "LODR-6-2-a"] },
+  { n: 51, group: "One violation, unrelated compliant facts", freeText: "Issue proceeds were diverted to promoter-controlled entities. Separately, the statutory auditor satisfied independence requirements and the Compliance Officer remained continuously appointed.", must: ["LODR-32"], mustNot: ["COMPANIES-ACT-141-3-i", "LODR-6-gen"] },
   { n: 52, group: "One violation, unrelated compliant facts", freeText: "The related-party transaction was not approved by the audit committee. Separately, the rights issue proceeds were used exactly for the stated objects.", must: ["LODR-23-2"], mustNot: ["LODR-32"] },
   { n: 53, group: "One violation, unrelated compliant facts", freeText: "Repeated summons were ignored by the company. Separately, the preferential allotment was fully paid, correctly priced and properly approved.", must: ["SEBI-ACT-11C-3"], mustNot: ["ICDR-160"] },
   { n: 54, group: "One violation, unrelated compliant facts", freeText: "Sales were fictitious and were fictitiously booked in the quarterly results. Separately, the material litigation was timely and accurately disclosed.", must: ["LODR-33-1-gen"], mustNot: ["LODR-30"] },
-  { n: 55, group: "One violation, unrelated compliant facts", freeText: "The preferential allotment consideration was circularly funded by the issuer. Separately, the Audit Committee was properly constituted and met as required.", must: ["ICDR-160"], mustNot: ["LODR-18-1-d"] },
+  { n: 55, group: "One violation, unrelated compliant facts", freeText: "The preferential allotment consideration was circularly funded by the issuer. Separately, the Audit Committee was properly constituted and met as required.", must: ["ICDR-160"], mustNot: ["LODR-18-2"] },
 
   // ----- Disputed/uncertain facts (56-58) — extra coverage beyond the
   // required 11 categories, item 1's own fifth polarity state -----

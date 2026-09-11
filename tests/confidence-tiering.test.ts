@@ -72,7 +72,7 @@ function makeProvision(overrides: Partial<LegalProvision>): LegalProvision {
 }
 
 describe("Confidence tiering — ancillary provisions from a partially-matched finding", () => {
-  const rptProvision = makeProvision({ id: "MOCK-RPT-DISCLOSURE", subject: "Related party disclosures" });
+  const rptProvision = makeProvision({ id: "IND-AS-1", subject: "Related party disclosures" });
   const diversionFinding = makeFinding({
     recordId: "MOCK-DIVERSION-01",
     // Mirrors the real reported case: the underlying finding genuinely
@@ -82,13 +82,13 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
     // shouldn't inherit that provision at full confidence.
     transactionTypes: ["related_party_transaction"],
     actorRoles: ["promoter"],
-    allegedConduct: ["false_compliance_certification"],
+    allegedConduct: ["financial_statement_misstatement"],
     provisionIds: [rptProvision.id],
   });
 
   it("downgrades to Low confidence when only conduct and a generic actor overlap, not the transaction type that actually justifies the provision", () => {
     const result = analyzeScenario(
-      { freeText: "There was a false certification by the promoter." },
+      { freeText: "There was a financial statement misstatement by the promoter." },
       [diversionFinding],
       [rptProvision],
       []
@@ -100,7 +100,7 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
 
   it("reaches at least Medium confidence once the scenario also establishes the transaction type the provision actually turns on", () => {
     const result = analyzeScenario(
-      { freeText: "A related party transaction was not disclosed and there was a false certification by the promoter." },
+      { freeText: "A related party transaction was not disclosed and there was a financial statement misstatement by the promoter." },
       [diversionFinding],
       [rptProvision],
       []
@@ -112,7 +112,7 @@ describe("Confidence tiering — ancillary provisions from a partially-matched f
 
   it("still surfaces the provision (never silently drops it) — Low confidence, not exclusion, is the mechanism", () => {
     const result = analyzeScenario(
-      { freeText: "There was a false certification by the promoter." },
+      { freeText: "There was a financial statement misstatement by the promoter." },
       [diversionFinding],
       [rptProvision],
       []

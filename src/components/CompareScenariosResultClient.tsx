@@ -7,6 +7,8 @@ import { Card, SourceLink } from "@/components/Card";
 import { OrderStageBadge } from "@/components/OrderStageBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/formatDate";
+import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 import {
   comparisonRowMatterLabel,
   type ComparisonRow,
@@ -39,7 +41,7 @@ function ProvisionsSection({ row, provisionById }: { row: ComparisonRow; provisi
         {row.hasFindingLevelOnlyProvisionLinkage ? "Provisions linked to matched finding(s)" : "Provisions considered in this order"}
       </p>
       {row.hasFindingLevelOnlyProvisionLinkage && (
-        <p className="mt-0.5 max-w-prose text-[11px] italic text-[var(--color-ink-500)]">
+        <p className={`mt-0.5 text-[11px] italic text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           Provision linkage is recorded at finding level in the current corpus and may span more than one captured order.
         </p>
       )}
@@ -92,18 +94,33 @@ function DispositionBadges({ dispositions }: { dispositions: FindingStatus[] }) 
   );
 }
 
-function DirectionsSummary({ row }: { row: ComparisonRow }) {
+function DirectionsSummary({ row, clamp }: { row: ComparisonRow; clamp?: boolean }) {
   if (row.directions.length === 0) {
     return <p className="text-xs italic text-[var(--color-ink-300)]">No structured directions/outcome captured yet for this order.</p>;
   }
   return (
     <ul className="space-y-1">
       {row.directions.map((d) => (
-        <li key={d.id} className="max-w-prose text-xs text-[var(--color-ink-700)]">
+        <li key={d.id} className={`text-xs text-[var(--color-ink-700)] ${clamp ? "line-clamp-4" : NARRATIVE_JUSTIFY_ONLY}`}>
           {d.directionOrOutcome}
           {d.paragraphReference && <span className="text-[var(--color-ink-500)]"> ({d.paragraphReference})</span>}
         </li>
       ))}
+      {/* A long direction text (a full ad-interim order can run to several
+          hundred words) was found, via visual QA screenshot review, to
+          make a single comparison-table row several times taller than its
+          neighbours -- the max-w-xs cell constrains width, never height.
+          Clamped here to 4 lines with a link to the order's own full
+          detail, where the complete text already lives; the mobile card
+          view below (clamp not set) keeps the full text, since a card's
+          own height varying by content is normal there. */}
+      {clamp && (
+        <li>
+          <Link href={`/orders/${row.order.id}`} className="text-xs font-medium text-[var(--color-gold-700)] hover:underline">
+            View full case detail →
+          </Link>
+        </li>
+      )}
     </ul>
   );
 }
@@ -126,7 +143,20 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
   const [sortKey, setSortKey] = useState<ComparisonSortKey>("date_desc");
 
   const stageOptions = useMemo(() => [...new Set(rows.map((r) => r.order.orderStage))], [rows]);
-  const dispositionOptions = useMemo(() => [...new Set(rows.flatMap((r) => r.dispositions))], [rows]);
+  // Independent-audit correction (P1-9): the disposition filter must never
+  // render a raw FindingStatus enum value as an option -- "Alleged" and
+  // "Prima facie" carry no actual disposition (findingDispositionLabel
+  // returns null for both) and are excluded here entirely rather than
+  // given a fabricated disposition label just to make the filter list
+  // complete. A row with only those statuses remains findable via every
+  // other filter (stage, provision, matter, date); it simply has no
+  // "by disposition" option of its own.
+  const dispositionOptions = useMemo(() => {
+    const statuses = [...new Set(rows.flatMap((r) => r.dispositions))];
+    return statuses
+      .map((status) => ({ status, label: findingDispositionLabel(status) }))
+      .filter((o): o is { status: FindingStatus; label: string } => o.label !== null);
+  }, [rows]);
   const provisionOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const r of rows) {
@@ -176,9 +206,9 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
           Disposition
           <select className={selectClass} value={dispositionFilter} onChange={(e) => setDispositionFilter(e.target.value)}>
             <option value="all">All dispositions</option>
-            {dispositionOptions.map((d) => (
-              <option key={d} value={d}>
-                {d}
+            {dispositionOptions.map((o) => (
+              <option key={o.status} value={o.status}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -228,8 +258,14 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
         {sorted.length} of {rows.length} order{rows.length === 1 ? "" : "s"} shown.
       </p>
 
-      {/* Desktop/tablet: full comparison table. */}
-      <div className="mt-2 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
+      {/* Desktop/tablet: full comparison table. Below xl (1280px) the table's
+          min-w-[1200px] exceeds the viewport and the wrapper's
+          overflow-x-auto kicks in correctly, but that's not discoverable
+          from a static view -- add a CSS-only hint in exactly that gap
+          (md..xl), never on mobile (card view instead) or at xl+ (the table
+          already fits). */}
+      <p className="mt-2 hidden text-xs text-[var(--color-ink-500)] md:block xl:hidden">Scroll horizontally to view all comparison columns →</p>
+      <div className="mt-1 hidden overflow-x-auto rounded-sm bg-white border border-[var(--color-border)] md:block">
         <table className="w-full min-w-[1200px] divide-y divide-[var(--color-border)] text-sm">
           <thead>
             <tr className="bg-[var(--color-neutral-50)]">
@@ -270,7 +306,7 @@ export function CompareScenariosResultClient({ rows, provisions }: { rows: Compa
                     <ProvisionsSection row={row} provisionById={provisionById} />
                   </td>
                   <td className="max-w-xs px-3 py-2 align-top">
-                    <DirectionsSummary row={row} />
+                    <DirectionsSummary row={row} clamp />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
                     <SourceLink href={row.order.officialUrl} />

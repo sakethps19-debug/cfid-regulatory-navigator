@@ -61,7 +61,7 @@ function makeFinding(overrides: Partial<ScenarioFinding>): ScenarioFinding {
 
 function makeProvision(overrides: Partial<LegalProvision>): LegalProvision {
   return {
-    id: "MOCK-PROVISION",
+    id: "LODR-6-gen",
     instrument: "Mock Instrument",
     provisionNumber: "Mock 1",
     subject: null,
@@ -76,18 +76,18 @@ function makeProvision(overrides: Partial<LegalProvision>): LegalProvision {
 
 describe("Factual-overlap tiering is independent of disposition (Alleged/Inconclusive/Procedural observation)", () => {
   it("a full 4-category overlap on an 'Alleged' finding reaches High factual overlap — its own status is reported separately, not blended into the tier", () => {
-    const provision = makeProvision({ id: "MOCK-PROVISION" });
+    const provision = makeProvision({ id: "LODR-6-gen" });
     const finding = makeFinding({
       findingStatus: "Alleged",
       transactionTypes: ["related_party_transaction"],
-      actorRoles: ["promoter"],
-      allegedConduct: ["fund_diversion"],
+      actorRoles: ["company"],
+      allegedConduct: ["compliance_officer_deficiency"],
       evidenceTypes: ["bank_statements_flow"],
       finalParagraphReferences: null,
       provisionIds: [provision.id],
     });
     const result = analyzeScenario(
-      { freeText: "The promoter diverted funds via a related party transaction, per bank statements." },
+      { freeText: "There was a Compliance Officer vacancy at the listed company. There was also a related party transaction, per bank statements." },
       [finding],
       [provision],
       []
@@ -102,16 +102,16 @@ describe("Factual-overlap tiering is independent of disposition (Alleged/Inconcl
   });
 
   it("a 2-category overlap on an 'Inconclusive' finding reaches Medium factual overlap on its overlap alone, not Low by virtue of its status", () => {
-    const provision = makeProvision({ id: "MOCK-PROVISION" });
+    const provision = makeProvision({ id: "LODR-6-gen" });
     const finding = makeFinding({
       findingStatus: "Inconclusive",
       transactionTypes: ["related_party_transaction"],
-      allegedConduct: ["fund_diversion"],
+      allegedConduct: ["compliance_officer_deficiency"],
       finalParagraphReferences: "Para 5",
       provisionIds: [provision.id],
     });
     const result = analyzeScenario(
-      { freeText: "The promoter diverted funds via a related party transaction." },
+      { freeText: "There was a Compliance Officer vacancy at the listed company. There was also a related party transaction." },
       [finding],
       [provision],
       []
@@ -121,13 +121,13 @@ describe("Factual-overlap tiering is independent of disposition (Alleged/Inconcl
   });
 
   it("prefers a genuinely resolved (Upheld) finding over a higher-scoring Alleged one as the confidence-reasoning anchor, and reports that resolved finding's own (here more modest) factual overlap honestly", () => {
-    const provision = makeProvision({ id: "MOCK-PROVISION" });
+    const provision = makeProvision({ id: "LODR-6-gen" });
     const allegedFinding = makeFinding({
       recordId: "MOCK-ALLEGED",
       findingStatus: "Alleged",
       transactionTypes: ["related_party_transaction"],
-      actorRoles: ["promoter"],
-      allegedConduct: ["fund_diversion"],
+      actorRoles: ["company"],
+      allegedConduct: ["compliance_officer_deficiency"],
       evidenceTypes: ["bank_statements_flow"],
       finalParagraphReferences: null,
       provisionIds: [provision.id],
@@ -136,13 +136,13 @@ describe("Factual-overlap tiering is independent of disposition (Alleged/Inconcl
       recordId: "MOCK-UPHELD",
       findingStatus: "Confirmed in Final Order",
       transactionTypes: ["related_party_transaction"],
-      actorRoles: ["promoter"],
-      allegedConduct: ["fund_diversion"],
+      actorRoles: ["company"],
+      allegedConduct: ["compliance_officer_deficiency"],
       finalParagraphReferences: "Para 20",
       provisionIds: [provision.id],
     });
     const result = analyzeScenario(
-      { freeText: "The promoter diverted funds via a related party transaction, per bank statements." },
+      { freeText: "There was a Compliance Officer vacancy at the listed company. There was also a related party transaction, per bank statements." },
       [allegedFinding, upheldFinding],
       [provision],
       []

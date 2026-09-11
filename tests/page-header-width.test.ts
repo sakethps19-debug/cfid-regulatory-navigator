@@ -29,13 +29,16 @@ describe("PageHeader: description paragraph widens at large breakpoints instead 
     expect(source).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
   });
 
-  it("FixedScenarioAnalyzer.tsx's intro paragraph carries the same widening classes", () => {
+  it("FixedScenarioAnalyzer.tsx's intro paragraph carries the same widening classes, now via the shared NARRATIVE_PROSE_CLASSES constant (live-officer-review global-justify pass) rather than a duplicated literal string", () => {
+    const proseClasses = read("src/lib/proseClasses.ts");
+    expect(proseClasses).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
     const source = read("src/components/analyzer/FixedScenarioAnalyzer.tsx");
-    expect(source).toMatch(/max-w-3xl[^"]*xl:max-w-4xl[^"]*2xl:max-w-5xl/);
+    expect(source).toContain('import { NARRATIVE_PROSE_CLASSES, NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses"');
+    expect(source).toMatch(/NARRATIVE_PROSE_CLASSES/);
   });
 
   it("the widening is graduated, not full shell width -- neither xl:max-w-[85rem] nor 2xl:max-w-[100rem] nor 3xl:max-w-[130rem] (the shell's own tiers) appear on these paragraphs", () => {
-    for (const path of ["src/components/PageHeader.tsx", "src/components/analyzer/FixedScenarioAnalyzer.tsx"]) {
+    for (const path of ["src/components/PageHeader.tsx", "src/components/analyzer/FixedScenarioAnalyzer.tsx", "src/lib/proseClasses.ts"]) {
       const source = read(path);
       expect(source).not.toMatch(/max-w-\[85rem\]/);
       expect(source).not.toMatch(/max-w-\[100rem\]/);

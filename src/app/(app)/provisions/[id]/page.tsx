@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { GROUP_INFO, GROUP_ORDER } from "@/components/FindingsByStatus";
+import { OrderStageBadge } from "@/components/OrderStageBadge";
 import { ProvisionOrderList } from "@/components/ProvisionOrderList";
 import { findingsForProvision, getOrders, getProvisionById, getProvisionVersions, getProvisions } from "@/lib/data";
 import { findSimilarlyNumberedProvisions } from "@/lib/provisionSimilarity";
@@ -10,11 +10,20 @@ import { compareProvisionNumbers } from "@/lib/provisionOrder";
 import { REGULATOR_LABELS, regulatorSlugForAuthority } from "@/lib/regulators";
 import { formatDate } from "@/lib/formatDate";
 import { broadScenariosForProvision } from "@/lib/broadScenarioMatch";
+import { PROVISION_TEXT_PROVENANCE } from "@/lib/provisionTextProvenance";
+import { groupProvisionFindingsByOrder } from "@/lib/provisionOrderHistory";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 
 const RELATION_TEXT: Record<string, string> = {
   similarly_numbered_different_instrument: "distinct similarly-numbered provision in a different instrument",
   sub_clause_of: "is a sub-clause of this provision (same instrument)",
   parent_of: "this provision is a sub-clause of (same instrument)",
+};
+
+const PROVENANCE_TONE_STYLES: Record<"positive" | "caution" | "neutral", string> = {
+  positive: "bg-[var(--status-green-bg)] text-[var(--status-green-text)] ring-[var(--status-green-ring)]",
+  caution: "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)] ring-[var(--status-amber-ring)]",
+  neutral: "bg-[var(--status-neutral-bg)] text-[var(--status-neutral-text)] ring-[var(--status-neutral-ring)]",
 };
 
 export default async function ProvisionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +61,11 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
         .reduce((x, y) => (x > y ? x : y), "");
     return latest(b).localeCompare(latest(a));
   });
+
+  // "Historical treatment in captured orders" (P1-8 redesign, live-officer-
+  // review independent audit) -- replaces the old raw-FindingStatus chip
+  // summary. See provisionOrderHistory.ts for the full rationale.
+  const orderHistory = groupProvisionFindingsByOrder(findings, ordersById);
 
   return (
     <div>
@@ -93,35 +107,58 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
           </p>
         ) : (
           <ul className="space-y-4">
-            {versions.map((v) => (
-              <li key={v.id} className="rounded-md border border-[var(--color-border)] p-3">
-                <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-ink-500)]">
-                  <span className="font-semibold">{v.versionLabel}</span>
-                  <span>
-                    {v.effectiveFrom ? `Effective from ${formatDate(v.effectiveFrom)}` : ""}
-                    {v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : v.effectiveFrom ? " (current)" : ""}
-                  </span>
-                </div>
-                {v.exactText ? (
-                  // Prose measure: the workspace around this card may be wide
-                  // on a large display, but the regulation text itself must
-                  // stay at a readable line length rather than stretching
-                  // edge-to-edge.
-                  <blockquote className="max-w-prose whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">
-                    {v.exactText}
-                  </blockquote>
-                ) : (
-                  <p className="text-sm text-[var(--color-ink-500)]">
-                    Not yet transcribed from the official source into this tool.
-                  </p>
-                )}
-                {v.sourceUrl && (
-                  <div className="mt-2">
-                    <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>
+            {versions.map((v) => {
+              // Source-provenance indicator (officially verified against the
+              // official statutory source / order-cited-only / requires
+              // verification) — see provisionTextProvenance.ts. Shown for
+              // EVERY version regardless of whether exactText is present, so
+              // an officer never mistakes order-cited text for the
+              // in-force official text, independently checked, and a
+              // missing exactText still carries its own honest provenance
+              // status rather than rendering as unexplained blank space.
+              const provenance = PROVISION_TEXT_PROVENANCE[v.status];
+              return (
+                <li key={v.id} className="rounded-md border border-[var(--color-border)] p-3">
+                  <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-ink-500)]">
+                    <span className="font-semibold">{v.versionLabel}</span>
+                    <span>
+                      {v.effectiveFrom ? `Effective from ${formatDate(v.effectiveFrom)}` : ""}
+                      {v.effectiveTo ? ` to ${formatDate(v.effectiveTo)}` : v.effectiveFrom ? " (current)" : ""}
+                    </span>
                   </div>
-                )}
-              </li>
-            ))}
+                  <div className="mb-2 flex flex-wrap items-start gap-2">
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${PROVENANCE_TONE_STYLES[provenance.tone]}`}
+                    >
+                      {provenance.label}
+                    </span>
+                    <span className="text-xs text-[var(--color-ink-500)]">{provenance.description}</span>
+                  </div>
+                  {v.exactText ? (
+                    // Prose measure: the workspace around this card may be wide
+                    // on a large display, but the regulation text itself must
+                    // stay at a readable line length rather than stretching
+                    // edge-to-edge.
+                    <blockquote className="max-w-prose whitespace-pre-wrap border-l-2 border-[var(--color-gold-600)] pl-3 text-sm text-[var(--color-ink-900)]">
+                      {v.exactText}
+                    </blockquote>
+                  ) : v.sourceUrl ? (
+                    <p className="text-sm text-[var(--color-ink-500)]">
+                      No text on file for this version yet — read it directly at the official source link below.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-[var(--color-ink-500)]">
+                      Not yet transcribed from the official source into this tool.
+                    </p>
+                  )}
+                  {v.sourceUrl && (
+                    <div className="mt-2">
+                      <SourceLink href={v.sourceUrl}>Official source (PDF)</SourceLink>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
@@ -166,33 +203,58 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
       </Card>
 
       <Card className="mb-6">
-        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Track record</h2>
-        <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Historical treatment in captured orders</h2>
+        <p className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           Cited in {findings.length} scenario finding{findings.length === 1 ? "" : "s"} in this pilot&apos;s precedent
-          library, by outcome, not a claim about how this provision has fared across every SEBI order, only the
-          ones analysed here.
+          library, across {orderHistory.length} captured order{orderHistory.length === 1 ? "" : "s"} below — not a
+          claim about how this provision has fared across every SEBI order, only the ones analysed here, and the
+          count itself carries no legal weight.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {GROUP_ORDER.map((status) => {
-            const count = findings.filter((f) => f.findingStatus === status).length;
-            if (count === 0) return null;
-            return (
-              <span
-                key={status}
-                className="rounded-sm bg-[var(--color-neutral-100)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-700)]"
-                title={GROUP_INFO[status].hint}
-              >
-                {GROUP_INFO[status].title}: {count}
-              </span>
-            );
-          })}
-        </div>
+        {orderHistory.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--color-ink-500)]">No captured order is on file for this provision&apos;s findings.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-3">
+            {orderHistory.map((entry) => {
+              const dispositions = entry.findings.filter((f) => f.dispositionLabel);
+              return (
+                <li key={entry.order.id} className="rounded-lg border border-[var(--color-border)] p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-[var(--color-ink-900)]">{entry.order.caseName}</span>
+                    <OrderStageBadge orderStage={entry.order.orderStage} />
+                    <span className="text-xs text-[var(--color-ink-500)]">{formatDate(entry.order.orderDate) || "date not on file"}</span>
+                  </div>
+                  {entry.hasFindingLevelOnlyLinkage && (
+                    <p className={`mt-1 text-xs italic text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
+                      Finding-level provision linkage: at least one finding below is linked to more than one captured order, so its citation of
+                      this provision is not proven specific to this order alone.
+                    </p>
+                  )}
+                  {dispositions.length > 0 && (
+                    <ul className="mt-1 flex flex-col gap-0.5">
+                      {dispositions.map((f) => (
+                        <li key={f.finding.recordId} className="text-sm text-[var(--color-ink-700)]">
+                          {f.finding.recordId}: {f.dispositionLabel}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <SourceLink href={entry.order.officialUrl} />
+                    <Link href={`/orders/${entry.order.id}`} className="text-sm font-medium text-[var(--color-gold-700)] hover:underline">
+                      View Case →
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
 
       {broadScenarios.length > 0 && (
         <Card className="mb-6">
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Broad CFID scenarios</h2>
-          <p className="mt-1 text-sm text-[var(--color-ink-700)]">
+          <p className={`mt-1 text-sm text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
             This provision has been invoked in orders involving these broad CFID fact patterns. Descriptive only —
             historical frequency is not legal applicability; this never means the provision automatically applies
             whenever one of these scenarios recurs.

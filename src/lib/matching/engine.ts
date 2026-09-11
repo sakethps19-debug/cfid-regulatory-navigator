@@ -4,7 +4,14 @@ import { ALWAYS_ON_INTERIM_GUARDRAIL, GUARDRAIL_TRIGGERS } from "@/data/curated/
 import { computeContinuitySentenceGroups, detectConcepts, type DetectedConcept } from "./conceptExtraction";
 import { applySemanticAssist } from "./fuzzyMatch";
 import { detectFactPolarity, type PolarityEvidence } from "./factPolarity";
-import { isConnected, passesRetrievalGate, retrievalRuleForProvision, type ProvisionRetrievalRule } from "@/data/curated/provision-retrieval-rules";
+import {
+  isConnected,
+  passesRetrievalGate,
+  retrievalRuleForProvision,
+  requiresIndependentlyRetrievedSubstantivePrimary,
+  topicAnchorMissingFactNotes,
+  type ProvisionRetrievalRule,
+} from "@/data/curated/provision-retrieval-rules";
 import { legalFunctionForProvision, isPrimaryCapable } from "@/data/curated/legal-function-classification";
 import { actorRuleForProvision } from "@/data/curated/provision-actor-applicability";
 import { buildHistoricalTreatment } from "./historicalTreatment";
@@ -351,7 +358,11 @@ function checkActorApplicability(
  * "primary_candidate" (its own legal function can anchor a charge) or a
  * "related_ancillary" one (a general principle, penalty, attribution
  * mechanism, SEBI power or bare definition riding on some other
- * established violation) — never presented as equivalent. */
+ * independently retrieved substantive provision) — never presented as
+ * equivalent. Checkpoint
+ * correction B: only ever called for a GATED provision (one with its own
+ * curated retrieval rule) — an ungated provision never reaches this point
+ * at all, see the `if (!rule)` branch above. */
 function deriveCandidateTier(legalFunction: ReturnType<typeof legalFunctionForProvision>): "primary_candidate" | "related_ancillary" {
   return isPrimaryCapable(legalFunction) ? "primary_candidate" : "related_ancillary";
 }
@@ -716,13 +727,20 @@ export function analyzeScenario(
       continue;
     }
 
+    // Post-checkpoint-4 UI/terminology hardening: a note attached to a
+    // requires_additional_fact result must never say the provision is "not
+    // potentially relevant" — it IS being shown to the officer, precisely
+    // because it is potentially relevant but not yet a Primary Candidate.
+    // Every branch below states what is engaged, what is missing, and that
+    // the tier is Additional Fact Required — never "violation established",
+    // never "not relevant".
     let note: string;
     if (reason === "factual_prerequisite") {
-      note = `${countPhrase}, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
+      note = `${countPhrase}. The entered facts engage this provision's subject matter, but the facts entered do not include what this provision's own text requires: ${rule?.explanation ?? ""} An additional factual prerequisite must be established before this provision can be treated as a Primary Candidate; the underlying order(s) should still be examined if the missing facts turn out to be present.`;
     } else if (reason === "actor_incompatibility") {
-      note = `${countPhrase}, but ${actorApplicability.note} This provision is not shown as potentially relevant on the present facts; the underlying order(s) should still be examined if a compatible actor turns out to be involved.`;
+      note = `${countPhrase}, but ${actorApplicability.note} This provision remains Additional Fact Required, not a Primary Candidate, until a compatible actor is stated — the underlying order(s) should still be examined if a compatible actor turns out to be involved.`;
     } else {
-      note = `${countPhrase}, but neither the facts this provision's own text requires (${rule?.explanation ?? ""}) nor a compatible actor (${actorApplicability.note}) are stated. This provision is not shown as potentially relevant on the present facts.`;
+      note = `${countPhrase}, but neither the facts this provision's own text requires (${rule?.explanation ?? ""}) nor a compatible actor (${actorApplicability.note}) are stated. This provision remains Additional Fact Required, not a Primary Candidate, until both are established.`;
     }
     gateBlockedProvisionResults.push({
       provision,
@@ -734,9 +752,59 @@ export function analyzeScenario(
       blockReason: reason,
     });
   }
-  gateBlockedProvisionResults.sort((a, b) =>
-    compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0])
-  );
+  // Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+  // architecture): a topic-anchor-driven promotion to Additional Fact
+  // Required, independent of the precedent-driven pass above. That pass
+  // only ever surfaces a provision here when the live corpus happens to
+  // hold a factually-overlapping, sufficiently-scoring finding already
+  // LINKED to it — legally sound, but corpus-dependent: a provision
+  // genuinely implicated by a statutory route the entered facts engage
+  // must not silently disappear purely because no such precedent exists
+  // (or scores highly enough) yet. See ProvisionRetrievalRule.topicAnchor.
+  // Deliberately narrow and opt-in: only a rule individually curated with a
+  // topicAnchor is ever affected by this pass; every other gated
+  // provision's behavior is completely unchanged. A provision's factual
+  // gate outcome does not vary by which specific finding is being
+  // considered (passesRetrievalGate depends only on the rule and the
+  // entered scenario's own effectiveConcepts), so a provision is either
+  // wholly blocked or wholly not — passesRetrievalGate alone is a safe,
+  // sufficient guard for "already a candidate, skip".
+  for (const provision of provisions) {
+    const rule = retrievalRuleForProvision(provision.id);
+    if (!rule) continue;
+    if (passesRetrievalGate(rule, effectiveConcepts, continuityMap)) continue;
+    const missingFactNotes = topicAnchorMissingFactNotes(rule, effectiveConcepts);
+    if (missingFactNotes.length === 0) continue;
+    const missingFactText = [...new Set(missingFactNotes)].join(" ");
+    const existing = gateBlockedProvisionResults.find((gb) => gb.provision.id === provision.id);
+    if (existing) {
+      // A topic anchor is a purely FACTUAL signal — never overrides or
+      // annotates a block that is actor-incompatibility only, which is a
+      // different question entirely (see blockReason).
+      if (existing.blockReason === "actor_incompatibility") continue;
+      existing.topicAnchorSatisfied = true;
+      existing.note = `${missingFactText} ${existing.note}`;
+      continue;
+    }
+    if (getActorApplicability(provision.id).status === "incompatible") continue;
+    gateBlockedProvisionResults.push({
+      provision,
+      relatedFactualPrecedents: [],
+      gateExplanation: rule.explanation,
+      note: `${missingFactText} No structured finding in the indexed precedent library currently scores as a close enough factual match to cite as a supporting precedent. The entered facts engage a statutory route ${provision.instrument} ${provision.provisionNumber} itself expressly contemplates, but an additional factual prerequisite must be established before this provision can be treated as a Primary Candidate.`,
+      legalFunction: legalFunctionForProvision(provision.id),
+      candidateTier: "requires_additional_fact",
+      blockReason: "factual_prerequisite",
+      topicAnchorSatisfied: true,
+    });
+  }
+  gateBlockedProvisionResults.sort((a, b) => {
+    if (!!a.topicAnchorSatisfied !== !!b.topicAnchorSatisfied) return a.topicAnchorSatisfied ? -1 : 1;
+    if (a.relatedFactualPrecedents.length === 0 || b.relatedFactualPrecedents.length === 0) {
+      return b.relatedFactualPrecedents.length - a.relatedFactualPrecedents.length;
+    }
+    return compareByFactualScoreThenFinality(a.relatedFactualPrecedents[0], b.relatedFactualPrecedents[0]);
+  });
   contradictedProvisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.relatedPrecedents[0], b.relatedPrecedents[0]));
 
   const provisionResults: ProvisionResult[] = [];
@@ -943,6 +1011,41 @@ export function analyzeScenario(
       continue;
     }
 
+    // Checkpoint correction B (precedent-only applicability leakage): an
+    // UNGATED provision (no curated retrieval rule of its own) reaching
+    // this point has conductIdsMatched.length > 0 — i.e. the ONLY reason
+    // it looks like a candidate breach is that a SPECIFIC linked
+    // precedent's own conduct tags happen to overlap the entered facts.
+    // That is applicability determined by which historical finding the
+    // corpus happens to link this provision to, never by an
+    // independently-curated legal prerequisite for the provision itself —
+    // exactly the leakage this correction removes: "a provision must
+    // never appear in the 'potentially relevant to my scenario' side
+    // merely because it was linked to a historical finding that happens
+    // to share a fact/conduct tag with the entered scenario." This is
+    // NEVER pushed to provisionResults regardless of legal function —
+    // including a primary-capable one (e.g. LODR-6-gen, governance
+    // procedural obligation) that previously surfaced as a
+    // "primary_candidate" through this exact path. Nothing is lost for
+    // genuine historical awareness: buildHistoricalTreatment
+    // (historicalTreatment.ts) walks the corpus and cross-references the
+    // (now-absent) provisionResults entry independently, correctly
+    // falling back to currentCandidateTier: "not_currently_a_candidate"
+    // and still surfacing the provision under Historical Treatment where
+    // a comparable matter genuinely invoked it.
+    if (!rule) {
+      const countPhrase = `${supporting.length} structured finding${supporting.length > 1 ? "s" : ""} factually overlapping this scenario also cite${supporting.length > 1 ? "" : "s"} ${provision.provisionNumber}`;
+      governingProvisionResults.push({
+        provision,
+        relatedPrecedents: supporting.slice(0, 3).map((f) => toPrecedentRef(f.sf, f.relationship)),
+        polarityClass: "no_independent_retrieval_rule",
+        note: `${countPhrase}, and the entered facts state an adverse fact overlapping that precedent's own record. This provision has no independently curated legal-retrieval rule in this corpus, so it is not shown here as a candidate applicable to the entered facts — only a historical linkage to a factually comparable precedent exists. See how CFID has treated this provision in comparable matters under Historical Treatment.`,
+        legalFunction: legalFunctionForProvision(provisionId),
+        candidateTier: "governing_relevant",
+      });
+      continue;
+    }
+
     // Prefer the highest-scoring RESOLVED finding (anything other than
     // Alleged/Inconclusive/Procedural observation) as the anchor for
     // confidence — a genuinely upheld precedent should not be shadowed by a
@@ -984,6 +1087,49 @@ export function analyzeScenario(
       candidateTier: deriveCandidateTier(legalFunction),
       actorApplicability: getActorApplicability(provisionId),
     });
+  }
+
+  // Checkpoint correction C / checkpoint correction 2 item 4-5: a
+  // provisionResults entry whose own curated retrieval rule carries
+  // dependency: "requires_independently_retrieved_substantive_candidate"
+  // (LODR Regulation 4(1)/4(2)(f) family, SEBI Act Section 15HB — see
+  // requiresIndependentlyRetrievedSubstantivePrimary) carries an
+  // explanation stating it is shown once some OTHER substantive provision
+  // has independently satisfied its own retrieval prerequisite; not itself
+  // an independent trigger. passesRetrievalGate only checks that the
+  // query's text MENTIONS a qualifying adverse concept, never that such an
+  // OTHER provision actually cleared its own gate elsewhere in this same
+  // result — when NO primary_candidate exists anywhere in provisionResults,
+  // that premise is simply false, and this provision must not be presented
+  // as a current-scenario applicability candidate on the strength of the
+  // umbrella gate alone. Demoted to governingProvisionResults with an
+  // honest explanation rather than silently dropped, and — like every
+  // other governing entry — still independently, correctly surfaced by
+  // buildHistoricalTreatment if a comparable matter genuinely invoked it.
+  // Deliberately scoped to rules carrying the explicit `dependency` field
+  // (never by legalFunction, and never by reference equality against the
+  // shared conduct array — see checkpoint correction 2 item 4) so a
+  // genuinely independent general-principle/penalty provision with its own
+  // narrower rule is never affected. NOTE on wording (checkpoint correction
+  // 2 item 5): "established" here would wrongly imply this engine makes an
+  // adjudicatory finding. A primary_candidate means an independently
+  // retrieved, potentially applicable provision — its own retrieval
+  // prerequisite is satisfied, not that a contravention has been proven.
+  if (!provisionResults.some((pr) => pr.candidateTier === "primary_candidate")) {
+    for (let i = provisionResults.length - 1; i >= 0; i--) {
+      const pr = provisionResults[i];
+      if (!requiresIndependentlyRetrievedSubstantivePrimary(retrievalRuleForProvision(pr.provision.id))) continue;
+      provisionResults.splice(i, 1);
+      const n = pr.supportingPrecedents.length;
+      governingProvisionResults.push({
+        provision: pr.provision,
+        relatedPrecedents: pr.supportingPrecedents,
+        polarityClass: "rides_on_unretrieved_primary_dependency",
+        note: `${n} structured finding${n === 1 ? "" : "s"} factually overlapping this scenario also cite${n === 1 ? "s" : ""} ${pr.provision.provisionNumber}. This provision's own retrieval rule rides on another substantive provision independently satisfying its own retrieval prerequisite on the entered facts — it is not an independent trigger of its own. No such other provision is independently retrieved as a candidate elsewhere in this result, so this provision is not shown here as a current-scenario applicability candidate.`,
+        legalFunction: pr.legalFunction,
+        candidateTier: "governing_relevant",
+      });
+    }
   }
 
   provisionResults.sort((a, b) => compareByFactualScoreThenFinality(a.supportingPrecedents[0], b.supportingPrecedents[0]));

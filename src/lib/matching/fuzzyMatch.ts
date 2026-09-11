@@ -101,7 +101,54 @@ export const PROTECTED_TERMS = new Set([
   "misutilization",
   "allotment",
   "consideration",
+  // P0 remediation finding (Analyzer template review): "unconnected" was
+  // silently corrected to "connected" -- reversing the meaning of the RPT
+  // template's own "arm's-length dealing with an unconnected vendor" text.
+  // Root cause was the general negation-prefix guard below (stripping "un"
+  // from an 11-letter word lands exactly on the edit-distance tolerance for
+  // that length), not a gap specific to this one pair -- but these named
+  // contrast pairs are listed explicitly too, as a second, independent
+  // layer that holds even if the general guard's logic ever changes.
+  "connected",
+  "unconnected",
+  "related",
+  "unrelated",
+  "genuine",
+  "compliant",
+  "cooperation",
+  "established",
+  "present",
+  "absent",
+  "disclosed",
+  "undisclosed",
+  "approved",
+  "unapproved",
+  "verified",
+  "unverified",
 ]);
+
+/**
+ * Prefixes that negate a word's meaning. A correction that strips or adds
+ * one of these across the word/candidate boundary is never a spelling fix
+ * -- it is a meaning reversal (P0 remediation finding: "unconnected" was
+ * silently "corrected" to "connected" because removing the 2-letter "un-"
+ * prefix from an 11-letter word landed exactly within that length's
+ * edit-distance tolerance, and "connected" is a real curated-vocabulary
+ * word). This guard is general and prefix-based rather than a fixed word
+ * list, so it also covers pairs not named in PROTECTED_TERMS (e.g. any
+ * future "non-X"/"without X" pair glued into a single token by punctuation
+ * stripping).
+ */
+const NEGATION_PREFIXES = ["un", "non", "not", "without", "no"];
+
+/** True if one of `a`/`b` equals the other with a leading negation prefix
+ * removed -- i.e. treating them as interchangeable would strip or add a
+ * negation and reverse the meaning. */
+function isNegationPrefixPair(a: string, b: string): boolean {
+  const [longer, shorter] = a.length >= b.length ? [a, b] : [b, a];
+  if (longer === shorter) return false;
+  return NEGATION_PREFIXES.some((prefix) => longer.startsWith(prefix) && longer.length > prefix.length && longer.slice(prefix.length) === shorter);
+}
 
 /**
  * The full correction-candidate pool: curated vocabulary words plus every
@@ -138,6 +185,7 @@ function correctWord(word: string): string | null {
   let tie = false;
   for (const candidate of CORRECTION_CANDIDATES) {
     if (Math.abs(candidate.length - word.length) > tolerance) continue;
+    if (isNegationPrefixPair(word, candidate)) continue;
     const d = levenshteinDistance(word, candidate, tolerance);
     if (d > tolerance) continue;
     if (d < bestDist) {

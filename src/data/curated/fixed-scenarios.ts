@@ -218,7 +218,19 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "Improper constitution of the Audit Committee; failure to convene Audit Committee meetings; the Audit Committee failing to discharge its responsibilities; directors or independent directors failing their governance duties; a failure of Board/Audit-Committee oversight; signing or certifying compliance despite known material deficiencies; or other material Board/Audit-Committee governance failures. The exact provision engaged depends on the specific governance failure at issue — not every provision listed here applies to every governance lapse. A bare Audit Committee meeting-frequency lapse is a governance/procedural matter, not automatically a PFUTP fraud finding, even where PFUTP provisions also appeared in a particular order's broader factual matrix.",
     provisionIds: ["LODR-16-1-b", "LODR-17-8", "LODR-18-1-d", "LODR-18-2", "LODR-18-3-schedule-II", "LODR-4-2-f"],
-    keyConceptIds: ["audit_committee_deficiency", "director_governance_failure"],
+    // Checkpoint correction 2, item 2: audit_committee_deficiency was split
+    // into four sub-predicate concepts (composition, chairperson,
+    // meetings-not-held, Schedule-II role) — this broad scenario's own
+    // subject genuinely spans all four (per its own explanation text
+    // above), so all four belong here, not just the narrowed meetings-only
+    // survivor of the original id.
+    keyConceptIds: [
+      "audit_committee_deficiency",
+      "audit_committee_composition_deficiency",
+      "audit_committee_chairperson_deficiency",
+      "audit_committee_role_failure",
+      "director_governance_failure",
+    ],
   },
   {
     id: "compliance-officer-irregularities",
@@ -226,7 +238,12 @@ export const FIXED_SCENARIOS: FixedScenario[] = [
     explanation:
       "Failure to appoint a Compliance Officer; failure to fill a Compliance Officer vacancy within the prescribed period; appointment of an ineligible or non-compliant person as Compliance Officer; the Compliance Officer failing prescribed responsibilities; or failure to ensure regulatory conformity. The exact provision text/version depends on when the conduct occurred — an earlier version of the LODR Regulations may govern conduct predating a later amendment.",
     provisionIds: ["LODR-6-1", "LODR-6-1A", "LODR-6-2-a", "LODR-6-2-c"],
-    keyConceptIds: ["compliance_officer_deficiency", "false_compliance_certification"],
+    // Checkpoint correction 2, item 2: compliance_officer_duty_failure added
+    // — this scenario's own subject spans both the appointment/vacancy
+    // predicate and the Regulation 6(2) duty-performance predicate (per its
+    // own explanation text above and its own provisionIds, which include
+    // the duty-specific LODR-6-2-a/LODR-6-2-c).
+    keyConceptIds: ["compliance_officer_deficiency", "compliance_officer_duty_failure", "false_compliance_certification"],
   },
   {
     id: "fraudulent-manipulative-conduct-broad",

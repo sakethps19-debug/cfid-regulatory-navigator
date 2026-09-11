@@ -105,8 +105,11 @@ export default function LoginPage() {
           <path d="M8 8h14M8 13h14M8 18h9" stroke="var(--color-gold-100)" strokeWidth="1.25" strokeLinecap="round" />
           <path d="M8 23.5 12 27l9-10" stroke="var(--color-gold-100)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <h1 className="font-serif text-2xl font-semibold">CFID Regulatory Navigator</h1>
-        <p className="mt-2 text-sm text-[var(--color-gold-100)]">Internal legal-research pilot, authorised access only.</p>
+        <h1 className="font-serif text-2xl font-semibold">SPARC</h1>
+        <p className="mt-1 text-sm text-[var(--color-gold-100)]">Scenario, Provision &amp; Regulatory Case Analysis</p>
+        <p className="mt-2 text-xs text-[var(--color-gold-100)]/80">
+          CFID Regulatory Research Platform — internal legal-research pilot, authorised access only.
+        </p>
       </div>
       <Suspense fallback={null}>
         <LoginForm />

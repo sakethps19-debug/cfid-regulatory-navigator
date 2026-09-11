@@ -78,10 +78,10 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
   });
 
   it("a finding whose status is not final is still fully scored and surfaced by the engine (finality is not required to appear at all, only to be labelled correctly)", () => {
-    const provision = makeProvision({ id: "TEST-PROV-INTERIM-WITH-REF" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const interimWithFinalRef = makeFinding({
       recordId: "SYN-INTERIM-01",
-      provisionIds: ["TEST-PROV-INTERIM-WITH-REF"],
+      provisionIds: ["LODR-17-8"],
       findingStatus: "Confirmed at interim",
       finalParagraphReferences: "Para 200", // present, but status is NOT final -- must not count as final
       interimParagraphReferences: "Para 50",
@@ -92,21 +92,21 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-INTERIM-WITH-REF");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     expect(pr!.supportingPrecedents[0]?.finding.findingStatus).toBe("Confirmed at interim");
   });
 
   it("treats a Not Confirmed in Final Order finding as final too (a final order rejecting the allegation is still a final-order determination)", () => {
-    const provision = makeProvision({ id: "TEST-PROV-REJECTED-FINAL" });
+    const provision = makeProvision({ id: "LODR-17-8" });
     const supporting = makeFinding({
       recordId: "SYN-SUPPORT-01",
-      provisionIds: ["TEST-PROV-REJECTED-FINAL"],
+      provisionIds: ["LODR-17-8"],
       findingStatus: "Confirmed in Final Order",
     });
     const rejected = makeFinding({
       recordId: "SYN-REJECTED-01",
-      provisionIds: ["TEST-PROV-REJECTED-FINAL"],
+      provisionIds: ["LODR-17-8"],
       findingStatus: "Not Confirmed in Final Order",
       finalParagraphReferences: null,
       interimParagraphReferences: "Para 9",
@@ -118,7 +118,7 @@ describe("explicit finality (findingStatus, not finalParagraphReferences presenc
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-REJECTED-FINAL");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     // No supporting precedent here is "interim only" (the only supporting
     // finding is itself a final-order confirmation), so the interim

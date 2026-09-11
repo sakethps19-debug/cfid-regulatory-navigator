@@ -1,15 +1,29 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
-import { getOrders, getProvisions, getVerifiedCfidOrders } from "@/lib/data";
+import { getOrders, getProvisions, getProvisionVersionsByProvisionId, getVerifiedCfidOrders } from "@/lib/data";
 import { isDeepAnalyzed } from "@/lib/processingStages";
 import { formatDate } from "@/lib/formatDate";
+import { countProvisionTextProvenance, PROVISION_TEXT_PROVENANCE } from "@/lib/provisionTextProvenance";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 
 export default async function LibraryPage() {
-  const [allOrders, provisions, verifiedCfidOrders] = await Promise.all([getOrders(), getProvisions(), getVerifiedCfidOrders()]);
+  const [allOrders, provisions, verifiedCfidOrders, versionsByProvisionId] = await Promise.all([
+    getOrders(),
+    getProvisions(),
+    getVerifiedCfidOrders(),
+    getProvisionVersionsByProvisionId(),
+  ]);
   const orders = allOrders.filter((o) => isDeepAnalyzed(o.processingStage));
   const byInstrument = new Map<string, number>();
   for (const p of provisions) byInstrument.set(p.instrument, (byInstrument.get(p.instrument) ?? 0) + 1);
+
+  // Live-computed, never hardcoded — see provisionTextProvenance.ts. The
+  // corpus genuinely contains provisions in all three provenance states plus
+  // provisions with no version on file at all; a blanket "always Requires
+  // verification" claim would misstate the officially_verified and
+  // order_cited_text_only provisions actually on file.
+  const provenanceCounts = countProvisionTextProvenance(provisions.length, versionsByProvisionId);
 
   return (
     <div>
@@ -18,13 +32,13 @@ export default async function LibraryPage() {
         description="Official sources used in this pilot. Only the official SEBI website (orders, Acts, regulations, circulars), the official MCA website, official sources for notified accounting standards, and sources expressly referred to within the SEBI orders themselves are used, never law-firm articles, blogs, news reports, commercial databases, or unofficial reproductions."
       />
 
-      <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Deep-analyzed orders ({orders.length})</h2>
-      <p className="mb-3 text-sm text-[var(--color-ink-700)]">
+      <h2 className="mb-3 text-base font-semibold text-[var(--color-ink-900)]">Orders in the structured precedent library ({orders.length})</h2>
+      <p className={`mb-3 text-sm text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>
         These orders have been broken down into individual scenario findings with paragraph references. See{" "}
-        <Link href="/awaiting-analysis" className="text-[var(--color-gold-700)] hover:underline">
-          Orders Awaiting Analysis
+        <Link href="/case-library" className="text-[var(--color-gold-700)] hover:underline">
+          the complete indexed order register
         </Link>{" "}
-        for the full authoritative list of {verifiedCfidOrders.length} confirmed CFID orders.
+        for all {verifiedCfidOrders.length} confirmed CFID orders, including those not yet broken down.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((o) => (
@@ -55,12 +69,28 @@ export default async function LibraryPage() {
             </div>
           ))}
         </dl>
-        <p className="mt-4 text-xs text-[var(--color-ink-500)]">
+        <p className={`mt-4 text-xs text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
           These {provisions.length} provisions are only the ones actually cited in the orders analysed so far, they
           do not represent the complete CFID law library, and the count will grow as more orders are analysed.
-          Current statutory text for each provision is not reproduced in this pilot and is marked{" "}
-          <span className="font-medium">&quot;Requires verification&quot;</span>, always confirm the current
-          in-force text on the official SEBI or MCA website before relying on it.
+        </p>
+        <p className={`mt-2 text-xs text-[var(--color-ink-500)] ${NARRATIVE_JUSTIFY_ONLY}`}>
+          Provision text on file, across {provenanceCounts.totalVersions} recorded version
+          {provenanceCounts.totalVersions === 1 ? "" : "s"}: {provenanceCounts.officiallyVerifiedVersions}{" "}
+          <span className="font-medium">&quot;{PROVISION_TEXT_PROVENANCE.officially_verified.label}&quot;</span>,{" "}
+          {provenanceCounts.orderCitedTextOnlyVersions}{" "}
+          <span className="font-medium">&quot;{PROVISION_TEXT_PROVENANCE.order_cited_text_only.label}&quot;</span>,{" "}
+          {provenanceCounts.requiresVerificationVersions}{" "}
+          <span className="font-medium">&quot;{PROVISION_TEXT_PROVENANCE.requires_verification.label}&quot;</span>.{" "}
+          {provenanceCounts.provisionsWithNoVersionOnFile > 0 && (
+            <>
+              A further {provenanceCounts.provisionsWithNoVersionOnFile} provision
+              {provenanceCounts.provisionsWithNoVersionOnFile === 1 ? "" : "s"} have no version text on file at all
+              yet.{" "}
+            </>
+          )}
+          &quot;{PROVISION_TEXT_PROVENANCE.order_cited_text_only.label}&quot; is text captured from an indexed SEBI
+          order that quoted the provision, not an independent verification of the current statutory text. Always
+          confirm the current in-force text on the official SEBI or MCA website before relying on it.
         </p>
       </Card>
     </div>

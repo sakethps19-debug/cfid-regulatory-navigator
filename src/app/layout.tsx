@@ -7,7 +7,7 @@ const heading = Source_Serif_4({ subsets: ["latin"], variable: "--font-heading",
 const body = Source_Sans_3({ subsets: ["latin"], variable: "--font-body", weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "CFID Regulatory Navigator",
+  title: "SPARC — CFID Regulatory Research Platform",
   description: "Internal legal-research pilot for CFID orders and provisions.",
   robots: { index: false, follow: false },
 };

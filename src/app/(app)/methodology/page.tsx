@@ -1,12 +1,16 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { PROCESSING_STAGE_LABELS, PROCESSING_STAGE_ORDER, PROCESSING_STAGE_STYLES } from "@/lib/processingStages";
+import { NARRATIVE_JUSTIFY_ONLY } from "@/lib/proseClasses";
 
+// Global text-alignment requirement (live-officer-review correction):
+// Methodology is entirely substantive explanatory prose, so both wrappers
+// justify their content in one shared place rather than scattering
+// text-justify across dozens of individual <p>/<li> tags on this page.
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="mb-6">
       <h2 className="text-base font-semibold text-[var(--color-ink-900)]">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
+      <div className={`mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>{children}</div>
     </Card>
   );
 }
@@ -21,7 +25,7 @@ function CollapsibleSection({ title, children }: { title: string; children: Reac
         <summary className="cursor-pointer text-base font-semibold text-[var(--color-ink-900)] marker:text-[var(--color-gold-600)]">
           {title}
         </summary>
-        <div className="mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)]">{children}</div>
+        <div className={`mt-3 space-y-3 text-sm leading-relaxed text-[var(--color-ink-700)] ${NARRATIVE_JUSTIFY_ONLY}`}>{children}</div>
       </details>
     </Card>
   );
@@ -35,19 +39,6 @@ const FLOW_STEPS = [
   "Missing evidence checklist",
   "Qualified, non-conclusive output",
 ];
-
-const PROCESSING_STAGE_HINTS: Record<(typeof PROCESSING_STAGE_ORDER)[number], string> = {
-  indexed: "Order identified and recorded; no document retrieval attempted yet.",
-  awaiting_retrieval: "Queued for document retrieval; no attempt recorded yet.",
-  retrieval_attempted: "A retrieval attempt was made and recorded for this specific order.",
-  retrieval_failed: "A retrieval attempt was made and failed, with a recorded reason.",
-  downloaded: "The source document was downloaded.",
-  text_extracted: "Text was extracted from the downloaded document.",
-  scenario_findings_extracted: "Scenario findings were drafted from the extracted text.",
-  citations_checked: "Findings and their paragraph citations were checked against the source order (counts as deep-analyzed).",
-  legally_reviewed: "Reviewed and signed off by a CFID officer — a further, distinct step, not a precondition for deep analysis.",
-  needs_manual_review: "Flagged for manual review before further automated processing continues.",
-};
 
 export default function MethodologyPage() {
   return (
@@ -81,7 +72,8 @@ export default function MethodologyPage() {
 
       <Section title="Purpose and scope">
         <p>
-          CFID Regulatory Navigator is an internal legal-research assistant for CFID officers, each signed in with
+          SPARC (Scenario, Provision &amp; Regulatory Case Analysis) is an internal legal-research assistant for CFID
+          officers, each signed in with
           their own allow-listed email. Given a factual scenario, it identifies potentially applicable SEBI Act
           sections, regulations and other provisions; matching factual ingredients; supporting CFID orders with
           paragraph references; contrary or negative precedents; the procedural status of each finding; missing facts
@@ -96,7 +88,7 @@ export default function MethodologyPage() {
       <Section title="Precedent database">
         <p>
           Every order in the{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
+          <a href="/case-library" className="text-[var(--color-gold-700)] underline">
             Verified CFID Orders
           </a>{" "}
           register has been confirmed to contain &quot;CFID&quot; in its own order number, then opened, read, and
@@ -116,41 +108,19 @@ export default function MethodologyPage() {
         </p>
       </Section>
 
-      <Card className="mb-6">
-        <h2 className="text-base font-semibold text-[var(--color-ink-900)]">Processing stages</h2>
-        <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-          Where each order currently stands in the pipeline; see the Admin Processing Dashboard for live counts.
-        </p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[480px] text-sm">
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {PROCESSING_STAGE_ORDER.map((stage) => (
-                <tr key={stage}>
-                  <td className="whitespace-nowrap py-2 pr-3 align-top">
-                    <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${PROCESSING_STAGE_STYLES[stage]}`}>
-                      {PROCESSING_STAGE_LABELS[stage]}
-                    </span>
-                  </td>
-                  <td className="py-2 text-[var(--color-ink-700)]">{PROCESSING_STAGE_HINTS[stage]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
       <CollapsibleSection title="Verified CFID Orders and the Residual register">
         <p>
           <strong>Verified_CFID_Order_Links.xlsx</strong> is the authoritative starting list of confirmed CFID orders
           for this pilot: every order identifier in it has already been confirmed to contain &quot;CFID&quot;. Each
-          row is either <strong>deep-analyzed</strong> (broken down into the full scenario-finding analysis that
-          powers the Scenario Analyzer) or still <strong>awaiting detailed analysis</strong>, a row awaiting
-          analysis is not treated as a source of scenario findings or provision matches until that analysis is done.
-          The{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
-            Orders Awaiting Analysis
-          </a>{" "}
-          page shows the current split.
+          row is either <strong>broken down into the full scenario-finding analysis</strong> that powers the
+          Scenario Analyzer, or still <strong>awaiting that analysis</strong>; a row awaiting analysis is not
+          treated as a source of scenario findings or provision matches until that analysis is done. The current
+          split is tracked in the corpus-management queue (administrator access); every order that has been
+          broken down is browsable in{" "}
+          <a href="/case-library" className="text-[var(--color-gold-700)] underline">
+            Case Library
+          </a>
+          .
         </p>
         <p>
           <strong>Residual_Order_Links.xlsx</strong> is an exclusion and pending-link register only. It records cases
@@ -162,11 +132,8 @@ export default function MethodologyPage() {
           that both of these were refined from is no longer used by this application.
         </p>
         <p>
-          Both registers are shown in full on the{" "}
-          <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">
-            Orders Awaiting Analysis
-          </a>{" "}
-          page. No row is ever deleted from either register.
+          Both registers are tracked in full in the corpus-management queue (administrator access). No row is ever
+          deleted from either register.
         </p>
         <p>
           <strong>Procedure for adding a newly analysed order later:</strong> confirm the order number contains
@@ -174,15 +141,14 @@ export default function MethodologyPage() {
           its scenario findings, provisions and paragraph references exactly as they appear in the order (never
           inferred or invented), and insert them into the relational database (see{" "}
           <code>scripts/db/build-import-sql.ts</code> and <code>scripts/db/run-import.ts</code>) with{" "}
-          <code>processing_stage</code> updated to <code>citations_checked</code> — the deep-analysis-complete stage,
-          reached once findings and their paragraph citations have been checked against the source order. Every
-          write goes through the service role and is subject to the same validation the pilot library was: a
-          citation without a paragraph reference or official URL is recorded as a <code>validation_issues</code> row
-          rather than shown as settled.{" "}
+          <code>processing_stage</code> updated to <code>citations_checked</code>, reached once findings and their
+          paragraph citations have been checked against the source order. Every write goes through the service role
+          and is subject to the same validation the pilot library was: a citation without a paragraph reference or
+          official URL is recorded as a <code>validation_issues</code> row rather than shown as settled.{" "}
           <strong>This procedure never sets <code>processing_stage</code> to <code>legally_reviewed</code></strong> —
-          that is a separate, later step reserved for an actual CFID officer&apos;s own sign-off, distinct from and
-          not a precondition for deep analysis. A newly imported order appears immediately as deep-analyzed, not as
-          legally reviewed.
+          that value is reserved for a separate corpus-maintenance step outside the scope of this import procedure,
+          and is not a precondition for this analysis. A newly imported order&apos;s findings appear in the
+          structured library once its citations have been checked, independently of that separate step.
         </p>
       </CollapsibleSection>
 
@@ -284,7 +250,7 @@ export default function MethodologyPage() {
             Detect factual concepts (transaction types, actor roles, evidence types, alleged conduct) using a
             controlled synonym dictionary of keyword and phrase matches.
           </li>
-          <li>Score every deep-analyzed scenario finding by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
+          <li>Score every scenario finding in the structured library by weighted overlap with the detected concepts and any selected actor/transaction-type filters.</li>
           <li>Prefer findings drawn from a final order over an interim-only finding.</li>
           <li>Group findings that cleared a minimum relevance threshold by the specific provision(s) they were actually tagged with, a provision is never suggested merely because it appeared elsewhere in the same order.</li>
           <li>Retrieve supporting precedents (status Confirmed in Final Order / Prima facie / Partly Confirmed in Final Order) and contrary precedents (status Not Confirmed in Final Order) for each provision, plus an independent contrary-precedent search for fund-movement and allotment scenarios.</li>
@@ -329,8 +295,8 @@ export default function MethodologyPage() {
 
       <Section title="Known limitations">
         <ul className="list-inside list-disc space-y-1">
-          <li>The deep-analyzed scenario-finding library covers only the orders marked &quot;deep-analyzed&quot; on the <a href="/awaiting-analysis" className="text-[var(--color-gold-700)] underline">Orders Awaiting Analysis</a> page; any order still awaiting analysis contributes no scenario findings yet. Results for facts outside the analysed corpus will correctly show no match rather than a fabricated one.</li>
-          <li>None of this analysis has yet been legally reviewed and signed off by a CFID officer, that is a separate, further step (see the Dashboard and Admin Processing Dashboard for the current legally-reviewed count).</li>
+          <li>The structured scenario-finding library covers only the orders whose findings have already been broken down; any order still awaiting that work contributes no scenario findings yet, though it remains listed in <a href="/case-library" className="text-[var(--color-gold-700)] underline">Case Library</a>. Results for facts outside the indexed corpus will correctly show no match rather than a fabricated one.</li>
+          <li>Always verify the cited provision and order against the official source before relying on the output.</li>
           <li>Keyword/synonym matching cannot capture every phrasing of a scenario, try adding more specific detail (transaction type, actors, evidence) if no results appear.</li>
           <li>Provision &quot;current text&quot; is not reproduced or guaranteed current, always verify against the official SEBI/MCA source before relying on it.</li>
           <li>The in-memory rate limiter operates per server instance; on a platform running multiple instances it is a best-effort, not a strict global, limit.</li>

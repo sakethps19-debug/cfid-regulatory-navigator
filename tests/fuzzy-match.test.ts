@@ -180,8 +180,68 @@ describe("applySemanticAssist: protected vocabulary never normalizes one valid t
   });
 });
 
+// P0 remediation finding (Analyzer template review): the app's own RPT
+// quick-start template text -- "misrepresented as an arm's-length dealing
+// with an unconnected vendor" -- was silently corrected to "...with an
+// connected vendor", reversing the meaning. Root cause: stripping the
+// 2-letter "un-" prefix from an 11-letter word ("unconnected") landed
+// exactly within that length's edit-distance tolerance, and "connected" is
+// a real curated-vocabulary word (see NEGATION_PREFIXES/isNegationPrefixPair
+// in fuzzyMatch.ts). These tests cover the general negation-prefix guard and
+// every explicitly named legal/factual contrast pair.
+describe("applySemanticAssist: never strips or reverses a negating prefix", () => {
+  it("unconnected is never changed to connected -- the specific reported defect", () => {
+    const text = "Company misrepresented as an arm's-length dealing with an unconnected vendor.";
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(correctedText).toContain("unconnected");
+    expect(correctedText).not.toMatch(/\bconnected vendor\b/);
+    expect(corrections).toEqual([]);
+  });
+
+  it("verification is never changed to certification (restated as its own negation/contrast-pair regression)", () => {
+    const { correctedText, corrections } = applySemanticAssist("Independent verification was obtained.");
+    expect(correctedText).toContain("verification");
+    expect(correctedText).not.toContain("certification");
+    expect(corrections).toEqual([]);
+  });
+
+  it("non-disclosure is never changed to disclosure", () => {
+    const text = "The order recorded non-disclosure of the related party transaction.";
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(correctedText).not.toMatch(/\brecorded disclosure\b/);
+    expect(corrections).toEqual([]);
+  });
+
+  it.each([
+    ["connected/unconnected", "The vendor was unconnected to the promoter group."],
+    ["related/unrelated", "The counterparty was unrelated to any related party."],
+    ["disclosed/undisclosed", "The liability remained undisclosed in the annual report."],
+    ["approved/unapproved", "The transaction was unapproved by the Audit Committee."],
+    ["compliant/non-compliant", "The filing was found non-compliant with Regulation 33."],
+    ["cooperation/non-cooperation", "The noticee's non-cooperation with the forensic audit was recorded."],
+    ["verified/unverified", "The claim remained unverified against the official source."],
+    ["genuine/non-genuine", "The assets were classified as non-genuine."],
+    ["present/absent", "Deceitful intent was found to be absent on these facts."],
+    ["established/not established", "Wrongful gain was not established on these facts."],
+  ])("protects the %s contrast: original text is never altered", (_label, text) => {
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(corrections).toEqual([]);
+  });
+
+  it("negated terms retain their meaning: a full negated sentence round-trips completely unchanged", () => {
+    const text =
+      "The RPT was undisclosed and unapproved; the counterparty was unconnected and unrelated; the certification remained unverified.";
+    const { correctedText, corrections } = applySemanticAssist(text);
+    expect(correctedText).toBe(text);
+    expect(corrections).toEqual([]);
+  });
+});
+
 describe("semantic assist integration with analyzeScenario", () => {
-  const provision = makeProvision({ id: "MOCK-PREF", subject: "Preferential allotment safeguards." });
+  const provision = makeProvision({ id: "COMPANIES-ACT-67-2", subject: "Preferential allotment safeguards." });
   // allegedConduct here must be a real concept-tag id ("preferential_allotment"
   // in concept-tags.ts) so detectConcepts's output actually overlaps with it.
   const findingWithRealTag = makeFinding({
@@ -192,7 +252,7 @@ describe("semantic assist integration with analyzeScenario", () => {
 
   it("still detects and surfaces a provision when the free text has a typo the engine can correct", () => {
     const result = analyzeScenario(
-      { freeText: "There was a prefrential allotment of shares to a related party without proper disclosur." },
+      { freeText: "There was a prefrential allotment of shares to a related party without proper disclosur, and consideration not received for the shares." },
       [findingWithRealTag],
       [provision],
       []

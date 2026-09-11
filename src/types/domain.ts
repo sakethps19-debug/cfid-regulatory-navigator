@@ -1,4 +1,4 @@
-// CFID Regulatory Navigator — core domain types
+// SPARC (CFID Regulatory Research Platform) — core domain types
 // These types describe the structured data generated from the source
 // workbooks: CFID_Precedent_Library_Pilot.xlsx (deep scenario-finding
 // analysis for 3 orders), Verified_CFID_Order_Links.xlsx (the authoritative

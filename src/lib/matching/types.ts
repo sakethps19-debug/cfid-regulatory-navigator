@@ -7,15 +7,25 @@ import type { WordCorrection } from "./fuzzyMatch";
  * pass): a provision shown at all is placed in exactly one of these tiers,
  * so a penalty provision, a bare definition, a general principle, a
  * liability-attribution mechanism and a substantive prohibition are never
- * presented as equivalent candidate violations.
+ * presented as equivalent candidate violations. NOTE (checkpoint
+ * correction 2, item 5): this engine never "establishes" a violation — a
+ * primary_candidate means an independently retrieved, potentially
+ * applicable provision whose own retrieval prerequisite is satisfied, not
+ * an adjudicatory conclusion that any contravention has been proven.
  *   - "primary_candidate": the entered facts independently satisfy this
- *     provision's own retrieval prerequisite (or it is ungated), AND its
- *     legal function is one that can itself anchor a charge (see
- *     PRIMARY_CAPABLE_LEGAL_FUNCTIONS).
+ *     provision's own curated retrieval prerequisite, AND its legal
+ *     function is one that can itself anchor a charge (see
+ *     PRIMARY_CAPABLE_LEGAL_FUNCTIONS). Checkpoint correction B: an
+ *     UNGATED provision (no curated retrieval rule at all) can no longer
+ *     reach primary_candidate or related_ancillary purely through a
+ *     linked precedent's own conduct-tag overlap with the entered facts —
+ *     that produced a "no_independent_retrieval_rule" GoverningProvisionResult
+ *     instead (see QuestionAPolarityClass), never a ProvisionResult.
  *   - "related_ancillary": the entered facts satisfy the prerequisite, but
  *     the provision's own legal function (general principle, penalty,
  *     liability-attribution, SEBI power, definition) means it rides on
- *     some OTHER substantive violation rather than standing on its own.
+ *     some OTHER independently retrieved substantive provision rather than
+ *     standing on its own.
  *   - "requires_additional_fact": a factually-overlapping historical
  *     finding cites this provision, but either its own factual retrieval
  *     prerequisite or its actor-applicability check is not satisfied by
@@ -61,13 +71,51 @@ export type CandidateTier = "primary_candidate" | "related_ancillary" | "require
  *     independently carries, even though the provision's own gate/topic
  *     match did not itself require that fact (e.g. PFUTP on a scenario
  *     that names no securities dealing at all, but explicitly rules out
- *     "securities trading, price manipulation... "). */
-export type QuestionAPolarityClass = "governing_no_breach" | "additional_fact_required" | "not_triggered_contradicted";
+ *     "securities trading, price manipulation... ").
+ *   - "no_independent_retrieval_rule" (checkpoint correction B): this
+ *     provision has NO curated retrieval rule of its own (see
+ *     retrievalRuleForProvision) — whatever overlap exists between the
+ *     entered facts and a linked precedent's own conduct tags is real,
+ *     but is not an independently-curated legal prerequisite for THIS
+ *     provision, so it is never presented as a current-scenario
+ *     applicability candidate (ProvisionResult). The provision may still
+ *     be genuinely relevant to comparable historical matters — see
+ *     Historical Treatment (historicalTreatment.ts), which surfaces it
+ *     there independently of this classification.
+ *   - "rides_on_unretrieved_primary_dependency" (checkpoint correction C;
+ *     renamed from "rides_on_unestablished_violation" in checkpoint
+ *     correction 2, item 5, to stop implying this engine adjudicates a
+ *     violation as "established"): this provision's own curated retrieval
+ *     rule carries dependency: "requires_independently_retrieved_substantive_candidate"
+ *     (see requiresIndependentlyRetrievedSubstantivePrimary,
+ *     provision-retrieval-rules.ts; checkpoint correction 2, item 4 —
+ *     explicit structured metadata, never JavaScript array reference
+ *     equality) — a rule whose OWN explanation text states it is shown
+ *     once some OTHER substantive provision has independently satisfied
+ *     its own retrieval prerequisite, never an independent trigger. The
+ *     gate itself only checks that the query's text MENTIONS a qualifying
+ *     adverse concept, not that any such OTHER provision actually cleared
+ *     its own gate (a real primary_candidate) elsewhere in the same
+ *     result. When no primary_candidate exists in the result at all, the
+ *     rule's own stated legal basis is unmet, so this provision is never
+ *     presented as a current-scenario applicability candidate here — do
+ *     not confuse with "additional_fact_required" (topic present, breach
+ *     genuinely unknown): here the provision's entire premise is that it
+ *     rides on ANOTHER provision, and none was independently retrieved as
+ *     a candidate. */
+export type QuestionAPolarityClass =
+  | "governing_no_breach"
+  | "additional_fact_required"
+  | "not_triggered_contradicted"
+  | "no_independent_retrieval_rule"
+  | "rides_on_unretrieved_primary_dependency";
 
 export const QUESTION_A_POLARITY_LABELS: Record<QuestionAPolarityClass, string> = {
   governing_no_breach: "Governing / relevant — no apparent breach on stated facts",
   additional_fact_required: "Additional fact required — breach status unknown",
   not_triggered_contradicted: "Not triggered — contradicted by stated facts",
+  no_independent_retrieval_rule: "No independent legal-retrieval rule — not a current-scenario applicability candidate",
+  rides_on_unretrieved_primary_dependency: "Rides on another provision — none independently retrieved as a candidate in this result",
 };
 
 /** Result of checking a provision's own actor-applicability rule (see
@@ -312,6 +360,24 @@ export interface GateBlockedProvisionResult {
    * understand the FACTS may otherwise be sufficient, just not against the
    * actor named. */
   blockReason: "factual_prerequisite" | "actor_incompatibility" | "both";
+  /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+   * architecture): true when the entered scenario's facts satisfy a
+   * curated, provision-specific "topic anchor" this provision's own
+   * retrieval rule declares (see ProvisionRetrievalRule.topicAnchor /
+   * alternateRoutes[].topicAnchor in provision-retrieval-rules.ts) — a
+   * narrow concept subset marking genuine statutory engagement with a
+   * route the provision's own text expressly contemplates, as distinct
+   * from a provision that only appears here because it happens to be
+   * co-cited by the same historical finding record as something else. Only
+   * ever true for a rule that opts in with a declared topicAnchor; every
+   * other gated provision leaves this undefined and is completely
+   * unaffected. Never promotes a provision to provisionResults on its own
+   * — it only (a) lets a topically-engaged provision surface here even
+   * when the live corpus has NO scoring precedent finding linked to it at
+   * all, so precision work never destroys legally useful recall, and (b)
+   * lets the UI/report surface it ahead of merely-co-cited entries with a
+   * SPECIFIC missing-fact note rather than generic boilerplate. */
+  topicAnchorSatisfied?: boolean;
 }
 
 /** Question-A polarity correction pass: a provision whose SUBJECT MATTER

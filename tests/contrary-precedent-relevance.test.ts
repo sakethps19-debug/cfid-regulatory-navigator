@@ -122,12 +122,12 @@ describe("global contrary-precedent search: material relevance required", () => 
 
 describe("per-provision contrary precedents: material relevance required", () => {
   it("excludes a contrary precedent that only overlaps on a weak (actor/evidence-only) category", () => {
-    const provision = makeProvision({ id: "TEST-PROV-WEAK-CONTRARY" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const supporting = makeFinding({
       recordId: "SYN-SUPPORT-WEAK-01",
-      provisionIds: ["TEST-PROV-WEAK-CONTRARY"],
+      provisionIds: ["IND-AS-1"],
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["false_compliance_certification"],
+      allegedConduct: ["financial_statement_misstatement"],
       actorRoles: ["promoter"],
     });
     // This negative finding shares the SAME provision link and the same
@@ -136,42 +136,42 @@ describe("per-provision contrary precedents: material relevance required", () =>
     // precedent for this provision.
     const weakContrary = makeFinding({
       recordId: "SYN-WEAK-CONTRARY-01",
-      provisionIds: ["TEST-PROV-WEAK-CONTRARY"],
+      provisionIds: ["IND-AS-1"],
       findingStatus: "Not Confirmed in Final Order",
       actorRoles: ["promoter"],
     });
     const result = analyzeScenario(
-      { freeText: "There was a false certification by the promoter.", actorSignal: "promoter" },
+      { freeText: "There was a financial statement misstatement by the promoter.", actorSignal: "promoter" },
       [supporting, weakContrary],
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-WEAK-CONTRARY");
+    const pr = result.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(pr).toBeDefined();
     expect(pr!.contraryPrecedents.find((c) => c.finding.recordId === "SYN-WEAK-CONTRARY-01")).toBeUndefined();
   });
 
   it("includes a contrary precedent that shares a substantive (conduct) category", () => {
-    const provision = makeProvision({ id: "TEST-PROV-STRONG-CONTRARY" });
+    const provision = makeProvision({ id: "IND-AS-1" });
     const supporting = makeFinding({
       recordId: "SYN-SUPPORT-STRONG-01",
-      provisionIds: ["TEST-PROV-STRONG-CONTRARY"],
+      provisionIds: ["IND-AS-1"],
       findingStatus: "Confirmed in Final Order",
-      allegedConduct: ["false_compliance_certification"],
+      allegedConduct: ["financial_statement_misstatement"],
     });
     const strongContrary = makeFinding({
       recordId: "SYN-STRONG-CONTRARY-01",
-      provisionIds: ["TEST-PROV-STRONG-CONTRARY"],
+      provisionIds: ["IND-AS-1"],
       findingStatus: "Not Confirmed in Final Order",
-      allegedConduct: ["false_compliance_certification"],
+      allegedConduct: ["financial_statement_misstatement"],
     });
     const result = analyzeScenario(
-      { freeText: "There was a false certification." },
+      { freeText: "There was a financial statement misstatement." },
       [supporting, strongContrary],
       [provision],
       []
     );
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-STRONG-CONTRARY");
+    const pr = result.provisionResults.find((p) => p.provision.id === "IND-AS-1");
     expect(pr).toBeDefined();
     expect(pr!.contraryPrecedents.find((c) => c.finding.recordId === "SYN-STRONG-CONTRARY-01")).toBeDefined();
   });

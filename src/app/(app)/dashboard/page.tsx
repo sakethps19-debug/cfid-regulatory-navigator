@@ -122,7 +122,21 @@ export default async function DashboardPage() {
               <Link href="/fraud-test" className="font-medium text-[var(--color-gold-700)] hover:underline">
                 Fraud Doctrine Analyser →
               </Link>{" "}
-              <span className="text-[var(--color-ink-700)]">apply the Supreme Court&apos;s PFUTP Regulation 2(1)(c) &quot;fraud&quot; test to a fact pattern.</span>
+              {/* Independent-audit correction (P2-1): this used to read "apply
+                  the Supreme Court's... test to a fact pattern", which read as
+                  the tool itself performing an automated legal application.
+                  The Fraud Doctrine page itself is explicit that it never
+                  computes a result -- it only helps an officer apply the test
+                  themselves -- and that the underlying Supreme Court judgment
+                  text has not separately been verified by this pilot against
+                  an official case-law repository (only its reproduction in
+                  the official SEBI Rajesh Exports Limited order is). Home's
+                  copy must not overclaim what Fraud Doctrine itself does not
+                  claim. */}
+              <span className="text-[var(--color-ink-700)]">
+                apply, to your own facts, the fraud test under PFUTP Regulation 2(1)(c) as reproduced in an official
+                SEBI order — a reference aid, not an automated determination.
+              </span>
             </li>
             <li>
               <Link href="/library" className="font-medium text-[var(--color-gold-700)] hover:underline">
@@ -134,10 +148,27 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <h2 className="text-base font-semibold text-[var(--color-ink-900)]">About this tool</h2>
+          {/* Independent-audit correction (P2-1): the previous blanket claim
+              ("Every result is deterministic and traceable... never generated
+              or inferred by AI") was a provenance aspiration presented as a
+              corpus-completeness certification. It is true that no result is
+              AI-generated or AI-inferred -- every match is deterministic
+              rule-based logic over curated records -- but "traceable" does
+              not mean "complete": some provision citations are recorded only
+              at finding level and may span more than one captured order
+              (not proven specific to one order alone), some statutory text
+              on file is order-cited-only or still requires verification
+              rather than officially verified, and not every captured order
+              yet has its exact official title or a full finding-provision
+              link. This line now states only what is actually true of every
+              result, and points to Methodology for the itemised gaps rather
+              than asserting there are none. */}
           <p className="mt-2 text-xs text-[var(--color-ink-500)]">
-            Every result is deterministic and traceable to an official SEBI/MCA source or an indexed CFID order —
-            never generated or inferred by AI. See how the analysis is built, what it does and does not do, and its
-            known limitations.
+            Every result is produced by deterministic rule-based matching over this pilot&apos;s curated records —
+            never generated or inferred by AI — and every source is a specific official SEBI/MCA document or indexed
+            CFID order. That does not mean the underlying corpus is complete: some provision citations, statutory
+            text, and order titles carry their own documented verification or completeness caveats, shown alongside
+            each result. See how the analysis is built, what it does and does not do, and its known limitations.
           </p>
           <Link href="/methodology" className="mt-3 inline-block text-sm font-medium text-[var(--color-gold-700)] hover:underline">
             Methodology &amp; Limitations →

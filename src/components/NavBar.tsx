@@ -14,13 +14,12 @@ const PRIMARY_NAV_ITEMS = [
 ];
 
 // Research Tools and admin/reference routes, all one tap away under "More"
-// rather than cluttering primary navigation. The Admin Dashboard is listed
-// here deliberately (not in primary nav) so it never reads as an ordinary
-// research function — see NavBar's own note below on why it isn't
-// role-gated: this app's authorization is a single email allowlist with no
-// separate admin role, so every authenticated user who can reach any page
-// can also reach this one; hiding it from primary nav is an information-
-// architecture choice, not a security boundary.
+// rather than cluttering primary navigation. The Admin Dashboard entry is
+// appended conditionally in NavBar below, only for an isAdmin caller
+// (independent-audit correction, P0-1) -- /admin is now a real server-side
+// authorization boundary (see src/lib/adminAuth.ts and proxy.ts), so a
+// non-admin never even sees the link, rather than seeing it and being
+// bounced on click.
 //
 // The legacy pairwise "Compare" tool (/compare) is deliberately NOT listed
 // here or anywhere else in navigation (reconciliation pass, Task 2): its
@@ -28,22 +27,20 @@ const PRIMARY_NAV_ITEMS = [
 // within one matter) and Compare Scenarios (the same issue across
 // matters/orders), both listed below, and leaving /compare independently
 // discoverable — even relabeled, even under "More" — would still read as a
-// third competing comparison model. /compare's route and functionality
-// (ad hoc pairwise finding comparison, the interim→final reversals list)
-// are NOT deleted or redirected — deleting real functionality or breaking
-// an existing bookmark is a bigger, more destructive action than simply not
-// linking to it — it is only made unreachable from navigation, an
-// inaccessible-but-preserved legacy compatibility route; the page itself
-// now carries its own deprecation notice pointing visitors to the two
-// current tools (see src/app/(app)/compare/page.tsx).
+// third competing comparison model. As of the reconciliation pass's final
+// pre-merge correction, /compare itself now performs a server-side redirect
+// to /compare-scenarios (see src/app/(app)/compare/page.tsx) rather than
+// rendering its own retired UI, so an old bookmark still lands somewhere
+// useful even though the route is unreachable from navigation.
 const SECONDARY_NAV_ITEMS = [
   { href: "/case-journey", label: "Case Journey" },
   { href: "/compare-scenarios", label: "Compare Scenarios" },
   { href: "/fraud-test", label: "Fraud Doctrine" },
   { href: "/library", label: "Source Library" },
   { href: "/methodology", label: "Methodology & Limitations" },
-  { href: "/admin", label: "Admin Dashboard" },
 ];
+
+const ADMIN_NAV_ITEM = { href: "/admin", label: "Admin Dashboard" };
 
 /** Original abstract mark — a bound register/ledger with a verification
  * check, not a reproduction of any official government or SEBI emblem. */
@@ -73,7 +70,7 @@ function NavLink({ href, label, active, onClick }: { href: string; label: string
   );
 }
 
-export function NavBar() {
+export function NavBar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -81,8 +78,9 @@ export function NavBar() {
   const [signingOut, setSigningOut] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
+  const secondaryItems = isAdmin ? [...SECONDARY_NAV_ITEMS, ADMIN_NAV_ITEM] : SECONDARY_NAV_ITEMS;
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  const secondaryActive = SECONDARY_NAV_ITEMS.some((item) => isActive(item.href));
+  const secondaryActive = secondaryItems.some((item) => isActive(item.href));
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -117,8 +115,14 @@ export function NavBar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 xl:max-w-[85rem] 2xl:max-w-[100rem] 3xl:max-w-[130rem]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <Emblem />
-          <span className="font-serif text-base font-semibold leading-tight text-white">
-            CFID <span className="font-normal text-[var(--color-gold-100)]">Regulatory Navigator</span>
+          {/* SPARC branding (pre-presentation hardening pass): "SPARC" is the
+              product name; the line beneath it names both what the letters
+              stand for and, in the same breath, that this is an internal
+              pilot -- never a bare "SPARC" that could read as an officially
+              approved production system on its own. */}
+          <span className="flex flex-col leading-tight">
+            <span className="font-serif text-base font-semibold tracking-wide text-white">SPARC</span>
+            <span className="text-[10px] font-normal text-[var(--color-gold-100)]">CFID Regulatory Research Platform (Pilot)</span>
           </span>
         </Link>
         <button
@@ -154,7 +158,7 @@ export function NavBar() {
             </button>
             {moreOpen && (
               <div className="absolute right-0 z-50 mt-1 w-56 rounded-sm border border-[var(--color-border)] bg-[var(--color-paper-raised)] py-1 shadow-lg">
-                {SECONDARY_NAV_ITEMS.map((item) => (
+                {secondaryItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -190,7 +194,7 @@ export function NavBar() {
             <div className="mt-2 border-t border-[var(--color-navy-800)] pt-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-gold-100)]/60">
               More
             </div>
-            {SECONDARY_NAV_ITEMS.map((item) => (
+            {secondaryItems.map((item) => (
               <NavLink key={item.href} href={item.href} label={item.label} active={isActive(item.href)} onClick={() => setOpen(false)} />
             ))}
             <button

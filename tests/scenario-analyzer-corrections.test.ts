@@ -70,11 +70,11 @@ function makeFinding(overrides: Partial<ScenarioFinding> & { recordId: string; p
 }
 
 describe("Scenario Analyzer: precedent outcome vs. present-scenario missing facts", () => {
-  const provision = makeProvision({ id: "TEST-PROV-1" });
+  const provision = makeProvision({ id: "LODR-17-8" });
 
   const genuineGapFinding = makeFinding({
     recordId: "SYN-GAP",
-    provisionIds: ["TEST-PROV-1"],
+    provisionIds: ["LODR-17-8"],
     allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: ["Genuine outstanding evidence: independent verification of the transaction."],
     precedentOutcomeNote: null,
@@ -82,7 +82,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
 
   const resolvedFinding = makeFinding({
     recordId: "SYN-RESOLVED",
-    provisionIds: ["TEST-PROV-1"],
+    provisionIds: ["LODR-17-8"],
     allegedConduct: ["false_compliance_certification"],
     evidentiaryGaps: [],
     precedentOutcomeNote: RESOLVED_TEXT,
@@ -99,7 +99,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
 
   it("keeps genuine missing-facts and a precedent's own resolution separate when both are present, attributed to the precedent that recorded them", () => {
     const result = run([genuineGapFinding, resolvedFinding]);
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     // Only SYN-GAP has a genuine gap - SYN-RESOLVED must not appear as a
     // group at all (its only evidentiaryGaps entry, if any, is filtered by
@@ -111,7 +111,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
 
   it('never shows "None outstanding" text inside any precedent\'s missing-facts group, even when another finding under the same provision has a genuine gap', () => {
     const result = run([genuineGapFinding, resolvedFinding]);
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     const allGaps = pr!.missingFacts.flatMap((g) => g.gaps);
     const hasResolvedTextInMissingFacts = allGaps.some((m) => m.toLowerCase().startsWith("none outstanding"));
     expect(hasResolvedTextInMissingFacts).toBe(false);
@@ -119,7 +119,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
 
   it("does not present the resolved precedent's historical outcome as a missing-evidence conclusion about the present scenario", () => {
     const result = run([resolvedFinding]);
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     expect(pr).toBeDefined();
     // No genuine gap exists for this provision — the checklist must have no
     // groups at all, not a group populated with the precedent's own outcome
@@ -134,13 +134,13 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
   it("defends against a mis-entered resolution note landing directly in evidentiaryGaps (regression guard)", () => {
     const misEntered = makeFinding({
       recordId: "SYN-MISENTERED",
-      provisionIds: ["TEST-PROV-1"],
+      provisionIds: ["LODR-17-8"],
       transactionTypes: ["synthetic_test_transaction"],
       evidentiaryGaps: [RESOLVED_TEXT], // simulates the original bug's data shape
       precedentOutcomeNote: null,
     });
     const result = run([genuineGapFinding, misEntered]);
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     // SYN-MISENTERED's own group must not appear at all (its sole gap is
     // filtered out as the resolved-sentinel text), leaving only SYN-GAP's.
     expect(pr!.missingFacts).toEqual([
@@ -152,7 +152,7 @@ describe("Scenario Analyzer: precedent outcome vs. present-scenario missing fact
 
   it("'None outstanding' can never coexist with an outstanding missing-evidence item in the same precedent's group", () => {
     const result = run([genuineGapFinding, resolvedFinding]);
-    const pr = result.provisionResults.find((p) => p.provision.id === "TEST-PROV-1");
+    const pr = result.provisionResults.find((p) => p.provision.id === "LODR-17-8");
     for (const group of pr!.missingFacts) {
       const containsResolvedSentinel = group.gaps.some((m) => m.toLowerCase().startsWith("none outstanding"));
       const containsGenuineGap = group.gaps.length > 0;

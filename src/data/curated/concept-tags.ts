@@ -382,7 +382,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   },
 
   // ----- Actor roles -----
-  { id: "company", kind: "actor", label: "Listed company", synonyms: ["the company", "listed entity", "listed company", "the issuer"] },
+  // Checkpoint correction 4: label was previously "Listed company" —
+  // identical to the DIFFERENT, transaction-kind "listed_company" concept
+  // below (the actual PFUTP-4-1 Explanation topic anchor), even though this
+  // tag's own synonyms include the bare, generic "the company"/"the
+  // issuer" and fire on any mention of the respondent entity, listed or
+  // not. Sharing one label made detectedConceptLabels ambiguous: an officer
+  // typing "The company diverted funds" saw "Listed company" among the
+  // detected concepts and could reasonably read that as the system having
+  // recognized a listed-company fact, when only this generic actor-role tag
+  // had actually fired. Renamed to something that cannot be confused with
+  // an assertion that the entity is listed.
+  { id: "company", kind: "actor", label: "Company (respondent entity)", synonyms: ["the company", "listed entity", "listed company", "the issuer"] },
   {
     id: "conduit_entity",
     kind: "actor",
@@ -718,6 +729,18 @@ export const CONCEPT_TAGS: ConceptTag[] = [
       "not used for the stated objects",
       "not utilised for the stated objects",
       "not utilized for the stated objects",
+      // "purpose" variants of the identical "objects" family immediately
+      // above (Part 1 template-audit remediation): the "Rights issue funds
+      // diverted" quick-start template's own text -- "moved out to related
+      // entities instead of being used for the disclosed purpose" -- uses
+      // "purpose" where the existing synonyms all used "objects", so the
+      // substring matcher missed it even though it is the exact same
+      // diverted-proceeds fact pattern. Same same-sentence gate, no broader
+      // search introduced -- purely the missing noun variant.
+      "instead of being used for the disclosed purpose",
+      "not used for the disclosed purpose",
+      "not utilised for the disclosed purpose",
+      "not utilized for the disclosed purpose",
       // P0 recall-hardening sprint: a closely-defined phrase FAMILY for the
       // same "used other than as represented" diversion predicate above,
       // generalised past the exact "instead of/not used for" wording to the
@@ -748,6 +771,70 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // context, and substring matching does not otherwise bridge the two.
   { id: "circular_fund_movement", kind: "conduct", label: "Circular movement of funds", subjectAgnostic: true, synonyms: ["circular transaction", "circular funding", "round tripping", "round-tripping", "layering of funds", "circular movement of funds", "circular movement of money", "back-to-back transfer", "circular financing", "circular fund flow", "circulated back", "routed through"] },
   { id: "fund_routed_personal_account", kind: "conduct", label: "Company funds routed through personal account", subjectAgnostic: true, synonyms: ["company funds routed", "funds routed through promoter", "routed through personal account", "diverted to personal account"] },
+  // Checkpoint correction 3, P0-2: three new concepts isolating each of
+  // Regulation 32's distinct REPORTING sub-duties — verified directly
+  // against the current official LODR text (Regulation 32, "Statement of
+  // deviation(s) or variation(s)"). Deliberately independent of
+  // fund_diversion/circular_fund_movement/etc. (the underlying
+  // utilisation/deviation FACT): a company can divert or misuse proceeds
+  // while still accurately filing every one of these three statements, and
+  // conversely can fail one of these reporting duties without any
+  // independently-established diversion. Each concept gates exactly one
+  // LODR-32 sub-regulation; none is satisfied by a bare diversion/misuse
+  // fact alone.
+  //   - 32(1): quarterly statement to the stock exchange, indicating
+  //     deviations "if any" in proceeds utilisation and category-wise
+  //     variation — required EVERY quarter regardless of whether a
+  //     deviation actually exists (a "nil" statement is still a filing).
+  {
+    id: "quarterly_deviation_disclosure_failure",
+    kind: "conduct",
+    label: "Quarterly deviation/variation statement not filed (Reg 32(1))",
+    synonyms: [
+      "quarterly statement of deviation was not disclosed",
+      "quarterly deviation statement was not filed",
+      "did not submit the quarterly statement of deviation",
+      "failed to submit the quarterly statement",
+      "quarterly variation statement was not disclosed",
+      "did not disclose the quarterly deviation",
+      "quarterly statement was not submitted to the stock exchange",
+    ],
+  },
+  //   - 32(4): the listed entity's own annual-report DIRECTORS' REPORT
+  //     explanation of the variation specified in sub-regulation (1) — an
+  //     annual-report disclosure duty, verified to have NO Audit
+  //     Committee-involvement component of its own text (unlike 32(3) and
+  //     32(5), neither of which is separately indexed as its own id in
+  //     this corpus).
+  {
+    id: "annual_variation_explanation_failure",
+    kind: "conduct",
+    label: "Annual report did not explain the proceeds variation (Reg 32(4))",
+    synonyms: [
+      "did not furnish an explanation for the variation",
+      "failed to explain the variation in the directors' report",
+      "annual report did not explain the variation",
+      "no explanation for the variation was furnished",
+      "variation was not explained in the directors' report",
+    ],
+  },
+  //   - 32(5): the annual statement of funds utilised for purposes OTHER
+  //     than those stated in the offer document, certified by the
+  //     statutory auditor and placed before the Audit Committee — one
+  //     consolidated duty combining auditor certification and AC
+  //     placement, per the sub-regulation's own single sentence.
+  {
+    id: "deviation_statement_auditor_certification_failure",
+    kind: "conduct",
+    label: "Annual deviation statement not certified/placed before Audit Committee (Reg 32(5))",
+    synonyms: [
+      "annual statement of deviation was not certified by the statutory auditor",
+      "annual deviation statement was not certified",
+      "deviation statement was not certified by the auditor",
+      "failed to obtain auditor certification of the deviation statement",
+      "annual statement was not placed before the audit committee",
+    ],
+  },
   // "without paying any/genuine consideration" variants added (P0
   // provision-precision remediation, 2026): natural officer phrasing for
   // the same no-genuine-consideration fact the existing "shares without
@@ -767,8 +854,29 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // same circular-financing fact this tag's own "allotment financed
   // circularly" synonym covers, in the more natural word order officers
   // commonly use.
-  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "no genuine payment", "circularly funded"] },
-  { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
+  // "circular chain of loans" / "kept the sale proceeds" / "retained the
+  // sale proceeds" added (Part 1 template-audit remediation): the
+  // "Preferential allotment / circular funding" quick-start template's own
+  // text -- "financed through a circular chain of loans and advances ...
+  // the allottees appear to have kept the sale proceeds from the shares" --
+  // is the same circularly-funded-allotment fact pattern the existing
+  // "allotment financed through loans"/"allotment financed circularly"
+  // synonyms cover, just with extra words breaking the contiguous match,
+  // plus the front-allottee-retains-proceeds half this tag had no synonym
+  // for at all (see the corpus's own "Ultimate benefit / sale proceeds"
+  // legal_tests entry, which independently confirms "retain sale proceeds"
+  // is genuine SEBI order vocabulary for this pattern, not invented here).
+  { id: "unsupported_share_allotment_consideration", kind: "conduct", label: "Unsupported consideration for share allotment", synonyms: ["consideration not received", "effective cash consideration", "financed the allotment", "consideration for allotment", "allotment financed circularly", "allotment financed through loans", "circular chain of loans", "kept the sale proceeds", "retained the sale proceeds", "retain the sale proceeds", "no genuine payment", "circularly funded"] },
+  // "turned out to be unsubstantiated" / "no supporting documentation"
+  // added (Part 1 template-audit remediation): the "False corporate
+  // announcement" quick-start template's own text -- "future revenue
+  // projections that turned out to be unsubstantiated, with no supporting
+  // documentation for the claims made in the announcement" -- describes
+  // exactly this concept but in a word order the existing "unsubstantiated
+  // projection" synonym (adjective before noun) doesn't reach as a
+  // contiguous substring. Both additions are generic order-language
+  // patterns, not overfit to this one template's exact sentence.
+  { id: "false_business_or_corporate_announcement", kind: "conduct", label: "False or fictitious corporate announcement", synonyms: ["unsupported announcement", "false announcement", "misleading announcement", "unsubstantiated projection", "turned out to be unsubstantiated", "no supporting documentation", "false business claim", "fictitious corporate announcement", "fictitious announcement", "non-binding"] },
   // Added for the Aug-2026 capital-raising taxonomy restructuring
   // (Debock/Trafiksol/Varanium correction pass): TWO brand-new tags, no
   // existing tag's synonym list touched (every synonym below is a string
@@ -785,8 +893,131 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // reporting, must not spuriously pull in diversion, annual-report, or
   // RPT scenarios, and vice versa.
   { id: "offer_document_prospectus", kind: "transaction", label: "Offer document / prospectus", synonyms: ["prospectus", "drhp", "rhp", "red herring prospectus", "draft red herring prospectus", "offer document", "letter of offer", "draft offer document"] },
+  // Checkpoint correction 3, P0-1: ICDR-24-1 (Chapter II, main board) and
+  // ICDR-245-1 (Chapter IX, SME) are chapter-specific alternatives —
+  // verified directly against the current official ICDR text's own
+  // chapter headings ("CHAPTER II - INITIAL PUBLIC OFFER ON MAIN BOARD" at
+  // Regulation 24; "CHAPTER IX - INITIAL PUBLIC OFFER BY SMALL AND MEDIUM
+  // ENTERPRISES" at Regulation 245). Neither provision's own retrieval
+  // gate can require the other chapter's own signal; these two concepts
+  // let the gate distinguish which chapter, if either, the entered facts
+  // actually establish, rather than defaulting either way.
+  {
+    id: "main_board_issue",
+    kind: "transaction",
+    label: "Main-board issue (ICDR Chapter II)",
+    synonyms: ["main board", "main-board", "mainboard", "main board ipo", "main-board ipo", "ipo on the main board", "main board initial public offer", "listed on the main board"],
+  },
+  {
+    id: "sme_issue",
+    kind: "transaction",
+    label: "SME issue (ICDR Chapter IX)",
+    synonyms: ["sme ipo", "sme platform", "sme exchange", "small and medium enterprises", "small and medium enterprise", "ipo by small and medium enterprises", "sme segment", "sme initial public offer"],
+  },
   { id: "issue_proceeds_deviation_reporting", kind: "conduct", label: "Issue-proceeds utilisation / deviation reporting", synonyms: ["statement of deviation", "deviation in use of proceeds", "utilisation of issue proceeds", "utilization of issue proceeds", "variation in utilisation of proceeds", "issue proceeds monitoring report"] },
-  { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee not properly constituted / meetings not held", synonyms: ["audit committee not constituted", "not properly constituted", "audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "improperly constituted audit committee", "ac meetings not conducted", "audit committee did not meet", "no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "existed only on paper", "audit committee only on paper"] },
+  // Checkpoint correction 2, item 2 (Regulation 18 family-level gate
+  // leakage): this concept previously bundled TWO legally distinct
+  // predicates — composition/constitution defects and meetings-not-held
+  // defects — under one tag, which is exactly what let a scenario stating
+  // only "meetings not held" also retrieve the composition-specific
+  // Regulation 18(1)(b) gate, and vice versa. Narrowed to ONLY the
+  // meetings-frequency/quorum/convening predicate (Regulation 18(2)); the
+  // composition-defect synonyms ("not properly constituted", "improperly
+  // constituted") moved to the new audit_committee_composition_deficiency
+  // concept below, which gates Regulation 18(1)(b) alone. "Existed only on
+  // paper"/"no minutes"/"no agendas" stay here: those describe meetings
+  // that were not genuinely held/conducted, not a composition defect.
+  // Checkpoint correction 3, P1: "no meeting minutes"/"minutes could not be
+  // produced"/"no agendas"/"agendas could not be produced" were removed
+  // from this concept's synonym list — verified against the current
+  // official LODR Regulation 18(2)(a) text (meeting-frequency requirement:
+  // at least four meetings a year, no more than 120 days between two
+  // consecutive meetings): an absence of documentary evidence (minutes,
+  // agendas) does not itself establish that a meeting was never held — it
+  // is an evidentiary indicator, not the substantive fact Regulation
+  // 18(2)(a) requires. See the new audit_committee_meeting_documentation_gap
+  // concept below, deliberately wired to no provision's retrieval gate, so
+  // a documentation-only fact correctly lands the provision in
+  // "additional fact required" rather than being treated as an established
+  // breach of the meeting-frequency requirement.
+  { id: "audit_committee_deficiency", kind: "conduct", label: "Audit Committee meetings not held/conducted", synonyms: ["audit committee meetings not held", "meetings not conducted", "meetings were not conducted", "meetings not convened", "not convened properly", "no audit committee meeting", "ac meetings not conducted", "audit committee did not meet", "existed only on paper", "audit committee only on paper"] },
+  // Checkpoint correction 3, P1: deliberately NOT included in any
+  // provision's requireAllOfGroups — an evidentiary indicator (absence of
+  // minutes/agendas), never itself the substantive "meeting not held"
+  // fact Regulation 18(2)(a) requires. Detected and shown to the officer
+  // for transparency, but cannot on its own promote LODR-18-2 to a
+  // candidate breach.
+  {
+    id: "audit_committee_meeting_documentation_gap",
+    kind: "evidence",
+    label: "Audit Committee meeting documentation gap (evidentiary only)",
+    synonyms: ["no meeting minutes", "minutes could not be produced", "no agendas", "agendas could not be produced", "minutes were not available", "no record of the meeting", "documentary evidence of the meeting could not be produced"],
+  },
+  // Checkpoint correction 2, item 2: new concept split out of
+  // audit_committee_deficiency above — the composition/constitution
+  // predicate (independent-director proportion under Regulation 18(1)(b)),
+  // legally distinct from a meetings-not-held fact: a properly constituted
+  // committee can still fail to meet, and a committee that meets regularly
+  // can still be improperly constituted.
+  {
+    id: "audit_committee_composition_deficiency",
+    kind: "conduct",
+    label: "Audit Committee composition/constitution deficiency",
+    synonyms: [
+      "audit committee not constituted",
+      "not properly constituted",
+      "improperly constituted audit committee",
+      "audit committee improperly constituted",
+      "audit committee composition",
+      "insufficient independent directors on the audit committee",
+      "did not have the required independent directors",
+      "audit committee did not meet the composition requirement",
+      // Checkpoint correction 2 re-audit finding: the "Audit Committee
+      // lapse" quick-start template's own wording ("does not appear to
+      // have been properly constituted") did not match the base
+      // "not properly constituted" phrase because of the intervening
+      // "appear to have been" words — the same paraphrase-gap class
+      // already fixed elsewhere in this file (literal-phrase matching by
+      // design, never fuzzy/semantic), not a gating defect.
+      "does not appear to have been properly constituted",
+    ],
+  },
+  // Checkpoint correction 2, item 2: new concept for the Audit Committee
+  // CHAIRPERSON-specific predicate (Regulation 18(1)(d) — the chairperson
+  // must be an independent director present at the AGM), independent of
+  // both composition (who sits on the committee generally) and meetings
+  // (whether the committee met at all).
+  {
+    id: "audit_committee_chairperson_deficiency",
+    kind: "conduct",
+    label: "Audit Committee chairperson deficiency",
+    synonyms: [
+      "chairperson of the audit committee was not an independent director",
+      "audit committee chairperson was not independent",
+      "chairman of the audit committee was not independent",
+      "audit committee chairperson did not attend the annual general meeting",
+      "chairperson of the audit committee was absent from the agm",
+    ],
+  },
+  // Checkpoint correction 2, item 2: new concept for the Audit Committee's
+  // SUBSTANTIVE role/responsibility failures under Regulation 18(3) read
+  // with Part C of Schedule II (e.g. reviewing financial statements before
+  // submission to the board) — distinct from whether the committee is
+  // properly constituted or whether it met at all: a properly constituted
+  // committee that met regularly can still have failed to discharge a
+  // specific Schedule II responsibility.
+  {
+    id: "audit_committee_role_failure",
+    kind: "conduct",
+    label: "Audit Committee role/responsibility failure (Schedule II)",
+    synonyms: [
+      "failed to review the financial statements",
+      "did not review the financial statements before submission to the board",
+      "audit committee failed to discharge its role",
+      "audit committee did not review the auditor's report",
+      "audit committee failed to examine",
+    ],
+  },
   // "position remained vacant" added (Question-A polarity acceptance pass,
   // governance/Compliance Officer paired test): the mandated adverse text
   // ("Compliance Officer position remained vacant beyond permitted
@@ -795,7 +1026,70 @@ export const CONCEPT_TAGS: ConceptTag[] = [
   // "had no compliance officer" added (P0 Question-A polarity connectivity
   // pass): a common natural phrasing ("the company had no Compliance
   // Officer for five months") this vocabulary previously missed.
-  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for", "had no compliance officer", "no compliance officer for"] },
+  // Checkpoint correction 2, item 2 (Regulation 6 family-level gate
+  // leakage): this concept was already correctly scoped to ONLY the
+  // appointment/vacancy predicate (Regulation 6/6(1)/6(1A)) — no synonym
+  // change needed here — but was WRONGLY also wired to gate the Regulation
+  // 6(2)(a)/(b)/(c) DUTY-PERFORMANCE sub-clauses, a genuinely different
+  // predicate (a properly appointed Compliance Officer can still fail to
+  // perform a specific 6(2) duty; a vacancy is not the same fact as a duty
+  // failure). See the new compliance_officer_duty_failure concept below and
+  // provision-retrieval-rules.ts's Regulation 6 gate matrix for the fix.
+  { id: "compliance_officer_deficiency", kind: "conduct", label: "Compliance Officer appointment/vacancy deficiency", synonyms: ["compliance officer vacancy", "compliance officer not appointed", "unqualified compliance officer", "co vacancy", "vacancy of compliance officer", "improper appointment of compliance officer", "improper appointment", "vacancy of the compliance officer", "compliance officer vacant", "position vacant", "position remained vacant", "vacant for", "had no compliance officer", "no compliance officer for"] },
+  // Checkpoint correction 2, item 2: new concept for the Regulation 6(2)
+  // DUTY-PERFORMANCE predicate, independently verified against the current
+  // official LODR text (amended to July 14, 2026): 6(2)(a) "ensuring
+  // conformity with the applicable statutory requirements"; 6(2)(b)
+  // "co-ordination with and reporting to the Board"; 6(2)(c) "ensuring
+  // that correct procedures have been followed ... correctness,
+  // authenticity and comprehensiveness of the information". Gates
+  // LODR-6-2-gen/6-2-a/6-2-b/6-2-c instead of compliance_officer_deficiency.
+  {
+    id: "compliance_officer_duty_failure",
+    kind: "conduct",
+    label: "Compliance Officer duty-performance failure",
+    synonyms: [
+      "compliance officer failed to ensure conformity",
+      "compliance officer did not co-ordinate with the board",
+      "compliance officer failed to report to the board",
+      "compliance officer failed to ensure correct procedures",
+      "compliance officer failed to ensure the correctness of the information",
+      "compliance officer did not perform his duties",
+      "compliance officer did not perform her duties",
+      "compliance officer failed to discharge the duties",
+    ],
+  },
+  // Checkpoint correction 3, P0-3: new concept isolating the Regulation
+  // 6(1A) TIME-CONDITION predicate — verified directly against the current
+  // official LODR text: "[a]ny vacancy in the office of the Compliance
+  // Officer shall be filled ... at the earliest and in any case not later
+  // than three months from the date of such vacancy." A vacancy that has
+  // just arisen does not, without more, breach this time-bound duty; only
+  // an EXPLICIT exceedance signal does. Deliberately excludes the bare
+  // "vacant"/"vacancy" phrasing already on compliance_officer_deficiency
+  // (which continues to gate the general appointment duty, Regulation
+  // 6/6(1), unaffected by this addition) — this concept gates ONLY
+  // LODR-6-1A, and only when the facts state the vacancy exceeded the
+  // permitted window, not merely that one exists.
+  {
+    id: "compliance_officer_vacancy_beyond_period",
+    kind: "conduct",
+    label: "Compliance Officer vacancy beyond the permitted period",
+    synonyms: [
+      "beyond the permitted period",
+      "beyond the statutory period",
+      "beyond the prescribed period",
+      "beyond three months",
+      "vacancy remained unfilled beyond",
+      "remained vacant for an extended period",
+      "for an extended period without a proper appointment",
+      "for a prolonged period",
+      "exceeded the permitted period",
+      "did not fill the vacancy within three months",
+      "was not filled within three months",
+      "unfilled beyond the statutory period",
+    ],
+  },
   { id: "false_compliance_certification", kind: "conduct", label: "False or improperly signed CEO/CFO certification", synonyms: ["false certificate", "false certification", "signed a false compliance certificate", "certified despite non-compliance", "false compliance certification", "false compliance certificate", "certification not duly signed", "not duly signed", "certificate not duly signed"] },
   { id: "director_governance_failure", kind: "conduct", label: "Director/board duties not fulfilled", subjectAgnostic: true, synonyms: ["governance failure", "duties not fulfilled", "did not fulfil", "failed board responsibilities", "gross negligence of director", "failed to supervise", "failed to exercise duties", "without board knowledge", "failed to raise concerns", "acquiesced"] },
   // Second-order remediation (2026): the single tag "price_manipulation_nexus"
@@ -922,6 +1216,54 @@ export const CONCEPT_TAGS: ConceptTag[] = [
     kind: "conduct",
     label: "Investor inducement to trade",
     synonyms: ["induced investors to trade", "induced to trade", "inducing trades", "investors induced to trade"],
+  },
+  // Checkpoint correction 2, item 1/3(D): new concept for PFUTP Regulation
+  // 4(2)(h), verified directly against the current official PFUTP text
+  // (consolidated to June 28, 2024) — "selling, dealing or pledging of
+  // stolen, counterfeit or fraudulently issued securities". A distinct
+  // predicate from every other PFUTP 4(2) clause: no false information, no
+  // trading-conduct/ownership fact is required, only dealing in a security
+  // that is itself stolen/counterfeit/fraudulently issued.
+  {
+    id: "dealing_in_stolen_or_counterfeit_securities",
+    kind: "conduct",
+    label: "Dealing in stolen, counterfeit or fraudulently issued securities",
+    synonyms: [
+      "stolen securities",
+      "counterfeit securities",
+      "fraudulently issued securities",
+      "forged securities",
+      "forged share certificates",
+      "dealing in stolen securities",
+      "selling stolen securities",
+      "pledging stolen securities",
+      "dealt in counterfeit securities",
+    ],
+  },
+  // Checkpoint correction 2, item 1/3(D): new concept for PFUTP Regulation
+  // 4(2)(s), verified directly against the current official PFUTP text —
+  // "mis-selling of securities or services relating to securities market",
+  // defined via a false/misleading statement, concealment of material
+  // facts, concealment of associated risk, or failure to ensure
+  // suitability of the security/service to the buyer. Distinct from
+  // ordinary false/misleading CONTENT (FALSE_INFORMATION_CONTENT above,
+  // which concerns disclosed financial/corporate facts, not a sale
+  // transaction's own suitability/risk-disclosure to an investor).
+  {
+    id: "mis_selling_of_securities",
+    kind: "conduct",
+    label: "Mis-selling of securities or securities-market services",
+    synonyms: [
+      "mis-selling",
+      "misselling",
+      "mis-selling of securities",
+      "mis-sold securities",
+      "mis-sold the securities",
+      "sold unsuitable securities",
+      "failed to ensure suitability",
+      "concealed the associated risk",
+      "concealed the risk associated with the securities",
+    ],
   },
   { id: "aiding_abetting", kind: "conduct", label: "Aiding and abetting", synonyms: ["aided and abetted", "aiding and abetting", "assisted in the scheme", "facilitated the fraud"] },
   // Added for the deterministic-engine completion pass (Companies Act

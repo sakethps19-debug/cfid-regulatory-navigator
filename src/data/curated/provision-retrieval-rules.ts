@@ -93,7 +93,62 @@ export interface ProvisionRetrievalRule {
      * other provision's rule — actor connectivity, the disclosure-family
      * gates, and every other rule in this file remain same-sentence-only. */
     allowSentenceContinuity?: boolean;
+    /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+     * architecture) — same shape and meaning as the rule-level topicAnchor
+     * below, scoped to this specific alternate route only. */
+    topicAnchor?: TopicAnchor;
   }[];
+  /** Checkpoint correction 4 (diversion/PFUTP recall + additional-fact
+   * architecture): a curated, provision-specific signal distinguishing "this
+   * provision is unrelated to the entered scenario" from "this provision is
+   * materially implicated by a statutory route it expressly contemplates,
+   * but the entered facts leave one or more of that route's own predicates
+   * unknown". Deliberately opt-in and narrow — conceptIds must be specific
+   * enough on their own (never a single generic word/tag like "company" or
+   * "director") that their presence, by itself, signals genuine engagement
+   * with THIS route, not a coincidental co-citation. When effectiveConcepts
+   * intersects conceptIds but the full gate (this group AND every other
+   * required group/route) is not satisfied, the engine treats the provision
+   * as requires_additional_fact (see GateBlockedProvisionResult.
+   * topicAnchorSatisfied) — surfaced even when the live corpus has no
+   * scoring precedent finding linked to the provision at all, so precision
+   * work from earlier checkpoints never silently destroys legally useful
+   * recall. Applies to the PRIMARY requireAllOfGroups route; each
+   * alternateRoutes entry may separately declare its own. Left undefined on
+   * every rule that has not been individually reviewed for this — it never
+   * changes retrieval-gate PASS/FAIL (passesRetrievalGate is completely
+   * unaffected), only whether a gate-FAILING provision is additionally
+   * flagged this way. */
+  topicAnchor?: TopicAnchor;
+  /** Checkpoint correction 2, item 4: explicit structured metadata replacing
+   * the former reference-equality detection of "this rule rides on some
+   * other substantive provision's own retrieval prerequisite being
+   * independently satisfied, rather than being an independent trigger of
+   * its own" (LODR Regulation 4(1)/4(2)(f) general-principle family, SEBI
+   * Act Section 15HB residual penalty, etc.). Previously
+   * requiresIndependentlyRetrievedSubstantivePrimary (formerly
+   * ridesOnEstablishedSubstantiveViolation) identified this class by
+   * JavaScript array reference equality against the shared
+   * ANY_SUBSTANTIVE_VIOLATION_CONDUCT constant — a legally meaningful
+   * dependency must never hinge on object identity (a cloned/reconstructed
+   * array with the same contents would silently NOT trigger the behavior).
+   * Set this field explicitly on every rule that carries this dependency
+   * instead; the engine branches on the field, never on which array object
+   * was passed to requireAllOfGroups. */
+  dependency?: "requires_independently_retrieved_substantive_candidate";
+}
+
+/** See ProvisionRetrievalRule.topicAnchor. */
+interface TopicAnchor {
+  /** Concept ids whose presence in the entered scenario alone constitutes a
+   * meaningful statutory/topic anchor for this specific route — curated
+   * deliberately narrow (see ProvisionRetrievalRule.topicAnchor). */
+  conceptIds: string[];
+  /** Officer-facing statement of exactly what additional fact this route
+   * still needs, distinct from and more specific than the rule's own
+   * general `explanation` (which describes the full route, not just what's
+   * missing on THESE facts). */
+  missingFactNote: string;
 }
 
 // ----- Reusable concept-tag groups -----
@@ -214,12 +269,61 @@ const ANY_SUBSTANTIVE_VIOLATION_CONDUCT = [
   "sham_preferential_allotment",
   "unsupported_share_allotment_consideration",
   "audit_committee_deficiency",
+  // Checkpoint correction 2, item 2: the three Audit Committee sub-predicate
+  // concepts split out of audit_committee_deficiency (composition,
+  // chairperson, Schedule-II role) are each independently genuine
+  // substantive violations too, so each belongs in this umbrella exactly
+  // as audit_committee_deficiency itself does.
+  "audit_committee_composition_deficiency",
+  "audit_committee_chairperson_deficiency",
+  "audit_committee_role_failure",
   "compliance_officer_deficiency",
+  // Checkpoint correction 2, item 2: the Compliance Officer duty-failure
+  // concept split out of compliance_officer_deficiency is likewise its own
+  // genuine substantive violation.
+  "compliance_officer_duty_failure",
   "false_compliance_certification",
   "director_governance_failure",
   "non_cooperation_with_investigation",
+  // Checkpoint correction 2, item 1: the two PFUTP 4(2) clauses newly gated
+  // in this pass are themselves substantive prohibitions.
+  "dealing_in_stolen_or_counterfeit_securities",
+  "mis_selling_of_securities",
   ...TRADING_CONDUCT_ANY,
 ];
+
+/** Checkpoint correction C / checkpoint correction 2 item 4: every rule
+ * below that carries `dependency: "requires_independently_retrieved_substantive_candidate"`
+ * (gated via `requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT]`, alone
+ * or combined with a narrower topic group) carries its own curated
+ * explanation text stating it is shown once some OTHER substantive
+ * provision has independently satisfied its own retrieval prerequisite —
+ * not itself an independent trigger. But passesRetrievalGate only ever
+ * checks whether the query's own text merely MENTIONS one of these conduct
+ * concepts, not whether any such OTHER provision actually cleared its own
+ * gate (i.e. resolved to a primary_candidate) elsewhere in the SAME
+ * result. That gap let this provision family appear as a
+ * "related_ancillary" candidate purely because the query names an adverse
+ * concept in passing, even where the corpus has NO independently-gated
+ * primary substantive candidate to anchor it — contradicting the rule's
+ * own stated legal basis. engine.ts uses this function to detect exactly
+ * that class of rule and additionally require a real primary_candidate to
+ * exist in the result before showing it.
+ *
+ * Checkpoint correction 2, item 4: this was formerly
+ * ridesOnEstablishedSubstantiveViolation, detected by JavaScript array
+ * reference equality against the shared ANY_SUBSTANTIVE_VIOLATION_CONDUCT
+ * constant — a legally meaningful dependency must never hinge on object
+ * identity. Renamed and rewritten to check the explicit `dependency` field
+ * on ProvisionRetrievalRule instead: only a rule that carries the field is
+ * affected, regardless of which array object (or a cloned/reconstructed
+ * one with identical contents) happens to be passed to
+ * requireAllOfGroups — see tests/checkpoint-correction-2.test.ts for the
+ * regression proving a cloned array alone cannot trigger this behavior. */
+export function requiresIndependentlyRetrievedSubstantivePrimary(rule: ProvisionRetrievalRule | undefined): boolean {
+  if (!rule) return false;
+  return rule.dependency === "requires_independently_retrieved_substantive_candidate";
+}
 
 /** Actor tags identifying a natural person potentially "in charge of and
  * responsible to the company for the conduct of its business" — the
@@ -371,10 +475,25 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     // route) into that bounded, closed-class continuation-phrase bridge; see
     // computeContinuitySentenceGroups (conceptExtraction.ts) for the exact
     // rule and its safeguards against scenario-wide or cross-entity bridging.
+    // Checkpoint correction 4: PURE_FUND_MOVEMENT_CONDUCT is the genuine
+    // statutory-specific anchor for this route — none of fund_diversion/
+    // circular_fund_movement/fund_routed_personal_account is a generic word;
+    // each names a specific act the Explanation itself lists. "listed_company"
+    // is deliberately NOT an anchor here: it is a cross-cutting entity-status
+    // fact common to many unrelated provisions, not specific to the
+    // diversion route, so its bare presence alone must never, by itself,
+    // promote an otherwise-unconnected provision to Additional Fact
+    // Required elsewhere in this file. See ProvisionRetrievalRule.
+    // topicAnchor and GateBlockedProvisionResult.topicAnchorSatisfied.
     alternateRoutes: [
       {
         requireAllOfGroups: [["listed_company"], PURE_FUND_MOVEMENT_CONDUCT],
         allowSentenceContinuity: true,
+        topicAnchor: {
+          conceptIds: PURE_FUND_MOVEMENT_CONDUCT,
+          missingFactNote:
+            "The facts entered describe diversion, misutilisation or siphoning off of assets or earnings, which the Explanation to Regulation 4(1) deems to always have been a manipulative, fraudulent or unfair trade practice under sub-regulation (1) — but only where that conduct concerns \"a company whose securities are listed\" (or proposed to be listed). State whether the company/entity involved is a listed company to determine whether this route is satisfied.",
+        },
       },
     ],
   },
@@ -641,24 +760,28 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "LODR-34-2-a",
     requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Accounting/reporting obligation] Regulation 34(2)(a) requires the annual report to contain the audited standalone financial statements. Requires an annual-report-specific fact; an accounting error not connected to the annual report itself does not, by itself, satisfy it.",
   },
   {
     provisionId: "LODR-34-2-b",
     requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Accounting/reporting obligation] Regulation 34(2)(b) requires the annual report to contain the audited consolidated financial statements. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
   },
   {
     provisionId: "LODR-34-3",
     requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Disclosure obligation] Regulation 34(3) requires the annual report to contain the other disclosures specified in the Companies Act, 2013 and Schedule V. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
   },
   {
     provisionId: "LODR-SCHEDULE-V-A-1",
     requireAllOfGroups: [["annual_report_disclosure"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Disclosure obligation] Schedule V, Part A, Clause 1 requires annual-report disclosure of related-party transactions per the applicable Accounting Standard. Requires an annual-report-specific fact connected to a stated violation, not merely that an annual report exists.",
   },
@@ -699,86 +822,100 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "LODR-4-1",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1) is the umbrella clause of general disclosure/governance principles a listed entity must abide by. Shown as a related general-principle candidate once some other substantive violation is established by the entered facts; not itself an independent trigger.",
+      "[General principle] Regulation 4(1) is the umbrella clause of general disclosure/governance principles a listed entity must abide by. Shown as a related general-principle candidate once some other substantive provision has independently satisfied its own retrieval prerequisite on the entered facts; not itself an independent trigger.",
   },
   {
     provisionId: "LODR-4-1-a",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(a): information shall be prepared and disclosed in accordance with applicable accounting/disclosure standards. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(a): information shall be prepared and disclosed in accordance with applicable accounting/disclosure standards. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-b",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(b): prescribed accounting standards shall be implemented in letter and spirit, with an independent, competent auditor. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(b): prescribed accounting standards shall be implemented in letter and spirit, with an independent, competent auditor. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-c",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(c): the listed entity shall refrain from misrepresentation and ensure information given to exchanges/investors is not misleading. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(c): the listed entity shall refrain from misrepresentation and ensure information given to exchanges/investors is not misleading. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-d",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(d): the listed entity shall recognise stakeholder rights and give timely, effective redress. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(d): the listed entity shall recognise stakeholder rights and give timely, effective redress. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-e",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(e): timely and accurate disclosure of all material matters, financial situation, performance, ownership and governance. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(e): timely and accurate disclosure of all material matters, financial situation, performance, ownership and governance. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-g",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(g): the listed entity shall abide by all applicable securities-law provisions and Board/exchange guidelines. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(g): the listed entity shall abide by all applicable securities-law provisions and Board/exchange guidelines. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-h",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(h): specified disclosures/obligations shall be followed in letter and spirit, taking all stakeholders' interests into account. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(h): specified disclosures/obligations shall be followed in letter and spirit, taking all stakeholders' interests into account. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-i",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(i): event-based/periodic filings shall contain relevant information. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(i): event-based/periodic filings shall contain relevant information. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-1-j",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(1)(j): periodic filings shall enable investors to track performance over regular intervals. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(1)(j): periodic filings shall enable investors to track performance over regular intervals. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-2-f",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(2)(f) is the umbrella board-responsibilities clause under which numbered sub-duties (i)-(iii) sit. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(2)(f) is the umbrella board-responsibilities clause under which numbered sub-duties (i)-(iii) sit. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-2-f-i",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(2)(f)(i), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(2)(f)(i), a numbered board-responsibility sub-duty. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-2-f-ii",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(2)(f)(ii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(2)(f)(ii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-2-f-iii",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[General principle] Regulation 4(2)(f)(iii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some substantive violation is established.",
+      "[General principle] Regulation 4(2)(f)(iii), a numbered board-responsibility sub-duty. General-principle candidate, shown once some other substantive provision is independently retrieved as a candidate on the entered facts.",
   },
   {
     provisionId: "LODR-4-2-e-i",
@@ -839,12 +976,14 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "SEBI-ACT-15HB",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
-      "[Residual penalty provision, not itself a violation] Section 15HB is the catch-all penalty for any SEBI Act/rule/regulation/direction contravention with no separately specified penalty. It is not, on its own, a standalone conduct standard; shown once some other substantive violation is established by the entered facts.",
+      "[Residual penalty provision, not itself a violation] Section 15HB is the catch-all penalty for any SEBI Act/rule/regulation/direction contravention with no separately specified penalty. It is not, on its own, a standalone conduct standard; shown once some other substantive provision has independently satisfied its own retrieval prerequisite on the entered facts.",
   },
   {
     provisionId: "SEBI-ACT-27",
     requireAllOfGroups: [ANY_SUBSTANTIVE_VIOLATION_CONDUCT, PERSON_IN_CHARGE_OF_COMPANY],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Liability/attribution provision, not itself a violation] Section 27 attributes a company's contravention to persons who were, at the relevant time, in charge of and responsible to the company for the conduct of its business (subject to their own consent/connivance/negligence defence). It is not a generic company-violation provision: it requires a substantive violation fact connected to a stated actor in such a role, not merely that a director/officer exists somewhere in the matter. It must never be read as extending automatically to every named individual once the company itself is found to have violated a provision.",
   },
@@ -920,6 +1059,7 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
   {
     provisionId: "IND-AS-110",
     requireAllOfGroups: [["consolidated_financials"], ANY_SUBSTANTIVE_VIOLATION_CONDUCT],
+    dependency: "requires_independently_retrieved_substantive_candidate",
     explanation:
       "[Accounting/reporting requirement] Ind AS 110 (Consolidated Financial Statements) requires a subsidiary/control/consolidation-specific fact connected to a stated violation (e.g. a misstatement from wrongly excluding a controlled subsidiary); a standalone accounting error unconnected to consolidation, or a bare, compliant mention of consolidated financials, does not, by itself, satisfy it.",
   },
@@ -1052,6 +1192,260 @@ export const PROVISION_RETRIEVAL_RULES: ProvisionRetrievalRule[] = [
     explanation:
       "[Governance/procedural obligation] Regulation 37A prohibits a public shareholder who is directly or indirectly a party to a sale/lease/disposal of the whole or substantially the whole undertaking from voting on the resolution approving it. Requires an asset/undertaking-disposal fact — the same materiality/procedural-threshold predicate Companies Act Section 180(1)(a) requires (see above); whether the specific voting shareholder was actually interested is a further question the entered facts should separately address.",
   },
+
+  // ----- LODR Regulation 6 (Compliance Officer) and Regulation 18
+  // (Audit Committee) sub-clause families, plus Regulation 17(8) -----
+  // Checkpoint correction B/C first gated these (previously ungated,
+  // relying on the ungated-fallback path — exactly the leakage checkpoint
+  // correction B removes). Checkpoint correction 2, item 2 corrects a
+  // SECOND defect in that first pass: gating every Regulation 6 sub-clause
+  // on one bundled compliance_officer_deficiency concept, and every
+  // Regulation 18 sub-clause on one bundled audit_committee_deficiency
+  // concept, replaced family-level precedent leakage with family-level
+  // GATE leakage — a scenario stating only "the Compliance Officer
+  // position remained vacant" would incorrectly also retrieve the
+  // Regulation 6(2)(a)/(b)/(c) DUTY-PERFORMANCE clauses, and a scenario
+  // stating only "Audit Committee meetings were not held" would
+  // incorrectly also retrieve the Regulation 18(1)(b) COMPOSITION clause.
+  // Independently verified against the current official LODR text (amended
+  // to July 14, 2026; /tmp/lodr_2026_full.txt) that Regulation 6 and
+  // Regulation 18 each combine genuinely distinct factual predicates under
+  // one regulation number — see concept-tags.ts for the resulting split:
+  //   Regulation 6: appointment/vacancy (6/6(1)/6(1A), still gated on
+  //     compliance_officer_deficiency, unchanged and confirmed correct) vs.
+  //     duty performance (6(2)(a)/(b)/(c), now gated on the new
+  //     compliance_officer_duty_failure concept).
+  //   Regulation 18: composition (18(1)(b), now gated on the new
+  //     audit_committee_composition_deficiency) vs. chairperson (18(1)(d),
+  //     now gated on the new audit_committee_chairperson_deficiency) vs.
+  //     meetings-not-held (18(2), audit_committee_deficiency, narrowed to
+  //     this predicate only) vs. Schedule II role failure
+  //     (18(3)/Schedule-II, now gated on the new
+  //     audit_committee_role_failure).
+  // Each clause is a narrow, single-topic obligation; the single adverse
+  // (conduct-kind) concept id gating each one already IS the topic (its own
+  // curated synonym list states the specific sub-predicate, never a generic
+  // mention of the role/committee/certificate alone), so a single-group
+  // gate remains the correct, precise minimum fact for each — never a
+  // broad "any substantive violation" umbrella gate, and never one concept
+  // shared across sub-clauses with genuinely different predicates.
+  {
+    provisionId: "LODR-6-gen",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6 is the umbrella clause requiring every listed entity to appoint a company secretary as Compliance Officer. Requires a stated Compliance Officer appointment/vacancy deficiency; a Compliance Officer mentioned only in an unrelated context does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-6-1",
+    requireAllOfGroups: [["compliance_officer_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(1) requires the Compliance Officer to be a whole-time KMP employee not more than one level below the board. Same minimum fact as Regulation 6 above: a stated Compliance Officer appointment/vacancy deficiency.",
+  },
+  {
+    provisionId: "LODR-6-1A",
+    requireAllOfGroups: [["compliance_officer_vacancy_beyond_period"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(1A) requires a Compliance Officer vacancy to be filled 'at the earliest and in any case not later than three months from the date of such vacancy', without an improper interim appointment. Checkpoint correction 3: requires an EXPLICIT exceedance-of-period fact — a vacancy that has merely arisen, with no stated duration or exceedance, does not by itself satisfy this time-bound duty; a bare 'position vacant' mention (Regulation 6/6(1)'s own predicate) is not sufficient on its own.",
+  },
+  {
+    provisionId: "LODR-6-2-gen",
+    requireAllOfGroups: [["compliance_officer_duty_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2) is the umbrella clause under which the lettered Compliance Officer duties sit. Checkpoint correction 2: requires a stated failure to PERFORM a Regulation 6(2) duty — a distinct predicate from the appointment/vacancy fact Regulation 6/6(1)/6(1A) require; a vacancy alone does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-6-2-a",
+    requireAllOfGroups: [["compliance_officer_duty_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(a) requires the Compliance Officer to ensure conformity with applicable statutory requirements. Checkpoint correction 2: same duty-performance predicate as Regulation 6(2) above, distinct from a bare vacancy.",
+  },
+  {
+    provisionId: "LODR-6-2-b",
+    requireAllOfGroups: [["compliance_officer_duty_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(b) requires the Compliance Officer's co-ordination with and reporting to the Board. Checkpoint correction 2: same duty-performance predicate as Regulation 6(2) above, distinct from a bare vacancy.",
+  },
+  {
+    provisionId: "LODR-6-2-c",
+    requireAllOfGroups: [["compliance_officer_duty_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6(2)(c) requires the Compliance Officer to ensure correct procedures, and the correctness/authenticity/comprehensiveness of the information reported. Checkpoint correction 2: same duty-performance predicate as Regulation 6(2) above, distinct from a bare vacancy.",
+  },
+  {
+    provisionId: "LODR-18-1-b",
+    requireAllOfGroups: [["audit_committee_composition_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(1)(b) requires at least two-thirds of the Audit Committee to be independent directors. Checkpoint correction 2: requires a stated COMPOSITION/constitution deficiency specifically — a properly constituted committee that simply did not meet does not, without more, satisfy it (see Regulation 18(2) below for that distinct predicate).",
+  },
+  {
+    provisionId: "LODR-18-1-d",
+    requireAllOfGroups: [["audit_committee_chairperson_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(1)(d) requires the Audit Committee chairperson to be an independent director present at the AGM. Checkpoint correction 2: requires a stated CHAIRPERSON-specific deficiency — a generic composition or meetings-frequency defect does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-18-2",
+    requireAllOfGroups: [["audit_committee_deficiency"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(2) sets the Audit Committee's meeting-frequency, quorum and power requirements. Checkpoint correction 2: requires a stated MEETINGS-NOT-HELD/not-convened deficiency specifically (this concept was narrowed to that one predicate — see concept-tags.ts); a bare composition or chairperson defect does not, without more, satisfy it. A bare 'failure to convene Audit Committee meetings' finding invokes sub-clause (a)'s frequency requirement (see the Seacoast Shipping Services Limited final order).",
+  },
+  {
+    provisionId: "LODR-18-3-schedule-II",
+    requireAllOfGroups: [["audit_committee_role_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18(3) read with Part C of Schedule II sets the Audit Committee's role and responsibilities, including reviewing financial statements for accuracy. Checkpoint correction 2: requires a stated ROLE/RESPONSIBILITY failure specifically (e.g. failing to review the financial statements) — a generic composition or meetings-frequency defect does not, without more, satisfy it.",
+  },
+  {
+    provisionId: "LODR-17-8",
+    requireAllOfGroups: [["false_compliance_certification"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 17(8) requires the CEO/CFO to certify the financial statements and internal controls to the board. Requires a stated false/improperly-signed compliance certification fact; a CEO or CFO mentioned only in an unrelated context does not, without more, satisfy it. Checkpoint correction 2, item 3: the actor-applicability rule for this provision (see provision-actor-applicability.ts) is independently confirmed correct against Regulation 2(1)(e)/(f)'s own definitions clause — no gate change required here.",
+  },
+
+  // ----- Pilot-era fixture legacy bundle ids (tests/fixtures.ts, sourced
+  // from src/data/generated/*.json — predates the live-corpus split into
+  // the LODR-6-*/LODR-18-* sub-clauses above, see tasks #38/#39) — these
+  // legacy ids represent the WHOLE of Regulation 6 or Regulation 18 as one
+  // bundled row (the pre-split fixture era had no sub-clause granularity at
+  // all), so — unlike the split live-corpus ids above, each of which now
+  // requires its own distinct sub-predicate — each legacy bundle id
+  // correctly requires only ANY ONE of that regulation's sub-predicates
+  // (an OR within a single group), never all of them at once. -----
+  {
+    provisionId: "LODR-6-compliance-officer",
+    requireAllOfGroups: [["compliance_officer_deficiency", "compliance_officer_duty_failure"]],
+    explanation:
+      "[Governance/procedural obligation] Regulation 6 (pilot-era pre-split fixture bundle — see LODR-6-gen/LODR-6-2-gen above for the live-corpus split ids) requires every listed entity to appoint a company secretary as Compliance Officer and to perform that role's duties. Requires a stated appointment/vacancy deficiency OR a stated duty-performance failure.",
+  },
+  {
+    provisionId: "LODR-audit-committee",
+    requireAllOfGroups: [
+      [
+        "audit_committee_deficiency",
+        "audit_committee_composition_deficiency",
+        "audit_committee_chairperson_deficiency",
+        "audit_committee_role_failure",
+      ],
+    ],
+    explanation:
+      "[Governance/procedural obligation] Regulation 18 (pilot-era pre-split fixture bundle — see LODR-18-1-b/LODR-18-1-d/LODR-18-2/LODR-18-3-schedule-II above for the live-corpus split ids) sets the Audit Committee's composition, chairperson, meeting and role requirements. Requires a stated deficiency in ANY ONE of those four sub-predicates.",
+  },
+
+  // ----- ICDR Regulations 24(1) and 245(1) (offer document disclosure) -----
+  // Checkpoint correction 2, item 1: previously ungated (silently "other").
+  // Independently verified against the current official ICDR text (amended
+  // to March 21, 2026; /tmp/icdr_2026_full.txt lines 1663-1665, 9123-9125):
+  // Regulation 24(1) (main-board issues, Chapter III) and Regulation 245(1)
+  // (the textually identical SME-chapter counterpart, Chapter IX) both
+  // require the draft offer document/offer document to "contain all
+  // material disclosures which are true and adequate ... to enable the
+  // applicants to take an informed investment decision" — a genuine
+  // disclosure obligation. The two ids are chapter-specific alternatives
+  // (main-board vs SME issue), never simultaneously applicable to the same
+  // offer document, so no combined-count double-attribution concern.
+  {
+    // Checkpoint correction 3, P0-1: ICDR-24-1 (Chapter II — "INITIAL
+    // PUBLIC OFFER ON MAIN BOARD") and ICDR-245-1 (Chapter IX — "INITIAL
+    // PUBLIC OFFER BY SMALL AND MEDIUM ENTERPRISES") are chapter-specific
+    // alternatives, verified directly against the current official ICDR
+    // text's own chapter headings. Checkpoint correction 2 gated both on
+    // the SAME two-group predicate with no chapter distinction at all,
+    // which let both become simultaneous Primary candidates on a bare,
+    // chapter-unspecified offer-document defect — a legal overclaim. Each
+    // now additionally requires its own chapter signal (main_board_issue /
+    // sme_issue); when the entered facts state neither, this third group
+    // is unsatisfied for both ids, so NEITHER clears its gate and both
+    // correctly fall to "requires_additional_fact" (assuming a factually-
+    // overlapping precedent still cites either) rather than either being
+    // shown as an established candidate.
+    provisionId: "ICDR-24-1",
+    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"], ["main_board_issue"]],
+    explanation:
+      "[Disclosure obligation] Regulation 24(1) (ICDR Chapter II, main-board issues) requires the draft offer document/offer document to contain all material disclosures that are true and adequate to enable an informed investment decision. Requires an offer-document/prospectus-specific fact connected to a stated non-disclosure or misstatement fact, AND a stated main-board-issue fact — a chapter-unspecified offer-document defect does not, on its own, distinguish this provision from its SME-chapter counterpart (ICDR-245-1) and is not sufficient.",
+    allowSentenceContinuity: true,
+  },
+  {
+    provisionId: "ICDR-245-1",
+    requireAllOfGroups: [["offer_document_prospectus"], ["non_disclosure_of_information", "financial_statement_misstatement"], ["sme_issue"]],
+    explanation:
+      "[Disclosure obligation] Regulation 245(1) is the SME-chapter counterpart of Regulation 24(1) above (ICDR Chapter IX vs Chapter II) — same minimum fact, but requires a stated SME-issue fact instead of a main-board one; a chapter-unspecified offer-document defect is not sufficient on its own.",
+    allowSentenceContinuity: true,
+  },
+
+  // ----- LODR Regulation 32(1)/(4)/(5) (issue-proceeds deviation
+  // statement) — live-corpus split successors of the legacy bare "LODR-32"
+  // id above -----
+  // Checkpoint correction 3, P0-2: checkpoint correction 2 gated all three
+  // on the shared ISSUE_PROCEEDS_MISUSE bag (fund_diversion/circular_fund_
+  // movement/fund_routed_personal_account/financial_statement_misstatement)
+  // — an overclaim. The fact that proceeds were diverted/misutilised is NOT
+  // itself proof that any specific Regulation 32 REPORTING duty was
+  // breached: a company can divert funds while still filing a fully
+  // compliant quarterly/annual deviation statement, and conversely can
+  // fail a reporting duty (e.g. never filing the required quarterly "nil
+  // deviation" statement) with no diversion at all — verified directly
+  // against the current official LODR text, whose own Regulation 32(1)
+  // requires the quarterly statement regardless of whether a deviation
+  // exists ("indicating deviations, if any"). Each sub-regulation is also
+  // independently verified to be textually DISTINCT from the others —
+  // correcting a further checkpoint-2 mischaracterization: 32(4) is the
+  // listed entity's own annual-report DIRECTORS' REPORT explanation of the
+  // variation, with no Audit Committee-involvement text of its own (the
+  // real Audit-Committee-review sub-duty is 32(3), not separately indexed
+  // as its own id in this corpus); only 32(5) itself combines auditor
+  // certification with Audit Committee placement, per its own single
+  // sentence. Each of the three now requires its OWN specific reporting-
+  // failure concept (never the shared diversion/misuse bag, and never each
+  // other's concept), so a bare diversion fact alone no longer promotes
+  // any of the three to Primary — it correctly leaves them requiring the
+  // specific missing reporting fact. allowSentenceContinuity retained
+  // (same rationale as the legacy bare-id predecessor above: the
+  // issue-proceeds context fact and the specific reporting-failure fact
+  // are routinely stated in adjacent sentences).
+  {
+    provisionId: "LODR-32-1",
+    requireAllOfGroups: [["rights_issue"], ["quarterly_deviation_disclosure_failure"]],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 32(1) requires the listed entity to submit a quarterly statement to the stock exchange indicating deviations, if any, in proceeds utilisation and category-wise variation — required every quarter regardless of whether a deviation actually exists. Requires an issue-proceeds-specific fact connected to a stated failure to file/disclose that quarterly statement; a bare diversion/misuse fact, without a stated reporting failure, does not satisfy it.",
+    allowSentenceContinuity: true,
+  },
+  {
+    provisionId: "LODR-32-4",
+    requireAllOfGroups: [["rights_issue"], ["annual_variation_explanation_failure"]],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 32(4) requires the listed entity to furnish an explanation for the variation specified in sub-regulation (1) in the directors' report in the Annual Report — its own text has no Audit Committee-involvement component. Requires an issue-proceeds-specific fact connected to a stated failure to furnish that explanation; a bare diversion/misuse fact, or a stated failure of a DIFFERENT Regulation 32 sub-duty (the quarterly statement or the auditor-certified annual statement), does not satisfy it.",
+    allowSentenceContinuity: true,
+  },
+  {
+    provisionId: "LODR-32-5",
+    requireAllOfGroups: [["rights_issue"], ["deviation_statement_auditor_certification_failure"]],
+    explanation:
+      "[Accounting/reporting obligation] Regulation 32(5) requires the listed entity to prepare an annual statement of funds utilised for purposes OTHER than those stated in the offer document, certified by the statutory auditors, and place it before the Audit Committee. Requires an issue-proceeds-specific fact connected to a stated failure of that certification/placement duty; a bare diversion/misuse fact, or a stated failure of a DIFFERENT Regulation 32 sub-duty, does not satisfy it.",
+    allowSentenceContinuity: true,
+  },
+
+  // ----- PFUTP Regulation 4(2)(h) and 4(2)(s) -----
+  // Checkpoint correction 2, item 1: previously ungated. Independently
+  // verified against the current official PFUTP text (consolidated to
+  // June 28, 2024): 4(2)(h) prohibits dealing in stolen/counterfeit/
+  // fraudulently-issued securities; 4(2)(s) prohibits mis-selling of
+  // securities/securities-market services. Each is a self-contained,
+  // single-predicate prohibited-conduct clause, gated the same way as the
+  // sibling 4(2) clauses above (a single-group gate on its own dedicated
+  // conduct concept, never the broad ANY_SUBSTANTIVE_VIOLATION_CONDUCT
+  // umbrella).
+  {
+    provisionId: "PFUTP-4-2-h",
+    requireAllOfGroups: [["dealing_in_stolen_or_counterfeit_securities"]],
+    explanation:
+      "[Substantive prohibition] Regulation 4(2)(h) prohibits selling, dealing in, or pledging stolen, counterfeit or fraudulently issued securities (subject to a bona fide holder-in-due-course/previously-traded carve-out in the Regulation's own proviso). Requires a stated fact that the securities themselves were stolen, counterfeit or fraudulently issued; an ordinary trading or price-manipulation fact alone does not satisfy it.",
+  },
+  {
+    provisionId: "PFUTP-4-2-s",
+    requireAllOfGroups: [["mis_selling_of_securities"]],
+    explanation:
+      "[Substantive prohibition] Regulation 4(2)(s) prohibits mis-selling of securities or securities-market services — defined as a sale by false/misleading statement, concealment of material facts, concealment of associated risk, or failure to ensure suitability to the buyer. Requires a stated mis-selling/suitability-failure fact in the course of a sale; ordinary false disclosed CONTENT unconnected to a sale transaction's own suitability/risk representation does not, by itself, satisfy it.",
+  },
 ];
 
 const RULES_BY_PROVISION_ID = new Map(PROVISION_RETRIEVAL_RULES.map((r) => [r.provisionId, r]));
@@ -1138,4 +1532,27 @@ export function passesRetrievalGate(
   return (rule.alternateRoutes ?? []).some((route) =>
     satisfiesGroups(route.requireAllOfGroups, effectiveConcepts, route.allowSentenceContinuity ? continuityMap : undefined)
   );
+}
+
+/** Checkpoint correction 4 — the "Additional Fact Required" signal, kept
+ * completely independent of passesRetrievalGate above (which alone still
+ * decides primary_candidate/related_ancillary; this function is never
+ * consulted there). Returns the missingFactNote of every declared
+ * topicAnchor (the rule's own primary-route anchor and/or any
+ * alternateRoutes[] anchor) whose conceptIds the entered scenario's
+ * effective concepts intersect — a plain presence check, deliberately not a
+ * connectivity/group check, because a topicAnchor's whole purpose is to
+ * flag a provision as MATERIALLY IMPLICATED despite one or more of its
+ * gate's own predicates being unknown; requiring the missing predicate to
+ * already be connected would defeat that purpose. Returns [] for a rule
+ * with no declared topicAnchor anywhere (the overwhelming majority — this
+ * function is a complete no-op for every rule that has not been
+ * individually curated to opt in), and for a rule/route whose anchor
+ * concepts are simply absent from the scenario. Never used to decide
+ * PASS/FAIL of the retrieval gate itself. */
+export function topicAnchorMissingFactNotes(rule: ProvisionRetrievalRule | undefined, effectiveConcepts: DetectedConcept[]): string[] {
+  if (!rule) return [];
+  const detectedIds = new Set(effectiveConcepts.map((c) => c.id));
+  const anchors = [rule.topicAnchor, ...(rule.alternateRoutes ?? []).map((r) => r.topicAnchor)].filter((a): a is TopicAnchor => !!a);
+  return anchors.filter((a) => a.conceptIds.some((id) => detectedIds.has(id))).map((a) => a.missingFactNote);
 }

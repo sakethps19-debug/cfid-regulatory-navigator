@@ -9,78 +9,47 @@ interface Factor {
   source: string;
 }
 
-// Limb (i): injury/inducement. Per the quoted text of Reliance v. SEBI
-// para 175(i) (quoted in full on the parent page -- see that page's own
-// official-source-verification-pending notice; this transcription has NOT
-// been confirmed against the primary judgment), the test is CONJUNCTIVE,
-// not a menu of independently sufficient factors: "injury due to wrongful
-// act is established, i.e., inducement to deal in securities has caused the
-// other person to be adversely affected AND allowed the party accused of
-// fraud to gain unlawful profits or avert ordinary losses" -- dealing alone,
-// without established injury/wrongful gain/avoided loss, does not complete
-// the limb. l1-dealt and l1-manipulation-established each supply only the
-// inducement/dealing half of that conjunction (the latter via Rakhi
-// Trading's presumption of inducement once manipulation is cogently
-// established) -- neither, on its own, is shown by that quoted text to also
-// supply the injury/gain half, so neither is treated as independently
-// sufficient here. l1-injury's own label already states the complete
-// conjunction (dealing THAT CAUSED injury/gain), so it alone carries the
-// citation. The decision logic itself lives in src/lib/fraudDoctrineTest.ts
-// (independently unit-tested); this file only renders it.
+// Independent-audit correction (P1-3): every factor previously attributed
+// to Kanhaiyalal Baldevbhai Patel, SEBI v. Rakhi Trading, SEBI v. Kishore R.
+// Ajmera, and Ketan Parekh v. SEBI has been REMOVED from this checklist.
+// Those citations could not be traced to any official SEBI-hosted
+// source/order this pilot actually captures -- per the product rule ("no
+// third-party case-law database, no fabricated doctrinal synthesis"), an
+// unverifiable proposition is removed rather than kept with a fabricated or
+// merely-assumed grounding. What remains is exactly the two limbs as
+// directly quoted from para 175 of Reliance v. SEBI, which is itself now
+// grounded in the official SEBI Rajesh Exports Limited interim order (see
+// the parent page's "Authority and doctrine" card) -- nothing here states a
+// proposition this pilot cannot trace to a captured official source. If any
+// of the removed case citations can later be traced to an official
+// SEBI-hosted order this pilot holds, they may be reinstated with that
+// grounding; until then this checklist stays narrower rather than broader
+// than what can be shown.
+//
+// Limb (i): injury/inducement -- the test is CONJUNCTIVE, not a menu of
+// independently sufficient factors: "injury due to wrongful act is
+// established, i.e., inducement to deal in securities has caused the other
+// person to be adversely affected AND allowed the party accused of fraud to
+// gain unlawful profits or avert ordinary losses". The decision logic
+// itself lives in src/lib/fraudDoctrineTest.ts (independently unit-tested);
+// this file only renders it.
 const LIMB_1_FACTORS: Factor[] = [
   {
-    id: "l1-dealt",
-    label:
-      "Investors or the counterparty are shown to have actually dealt in securities (bought/sold/subscribed) as a result of the conduct (inducement component only -- see note below)",
-    source: "Kanhaiyalal Baldevbhai Patel, paras 30, 56",
-  },
-  {
     id: "l1-injury",
-    label: "That dealing caused established injury (loss to investors) or wrongful gain / avoided loss to the person accused",
-    source: "Reliance v. SEBI para 175(i)",
-  },
-  {
-    id: "l1-manipulation-established",
-    label:
-      "The factum of manipulation itself is cogently and sufficiently established from the facts (non-genuine transactions, artificial price/volume) -- presumes inducement only, not injury/gain (inducement component only -- see note below)",
-    source: "SEBI v. Rakhi Trading (P) Ltd., (2018) 13 SCC 753, para 78, inducement then presumed, no separate proof required",
+    label: "Dealing in securities caused established injury (loss to investors) or wrongful gain / avoided loss to the person accused",
+    source: "Reliance v. SEBI para 175(i), as reproduced in the official SEBI Rajesh Exports Limited interim order",
   },
 ];
 
 // Limb (ii): deceitful/mala fide intent clear from blatant misconduct or
-// attending circumstances. These are the factors the Supreme Court itself
-// drew from Ketan Parekh and Kishore R. Ajmera for gauging intent
-// circumstantially, since direct evidence of intent is rarely available.
+// attending circumstances, as directly stated in the quoted text -- no
+// third-party circumstantial-factor case law is attributed here (see the
+// removal note above).
 const LIMB_2_FACTORS: Factor[] = [
-  {
-    id: "l2-volume",
-    label: "Volume of the trade / transactions effected is disproportionate to any legitimate explanation",
-    source: "SEBI v. Kishore R. Ajmera, (2016) 6 SCC 368, para 31",
-  },
-  {
-    id: "l2-persistence",
-    label: "Persistence in the conduct over a period of time, or repeated across the same scrip/entity",
-    source: "Kishore R. Ajmera para 31",
-  },
-  {
-    id: "l2-proximity",
-    label: "Close proximity in time between related orders/transactions (e.g. same-day buy and sell, back-to-back transfers)",
-    source: "Kishore R. Ajmera para 31; Ketan Parekh para 20",
-  },
-  {
-    id: "l2-circular",
-    label: "Circular trading or no genuine change of beneficial ownership",
-    source: "Ketan Parekh v. SEBI, 2006 SCC OnLine SAT 221, para 20",
-  },
   {
     id: "l2-blatant",
     label: "Blatant misconduct clear from the attending circumstances, e.g. fabricated documents, deliberately false certifications, concealment inconsistent with any innocent explanation",
-    source: "Reliance v. SEBI para 175(ii)",
-  },
-  {
-    id: "l2-noeconomicsense",
-    label: "The conduct makes no commercial sense except as an attempt to manipulate the market or defeat its mechanism",
-    source: "Ketan Parekh para 20",
+    source: "Reliance v. SEBI para 175(ii), as reproduced in the official SEBI Rajesh Exports Limited interim order",
   },
 ];
 
@@ -161,42 +130,48 @@ export function FraudTestChecklist() {
   return (
     <div>
       <p className="text-xs text-[var(--color-ink-500)]">
-        Set the status of each fact below against your scenario. This checklist mirrors the specific factors the
-        Supreme Court and the case law it cites used to decide the two limbs; it does not interpret free text, match
-        against precedent, or call any external service. A factor left as &quot;Not stated&quot; is never read as
-        meaning it is actually absent, only that its status has not been set. Nothing is saved.
+        Set the status of each fact below against your scenario. This checklist mirrors exactly the two limbs stated
+        in the quoted text of para 175 (see the parent page); it does not interpret free text, match against
+        precedent, or call any external service. A factor left as &quot;Not stated&quot; is never read as meaning it
+        is actually absent, only that its status has not been set. Nothing is saved.
       </p>
 
       <div className="mt-4 grid gap-6 md:grid-cols-2">
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (i): Injury from inducement</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            This limb requires the established-injury/wrongful-gain/avoided-loss factor. The other two factors
-            establish only the dealing/inducement component and do not complete the limb on their own.
+            Dealing in securities that caused established injury or wrongful gain, exactly as stated in the quoted
+            text — no wrongful-intent element required for this limb.
           </p>
           <FactorList factors={LIMB_1_FACTORS} states={states} onChange={setFactorState} />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-ink-900)]">Limb (ii): Intent from attending circumstances</h3>
           <p className="mt-1 text-xs text-[var(--color-ink-500)]">
-            No single factor is automatically decisive; the court draws an inference from their cumulative effect.
+            Blatant misconduct or attending circumstances that cogently establish wrongful intent, exactly as stated
+            in the quoted text — no separate proof of injury required for this limb.
           </p>
           <FactorList factors={LIMB_2_FACTORS} states={states} onChange={setFactorState} />
         </div>
       </div>
 
-      {/* Final pre-merge correction: this checklist no longer computes or
-          displays a satisfied/borderline/not-satisfied read from the
-          selections above. That computation (evaluateFraudDoctrineTest, in
+      {/* Independent-audit correction (P1-3): the para 175 text itself is
+          now grounded in the official SEBI Rajesh Exports order (see the
+          parent page's "Authority and doctrine" card) rather than presented
+          as unverified. This checklist still never computes or displays a
+          satisfied/borderline/not-satisfied read from the selections above
+          -- that computation (evaluateFraudDoctrineTest, in
           src/lib/fraudDoctrineTest.ts) is retained in code, independently
-          tested, and ready to be wired back in once the governing para 175
-          text is confirmed against an official source -- it is simply not
-          called from this officer-facing view until then. */}
+          tested, and ready to be wired back in once the underlying Supreme
+          Court judgment is separately confirmed against an official
+          case-law repository -- it is simply not called from this
+          officer-facing view until then. */}
       <div className="mt-5 rounded-sm bg-[var(--color-neutral-50)] p-3 text-sm ring-1 ring-inset ring-[var(--color-border)]">
-        <p className="font-semibold text-[var(--color-ink-900)]">Official-source verification pending</p>
+        <p className="font-semibold text-[var(--color-ink-900)]">Automated doctrinal assessment unavailable</p>
         <p className="mt-1 text-[var(--color-ink-700)]">
-          The governing judicial text used for this doctrinal checklist has not yet been independently verified
-          against the official judgment. Automated doctrinal assessment is therefore temporarily unavailable.
+          This checklist never computes a satisfied/borderline/not-satisfied read from your selections. The
+          underlying Supreme Court judgment text has not separately been verified by this pilot against an official
+          case-law repository.
         </p>
       </div>
 

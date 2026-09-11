@@ -70,7 +70,7 @@ describe("Exports never assert the entered scenario itself violated a provision"
     expect(text).toContain("does not indicate that the ingredients of any violation have been established");
   });
 
-  it("historical precedent outcome language (Confirmed/Not Confirmed in Final Order) is preserved, not weakened", () => {
+  it("historical precedent outcome language (established/not established) is preserved, not weakened -- and never fused with a guessed order-stage prefix", () => {
     const result = analyzeScenario(
       {
         freeText:
@@ -81,6 +81,7 @@ describe("Exports never assert the entered scenario itself violated a provision"
       legalTests
     );
     const text = resultToText(result);
-    expect(text.toLowerCase()).toContain("final order · not confirmed");
+    expect(text.toLowerCase()).toContain("contravention not established");
+    expect(text.toLowerCase()).not.toContain("final order · not confirmed");
   });
 });
