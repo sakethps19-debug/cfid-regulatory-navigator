@@ -671,7 +671,13 @@ export function FraudDoctrineScreen() {
   const appliedFindings = F.REL_FINDINGS.filter((f) => f.recordId === "REL-01" || f.recordId === "REL-02");
   const relFinding = appliedFindings.find((f) => f.recordId.startsWith("REL-"));
   const relOrderId = relFinding?.orderIds[0];
-  const appliedOrders = groupAppliedFindingsByOrder(appliedFindings);
+  // Fixture-only date map: production wires this from getOrders(); this
+  // static QA screen has no DB access, so it supplies the same real
+  // post-judgment date (Rajesh Exports' interim order, 03-Jun-2026) the
+  // fixture findings actually belong to, satisfying fraudDoctrineApplication.ts's
+  // temporal safety guard without changing what this screen renders.
+  const orderDateById = new Map(appliedFindings.flatMap((f) => f.orderIds.map((id) => [id, "2026-06-03"] as const)));
+  const appliedOrders = groupAppliedFindingsByOrder(appliedFindings, orderDateById);
 
   return (
     <div>

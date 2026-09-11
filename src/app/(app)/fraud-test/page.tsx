@@ -2,67 +2,94 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, SourceLink } from "@/components/Card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { getLegalTests, getScenarioFindings } from "@/lib/data";
+import { getLegalTests, getOrders, getScenarioFindings } from "@/lib/data";
 import { groupAppliedFindingsByOrder } from "@/lib/fraudDoctrineApplication";
 import { FraudTestChecklist } from "./FraudTestChecklist";
 
 const DOCTRINE_ISSUE = "PFUTP 2(1)(c): fraud (inducement/intent test)";
 
-// Post-freeze correction pass (Section B): this list previously held
-// ["REL-01", "REL-02", "ZEE-PLEDGE-01", "VCL-01"] with no date or content
-// check against the data -- a legal-integrity defect, since two of those
-// four findings (ZEE-PLEDGE-01, VCL-01) had never actually been confirmed
-// to APPLY the Reliance Industries doctrine in SEBI's own reasoning, only
-// tagged under the same broad PFUTP fraud issue.
-//
-// Audit performed this pass, order by order, against the official SEBI
-// document (not DB tags):
-//   - Rajesh Exports Limited, Interim Order, 03-Jun-2026 (REL-01, REL-02's
-//     shared order): the order's own paras 220-221 quote para 175 of
-//     Reliance Industries Ltd. & Ors. v. SEBI, 2026 INSC 585 verbatim and
-//     the Whole Time Member expressly tests the finding against it --
-//     "The threshold laid down by the Hon'ble Supreme Court in the
-//     aforesaid judgement ... has been tested in this interim order before
-//     holding Noticees prima facie liable ... The instant case satisfies
-//     the threshold". Confirmed APPLIED (category A).
+// SPARC final surgical correction: this list is now grounded in the
+// completed post-deployment official-source audit, which obtained and
+// read the actual SEBI order PDF for every post-29-May-2026 CFID order in
+// the corpus (not DB tags, not secondary reports) and classified each one
+// against the Reliance Industries Ltd. & Ors. v. SEBI, 2026 INSC 585
+// judgment on that basis alone. Seven orders were confirmed as SEBI
+// itself applying/adopting the para 175 two-limb test in its own
+// reasoning (category A) -- including two the prior pass had wrongly
+// excluded for "unreachable primary text" (Zee, Varanium) and two it
+// wrongly believed had no linked scenario-finding record at all (Debock,
+// Max Financial Services):
+//   - Rajesh Exports Limited, Interim Order, 03-Jun-2026 (REL-01, REL-02):
+//     paras 219-222, SEBI's own reasoning, applied.
+//   - Hexa Tradex Limited, Final Order, 24-Jul-2026 (HEXA-01): paras
+//     85-87, 111-113, SEBI's own reasoning, applied -- NEGATIVE/exonerating
+//     (SCN disposed without penalty; do not read "applied" as "contravention
+//     established").
 //   - Zee Entertainment Enterprises Ltd., Final Order (pledge matter),
-//     31-Jul-2026 (ZEE-PLEDGE-01/02's shared order) and Varanium Cloud
-//     Limited, Final Order, 25-Aug-2026 (VCL-01's order): both post-date
-//     the 29-May-2026 judgment, so a citation is *possible* on dates
-//     alone, but the primary order text could not be retrieved in this
-//     environment (official SEBI PDF links did not resolve to fetchable
-//     document text; a third-party mirror of the Zee order was also
-//     unreachable). Multiple independent secondary reports on each matter's
-//     substantive PFUTP findings make no mention of the Reliance doctrine.
-//     Absent an actual passage in SEBI's own reasoning discussing/applying
-//     it, these do not meet the bar for category A -- removed from this
-//     list rather than assumed. If genuine document access becomes
-//     available, they should be re-audited on their merits, not
-//     reinstated on the strength of the earlier assumption.
-//   - Debock Industries Limited (Final Order, 28-Aug-2026) and the Max
-//     Financial Services matter, both named in this pass's brief: neither
-//     has an existing scenario-finding record in this pilot's corpus tied
-//     to this doctrine issue, so neither was ever in this list and neither
-//     is added speculatively.
+//     31-Jul-2026 (ZEE-PLEDGE-01, ZEE-PLEDGE-02): Noticee No. 3 cites the
+//     judgment at para 234 (submission only, standing alone), but SEBI's
+//     own reasoning at paras 235-240 independently applies the same
+//     two-limb framework to decide the issue -- an "applied via rebuttal"
+//     pattern that crosses from noticee-submission-only into category A.
+//   - Max Financial Services Limited, Final Order, 24-Aug-2026 (MFS-01):
+//     paras 149-158, SEBI's own reasoning, applied -- NEGATIVE/exonerating
+//     (fraud held not established).
+//   - Varanium Cloud Limited, Final Order, 25-Aug-2026 (VCL-01, VCL-02,
+//     VCL-03): paras 109-111, SEBI's own reasoning, applied.
+//   - Debock Industries Limited, Final Order, 28-Aug-2026 (DBK-01): paras
+//     66-68, SEBI's own reasoning, applied.
+//   - Trafiksol ITS Technologies Ltd., Final Order, 28-Aug-2026 (TRF-01):
+//     paras 96-97, SEBI's own reasoning, applied.
 //
-// This list is deliberately narrower than what it displaced -- exactly
-// the posture the product rule already uses elsewhere ("an unverifiable
-// proposition is removed rather than kept with a fabricated or
-// merely-assumed grounding").
-const DOCTRINE_APPLIED_RECORD_IDS = ["REL-01", "REL-02"];
+// Nalwa Sons Investments Limited (Final Order, 24-Jul-2026) is
+// deliberately NOT included: its own order text does not independently
+// reproduce/apply the doctrine -- it incorporates the Hexa order's
+// findings by reference ("mutatis mutandis... shall also form part of
+// this order"). That is legally relevant but materially different from
+// the seven orders above, which each apply the test in their own text;
+// resolving whether incorporation-by-reference itself qualifies is left
+// for a dedicated pass, not decided here by default inclusion.
+//
+// Suzlon Energy Limited, Nirman Agri Genetics Limited, Bharat Global
+// Developers Limited, and Tarapur Transformers Limited were confirmed to
+// contain no discussion of the doctrine at all (full-text searched,
+// including generic "Supreme Court" mentions, not just exact-phrase
+// matches) and remain excluded.
+//
+// A temporal safety guard (see DOCTRINE_JUDGMENT_DATE in
+// fraudDoctrineApplication.ts) independently rejects any group whose own
+// order predates the judgment even if a finding id is added here by
+// mistake in a future pass -- this curated list remains the sole
+// inclusion authority; the guard is a defensive backstop, not a discovery
+// mechanism.
+const DOCTRINE_APPLIED_RECORD_IDS = [
+  "REL-01",
+  "REL-02",
+  "HEXA-01",
+  "ZEE-PLEDGE-01",
+  "ZEE-PLEDGE-02",
+  "MFS-01",
+  "VCL-01",
+  "VCL-02",
+  "VCL-03",
+  "DBK-01",
+  "TRF-01",
+];
 
 export default async function FraudTestPage() {
-  const [legalTests, findings] = await Promise.all([getLegalTests(), getScenarioFindings()]);
+  const [legalTests, findings, orders] = await Promise.all([getLegalTests(), getScenarioFindings(), getOrders()]);
   const doctrine = legalTests.find((lt) => lt.provisionOrIssue === DOCTRINE_ISSUE);
   const appliedFindings = DOCTRINE_APPLIED_RECORD_IDS.map((id) => findings.find((f) => f.recordId === id)).filter(
     (f): f is NonNullable<typeof f> => !!f,
   );
   // One order = one authority card, with its relevant findings nested
-  // underneath -- REL-01 and REL-02 are two findings belonging to the SAME
-  // order (the Rajesh Exports interim order) and must not read as two
+  // underneath -- REL-01 and REL-02 (and similarly Zee's two findings,
+  // Varanium's three) belong to the SAME order and must not read as
   // separate authorities. See src/lib/fraudDoctrineApplication.ts
-  // (independently unit-tested) for the grouping logic.
-  const appliedOrders = groupAppliedFindingsByOrder(appliedFindings);
+  // (independently unit-tested) for the grouping logic and the temporal
+  // safety guard applied alongside it.
+  const orderDateById = new Map(orders.map((o) => [o.id, o.orderDate]));
+  const appliedOrders = groupAppliedFindingsByOrder(appliedFindings, orderDateById);
   // Independent-audit correction (P1-3): re-ground the doctrine primarily in
   // the official SEBI Rajesh Exports Limited interim order (03-Jun-2026),
   // which this pilot already holds as a captured, official-source-verified
@@ -193,9 +220,10 @@ export default async function FraudTestPage() {
           <p className="mt-3 text-sm italic text-[var(--color-ink-300)]">No order in this register is currently confirmed to apply this doctrine.</p>
         )}
         <p className="mt-3 text-xs italic text-[var(--color-ink-500)]">
-          This list reflects only orders this pilot could independently confirm actually discuss and apply the
-          doctrine, from the specific orders reviewed on this pass — it is not a claim that every CFID order dated on
-          or after 29 May 2026 has been checked.
+          This list reflects a completed audit of every CFID order in this register dated on or after 29 May 2026,
+          each checked against its own official SEBI order text. An order applying the doctrine to conclude a
+          contravention was NOT established is listed here on the same footing as one concluding it was — see each
+          finding&apos;s own status above, which is never itself the claim &quot;the doctrine was applied.&quot;
         </p>
       </Card>
     </div>

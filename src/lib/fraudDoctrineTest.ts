@@ -98,13 +98,28 @@ export function evaluateFraudDoctrineTest(states: Map<string, FactorState>): Fra
       text: "Only the dealing/inducement component of Limb (i) is selected. Per the quoted text of para 175(i) (not yet confirmed against an official source), the limb requires BOTH inducement to deal AND that it caused established injury, wrongful gain, or avoided loss -- dealing alone does not complete it. Mark the injury/gain/avoided-loss factor if it is separately established, or rely on Limb (ii) instead.",
     };
   }
+  // SPARC final surgical correction: the officer-facing checklist
+  // (FraudTestChecklist.tsx) deliberately exposes ONE consolidated Limb
+  // (ii) question representing the para 175(ii) proposition, not the
+  // multiple technical sub-factors LIMB_2_FACTOR_IDS lists here -- the
+  // previous version of this branch required limb2Count >= 2 to read as
+  // "satisfied", which the shipped UI could never produce (it can only
+  // ever set one of these ids), so a genuine positive selection on the one
+  // visible factor was permanently stuck at "borderline". The previous
+  // "borderline" text also cited "Ketan Parekh para 20" for the
+  // multiple-factors proposition -- a citation this checklist's own
+  // earlier audit (see the file-level comment above) already removed
+  // everywhere else for lacking a traceable official-source grounding.
+  // Both defects are corrected together: the engine is now aligned to
+  // what the UI actually exposes (any genuine Limb (ii) selection reads as
+  // supported, per para 175(ii)'s own text -- "then injury would not be
+  // required" does not condition on a factor count), and no case citation
+  // this pilot cannot trace to a captured official source is attributed
+  // here.
   if (limb2Satisfied) {
     return {
-      tone: limb2Count >= 2 ? "satisfied" : "borderline",
-      text:
-        limb2Count >= 2
-          ? "Limb (ii), intent from attending circumstances, has multiple selections. Per Reliance v. SEBI para 175(ii), cogent circumstantial intent alone is enough; injury does not additionally need to be proved."
-          : "Only one limb (ii) factor is selected. The Supreme Court treated intent as something to be inferred from the cumulative effect of several factors (Ketan Parekh para 20); a single factor alone may be a weak signal.",
+      tone: "satisfied",
+      text: "Limb (ii) appears supported on the selected inputs. Under the para-175 framework reflected in this checklist, a sufficiently established wrongful intent may be examined independently of injury/inducement. This is not a determination that fraud or any regulatory violation occurred.",
     };
   }
   return {

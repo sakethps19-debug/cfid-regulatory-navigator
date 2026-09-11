@@ -76,13 +76,25 @@ describe("evaluateFraudDoctrineTest: Limb (i) is never satisfied by mere dealing
   });
 });
 
-describe("evaluateFraudDoctrineTest: Limb (ii) cumulative-inference behavior is preserved", () => {
-  it("a single Limb (ii) factor alone reads as borderline, never satisfied -- intent is a cumulative inference", () => {
+// SPARC final surgical correction: the shipped officer UI
+// (FraudTestChecklist.tsx) exposes exactly ONE consolidated Limb (ii)
+// question, never the six technical sub-factor ids this pure function
+// still enumerates for its own internal bookkeeping. The engine's
+// previous "satisfied" threshold (limb2Count >= 2) was therefore
+// unreachable through the actual product -- marking the one visible
+// factor present always read as "borderline", contrary to para 175(ii)'s
+// own text ("...then injury would not be required", i.e. that showing
+// alone is meant to be sufficient). The engine is now aligned to what the
+// UI can actually produce: any genuine Limb (ii) selection reads as
+// supported.
+describe("evaluateFraudDoctrineTest: a single Limb (ii) factor reaches the intended positive analytical state (aligned with the one-question UI)", () => {
+  it("a single Limb (ii) factor alone now reads as satisfied, not borderline -- the defect this pass corrects", () => {
     const result = evaluateFraudDoctrineTest(states([[LIMB_2_FACTOR_IDS[0], "present"]]));
-    expect(result.tone).toBe("borderline");
+    expect(result.tone).toBe("satisfied");
+    expect(result.text).toMatch(/appears supported/i);
   });
 
-  it("two or more Limb (ii) factors together read as satisfied", () => {
+  it("two or more Limb (ii) factors together still read as satisfied", () => {
     const result = evaluateFraudDoctrineTest(
       states([
         [LIMB_2_FACTOR_IDS[0], "present"],
@@ -95,6 +107,63 @@ describe("evaluateFraudDoctrineTest: Limb (ii) cumulative-inference behavior is 
   it("all six Limb (ii) factors present reads as satisfied", () => {
     const result = evaluateFraudDoctrineTest(states(LIMB_2_FACTOR_IDS.map((id): [string, FactorState] => [id, "present"])));
     expect(result.tone).toBe("satisfied");
+  });
+
+  it("a Limb (ii)-only satisfied result never claims fraud or a violation is established", () => {
+    const result = evaluateFraudDoctrineTest(states([[LIMB_2_FACTOR_IDS[0], "present"]]));
+    expect(result.text.toLowerCase()).not.toMatch(/fraud (is|was) established/);
+    expect(result.text.toLowerCase()).not.toMatch(/violation established/);
+    expect(result.text).toMatch(/not a determination that fraud or any regulatory violation occurred/);
+  });
+
+  it("the result text never cites Ketan Parekh -- that citation was already removed from this checklist elsewhere for lacking official-source grounding", () => {
+    const result = evaluateFraudDoctrineTest(states([[LIMB_2_FACTOR_IDS[0], "present"]]));
+    expect(result.text).not.toMatch(/Ketan Parekh/i);
+  });
+});
+
+describe("evaluateFraudDoctrineTest: exact 2x2 visible-UI combination matrix (L1 = l1-injury, L2 = l2-blatant, the only ids FraudTestChecklist.tsx actually renders)", () => {
+  const L1 = LIMB_1_FACTOR_IDS.injury; // "l1-injury"
+  const L2 = LIMB_2_FACTOR_IDS[4]; // "l2-blatant"
+
+  it("L1 not stated / L2 not stated -> not-satisfied, described as insufficient support on current selections, never as a factual finding of absence", () => {
+    const result = evaluateFraudDoctrineTest(new Map());
+    expect(result.tone).toBe("not-satisfied");
+    expect(result.text).not.toMatch(/is absent|was not present|does not exist/i);
+  });
+
+  it("L1 present / L2 not stated -> satisfied on Limb (i) alone", () => {
+    const result = evaluateFraudDoctrineTest(states([[L1, "present"]]));
+    expect(result.tone).toBe("satisfied");
+  });
+
+  it("L1 not stated / L2 present -> satisfied on Limb (ii) alone (the corrected behavior)", () => {
+    const result = evaluateFraudDoctrineTest(states([[L2, "present"]]));
+    expect(result.tone).toBe("satisfied");
+  });
+
+  it("L1 present / L2 present -> satisfied, describing both limbs, never a stronger/compounded conclusion", () => {
+    const result = evaluateFraudDoctrineTest(
+      states([
+        [L1, "present"],
+        [L2, "present"],
+      ])
+    );
+    expect(result.tone).toBe("satisfied");
+    expect(result.text).toMatch(/both have supporting selections/);
+  });
+
+  it("no hidden/unrendered factor id is necessary to reach any of the four states above -- l1-injury and l2-blatant alone are sufficient", () => {
+    // Sanity check that these are exactly the ids FraudTestChecklist.tsx renders.
+    const checklist = readFileSync(new URL("../src/app/(app)/fraud-test/FraudTestChecklist.tsx", import.meta.url), "utf8");
+    expect(checklist).toMatch(/id:\s*"l1-injury"/);
+    expect(checklist).toMatch(/id:\s*"l2-blatant"/);
+    // And that no other factor id from either limb is rendered as a control.
+    expect(checklist).not.toMatch(/id:\s*"l1-dealt"/);
+    expect(checklist).not.toMatch(/id:\s*"l1-manipulation-established"/);
+    for (const hiddenId of ["l2-volume", "l2-persistence", "l2-proximity", "l2-circular", "l2-noeconomicsense"]) {
+      expect(checklist).not.toMatch(new RegExp(`id:\\s*"${hiddenId}"`));
+    }
   });
 });
 
@@ -111,7 +180,7 @@ describe("evaluateFraudDoctrineTest: Limb (i) satisfied + Limb (ii) satisfied to
     expect(result.text).toMatch(/both have supporting selections/);
   });
 
-  it("Limb (i) fully satisfied takes priority display over an unrelated single Limb (ii) factor (which alone would only be borderline)", () => {
+  it("Limb (i) fully satisfied combines cleanly with an unrelated single Limb (ii) factor (which alone is now also satisfied)", () => {
     const result = evaluateFraudDoctrineTest(
       states([
         [LIMB_1_FACTOR_IDS.injury, "present"],
@@ -130,15 +199,16 @@ describe("evaluateFraudDoctrineTest: Unclear / Requires verification / Additiona
     expect(result.tone).not.toBe("satisfied");
   });
 
-  it.each(nonPresentStates)("a Limb (ii) factor marked '%s' does not count toward Limb (ii) satisfaction", (state) => {
+  it.each(nonPresentStates)("a Limb (ii) factor marked '%s' does not itself count toward Limb (ii) satisfaction -- only the genuinely-present factor does", (state) => {
     const result = evaluateFraudDoctrineTest(
       states([
         [LIMB_2_FACTOR_IDS[0], state],
         [LIMB_2_FACTOR_IDS[1], "present"],
       ])
     );
-    // Only one factor is genuinely "present" -- must read as borderline, not satisfied.
-    expect(result.tone).toBe("borderline");
+    // Exactly one factor is genuinely "present" -- that alone is now enough to satisfy Limb (ii)
+    // (the UI-alignment fix), but the non-present factor contributed nothing to that result.
+    expect(result.tone).toBe("satisfied");
   });
 
   it("factors marked unclear/requires-verification/additional-evidence-required are counted by attentionCount, never silently dropped", () => {
