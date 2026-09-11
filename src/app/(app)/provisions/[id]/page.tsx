@@ -170,7 +170,7 @@ export default async function ProvisionDetailPage({ params }: { params: Promise<
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.treatmentInPilotOrders}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Orders in which considered</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">Matters in which considered</dt>
             <dd className="mt-1 text-sm text-[var(--color-ink-700)]">{provision.ordersConsidered.join(", ") || "-"}</dd>
           </div>
           <div>

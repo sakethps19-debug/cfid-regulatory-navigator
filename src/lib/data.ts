@@ -24,6 +24,7 @@ import type {
 } from "@/types/domain";
 import type { Database } from "@/types/database";
 import { isDeepAnalyzedWithFindings, PROCESSING_STAGE_LABELS } from "@/lib/processingStages";
+import { resolveMatterKey } from "@/lib/matterIdentity";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ScenarioFindingRow = Database["public"]["Tables"]["scenario_findings"]["Row"];
@@ -285,24 +286,44 @@ export async function getScenarioFindings(): Promise<ScenarioFinding[]> {
 
 export async function getProvisions(): Promise<LegalProvision[]> {
   const supabase = await createClient();
-  const [{ data: provisionRows, error: provisionsError }, findings] = await Promise.all([
+  const [{ data: provisionRows, error: provisionsError }, findings, orders] = await Promise.all([
     supabase.from("legal_provisions").select("*, legal_instruments(id, name, issuing_authority)").order("canonical_id", { ascending: true }),
     getScenarioFindings(),
+    getOrders(),
   ]);
   if (provisionsError) throw provisionsError;
 
-  const casesByProvision = new Map<string, Set<string>>();
+  // Release-candidate correction: Provision Detail's "How this provision
+  // has been treated" summary previously deduplicated by finding.caseName
+  // alone and labelled the result "orders" -- but a matter's interim and
+  // final orders share one case name, so that count was actually a MATTER
+  // count mislabelled as an order count. It silently disagreed with the
+  // page's own "Historical treatment in captured orders" section below,
+  // which correctly groups by literal order id (see
+  // groupProvisionFindingsByOrder in provisionOrderHistory.ts) -- e.g.
+  // PFUTP Regulation 4(2)(e) showed "16 orders" here against "20 captured
+  // orders" there, for the same 23 findings, because 4 of those matters
+  // each contribute two order-stage records. Fixed by resolving the same
+  // three-tier matter identity already audited for the Scenario Analyzer's
+  // historical-treatment view (matter_id, then the linked order's own
+  // normalized_matter_name, then case_name as the last resort -- see
+  // matterIdentity.ts), and by labelling the result "matter(s)", never
+  // "order(s)". The genuine per-order count already shown further down the
+  // page is untouched and remains the correct "orders" label.
+  const ordersById = new Map(orders.map((o) => [o.id, o]));
+  const mattersByProvision = new Map<string, Map<string, string>>(); // provisionId -> (matterKey -> displayName)
   for (const finding of findings) {
     for (const provisionId of finding.provisionIds) {
-      const set = casesByProvision.get(provisionId) ?? new Set<string>();
-      set.add(finding.caseName);
-      casesByProvision.set(provisionId, set);
+      const map = mattersByProvision.get(provisionId) ?? new Map<string, string>();
+      const { key, displayName } = resolveMatterKey(finding, ordersById);
+      if (!map.has(key)) map.set(key, displayName);
+      mattersByProvision.set(provisionId, map);
     }
   }
 
   return (provisionRows ?? []).map((row) => {
     const instrumentRow = (row as { legal_instruments: { id: string; name: string; issuing_authority: string } | null }).legal_instruments;
-    const casesConsidered = [...(casesByProvision.get(row.canonical_id) ?? [])];
+    const mattersConsidered = [...(mattersByProvision.get(row.canonical_id) ?? new Map<string, string>()).values()];
     const findingsCount = findings.filter((f) => f.provisionIds.includes(row.canonical_id)).length;
     return {
       id: row.canonical_id,
@@ -313,10 +334,10 @@ export async function getProvisions(): Promise<LegalProvision[]> {
       subject: row.subject,
       currentTextVerificationStatus: VERIFICATION_STATUS_LABELS[row.current_text_verification_status] ?? "Requires verification",
       officialSource: row.official_source_url,
-      ordersConsidered: casesConsidered,
+      ordersConsidered: mattersConsidered,
       treatmentInPilotOrders:
         findingsCount > 0
-          ? `Cited in ${findingsCount} scenario finding${findingsCount === 1 ? "" : "s"} across ${casesConsidered.length} order${casesConsidered.length === 1 ? "" : "s"}: ${casesConsidered.join(", ")}.`
+          ? `Cited in ${findingsCount} scenario finding${findingsCount === 1 ? "" : "s"} across ${mattersConsidered.length} matter${mattersConsidered.length === 1 ? "" : "s"}: ${mattersConsidered.join(", ")}.`
           : "Not yet cited in any scenario finding in the structured library.",
       lawLibraryNote: row.law_library_note,
     };
