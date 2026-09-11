@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { JourneyStage } from "@/lib/caseJourney";
 import { Card, SourceLink } from "@/components/Card";
 import { OrderStageBadge } from "@/components/OrderStageBadge";
-import { findingDispositionLabel } from "@/lib/findingStatusDisplay";
 import { formatDate } from "@/lib/formatDate";
 import { stripPipelineLanguage } from "@/lib/orderGist";
 import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses";
@@ -21,15 +20,20 @@ import { NARRATIVE_PROSE_CLASSES } from "@/lib/proseClasses";
  * renders nothing, leaving an orphan "×N" floating with no visible label.
  * Order stage (from the real Order, via OrderStageBadge above) and finding
  * disposition are different dimensions and are never fused into a second
- * pseudo-stage derived from finding_status. This card now shows only
- * findings that actually have a disposition (findingDispositionLabel
- * non-null); an SCN-stage allegation with no disposition simply doesn't
- * appear here — it is not given a fabricated one. */
+ * pseudo-stage derived from finding_status.
+ *
+ * Release-candidate correction (stage-specific outcome attribution): a
+ * finding whose orderIds spans both an interim and a later, controlling
+ * order used to render that later order's own final disposition under
+ * BOTH stages, since findingStatus is one overall value with no per-stage
+ * variant. stage.dispositions is now precomputed by buildCaseJourney via
+ * attributedOrderIdForDisposition, so this component only ever renders a
+ * disposition under the one stage it is genuinely attributable to; when a
+ * stage has findings whose disposition belongs to a different stage,
+ * hasNonAttributableDispositions drives a single neutral note below,
+ * rather than a fabricated or duplicated stage-specific outcome. */
 export function CaseJourneyStageCard({ stage, stageNumber, totalStages }: { stage: JourneyStage; stageNumber: number; totalStages: number }) {
-  const { order } = stage;
-  const dispositions = stage.findings
-    .map((f) => ({ recordId: f.recordId, label: findingDispositionLabel(f.findingStatus) }))
-    .filter((d): d is { recordId: string; label: string } => d.label !== null);
+  const { order, dispositions } = stage;
 
   return (
     <Card className="flex h-full flex-col">
@@ -85,6 +89,12 @@ export function CaseJourneyStageCard({ stage, stageNumber, totalStages }: { stag
             ))}
           </ul>
         </div>
+      )}
+
+      {stage.hasNonAttributableDispositions && (
+        <p className="mt-2 text-xs italic text-[var(--color-ink-500)]">
+          No separately structured stage-specific disposition is available for the remaining findings examined at this stage. See the final order for the controlling outcome.
+        </p>
       )}
 
       {stage.broadScenarios.length > 0 && (
